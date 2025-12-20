@@ -1,3 +1,5 @@
+import { getMenuByPath } from "@/lib/modules/registry";
+
 /**
  * Page title translations for header display
  */
@@ -49,7 +51,7 @@ export const pageTitles = {
     "/backoffice/page-announcements": "Page Announcements",
     "/backoffice/ticket-sales": "Internal Ticket Sales",
     "/backoffice/ai-business-analysis": "AI Business Analysis",
-    "/admin/openldap": "OpenLDAP",
+    "/admin/openldap": "OpenLDAP Settings",
   },
   ja: {
     "/": "ホーム",
@@ -97,7 +99,7 @@ export const pageTitles = {
     "/backoffice/page-announcements": "ページ案内",
     "/backoffice/ticket-sales": "社内チケット販売",
     "/backoffice/ai-business-analysis": "AI業務分析",
-    "/admin/openldap": "OpenLDAP",
+    "/admin/openldap": "OpenLDAP設定",
   },
 } as const;
 
@@ -279,6 +281,12 @@ export function getPageTitle(pathname: string, language: "en" | "ja"): string {
   // /user/calendar/* -> "わたしのカレンダー"
   if (pathname.startsWith("/user/calendar")) {
     return language === "ja" ? "わたしのカレンダー" : "My Calendar";
+  }
+
+  // モジュールレジストリからメニュー名を動的に取得
+  const menu = getMenuByPath(pathname);
+  if (menu) {
+    return language === "ja" ? menu.nameJa : menu.name;
   }
 
   return "BoxFrame";

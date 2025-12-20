@@ -35,10 +35,10 @@ export function TemplateClient({
         <p className="text-muted-foreground mt-1">{t.description}</p>
       </div>
 
-      {/* ウェルカムカード */}
-      <Card className="bg-primary border-0">
+      {/* ウェルカムカード（青：USERロールカラー） */}
+      <Card className="bg-blue-600 border-0">
         <CardContent className="py-6">
-          <div className="text-primary-foreground">
+          <div className="text-white">
             <h2 className="text-xl font-bold mb-2">{t.welcomeMessage}</h2>
             <p className="opacity-80">
               {language === "ja" ? "ログインユーザ" : "Logged in as"}: {userName} (

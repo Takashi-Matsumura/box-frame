@@ -23,8 +23,8 @@ export const openldapModule: AppModule = {
     {
       id: "openldapManagement",
       moduleId: "openldap",
-      name: "OpenLDAP",
-      nameJa: "OpenLDAP",
+      name: "OpenLDAP Settings",
+      nameJa: "OpenLDAP設定",
       path: "/admin/openldap",
       menuGroup: "admin",
       requiredRoles: ["ADMIN"],
