@@ -31,6 +31,22 @@ async function main() {
     },
   });
 
+  // Create OpenLDAP configuration
+  const openLdapConfig = await prisma.openLdapConfig.upsert({
+    where: { id: "default" },
+    update: {},
+    create: {
+      id: "default",
+      isEnabled: true,
+      serverUrl: "ldap://localhost:390",
+      adminDN: "cn=admin,dc=boxframe,dc=local",
+      adminPassword: "admin",
+      baseDN: "dc=boxframe,dc=local",
+      usersOU: "ou=users,dc=boxframe,dc=local",
+      timeout: 10000,
+    },
+  });
+
   console.log("✅ Database seeded successfully!");
   console.log("Created admin user:");
   console.log(`  - ${admin.email} (${admin.role})`);

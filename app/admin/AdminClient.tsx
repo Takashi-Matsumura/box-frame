@@ -181,6 +181,10 @@ export function AdminClient({
   );
   const [openLdapStatusLoading, setOpenLdapStatusLoading] = useState(false);
 
+  // Google OAuth設定
+  const [googleOAuthEnabled, setGoogleOAuthEnabled] = useState(false);
+  const [googleOAuthLoading, setGoogleOAuthLoading] = useState(false);
+
   // OpenLDAPテスト認証
   const [testAuthUsername, setTestAuthUsername] = useState("");
   const [testAuthPassword, setTestAuthPassword] = useState("");
@@ -223,6 +227,45 @@ export function AdminClient({
       fetchOpenLdapStatus();
     }
   }, [selectedModule, fetchOpenLdapStatus]);
+
+  // Google OAuth設定を取得
+  const fetchGoogleOAuthSetting = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/google-oauth");
+      if (response.ok) {
+        const data = await response.json();
+        setGoogleOAuthEnabled(data.enabled);
+      }
+    } catch (error) {
+      console.error("Error fetching Google OAuth setting:", error);
+    }
+  }, []);
+
+  // Google OAuth設定を切り替え
+  const handleGoogleOAuthToggle = useCallback(async (enabled: boolean) => {
+    setGoogleOAuthLoading(true);
+    try {
+      const response = await fetch("/api/admin/google-oauth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled }),
+      });
+      if (response.ok) {
+        setGoogleOAuthEnabled(enabled);
+      }
+    } catch (error) {
+      console.error("Error updating Google OAuth setting:", error);
+    } finally {
+      setGoogleOAuthLoading(false);
+    }
+  }, []);
+
+  // システムタブが表示された時にGoogle OAuth設定を取得
+  useEffect(() => {
+    if (activeTab === "system") {
+      fetchGoogleOAuthSetting();
+    }
+  }, [activeTab, fetchGoogleOAuthSetting]);
 
   // OpenLDAPテスト認証を実行
   const handleTestAuth = useCallback(async () => {
@@ -517,6 +560,42 @@ export function AdminClient({
                       <span>TypeScript</span>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* 認証設定 */}
+              <div className="space-y-4 mt-8">
+                <h2 className="text-2xl font-semibold">
+                  {t("Authentication Settings", "認証設定")}
+                </h2>
+
+                <div className="p-6 bg-muted rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium text-foreground">
+                        Google OAuth
+                      </h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {t(
+                          "Enable Google OAuth login on the login page",
+                          "ログイン画面でGoogle OAuthログインを有効にする"
+                        )}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={googleOAuthEnabled}
+                      onCheckedChange={handleGoogleOAuthToggle}
+                      disabled={googleOAuthLoading}
+                    />
+                  </div>
+                  {!googleOAuthEnabled && (
+                    <p className="text-sm text-amber-600 dark:text-amber-400 mt-3">
+                      {t(
+                        "To enable Google OAuth, configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in the environment variables.",
+                        "Google OAuthを有効にするには、環境変数にGOOGLE_CLIENT_IDとGOOGLE_CLIENT_SECRETを設定してください。"
+                      )}
+                    </p>
+                  )}
                 </div>
               </div>
               </CardContent>

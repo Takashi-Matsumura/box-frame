@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { getLanguage } from "@/lib/i18n/get-language";
 import { OpenLdapService } from "@/lib/ldap/openldap-service";
+import { prisma } from "@/lib/prisma";
 import { loginTranslations } from "./translations";
 
 export default async function LoginPage() {
@@ -22,6 +23,18 @@ export default async function LoginPage() {
     isOpenLdapEnabled = false;
   }
 
+  // Google OAuth認証の有効/無効を確認
+  let isGoogleOAuthEnabled = false;
+  try {
+    const setting = await prisma.systemSetting.findUnique({
+      where: { key: "google_oauth_enabled" },
+    });
+    isGoogleOAuthEnabled = setting?.value === "true";
+  } catch (error) {
+    console.error("Failed to check Google OAuth setting:", error);
+    isGoogleOAuthEnabled = false;
+  }
+
   return (
     <div className="min-h-[calc(100vh-7rem)] flex items-center justify-center bg-background">
       <div className="w-full max-w-md px-6">
@@ -30,19 +43,22 @@ export default async function LoginPage() {
           <CardContent className="pt-6">
             {/* OpenLDAPログインフォーム */}
             {isOpenLdapEnabled && (
-              <>
-                <OpenLdapLoginForm language={language} />
-                <div className="my-6 flex items-center gap-4">
-                  <Separator className="flex-1" />
-                  <span className="text-sm text-muted-foreground font-medium">
-                    {t.or}
-                  </span>
-                  <Separator className="flex-1" />
-                </div>
-              </>
+              <OpenLdapLoginForm language={language} />
             )}
 
-            <SignInButton />
+            {/* 両方有効な場合のセパレータ */}
+            {isOpenLdapEnabled && isGoogleOAuthEnabled && (
+              <div className="my-6 flex items-center gap-4">
+                <Separator className="flex-1" />
+                <span className="text-sm text-muted-foreground font-medium">
+                  {t.or}
+                </span>
+                <Separator className="flex-1" />
+              </div>
+            )}
+
+            {/* Google OAuthボタン */}
+            {isGoogleOAuthEnabled && <SignInButton />}
           </CardContent>
         </Card>
 
