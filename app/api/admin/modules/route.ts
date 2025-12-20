@@ -11,6 +11,20 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // メニュー順序のオーバーライドを取得
+    const menuOrderSettings = await prisma.systemSetting.findMany({
+      where: {
+        key: {
+          startsWith: "menu_order_",
+        },
+      },
+    });
+    const menuOrderOverrides: Record<string, number> = {};
+    for (const setting of menuOrderSettings) {
+      const menuId = setting.key.replace("menu_order_", "");
+      menuOrderOverrides[menuId] = parseInt(setting.value, 10);
+    }
+
     // モジュール情報を取得
     // 依存関係がないモジュールをcoreとして扱う
     const modules = Object.values(moduleRegistry).map((module) => {
@@ -31,7 +45,7 @@ export async function GET() {
           path: menu.path,
           menuGroup: menu.menuGroup,
           enabled: menu.enabled,
-          order: menu.order,
+          order: menuOrderOverrides[menu.id] ?? menu.order,
           requiredRoles: menu.requiredRoles || [],
         })),
       };
@@ -112,6 +126,64 @@ export async function PATCH(request: Request) {
     });
   } catch (error) {
     console.error("Error updating module:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const session = await auth();
+
+    if (!session || session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { menuId, order } = await request.json();
+
+    if (!menuId || typeof order !== "number") {
+      return NextResponse.json(
+        { error: "Menu ID and order are required" },
+        { status: 400 }
+      );
+    }
+
+    // メニューが存在するか確認
+    let menuFound = false;
+    for (const module of Object.values(moduleRegistry)) {
+      const menu = module.menus.find((m) => m.id === menuId);
+      if (menu) {
+        menuFound = true;
+        // ランタイムのメニュー順序も更新
+        menu.order = order;
+        break;
+      }
+    }
+
+    if (!menuFound) {
+      return NextResponse.json(
+        { error: "Menu not found" },
+        { status: 404 }
+      );
+    }
+
+    // SystemSettingに保存
+    const settingKey = `menu_order_${menuId}`;
+    await prisma.systemSetting.upsert({
+      where: { key: settingKey },
+      update: { value: order.toString() },
+      create: { key: settingKey, value: order.toString() },
+    });
+
+    return NextResponse.json({
+      success: true,
+      menuId,
+      order,
+    });
+  } catch (error) {
+    console.error("Error updating menu order:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

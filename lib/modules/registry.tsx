@@ -4,6 +4,7 @@ import { systemModule } from "@/lib/core-modules/system";
 // アドオンモジュール
 import { openldapModule } from "@/lib/addon-modules/openldap";
 import { templateModule } from "@/lib/addon-modules/template";
+import { prisma } from "@/lib/prisma";
 import type {
   AppMenu,
   AppModule,
@@ -42,9 +43,32 @@ export const menuGroups: Record<string, MenuGroup> = {
 /**
  * 全モジュールを取得
  * moduleRegistryから有効なモジュールを動的に取得
+ * メニュー順序のオーバーライドをデータベースから適用
  */
 export async function getAllModules(): Promise<AppModule[]> {
-  return Object.values(moduleRegistry).filter((module) => module.enabled);
+  // メニュー順序のオーバーライドを取得
+  const menuOrderSettings = await prisma.systemSetting.findMany({
+    where: {
+      key: {
+        startsWith: "menu_order_",
+      },
+    },
+  });
+  const menuOrderOverrides: Record<string, number> = {};
+  for (const setting of menuOrderSettings) {
+    const menuId = setting.key.replace("menu_order_", "");
+    menuOrderOverrides[menuId] = parseInt(setting.value, 10);
+  }
+
+  return Object.values(moduleRegistry)
+    .filter((module) => module.enabled)
+    .map((module) => ({
+      ...module,
+      menus: module.menus.map((menu) => ({
+        ...menu,
+        order: menuOrderOverrides[menu.id] ?? menu.order,
+      })),
+    }));
 }
 
 /**

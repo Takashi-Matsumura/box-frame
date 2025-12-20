@@ -298,6 +298,55 @@ export function AdminClient({
     }
   }, [testAuthUsername, testAuthPassword]);
 
+  // メニュー順序を更新
+  const handleUpdateMenuOrder = useCallback(async (menuId: string, order: number) => {
+    try {
+      const response = await fetch("/api/admin/modules", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ menuId, order }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to update menu order");
+      }
+
+      // ローカルの状態を更新
+      setModulesData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          modules: prev.modules.map((m) => ({
+            ...m,
+            menus: m.menus.map((menu) =>
+              menu.id === menuId ? { ...menu, order } : menu
+            ),
+          })),
+        };
+      });
+
+      // 選択中のモジュールも更新
+      setSelectedModule((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          menus: prev.menus.map((menu) =>
+            menu.id === menuId ? { ...menu, order } : menu
+          ),
+        };
+      });
+    } catch (error) {
+      console.error("Error updating menu order:", error);
+      alert(
+        t(
+          error instanceof Error ? error.message : "Failed to update menu order",
+          error instanceof Error ? error.message : "メニュー順序の更新に失敗しました"
+        )
+      );
+    }
+  }, [t]);
+
   // モジュールの有効/無効を切り替え
   const handleToggleModule = useCallback(async (moduleId: string, enabled: boolean) => {
     try {
@@ -1467,6 +1516,20 @@ export function AdminClient({
                                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                                     {menu.menuGroup}
                                   </span>
+                                  {/* 順序入力 */}
+                                  <Input
+                                    type="number"
+                                    value={menu.order}
+                                    onChange={(e) => {
+                                      const newOrder = parseInt(e.target.value, 10);
+                                      if (!isNaN(newOrder)) {
+                                        handleUpdateMenuOrder(menu.id, newOrder);
+                                      }
+                                    }}
+                                    className="w-16 h-7 text-xs text-center"
+                                    min={0}
+                                    max={999}
+                                  />
                                   <span
                                     className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                       menu.enabled
