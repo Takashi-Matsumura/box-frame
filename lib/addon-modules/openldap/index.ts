@@ -1,0 +1,1 @@
+export { openldapModule } from "./module";

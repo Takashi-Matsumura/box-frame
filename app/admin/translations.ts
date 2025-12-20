@@ -1,0 +1,33 @@
+export const adminTranslations = {
+  en: {
+    title: "System Environment Management",
+    totalUsers: "Total Users",
+    regularUsers: "Regular Users",
+    administrators: "Administrators",
+    manageUsers: "Manage Users",
+    manageUsersDesc: "View all users, change roles, and manage user accounts",
+    systemInfo: "System Information",
+    database: "Database:",
+    databaseValue: "SQLite (Development)",
+    authentication: "Authentication:",
+    authValue: "NextAuth.js v5",
+    provider: "Provider:",
+    providerValue: "Google OAuth / LDAP",
+  },
+  ja: {
+    title: "システム環境管理",
+    totalUsers: "総ユーザ数",
+    regularUsers: "一般ユーザ",
+    administrators: "管理者",
+    manageUsers: "ユーザ管理",
+    manageUsersDesc:
+      "すべてのユーザを表示し、ロールの変更とユーザアカウントの管理を行います",
+    systemInfo: "システム情報",
+    database: "データベース:",
+    databaseValue: "SQLite (開発環境)",
+    authentication: "認証:",
+    authValue: "NextAuth.js v5",
+    provider: "プロバイダー:",
+    providerValue: "Google OAuth / LDAP",
+  },
+} as const;

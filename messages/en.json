@@ -1,0 +1,62 @@
+{
+  "menu": {
+    "home": "Home",
+    "login": "Login",
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "settings": "Settings",
+    "accessKeys": "Access Keys",
+    "hrEvaluation": "HR Evaluation",
+    "businessTrip": "Business Trip Request",
+    "expenseClaim": "Expense Claim",
+    "reports": "Reports",
+    "analytics": "Analytics",
+    "advancedSettings": "Advanced Settings",
+    "adminPanel": "Admin Panel",
+    "userManagement": "User Management",
+    "accessKeyManagement": "Access Key Management",
+    "organization": "Organization Chart",
+    "logout": "Logout"
+  },
+  "menuGroups": {
+    "user": "User",
+    "manager": "Manager",
+    "backOffice": "Back Office",
+    "additionalFeatures": "Additional Features",
+    "admin": "Admin"
+  },
+  "pages": {
+    "home": "Home",
+    "login": "Login",
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "settings": "Settings",
+    "accessKeys": "Access Keys",
+    "hrEvaluation": "HR Evaluation",
+    "businessTrip": "Business Trip Request",
+    "expenseClaim": "Expense Claim",
+    "reports": "Reports",
+    "analytics": "Analytics",
+    "advancedSettings": "Advanced Settings",
+    "adminPanel": "Admin Panel",
+    "userManagement": "User Management",
+    "accessKeyManagement": "Access Key Management",
+    "organization": "Organization Chart"
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage your application preferences",
+    "language": {
+      "title": "Language",
+      "description": "Select your preferred language",
+      "english": "English",
+      "japanese": "Japanese",
+      "current": "Current Language",
+      "saveButton": "Save Language Preference",
+      "saved": "Language preference saved successfully!"
+    }
+  },
+  "common": {
+    "appName": "RBAC Demo"
+  }
+}

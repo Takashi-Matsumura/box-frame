@@ -1,0 +1,77 @@
+import type { Session } from "next-auth";
+import { prisma } from "@/lib/prisma";
+
+/**
+ * ユーザが特定のメニューパスにアクセスする権限があるかチェックする
+ *
+ * 以下の条件のいずれかを満たす場合、アクセスを許可：
+ * 1. ユーザのロールが指定されたrolesに含まれる
+ * 2. ユーザが有効なアクセスキーを持ち、そのアクセスキーがmenuPathへのアクセスを許可している
+ *
+ * @param session - NextAuthのセッション
+ * @param menuPath - アクセスしようとしているメニューのパス（例: "/analytics"）
+ * @param roles - 許可するロールの配列（デフォルト: ["MANAGER", "ADMIN"]）
+ * @returns アクセス権限がある場合true、ない場合false
+ */
+export async function checkAccess(
+  session: Session | null,
+  menuPath: string,
+  roles: string[] = ["MANAGER", "ADMIN"],
+): Promise<boolean> {
+  if (!session?.user) {
+    return false;
+  }
+
+  // 1. ロールチェック
+  const userRole = session.user.role;
+  if (roles.includes(userRole || "")) {
+    return true;
+  }
+
+  // 2. アクセスキーチェック
+  try {
+    const userId = session.user.id;
+
+    const userAccessKeys = await prisma.userAccessKey.findMany({
+      where: {
+        userId,
+      },
+      include: {
+        accessKey: {
+          include: {
+            permissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // 有効なアクセスキーを確認
+    for (const uak of userAccessKeys) {
+      const ak = uak.accessKey;
+
+      // アクセスキーが有効かチェック
+      if (!ak.isActive || new Date(ak.expiresAt) < new Date()) {
+        continue;
+      }
+
+      // このアクセスキーがmenuPathへのアクセスを許可しているかチェック
+      for (const akp of ak.permissions) {
+        if (akp.permission.menuPath === menuPath) {
+          return true;
+        }
+      }
+    }
+  } catch (error) {
+    console.error(
+      "[checkAccess] Error checking access key permissions:",
+      error,
+    );
+    // エラーが発生してもロールチェックは済んでいるので、falseを返す
+  }
+
+  return false;
+}

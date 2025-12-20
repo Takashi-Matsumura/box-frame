@@ -1,0 +1,215 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  GUEST
+  USER
+  MANAGER
+  ADMIN
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String        @id @default(cuid())
+  name          String?
+  email         String?       @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role          @default(USER)
+  language      String        @default("ja")
+  timezone      String        @default("Asia/Tokyo")
+  braveApiKey   String?
+  systemPrompt  String?
+  lastSignInAt  DateTime?
+  twoFactorEnabled Boolean    @default(false)
+  twoFactorSecret  String?
+  accounts      Account[]
+  sessions      Session[]
+  userAccessKeys UserAccessKey[]
+  targetedAccessKeys AccessKey[]
+  ldapMappings  LdapUserMapping[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ========================================
+// LDAP認証システム関連モデル
+// ========================================
+
+model LdapConfig {
+  id            String   @id @default(cuid())
+  isEnabled     Boolean  @default(false)
+  serverUrl     String   @default("")
+  baseDN        String   @default("")
+  bindDN        String?
+  bindPassword  String?
+  searchFilter  String   @default("(uid={username})")
+  timeout       Int      @default(10000)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  updatedBy     String?
+}
+
+model LdapUserMapping {
+  id               String   @id @default(cuid())
+  ldapUsername     String   @unique
+  userId           String   @unique
+  ldapDN           String?
+  email            String?
+  displayName      String?
+  mappingType      LdapMappingType @default(MANUAL)
+  isActive         Boolean  @default(true)
+  lastLoginAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  createdBy        String?
+  migrated         Boolean  @default(false)
+  migratedAt       DateTime?
+  migratedFrom     String?
+  mustChangePassword Boolean @default(false)
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([ldapUsername])
+  @@index([userId])
+  @@index([migrated])
+}
+
+enum LdapMappingType {
+  AUTO
+  MANUAL
+}
+
+model LdapAuthLog {
+  id            String   @id @default(cuid())
+  ldapUsername  String
+  success       Boolean
+  failureReason String?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  @@index([ldapUsername])
+  @@index([createdAt])
+  @@index([success])
+}
+
+model OpenLdapConfig {
+  id            String   @id @default(cuid())
+  isEnabled     Boolean  @default(true)
+  serverUrl     String   @default("")
+  adminDN       String   @default("")
+  adminPassword String   @default("")
+  baseDN        String   @default("")
+  usersOU       String   @default("")
+  timeout       Int      @default(10000)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ========================================
+// アクセス制御システム
+// ========================================
+
+model Permission {
+  id                    String                  @id @default(cuid())
+  name                  String                  @unique
+  displayName           String
+  description           String?
+  menuPath              String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  accessKeyPermissions  AccessKeyPermission[]
+}
+
+model AccessKey {
+  id              String                @id @default(cuid())
+  key             String                @unique
+  name            String
+  targetUserId    String?
+  targetUser      User?                 @relation(fields: [targetUserId], references: [id], onDelete: Cascade)
+  menuPaths       String
+  expiresAt       DateTime
+  isActive        Boolean               @default(true)
+  createdBy       String
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  permissions     AccessKeyPermission[]
+  userAccessKeys  UserAccessKey[]
+}
+
+model AccessKeyPermission {
+  id           String     @id @default(cuid())
+  accessKeyId  String
+  permissionId String
+  accessKey    AccessKey  @relation(fields: [accessKeyId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([accessKeyId, permissionId])
+}
+
+model UserAccessKey {
+  id          String    @id @default(cuid())
+  userId      String
+  accessKeyId String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessKey   AccessKey @relation(fields: [accessKeyId], references: [id], onDelete: Cascade)
+  activatedAt DateTime  @default(now())
+
+  @@unique([userId, accessKeyId])
+}
+
+// ========================================
+// システム設定
+// ========================================
+
+model SystemSetting {
+  key       String   @id
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

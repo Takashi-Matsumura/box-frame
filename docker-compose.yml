@@ -1,0 +1,51 @@
+name: box-frame
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: boxframe-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: boxframe
+      POSTGRES_PASSWORD: boxframe
+      POSTGRES_DB: boxframe
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U boxframe"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # OpenLDAP Server
+  openldap:
+    image: osixia/openldap:1.5.0
+    container_name: boxframe-openldap
+    restart: unless-stopped
+    environment:
+      LDAP_ORGANISATION: "BoxFrame"
+      LDAP_DOMAIN: "boxframe.local"
+      LDAP_BASE_DN: "dc=boxframe,dc=local"
+      LDAP_ADMIN_PASSWORD: "admin"
+      LDAP_CONFIG_PASSWORD: "config"
+      LDAP_READONLY_USER: "false"
+      LDAP_RFC2307BIS_SCHEMA: "false"
+      LDAP_BACKEND: "mdb"
+      LDAP_TLS: "false"
+      LDAP_REPLICATION: "false"
+    ports:
+      - "390:389"
+      - "637:636"
+    volumes:
+      - openldap_data:/var/lib/ldap
+      - openldap_config:/etc/ldap/slapd.d
+      - ./docker/openldap/bootstrap:/container/service/slapd/assets/config/bootstrap/ldif/custom
+    command: --copy-service
+
+volumes:
+  postgres_data:
+  openldap_data:
+  openldap_config:

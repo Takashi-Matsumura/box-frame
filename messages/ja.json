@@ -1,0 +1,62 @@
+{
+  "menu": {
+    "home": "ホーム",
+    "login": "ログイン",
+    "dashboard": "ダッシュボード",
+    "profile": "プロフィール",
+    "settings": "設定",
+    "accessKeys": "アクセスキー",
+    "hrEvaluation": "人事評価",
+    "businessTrip": "出張申請",
+    "expenseClaim": "経費精算",
+    "reports": "レポート",
+    "analytics": "分析ツール",
+    "advancedSettings": "高度な設定",
+    "adminPanel": "管理画面",
+    "userManagement": "ユーザー管理",
+    "accessKeyManagement": "アクセスキー管理",
+    "organization": "組織図",
+    "logout": "ログアウト"
+  },
+  "menuGroups": {
+    "user": "ユーザー",
+    "manager": "マネージャー",
+    "backOffice": "バックオフィス",
+    "additionalFeatures": "追加機能",
+    "admin": "管理者"
+  },
+  "pages": {
+    "home": "ホーム",
+    "login": "ログイン",
+    "dashboard": "ダッシュボード",
+    "profile": "プロフィール",
+    "settings": "設定",
+    "accessKeys": "アクセスキー",
+    "hrEvaluation": "人事評価",
+    "businessTrip": "出張申請",
+    "expenseClaim": "経費精算",
+    "reports": "レポート",
+    "analytics": "分析ツール",
+    "advancedSettings": "高度な設定",
+    "adminPanel": "管理画面",
+    "userManagement": "ユーザー管理",
+    "accessKeyManagement": "アクセスキー管理",
+    "organization": "組織図"
+  },
+  "settings": {
+    "title": "設定",
+    "description": "アプリケーションの設定を管理",
+    "language": {
+      "title": "言語設定",
+      "description": "使用する言語を選択してください",
+      "english": "English",
+      "japanese": "日本語",
+      "current": "現在の言語",
+      "saveButton": "言語設定を保存",
+      "saved": "言語設定が保存されました！"
+    }
+  },
+  "common": {
+    "appName": "RBACデモ"
+  }
+}
