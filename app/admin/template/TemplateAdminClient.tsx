@@ -6,6 +6,8 @@ import { templateAdminTranslations } from "./translations";
 
 interface TemplateAdminClientProps {
   language: "en" | "ja";
+  userName: string;
+  userRole: string;
 }
 
 /**
@@ -14,7 +16,11 @@ interface TemplateAdminClientProps {
  * 管理者向けの設定ページのテンプレートです。
  * モジュール固有の設定機能を実装する際の参考にしてください。
  */
-export function TemplateAdminClient({ language }: TemplateAdminClientProps) {
+export function TemplateAdminClient({
+  language,
+  userName,
+  userRole,
+}: TemplateAdminClientProps) {
   const t = templateAdminTranslations[language];
 
   return (
@@ -24,6 +30,19 @@ export function TemplateAdminClient({ language }: TemplateAdminClientProps) {
         <h1 className="text-2xl font-bold text-foreground">{t.pageTitle}</h1>
         <p className="text-muted-foreground mt-1">{t.description}</p>
       </div>
+
+      {/* ウェルカムカード（紫：ADMINロールカラー） */}
+      <Card className="bg-purple-600 border-0">
+        <CardContent className="py-6">
+          <div className="text-white">
+            <h2 className="text-xl font-bold mb-2">{t.welcomeMessage}</h2>
+            <p className="opacity-80">
+              {language === "ja" ? "ログインユーザ" : "Logged in as"}: {userName} (
+              {userRole})
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 設定セクション */}
       <Card>

@@ -6,6 +6,7 @@ export const templateAdminTranslations = {
     title: "Template Settings",
     pageTitle: "Template Module Settings",
     description: "Configure template module settings here.",
+    welcomeMessage: "Welcome to Admin Template!",
     settingsSection: "Settings",
     settingsSectionDesc:
       "This is an example of an admin settings page. Add your module configuration options here.",
@@ -22,6 +23,7 @@ export const templateAdminTranslations = {
     title: "テンプレート設定",
     pageTitle: "テンプレートモジュール設定",
     description: "テンプレートモジュールの設定を行います。",
+    welcomeMessage: "管理者テンプレートへようこそ！",
     settingsSection: "設定",
     settingsSectionDesc:
       "管理者設定ページの例です。モジュールの設定オプションをここに追加してください。",
