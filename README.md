@@ -213,9 +213,18 @@ npx prisma studio    # Prisma Studio起動
 
 ### 対応プロバイダ
 
-- Google OAuth
+- Google OAuth（管理者が有効/無効を切り替え可能）
 - OpenLDAP
-- 2要素認証 (TOTP)
+- 二要素認証 (TOTP)
+
+### 二要素認証 (2FA)
+
+ユーザは設定画面から二要素認証を有効化できます。
+
+1. 設定画面 (`/settings`) で「二要素認証を有効にする」をクリック
+2. 認証アプリ（Google Authenticator等）でQRコードをスキャン
+3. 6桁のコードを入力して有効化
+4. 次回ログイン時から認証コードの入力が必要
 
 ### Edge Runtime対応
 
