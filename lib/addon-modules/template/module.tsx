@@ -50,6 +50,21 @@ export const templateModule: AppModule = {
       descriptionJa: "ユーザ向けテンプレートページ",
     },
 
+    // --- マネージャー向けメニュー ---
+    {
+      id: "templateManager",
+      moduleId: "template",
+      name: "Template Manager",
+      nameJa: "テンプレート管理",
+      path: "/manager/template",
+      menuGroup: "manager",
+      requiredRoles: ["MANAGER", "ADMIN"],
+      enabled: true,
+      order: 10,
+      description: "Template page for managers",
+      descriptionJa: "マネージャー向けテンプレートページ",
+    },
+
     // --- 管理者向けメニュー ---
     {
       id: "templateAdmin",

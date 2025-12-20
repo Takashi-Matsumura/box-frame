@@ -343,18 +343,23 @@ lib/
 app/
 ├── (menus)/
 │   └── (user)/
-│       └── mypage/           # ユーザ向けページ（/mypage）
+│       └── mypage/               # ユーザ向けページ（/mypage）
 │           ├── page.tsx
 │           ├── MyPageClient.tsx
 │           └── translations.ts
+├── manager/
+│   └── mypage/                   # マネージャー向けページ（/manager/mypage）
+│       ├── page.tsx
+│       ├── MyPageManagerClient.tsx
+│       └── translations.ts
 ├── admin/
-│   └── mypage/               # 管理者向けページ（/admin/mypage）
+│   └── mypage/                   # 管理者向けページ（/admin/mypage）
 │       ├── page.tsx
 │       ├── MyPageAdminClient.tsx
 │       └── translations.ts
 └── api/
     └── mymodule/
-        └── route.ts          # APIルート（必要に応じて）
+        └── route.ts              # APIルート（必要に応じて）
 ```
 
 ---
