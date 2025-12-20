@@ -116,6 +116,57 @@ export const exampleModule: AppModule = {
 };
 ```
 
+### カスタムモジュールの作成
+
+テンプレートモジュールをコピーして独自のモジュールを作成できます。
+
+#### 1. モジュール定義をコピー
+
+```bash
+cp -r lib/addon-modules/template lib/addon-modules/mymodule
+```
+
+#### 2. モジュールIDと名前を変更
+
+`lib/addon-modules/mymodule/module.tsx` を編集:
+
+```typescript
+export const myModule: AppModule = {
+  id: "mymodule",           // 変更
+  name: "My Module",        // 変更
+  nameJa: "マイモジュール",  // 変更
+  // ...
+};
+```
+
+#### 3. ページをコピー
+
+```bash
+cp -r app/(menus)/(user)/template app/(menus)/(user)/mypage
+```
+
+#### 4. モジュールを登録
+
+`lib/modules/registry.tsx` を編集:
+
+```typescript
+import { myModule } from "@/lib/addon-modules/mymodule";
+
+export const moduleRegistry: ModuleRegistry = {
+  system: systemModule,
+  openldap: openldapModule,
+  mymodule: myModule,  // 追加
+};
+```
+
+#### 5. 開発サーバを再起動
+
+```bash
+npm run dev
+```
+
+詳細は [docs/MODULE_GUIDE.md](docs/MODULE_GUIDE.md) を参照してください。
+
 ### ロール
 
 | ロール | 説明 |

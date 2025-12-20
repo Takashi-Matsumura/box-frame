@@ -1,8 +1,9 @@
 // コアモジュール（静的インポート）
+import { systemModule } from "@/lib/core-modules/system";
 
 // アドオンモジュール
 import { openldapModule } from "@/lib/addon-modules/openldap";
-import { systemModule } from "@/lib/core-modules/system";
+import { templateModule } from "@/lib/addon-modules/template";
 import type {
   AppMenu,
   AppModule,
@@ -48,10 +49,17 @@ export async function getAllModules(): Promise<AppModule[]> {
 
 /**
  * モジュールレジストリ
+ *
+ * 新しいモジュールを追加する場合は、ここにインポートして登録してください。
+ * 例: mymodule: myModule,
  */
 export const moduleRegistry: ModuleRegistry = {
+  // コアモジュール
   system: systemModule,
+
+  // アドオンモジュール
   openldap: openldapModule,
+  template: templateModule, // テンプレートモジュール（参考用）
 };
 
 /**
