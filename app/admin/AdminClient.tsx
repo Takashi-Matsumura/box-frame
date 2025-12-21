@@ -1025,10 +1025,10 @@ export function AdminClient({
                                   </div>
                                   <div>
                                     <CardTitle className="text-lg">
-                                      {module.nameJa}
+                                      {language === "ja" ? module.nameJa : module.name}
                                     </CardTitle>
                                     <p className="text-sm text-muted-foreground">
-                                      {module.name}
+                                      {language === "ja" ? module.name : module.nameJa}
                                     </p>
                                   </div>
                                 </div>
@@ -1040,9 +1040,9 @@ export function AdminClient({
                               onClick={() => setSelectedModule(module)}
                             >
                               {/* モジュール説明 */}
-                              {module.descriptionJa && (
+                              {(language === "ja" ? module.descriptionJa : module.description) && (
                                 <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                                  {module.descriptionJa}
+                                  {language === "ja" ? module.descriptionJa : module.description}
                                 </p>
                               )}
 
@@ -1101,10 +1101,10 @@ export function AdminClient({
                     </div>
                     <div className="flex-1">
                       <h2 className="text-2xl font-bold">
-                        {selectedModule.nameJa}
+                        {language === "ja" ? selectedModule.nameJa : selectedModule.name}
                       </h2>
                       <p className="text-sm text-muted-foreground mt-1">
-                        {selectedModule.name}
+                        {language === "ja" ? selectedModule.name : selectedModule.nameJa}
                       </p>
                     </div>
                   </div>
@@ -1151,7 +1151,7 @@ export function AdminClient({
                           {t("Description", "説明")}
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                          {selectedModule.descriptionJa || t("None", "なし")}
+                          {(language === "ja" ? selectedModule.descriptionJa : selectedModule.description) || t("None", "なし")}
                         </p>
                       </div>
                     </div>
@@ -1486,10 +1486,10 @@ export function AdminClient({
                               >
                                 <div className="flex-1">
                                   <p className="text-sm font-medium">
-                                    {menu.nameJa}
+                                    {language === "ja" ? menu.nameJa : menu.name}
                                   </p>
                                   <p className="text-xs text-muted-foreground">
-                                    {menu.name}
+                                    {language === "ja" ? menu.name : menu.nameJa}
                                   </p>
                                   <p className="text-xs text-muted-foreground/70 mt-1">
                                     {menu.path}

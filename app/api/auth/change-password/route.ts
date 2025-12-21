@@ -59,9 +59,25 @@ export async function POST(request: NextRequest) {
 
     const ldapService = await OpenLdapService.createWithDatabaseConfig();
 
-    // パスワードリセットフラグがONの場合は現在のパスワード確認をスキップ
-    // それ以外の場合は現在のパスワードを確認
-    if (!mapping.mustChangePassword) {
+    // パスワードリセットフラグがONの場合は管理者権限でパスワードを更新
+    // それ以外の場合はユーザー自身の権限で変更（ACLベース）
+    if (mapping.mustChangePassword) {
+      // 管理者権限でパスワードをリセット（初回ログイン時など）
+      const updateResult = await ldapService.updateUserPassword(
+        mapping.ldapUsername,
+        newPassword,
+      );
+      if (!updateResult) {
+        return NextResponse.json(
+          {
+            error: "Failed to update password",
+            errorJa: "パスワードの更新に失敗しました",
+          },
+          { status: 500 },
+        );
+      }
+    } else {
+      // ユーザー自身の権限でパスワードを変更（ACLベース）
       if (!currentPassword) {
         return NextResponse.json(
           {
@@ -72,35 +88,30 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // 現在のパスワードを確認
-      const authResult = await ldapService.authenticate(
+      const changeResult = await ldapService.changeMyPassword(
         mapping.ldapUsername,
         currentPassword,
+        newPassword,
       );
-      if (!authResult.success) {
+
+      if (!changeResult.success) {
+        if (changeResult.errorCode === "INVALID_CREDENTIALS") {
+          return NextResponse.json(
+            {
+              error: "Current password is incorrect",
+              errorJa: "現在のパスワードが正しくありません",
+            },
+            { status: 400 },
+          );
+        }
         return NextResponse.json(
           {
-            error: "Current password is incorrect",
-            errorJa: "現在のパスワードが正しくありません",
+            error: "Failed to update password",
+            errorJa: "パスワードの更新に失敗しました",
           },
-          { status: 400 },
+          { status: 500 },
         );
       }
-    }
-
-    // パスワードを更新
-    const updateResult = await ldapService.updateUserPassword(
-      mapping.ldapUsername,
-      newPassword,
-    );
-    if (!updateResult) {
-      return NextResponse.json(
-        {
-          error: "Failed to update password",
-          errorJa: "パスワードの更新に失敗しました",
-        },
-        { status: 500 },
-      );
     }
 
     // パスワード変更フラグをクリア

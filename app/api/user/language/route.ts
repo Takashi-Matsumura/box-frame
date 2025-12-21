@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { LANGUAGE_COOKIE_NAME } from "@/lib/i18n/get-language";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
@@ -59,7 +60,15 @@ export async function POST(request: Request) {
       session.user.email,
     );
 
-    return NextResponse.json({ success: true, language });
+    // レスポンスにCookieを設定（ログアウト後も言語設定を維持）
+    const response = NextResponse.json({ success: true, language });
+    response.cookies.set(LANGUAGE_COOKIE_NAME, language, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365, // 1年間
+      sameSite: "lax",
+    });
+
+    return response;
   } catch (error) {
     console.error("Error updating language preference:", error);
     return NextResponse.json(

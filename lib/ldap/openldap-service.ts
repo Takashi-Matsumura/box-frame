@@ -103,6 +103,12 @@ export interface UpdateUserResult {
   error?: string;
 }
 
+export interface ChangeMyPasswordResult {
+  success: boolean;
+  error?: string;
+  errorCode?: "INVALID_CREDENTIALS" | "LDAP_ERROR";
+}
+
 /**
  * OpenLDAPサービスクラス
  * 新LDAPサーバ（OpenLDAP）への接続、認証、ユーザ作成を担当
@@ -379,7 +385,7 @@ export class OpenLdapService {
   }
 
   /**
-   * ユーザのパスワードを更新 (ldapts)
+   * ユーザのパスワードを更新 (ldapts) - 管理者権限で実行
    */
   async updateUserPassword(
     username: string,
@@ -406,6 +412,68 @@ export class OpenLdapService {
     } catch (error) {
       console.error(`[OpenLdapService] Failed to update password:`, error);
       return false;
+    } finally {
+      await this.closeClient(client);
+    }
+  }
+
+  /**
+   * ユーザ自身の権限でパスワードを変更
+   * 管理者権限ではなく、ユーザー自身でLDAPにbindしてパスワードを変更
+   * OpenLDAPのACLにより、自分自身のuserPassword属性のみ変更可能
+   */
+  async changeMyPassword(
+    username: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<ChangeMyPasswordResult> {
+    const client = this.createClient();
+    const userDN = `uid=${username},${this.config.usersOU}`;
+
+    try {
+      // ユーザー自身の認証情報でバインド（本人確認）
+      await this.bind(client, userDN, currentPassword);
+
+      // 自分自身のパスワードを変更（ACLで許可されている）
+      const change = new Change({
+        operation: "replace",
+        modification: new Attribute({
+          type: "userPassword",
+          values: [newPassword],
+        }),
+      });
+
+      await this.modifyEntry(client, userDN, [change]);
+
+      console.log(
+        `[OpenLdapService] User changed their own password: ${username}`,
+      );
+      return { success: true };
+    } catch (error) {
+      console.error(
+        `[OpenLdapService] Failed to change password for ${username}:`,
+        error,
+      );
+
+      // 認証失敗の場合
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      if (
+        errorMessage.includes("Invalid Credentials") ||
+        errorMessage.includes("invalidCredentials")
+      ) {
+        return {
+          success: false,
+          error: "Invalid current password",
+          errorCode: "INVALID_CREDENTIALS",
+        };
+      }
+
+      return {
+        success: false,
+        error: errorMessage,
+        errorCode: "LDAP_ERROR",
+      };
     } finally {
       await this.closeClient(client);
     }
