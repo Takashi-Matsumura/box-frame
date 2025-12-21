@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { NotificationService } from "@/lib/services/notification-service";
 
 /**
  * DELETE /api/admin/users/[id]
@@ -56,19 +57,19 @@ export async function DELETE(
       where: { id },
     });
 
-    // 変更履歴を記録
-    await prisma.changeLog.create({
-      data: {
-        entityType: "User",
-        entityId: id,
-        changeType: "DELETE",
-        fieldName: null,
-        oldValue: JSON.stringify(userInfo),
-        newValue: null,
-        changeDescription: `ユーザアカウント削除: ${user.name || user.email} (${user.role})`,
-        changeReason: "管理者による削除",
-        changedBy: session.user.email || "unknown",
-      },
+    // 全管理者にユーザー削除通知を発行
+    await NotificationService.broadcast({
+      role: "ADMIN",
+      type: "SECURITY",
+      priority: "HIGH",
+      title: "User account deleted",
+      titleJa: "ユーザーアカウントが削除されました",
+      message: `User "${user.name || user.email}" (${user.role}) has been deleted by ${session.user.email}.`,
+      messageJa: `ユーザー「${user.name || user.email}」（${user.role}）が ${session.user.email} によって削除されました。`,
+      source: "ADMIN",
+      metadata: userInfo,
+    }).catch((err) => {
+      console.error("[User Delete] Failed to create notification:", err);
     });
 
     return NextResponse.json({

@@ -73,6 +73,22 @@ export const authConfig = {
             where: { id: existingUser.id },
             data: { lastSignInAt: new Date() },
           });
+
+          // ログイン通知を発行（Google OAuth）
+          await prisma.notification.create({
+            data: {
+              userId: existingUser.id,
+              type: "SECURITY",
+              priority: "NORMAL",
+              title: "New login detected",
+              titleJa: "新しいログインを検出しました",
+              message: "You have successfully logged in via Google.",
+              messageJa: "Googleでログインしました。",
+              source: "AUTH",
+            },
+          }).catch((err) => {
+            console.error("[Auth] Failed to create login notification:", err);
+          });
         }
       }
 

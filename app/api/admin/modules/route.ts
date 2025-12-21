@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { moduleRegistry } from "@/lib/modules/registry";
 import { prisma } from "@/lib/prisma";
+import { NotificationService } from "@/lib/services/notification-service";
 
 export async function GET() {
   try {
@@ -118,6 +119,20 @@ export async function PATCH(request: Request) {
 
     // ランタイムのモジュールレジストリも更新（再起動まで有効）
     module.enabled = enabled;
+
+    // 全管理者にモジュール状態変更通知を発行
+    await NotificationService.broadcast({
+      role: "ADMIN",
+      type: "SYSTEM",
+      priority: "NORMAL",
+      title: enabled ? "Module enabled" : "Module disabled",
+      titleJa: enabled ? "モジュールが有効になりました" : "モジュールが無効になりました",
+      message: `Module "${module.name}" has been ${enabled ? "enabled" : "disabled"}.`,
+      messageJa: `モジュール「${module.nameJa || module.name}」が${enabled ? "有効" : "無効"}になりました。`,
+      source: "MODULE",
+    }).catch((err) => {
+      console.error("[Module] Failed to create notification:", err);
+    });
 
     return NextResponse.json({
       success: true,

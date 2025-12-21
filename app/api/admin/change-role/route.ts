@@ -2,6 +2,7 @@ import type { Role } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { NotificationService } from "@/lib/services/notification-service";
 
 export async function POST(request: Request) {
   try {
@@ -32,6 +33,27 @@ export async function POST(request: Request) {
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { role: role as Role },
+    });
+
+    // ロール変更通知を発行
+    const roleLabels: Record<string, { en: string; ja: string }> = {
+      USER: { en: "User", ja: "ユーザー" },
+      MANAGER: { en: "Manager", ja: "管理職" },
+      ADMIN: { en: "Administrator", ja: "管理者" },
+    };
+    const roleLabel = roleLabels[role] || { en: role, ja: role };
+
+    await NotificationService.actionNotify(userId, {
+      title: "Your role has been changed",
+      titleJa: "ロールが変更されました",
+      message: `Your role has been changed to ${roleLabel.en}.`,
+      messageJa: `あなたのロールが「${roleLabel.ja}」に変更されました。`,
+      actionUrl: "/dashboard",
+      actionLabel: "View Dashboard",
+      actionLabelJa: "ダッシュボードを見る",
+      source: "ADMIN",
+    }).catch((err) => {
+      console.error("[Role] Failed to create notification:", err);
     });
 
     return NextResponse.json({

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { NotificationService } from "@/lib/services/notification-service";
 
 export interface OpenLdapConfigData {
   isEnabled: boolean;
@@ -112,6 +113,20 @@ export async function POST(request: Request) {
         },
       });
     }
+
+    // 全管理者にOpenLDAP設定変更通知を発行
+    await NotificationService.broadcast({
+      role: "ADMIN",
+      type: "SYSTEM",
+      priority: "HIGH",
+      title: "OpenLDAP configuration updated",
+      titleJa: "OpenLDAP設定が更新されました",
+      message: `OpenLDAP configuration has been updated by ${session.user.email}. Server: ${serverUrl}`,
+      messageJa: `OpenLDAP設定が ${session.user.email} によって更新されました。サーバー: ${serverUrl}`,
+      source: "LDAP",
+    }).catch((err) => {
+      console.error("[OpenLDAP] Failed to create notification:", err);
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

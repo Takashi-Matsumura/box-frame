@@ -233,6 +233,106 @@ Next.js middlewareはEdge Runtimeで動作するため、認証設定を分離:
 - `auth.config.ts` - Edge Runtime用（middleware）
 - `auth.ts` - Node.js Runtime用（LDAP認証を含む）
 
+## 通知機能
+
+### 概要
+
+アプリケーション内での重要なイベントをユーザに通知するシステムです。
+
+- **通知センター**: ヘッダーのベルアイコンから通知一覧を確認
+- **トースト通知**: 新着通知をリアルタイムで表示
+- **DB永続化**: 通知履歴をPostgreSQLに保存
+
+### 通知タイプ
+
+| タイプ | 説明 | 例 |
+|-------|------|-----|
+| SYSTEM | システム通知 | モジュール設定変更、LDAP設定変更 |
+| SECURITY | セキュリティ通知 | ログイン検出、2FA変更、パスワード変更 |
+| ACTION | アクション要求 | 承認依頼 |
+| INFO | 一般情報 | お知らせ |
+| WARNING | 警告 | 期限切れ警告 |
+| ERROR | エラー | 処理失敗 |
+
+### 優先度
+
+| 優先度 | 説明 |
+|-------|------|
+| URGENT | 緊急（即時対応必要） |
+| HIGH | 高（重要なセキュリティイベント） |
+| NORMAL | 通常 |
+| LOW | 低（情報通知） |
+
+### 開発者向け: 通知の発行方法
+
+通知は自動生成されません。開発者が明示的に `NotificationService` を呼び出す必要があります。
+
+```typescript
+import { NotificationService } from "@/lib/services/notification-service";
+
+// 特定ユーザへのセキュリティ通知
+await NotificationService.securityNotify(userId, {
+  title: "New login detected",
+  titleJa: "新しいログインを検出しました",
+  message: "You have logged in from a new device.",
+  messageJa: "新しいデバイスからログインしました。",
+});
+
+// 特定ロールへのブロードキャスト通知
+await NotificationService.broadcast({
+  role: "ADMIN",
+  type: "SYSTEM",
+  priority: "HIGH",
+  title: "Configuration updated",
+  titleJa: "設定が更新されました",
+  message: "LDAP configuration has been changed.",
+  messageJa: "LDAP設定が変更されました。",
+  source: "LDAP",
+});
+
+// カスタム通知
+await NotificationService.create({
+  userId: "user-id",
+  type: "ACTION",
+  priority: "NORMAL",
+  title: "Approval required",
+  titleJa: "承認が必要です",
+  message: "Please review the pending request.",
+  messageJa: "保留中のリクエストを確認してください。",
+  actionUrl: "/approvals/123",
+  actionLabel: "Review",
+  actionLabelJa: "確認する",
+});
+```
+
+### 現在の通知トリガー
+
+以下のイベントで自動的に通知が発行されます:
+
+**セキュリティイベント（対象ユーザへ通知）**
+- ログイン成功（OpenLDAP / Google OAuth）
+- 二要素認証の有効化/無効化
+- パスワード変更
+- ロール変更
+- アクセスキーの作成/変更/削除
+
+**システムイベント（全管理者へ通知）**
+- ユーザアカウント削除
+- OpenLDAP設定変更
+- LDAP移行設定変更
+- モジュールの有効化/無効化
+
+### APIエンドポイント
+
+| Method | Endpoint | 説明 |
+|--------|----------|------|
+| GET | /api/notifications | 通知一覧取得 |
+| POST | /api/notifications | 通知作成（管理者用） |
+| PATCH | /api/notifications/[id] | 既読更新 |
+| DELETE | /api/notifications/[id] | 通知削除 |
+| POST | /api/notifications/read-all | 一括既読 |
+| GET | /api/notifications/unread-count | 未読数取得 |
+
 ## ライセンス
 
 MIT License

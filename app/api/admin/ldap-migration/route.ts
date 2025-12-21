@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { NotificationService } from "@/lib/services/notification-service";
 
 export interface LdapMigrationConfig {
   enabled: boolean;
@@ -138,6 +139,20 @@ export async function POST(request: Request) {
       }),
     ]);
 
+    // 全管理者にLDAP移行設定変更通知を発行
+    await NotificationService.broadcast({
+      role: "ADMIN",
+      type: "SYSTEM",
+      priority: "HIGH",
+      title: "LDAP migration settings updated",
+      titleJa: "LDAP移行設定が更新されました",
+      message: `LDAP migration ${enabled ? "enabled" : "disabled"}. Period: ${startDate || "N/A"} - ${endDate || "N/A"}`,
+      messageJa: `LDAP移行が${enabled ? "有効" : "無効"}になりました。期間: ${startDate || "未設定"} - ${endDate || "未設定"}`,
+      source: "LDAP",
+    }).catch((err) => {
+      console.error("[LDAP Migration] Failed to create notification:", err);
+    });
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to save migration config:", error);
@@ -210,6 +225,20 @@ export async function PUT(request: Request) {
         },
       });
     }
+
+    // 全管理者に旧LDAP設定変更通知を発行
+    await NotificationService.broadcast({
+      role: "ADMIN",
+      type: "SYSTEM",
+      priority: "HIGH",
+      title: "Legacy LDAP configuration updated",
+      titleJa: "旧LDAP設定が更新されました",
+      message: `Legacy LDAP configuration has been updated. Server: ${serverUrl}`,
+      messageJa: `旧LDAP設定が更新されました。サーバー: ${serverUrl}`,
+      source: "LDAP",
+    }).catch((err) => {
+      console.error("[Legacy LDAP] Failed to create notification:", err);
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

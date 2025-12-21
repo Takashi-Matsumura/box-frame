@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { NotificationService } from "@/lib/services/notification-service";
 
 // Generate random Access key
 function generateAccessKey(): string {
@@ -79,6 +80,16 @@ export async function POST(request: Request) {
       },
     });
 
+    // 対象ユーザーにアクセスキー作成通知を発行
+    await NotificationService.securityNotify(targetUserId, {
+      title: "New access key created",
+      titleJa: "新しいアクセスキーが作成されました",
+      message: `An access key "${name}" has been created for your account.`,
+      messageJa: `アカウントにアクセスキー「${name}」が作成されました。`,
+    }).catch((err) => {
+      console.error("[AccessKey] Failed to create notification:", err);
+    });
+
     return NextResponse.json({ accessKey });
   } catch (error) {
     console.error("Error creating Access key:", error);
@@ -111,7 +122,24 @@ export async function PATCH(request: Request) {
     const accessKey = await prisma.accessKey.update({
       where: { id },
       data: { isActive },
+      include: {
+        targetUser: {
+          select: { id: true },
+        },
+      },
     });
+
+    // 対象ユーザーにアクセスキー状態変更通知を発行
+    if (accessKey.targetUser) {
+      await NotificationService.securityNotify(accessKey.targetUser.id, {
+        title: isActive ? "Access key activated" : "Access key deactivated",
+        titleJa: isActive ? "アクセスキーが有効になりました" : "アクセスキーが無効になりました",
+        message: `Your access key "${accessKey.name}" has been ${isActive ? "activated" : "deactivated"}.`,
+        messageJa: `アクセスキー「${accessKey.name}」が${isActive ? "有効" : "無効"}になりました。`,
+      }).catch((err) => {
+        console.error("[AccessKey] Failed to create notification:", err);
+      });
+    }
 
     return NextResponse.json({ accessKey });
   } catch (error) {
@@ -142,9 +170,31 @@ export async function DELETE(request: Request) {
       );
     }
 
+    // 削除前にアクセスキー情報を取得
+    const accessKey = await prisma.accessKey.findUnique({
+      where: { id },
+      include: {
+        targetUser: {
+          select: { id: true },
+        },
+      },
+    });
+
     await prisma.accessKey.delete({
       where: { id },
     });
+
+    // 対象ユーザーにアクセスキー削除通知を発行
+    if (accessKey?.targetUser) {
+      await NotificationService.securityNotify(accessKey.targetUser.id, {
+        title: "Access key deleted",
+        titleJa: "アクセスキーが削除されました",
+        message: `Your access key "${accessKey.name}" has been deleted.`,
+        messageJa: `アクセスキー「${accessKey.name}」が削除されました。`,
+      }).catch((err) => {
+        console.error("[AccessKey] Failed to create notification:", err);
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

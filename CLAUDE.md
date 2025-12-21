@@ -15,6 +15,26 @@
 | 言語 | TypeScript |
 | 多言語 | 英語・日本語 |
 
+## アーキテクチャ
+
+```
+┌─────────────────────────────────────────────┐
+│              フレーム基盤                    │
+│  ┌─────────┐ ┌─────────┐ ┌───────┐ ┌─────┐ │
+│  │ 認証    │ │ 通知    │ │ i18n  │ │Prisma│ │
+│  └─────────┘ └─────────┘ └───────┘ └─────┘ │
+└─────────────────────────────────────────────┘
+                    ↑
+               使用する
+                    │
+┌───────────────────┴─────────────────────────┐
+│       コアモジュール / アドオンモジュール     │
+│      (organization, system, openldap等)     │
+└─────────────────────────────────────────────┘
+```
+
+フレーム基盤機能はモジュールではなく、モジュールが利用するインフラストラクチャです。
+
 ## ディレクトリ構造
 
 ```
@@ -32,6 +52,10 @@ lib/
   ├── core-modules/         # コアモジュール
   │   ├── organization/     # 組織管理モジュール
   │   └── system/           # システムモジュール
+  ├── services/             # フレーム基盤サービス
+  │   └── notification-service.ts  # 通知サービス
+  ├── stores/               # Zustandストア
+  │   └── notification-store.ts    # 通知ストア
   ├── ldap/                 # LDAP認証
   ├── i18n/                 # 多言語対応
   ├── importers/            # データインポート
@@ -39,6 +63,7 @@ lib/
 
 components/
   ├── ui/                   # 共通UIコンポーネント
+  ├── notifications/        # 通知UIコンポーネント
   └── *.tsx                 # 各種コンポーネント
 
 prisma/
@@ -60,7 +85,7 @@ prisma/
 - データ履歴
 - システム設定
 
-## Prismaモデル（22モデル）
+## Prismaモデル（23モデル）
 
 ### 認証系
 - Account, Session, User, VerificationToken
@@ -79,6 +104,9 @@ prisma/
 
 ### システム系
 - SystemSetting
+
+### 通知系（フレーム基盤）
+- Notification
 
 ## 開発コマンド
 
@@ -192,6 +220,44 @@ Next.js 15のmiddlewareはEdge Runtimeで動作するため、認証設定を分
 2. `/api/auth/callback/ldap`がNode.js Runtimeで実行
 3. LdapMigrationServiceで認証（Legacy LDAP + OpenLDAP対応）
 4. JWTトークン発行
+
+## 通知機能（フレーム基盤）
+
+通知機能はモジュールではなく、フレーム基盤として提供されます。
+
+### 使用方法
+
+```typescript
+import { NotificationService } from "@/lib/services/notification-service";
+
+// セキュリティ通知（対象ユーザへ）
+await NotificationService.securityNotify(userId, {
+  title: "New login detected",
+  titleJa: "新しいログインを検出しました",
+  message: "You have logged in successfully.",
+  messageJa: "正常にログインしました。",
+});
+
+// ブロードキャスト通知（特定ロールへ）
+await NotificationService.broadcast({
+  role: "ADMIN",
+  type: "SYSTEM",
+  priority: "HIGH",
+  title: "Settings updated",
+  titleJa: "設定が更新されました",
+  message: "Configuration has been changed.",
+  messageJa: "設定が変更されました。",
+  source: "ADMIN",
+});
+```
+
+### 注意事項
+
+- 通知は自動生成されない（開発者が明示的に呼び出す）
+- 通知失敗はメイン処理に影響させない（`.catch()` でログのみ）
+- 英語・日本語両方のタイトル・メッセージを指定
+
+詳細は `.claude/skills/notifications/SKILL.md` を参照。
 
 ## ビルド情報
 

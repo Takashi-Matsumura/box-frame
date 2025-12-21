@@ -63,6 +63,7 @@ model User {
   userAccessKeys UserAccessKey[]
   targetedAccessKeys AccessKey[]
   ldapMappings  LdapUserMapping[]
+  notifications Notification[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }
@@ -121,6 +122,26 @@ model LdapUserMapping {
 enum LdapMappingType {
   AUTO
   MANUAL
+}
+
+// ========================================
+// 通知システム
+// ========================================
+
+enum NotificationType {
+  SYSTEM    // システム通知（メンテナンス等）
+  SECURITY  // セキュリティ（ログイン検出等）
+  ACTION    // アクション要求（承認依頼等）
+  INFO      // 一般情報
+  WARNING   // 警告
+  ERROR     // エラー
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
 }
 
 model LdapAuthLog {
@@ -212,4 +233,41 @@ model SystemSetting {
   value     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ========================================
+// 通知モデル
+// ========================================
+
+model Notification {
+  id            String               @id @default(cuid())
+  userId        String
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type          NotificationType     @default(INFO)
+  priority      NotificationPriority @default(NORMAL)
+
+  title         String
+  titleJa       String?
+  message       String
+  messageJa     String?
+
+  actionUrl     String?
+  actionLabel   String?
+  actionLabelJa String?
+
+  source        String?
+  sourceId      String?
+
+  isRead        Boolean              @default(false)
+  readAt        DateTime?
+  metadata      Json?
+  expiresAt     DateTime?
+
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@index([createdAt])
 }

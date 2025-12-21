@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { OpenLdapService } from "@/lib/ldap/openldap-service";
 import { prisma } from "@/lib/prisma";
+import { NotificationService } from "@/lib/services/notification-service";
 
 /**
  * POST /api/auth/change-password
@@ -106,6 +107,18 @@ export async function POST(request: NextRequest) {
     await prisma.ldapUserMapping.update({
       where: { id: mapping.id },
       data: { mustChangePassword: false },
+    });
+
+    // パスワード変更通知を発行
+    await NotificationService.securityNotify(session.user.id, {
+      title: "Password changed",
+      titleJa: "パスワードが変更されました",
+      message:
+        "Your password has been changed successfully. If you did not make this change, please contact your administrator immediately.",
+      messageJa:
+        "パスワードが正常に変更されました。この変更に心当たりがない場合は、すぐに管理者に連絡してください。",
+    }).catch((err) => {
+      console.error("[Password] Failed to create notification:", err);
     });
 
     return NextResponse.json({

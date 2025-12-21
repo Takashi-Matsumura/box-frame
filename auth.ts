@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "@/auth.config";
 import { prisma } from "@/lib/prisma";
+import { NotificationService } from "@/lib/services/notification-service";
 
 // Full auth config with LDAP providers (for API routes - Node.js runtime)
 // Extends the base authConfig with additional OpenLDAP provider
@@ -138,6 +139,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           await prisma.user.update({
             where: { id: mapping.user.id },
             data: { lastSignInAt: new Date() },
+          });
+
+          // ログイン通知を発行
+          await NotificationService.securityNotify(mapping.user.id, {
+            title: "New login detected",
+            titleJa: "新しいログインを検出しました",
+            message: "You have successfully logged in via OpenLDAP.",
+            messageJa: "OpenLDAPでログインしました。",
+          }).catch((err) => {
+            console.error("[Auth] Failed to create login notification:", err);
           });
 
           return {
