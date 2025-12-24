@@ -543,35 +543,35 @@ export function AdminClient({
             <Card>
               <CardContent className="p-8">
               {/* 統計カード */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
                 <Card>
-                  <CardContent className="p-6">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                  <CardContent className="py-2 px-4 flex items-center justify-between">
+                    <span className="text-sm font-medium text-muted-foreground">
                       {t("Total Users", "総ユーザ数")}
-                    </h3>
-                    <p className="text-3xl font-bold">
+                    </span>
+                    <span className="text-2xl font-bold">
                       {initialStats.totalUsers}
-                    </p>
+                    </span>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="p-6">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                  <CardContent className="py-2 px-4 flex items-center justify-between">
+                    <span className="text-sm font-medium text-muted-foreground">
                       {t("Regular Users", "一般ユーザ")}
-                    </h3>
-                    <p className="text-3xl font-bold">
+                    </span>
+                    <span className="text-2xl font-bold">
                       {initialStats.userCount}
-                    </p>
+                    </span>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="p-6">
-                    <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                  <CardContent className="py-2 px-4 flex items-center justify-between">
+                    <span className="text-sm font-medium text-muted-foreground">
                       {t("Administrators", "管理者")}
-                    </h3>
-                    <p className="text-3xl font-bold">
+                    </span>
+                    <span className="text-2xl font-bold">
                       {initialStats.adminCount}
-                    </p>
+                    </span>
                   </CardContent>
                 </Card>
               </div>
