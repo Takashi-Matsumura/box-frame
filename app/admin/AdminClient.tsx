@@ -1082,76 +1082,40 @@ export function AdminClient({
                                 </div>
                               </div>
 
-                              {/* コンテナステータス */}
-                              {module.containers && module.containers.length > 0 && (
-                                <div className="mt-4 pt-4 border-t">
-                                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" />
-                                    </svg>
-                                    {t("Containers", "コンテナ")}
-                                  </div>
-                                  <div className="space-y-1">
-                                    {module.containers.map((container) => (
-                                      <div
-                                        key={container.id}
-                                        className="flex items-center justify-between text-xs"
-                                      >
-                                        <span className="text-muted-foreground">
-                                          {language === "ja" ? container.nameJa : container.name}
-                                        </span>
-                                        <span
-                                          className={`flex items-center gap-1 ${
-                                            container.isRunning
-                                              ? "text-green-600"
-                                              : "text-amber-600"
-                                          }`}
-                                        >
-                                          <span
-                                            className={`w-2 h-2 rounded-full ${
-                                              container.isRunning
-                                                ? "bg-green-500"
-                                                : "bg-amber-500"
-                                            }`}
-                                          />
-                                          {container.isRunning
-                                            ? t("Running", "稼働中")
-                                            : t("Stopped", "停止中")}
-                                          {!container.isRunning && container.required && (
-                                            <span title={t("Required container is not running", "必須コンテナが停止しています")}>
-                                              ⚠️
-                                            </span>
-                                          )}
+                              {/* コンテナ・MCPサーバステータス（シンプル表示） */}
+                              {(module.containers?.length > 0 || module.mcpServer) && (
+                                <div className="mt-4 pt-4 border-t flex flex-wrap gap-3">
+                                  {/* コンテナステータス */}
+                                  {module.containers && module.containers.length > 0 && (() => {
+                                    const allRunning = module.containers.every(c => c.isRunning);
+                                    const hasRequiredStopped = module.containers.some(c => !c.isRunning && c.required);
+                                    return (
+                                      <div className="flex items-center gap-1.5 text-xs">
+                                        <svg className="w-3.5 h-3.5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" />
+                                        </svg>
+                                        <span className="text-muted-foreground">{t("Container", "コンテナ")}</span>
+                                        <span className={`flex items-center gap-1 ${allRunning ? "text-green-600" : "text-amber-600"}`}>
+                                          <span className={`w-1.5 h-1.5 rounded-full ${allRunning ? "bg-green-500" : "bg-amber-500"}`} />
+                                          {allRunning ? t("Running", "稼働中") : t("Stopped", "停止中")}
+                                          {hasRequiredStopped && <span>⚠️</span>}
                                         </span>
                                       </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
+                                    );
+                                  })()}
 
-                              {/* MCPサーバー */}
-                              {module.mcpServer && (
-                                <div className="mt-4 pt-4 border-t">
-                                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                    {t("MCP Server", "MCPサーバ")}
-                                  </div>
-                                  <div className="flex items-center justify-between text-xs">
-                                    <span className="text-muted-foreground">
-                                      {language === "ja" ? module.mcpServer.nameJa : module.mcpServer.name}
-                                    </span>
-                                    <span className="flex items-center gap-1 text-blue-600">
-                                      <span className="w-2 h-2 rounded-full bg-blue-500" />
-                                      {module.mcpServer.toolCount} {t("tools", "ツール")}
-                                      {module.mcpServer.readOnly && (
-                                        <span className="text-muted-foreground ml-1" title={t("Read-only access", "読み取り専用")}>
-                                          (RO)
-                                        </span>
-                                      )}
-                                    </span>
-                                  </div>
+                                  {/* MCPサーバー */}
+                                  {module.mcpServer && (
+                                    <div className="flex items-center gap-1.5 text-xs">
+                                      <svg className="w-3.5 h-3.5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                      </svg>
+                                      <span className="text-muted-foreground">{t("MCP", "MCP")}</span>
+                                      <span className="text-blue-600">
+                                        {module.mcpServer.toolCount} {t("tools", "ツール")}
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
                               )}
 
@@ -1563,6 +1527,101 @@ export function AdminClient({
                                 )}
                             </div>
                           )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* MCPサーバー詳細 */}
+                    {selectedModule.mcpServer && (
+                      <div className="mb-6 p-4 bg-muted border border-border rounded-lg">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                              />
+                            </svg>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-semibold">
+                              {language === "ja"
+                                ? selectedModule.mcpServer.nameJa
+                                : selectedModule.mcpServer.name}
+                            </h4>
+                            <p className="text-xs text-muted-foreground">
+                              {t(
+                                "MCP Server for external AI integration",
+                                "外部AI連携用MCPサーバ",
+                              )}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          {/* 説明 */}
+                          {(language === "ja"
+                            ? selectedModule.mcpServer.descriptionJa
+                            : selectedModule.mcpServer.description) && (
+                            <div className="p-3 bg-card rounded-lg border border-border">
+                              <p className="text-sm font-medium mb-1">
+                                {t("Description", "説明")}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {language === "ja"
+                                  ? selectedModule.mcpServer.descriptionJa
+                                  : selectedModule.mcpServer.description}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* ツール数 */}
+                          <div className="p-3 bg-card rounded-lg border border-border">
+                            <p className="text-sm font-medium mb-1">
+                              {t("Tools", "ツール数")}
+                            </p>
+                            <span className="text-lg font-bold text-blue-600">
+                              {selectedModule.mcpServer.toolCount}
+                            </span>
+                            <span className="text-sm text-muted-foreground ml-1">
+                              {t("tools available", "個のツールを提供")}
+                            </span>
+                          </div>
+
+                          {/* アクセスモード */}
+                          <div className="p-3 bg-card rounded-lg border border-border">
+                            <p className="text-sm font-medium mb-1">
+                              {t("Access Mode", "アクセスモード")}
+                            </p>
+                            <span
+                              className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                                selectedModule.mcpServer.readOnly
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-amber-100 text-amber-800"
+                              }`}
+                            >
+                              {selectedModule.mcpServer.readOnly
+                                ? t("Read Only", "読み取り専用")
+                                : t("Read/Write", "読み書き可能")}
+                            </span>
+                          </div>
+
+                          {/* パス */}
+                          <div className="p-3 bg-card rounded-lg border border-border">
+                            <p className="text-sm font-medium mb-1">
+                              {t("Server Path", "サーバパス")}
+                            </p>
+                            <code className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded">
+                              {selectedModule.mcpServer.path}
+                            </code>
+                          </div>
                         </div>
                       </div>
                     )}
