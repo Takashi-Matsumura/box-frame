@@ -93,6 +93,35 @@ export const openldapModule: AppModule = {
 - 稼働中: 緑色のインジケーター
 - 停止中: 黄色のインジケーター + 警告アイコン（必須コンテナの場合）
 
+### MCPサーバー
+
+モジュールは外部AI連携用のMCPサーバーを提供できます。管理画面でMCPサーバーの有無とツール数を確認できます。
+
+```typescript
+// モジュール定義例
+export const openldapModule: AppModule = {
+  id: "openldap",
+  // ...
+  mcpServer: {
+    id: "openldap-mcp",
+    name: "OpenLDAP MCP Server",
+    nameJa: "OpenLDAP MCPサーバ",
+    path: "mcp-servers/openldap",
+    toolCount: 5,
+    readOnly: true,
+    tools: [
+      { name: "ldap_check_status", descriptionJa: "サーバ接続状態を確認" },
+      { name: "ldap_list_users", descriptionJa: "ユーザ一覧を取得" },
+      // ...
+    ],
+  },
+};
+```
+
+**表示内容:**
+- モジュールカード: `MCP 5ツール`（シンプル表示）
+- モジュール詳細: ツール一覧、アクセスモード、サーバパス
+
 ## ディレクトリ構造
 
 ```
