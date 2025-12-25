@@ -126,6 +126,9 @@ components/
 
 prisma/
   └── schema.prisma         # データベーススキーマ
+
+mcp-servers/
+  └── openldap/             # OpenLDAP MCPサーバー
 ```
 
 ## コアモジュール構成
@@ -329,6 +332,51 @@ await NotificationService.broadcast({
 - 英語・日本語両方のタイトル・メッセージを指定
 
 詳細は `.claude/skills/notifications/SKILL.md` を参照。
+
+## MCPサーバー
+
+外部の生成AIからBoxFrameの機能を利用可能にするMCPサーバーを提供しています。
+
+### OpenLDAP MCPサーバー
+
+`mcp-servers/openldap/` に配置。読み取り専用でLDAPユーザー情報にアクセスできます。
+
+**提供ツール:**
+| ツール名 | 説明 |
+|----------|------|
+| `ldap_check_status` | サーバー接続状態を確認 |
+| `ldap_list_users` | ユーザー一覧を取得 |
+| `ldap_get_user` | ユーザー詳細を取得 |
+| `ldap_search_users` | ユーザーを検索 |
+| `ldap_user_exists` | ユーザー存在確認 |
+
+**セットアップ:**
+```bash
+cd mcp-servers/openldap
+npm install
+npm run build
+```
+
+**Claude Code設定 (.mcp.json):**
+```json
+{
+  "mcpServers": {
+    "openldap": {
+      "command": "node",
+      "args": ["mcp-servers/openldap/dist/index.js"],
+      "env": {
+        "OPENLDAP_URL": "ldap://localhost:390",
+        "OPENLDAP_ADMIN_DN": "cn=admin,dc=boxframe,dc=local",
+        "OPENLDAP_ADMIN_PASSWORD": "admin",
+        "OPENLDAP_BASE_DN": "dc=boxframe,dc=local",
+        "OPENLDAP_USERS_OU": "ou=users,dc=boxframe,dc=local"
+      }
+    }
+  }
+}
+```
+
+詳細は `mcp-servers/openldap/README.md` を参照。
 
 ## ビルド情報
 

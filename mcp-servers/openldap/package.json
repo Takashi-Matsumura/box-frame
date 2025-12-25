@@ -1,0 +1,26 @@
+{
+  "name": "@boxframe/mcp-openldap",
+  "version": "1.0.0",
+  "description": "MCP server for OpenLDAP user directory access",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "mcp",
+    "openldap",
+    "ldap",
+    "directory"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "ldapts": "^7.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}
