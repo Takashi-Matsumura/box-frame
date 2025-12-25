@@ -96,6 +96,16 @@ interface AdminClientProps {
 
 type TabType = "system" | "users" | "access-keys" | "modules";
 
+interface ContainerStatus {
+  id: string;
+  name: string;
+  nameJa: string;
+  required: boolean;
+  description?: string;
+  descriptionJa?: string;
+  isRunning: boolean;
+}
+
 interface ModuleInfo {
   id: string;
   name: string;
@@ -115,6 +125,7 @@ interface ModuleInfo {
     order: number;
     requiredRoles: string[];
   }>;
+  containers: ContainerStatus[];
 }
 
 interface ModulesData {
@@ -1058,6 +1069,53 @@ export function AdminClient({
                                   </span>
                                 </div>
                               </div>
+
+                              {/* コンテナステータス */}
+                              {module.containers && module.containers.length > 0 && (
+                                <div className="mt-4 pt-4 border-t">
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" />
+                                    </svg>
+                                    {t("Containers", "コンテナ")}
+                                  </div>
+                                  <div className="space-y-1">
+                                    {module.containers.map((container) => (
+                                      <div
+                                        key={container.id}
+                                        className="flex items-center justify-between text-xs"
+                                      >
+                                        <span className="text-muted-foreground">
+                                          {language === "ja" ? container.nameJa : container.name}
+                                        </span>
+                                        <span
+                                          className={`flex items-center gap-1 ${
+                                            container.isRunning
+                                              ? "text-green-600"
+                                              : "text-amber-600"
+                                          }`}
+                                        >
+                                          <span
+                                            className={`w-2 h-2 rounded-full ${
+                                              container.isRunning
+                                                ? "bg-green-500"
+                                                : "bg-amber-500"
+                                            }`}
+                                          />
+                                          {container.isRunning
+                                            ? t("Running", "稼働中")
+                                            : t("Stopped", "停止中")}
+                                          {!container.isRunning && container.required && (
+                                            <span title={t("Required container is not running", "必須コンテナが停止しています")}>
+                                              ⚠️
+                                            </span>
+                                          )}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
 
                               {/* モジュールID */}
                               <div className="mt-4 pt-4 border-t">

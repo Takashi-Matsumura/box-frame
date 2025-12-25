@@ -51,6 +51,38 @@ export interface AppModule {
 
   /** このモジュールが提供するサービス一覧（画面を持たないAPI・ロジック） */
   services?: AppService[];
+
+  /** このモジュールが依存するDockerコンテナ一覧 */
+  containers?: ContainerDependency[];
+}
+
+/**
+ * コンテナ依存関係（Dockerコンテナへの依存を定義）
+ *
+ * モジュールが正常に動作するために必要なDockerコンテナを定義します。
+ * 例: OpenLDAPモジュールはopenldapコンテナに依存
+ */
+export interface ContainerDependency {
+  /** コンテナの一意なID */
+  id: string;
+
+  /** 表示名（英語） */
+  name: string;
+
+  /** 表示名（日本語） */
+  nameJa: string;
+
+  /** ヘルスチェック用APIエンドポイント */
+  healthCheckUrl: string;
+
+  /** 必須かどうか（falseの場合は任意依存） */
+  required: boolean;
+
+  /** 説明文（英語） */
+  description?: string;
+
+  /** 説明文（日本語） */
+  descriptionJa?: string;
 }
 
 /**

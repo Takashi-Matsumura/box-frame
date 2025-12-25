@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { moduleRegistry } from "@/lib/modules/registry";
 import { prisma } from "@/lib/prisma";
 import { NotificationService } from "@/lib/services/notification-service";
+import { OpenLdapService } from "@/lib/ldap/openldap-service";
 
 export async function GET() {
   try {
@@ -26,31 +27,75 @@ export async function GET() {
       menuOrderOverrides[menuId] = parseInt(setting.value, 10);
     }
 
+    // コンテナステータスをチェックする関数
+    const checkContainerStatus = async (containerId: string): Promise<boolean> => {
+      try {
+        // コンテナIDに基づいて適切なヘルスチェックを実行
+        switch (containerId) {
+          case "openldap": {
+            // OpenLDAPはサービスを直接使用してチェック
+            const openLdapService = await OpenLdapService.createWithDatabaseConfig();
+            return await openLdapService.isAvailable();
+          }
+          case "postgres":
+          case "postgresql": {
+            // PostgreSQLはPrismaの接続チェック
+            await prisma.$queryRaw`SELECT 1`;
+            return true;
+          }
+          default:
+            // 未知のコンテナは稼働中と仮定
+            return true;
+        }
+      } catch {
+        return false;
+      }
+    };
+
     // モジュール情報を取得
     // 依存関係がないモジュールをcoreとして扱う
-    const modules = Object.values(moduleRegistry).map((module) => {
-      const isCore = !module.dependencies || module.dependencies.length === 0;
-      return {
-        id: module.id,
-        name: module.name,
-        nameJa: module.nameJa,
-        description: module.description,
-        descriptionJa: module.descriptionJa,
-        enabled: module.enabled,
-        type: isCore ? ("core" as const) : ("addon" as const),
-        menuCount: module.menus.filter((m) => m.enabled).length,
-        menus: module.menus.map((menu) => ({
-          id: menu.id,
-          name: menu.name,
-          nameJa: menu.nameJa,
-          path: menu.path,
-          menuGroup: menu.menuGroup,
-          enabled: menu.enabled,
-          order: menuOrderOverrides[menu.id] ?? menu.order,
-          requiredRoles: menu.requiredRoles || [],
-        })),
-      };
-    });
+    const modules = await Promise.all(
+      Object.values(moduleRegistry).map(async (module) => {
+        const isCore = !module.dependencies || module.dependencies.length === 0;
+
+        // コンテナステータスをチェック
+        const containersWithStatus = module.containers
+          ? await Promise.all(
+              module.containers.map(async (container) => ({
+                id: container.id,
+                name: container.name,
+                nameJa: container.nameJa,
+                required: container.required,
+                description: container.description,
+                descriptionJa: container.descriptionJa,
+                isRunning: await checkContainerStatus(container.id),
+              }))
+            )
+          : [];
+
+        return {
+          id: module.id,
+          name: module.name,
+          nameJa: module.nameJa,
+          description: module.description,
+          descriptionJa: module.descriptionJa,
+          enabled: module.enabled,
+          type: isCore ? ("core" as const) : ("addon" as const),
+          menuCount: module.menus.filter((m) => m.enabled).length,
+          menus: module.menus.map((menu) => ({
+            id: menu.id,
+            name: menu.name,
+            nameJa: menu.nameJa,
+            path: menu.path,
+            menuGroup: menu.menuGroup,
+            enabled: menu.enabled,
+            order: menuOrderOverrides[menu.id] ?? menu.order,
+            requiredRoles: menu.requiredRoles || [],
+          })),
+          containers: containersWithStatus,
+        };
+      })
+    );
 
     // 統計情報を計算
     const statistics = {

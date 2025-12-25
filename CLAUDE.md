@@ -67,6 +67,32 @@
 | 主な用途 | UI/UX提供 | API/ビジネスロジック提供 |
 | 例 | 組織図、データインポート | 承認経路取得、ワークフロー |
 
+### コンテナ依存関係
+
+モジュールはDockerコンテナに依存することがあります。依存関係を定義することで、管理画面でコンテナの稼働状況を確認できます。
+
+```typescript
+// モジュール定義例
+export const openldapModule: AppModule = {
+  id: "openldap",
+  // ...
+  containers: [
+    {
+      id: "openldap",
+      name: "OpenLDAP Server",
+      nameJa: "OpenLDAPサーバ",
+      healthCheckUrl: "/api/admin/openldap/status",
+      required: true,
+    },
+  ],
+};
+```
+
+**表示内容:**
+- モジュールカードにコンテナの稼働状況を表示
+- 稼働中: 緑色のインジケーター
+- 停止中: 黄色のインジケーター + 警告アイコン（必須コンテナの場合）
+
 ## ディレクトリ構造
 
 ```

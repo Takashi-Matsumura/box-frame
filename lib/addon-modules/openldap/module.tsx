@@ -34,4 +34,15 @@ export const openldapModule: AppModule = {
       descriptionJa: "OpenLDAPサーバとユーザを管理します",
     },
   ],
+  containers: [
+    {
+      id: "openldap",
+      name: "OpenLDAP Server",
+      nameJa: "OpenLDAPサーバ",
+      healthCheckUrl: "/api/admin/openldap/status",
+      required: true,
+      description: "LDAP authentication server container",
+      descriptionJa: "LDAP認証サーバコンテナ",
+    },
+  ],
 };

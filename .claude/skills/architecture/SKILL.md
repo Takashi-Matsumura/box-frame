@@ -145,6 +145,66 @@ export const organizationModule: AppModule = {
 | サイドバーに表示したい | メニュー |
 | バックグラウンド処理 | サービス |
 
+## コンテナ依存関係
+
+モジュールがDockerコンテナに依存する場合、`containers`プロパティで定義します。
+
+### コンテナ依存定義例
+
+```typescript
+// lib/addon-modules/openldap/module.tsx
+export const openldapModule: AppModule = {
+  id: "openldap",
+  name: "OpenLDAP",
+  nameJa: "OpenLDAP",
+  enabled: true,
+  menus: [...],
+  containers: [
+    {
+      id: "openldap",
+      name: "OpenLDAP Server",
+      nameJa: "OpenLDAPサーバ",
+      healthCheckUrl: "/api/admin/openldap/status",
+      required: true,
+      description: "LDAP authentication server container",
+      descriptionJa: "LDAP認証サーバコンテナ",
+    },
+  ],
+};
+```
+
+### ContainerDependency型
+
+```typescript
+interface ContainerDependency {
+  id: string;           // コンテナID
+  name: string;         // 表示名（英語）
+  nameJa: string;       // 表示名（日本語）
+  healthCheckUrl: string; // ヘルスチェックAPI
+  required: boolean;    // 必須かどうか
+  description?: string;
+  descriptionJa?: string;
+}
+```
+
+### ヘルスチェックAPI要件
+
+`healthCheckUrl`で指定するAPIは以下のレスポンス形式を返す必要があります:
+
+```typescript
+// 成功時
+{ "isAvailable": true, ... }
+
+// 失敗時
+{ "isAvailable": false, ... }
+```
+
+### UI表示
+
+モジュール管理画面のカードに以下が表示されます:
+- **稼働中**: 緑色インジケーター
+- **停止中**: 黄色インジケーター + ⚠️（必須コンテナの場合）
+
 ## コア/アドオンモジュール分離
 
 ```
