@@ -23,6 +23,8 @@ const getRoleColor = (role: Role) => {
   switch (role) {
     case "ADMIN":
       return "bg-purple-100 text-purple-800 hover:bg-purple-100 dark:bg-purple-900 dark:text-purple-200 dark:hover:bg-purple-900";
+    case "EXECUTIVE":
+      return "bg-rose-100 text-rose-800 hover:bg-rose-100 dark:bg-rose-900 dark:text-rose-200 dark:hover:bg-rose-900";
     case "USER":
       return "bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-900";
     case "MANAGER":
@@ -94,6 +96,7 @@ export function UserRoleChanger({
       <SelectContent>
         <SelectItem value="USER">USER</SelectItem>
         <SelectItem value="MANAGER">MANAGER</SelectItem>
+        <SelectItem value="EXECUTIVE">EXECUTIVE</SelectItem>
         <SelectItem value="ADMIN">ADMIN</SelectItem>
       </SelectContent>
     </Select>

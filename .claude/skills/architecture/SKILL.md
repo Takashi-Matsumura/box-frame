@@ -71,6 +71,80 @@ export default async function PerformanceReviewPage() {
 | `permission` | 追加機能 | 権限ベースの追加機能 |
 | `admin` | 管理者 | システム管理者向け機能 |
 
+## サービス定義（画面なしAPI）
+
+モジュールには**メニュー**（画面あり）と**サービス**（画面なし）の2種類があります。
+
+### サービスとは
+
+- 画面（UI）を持たないAPI・ビジネスロジック
+- 他のモジュールや機能から呼び出される
+- サイドバーには表示されない
+- 例: 承認経路取得、ワークフロー管理、通知送信
+
+### サービス定義例
+
+```typescript
+// lib/core-modules/organization/module.tsx
+export const organizationModule: AppModule = {
+  id: "organization",
+  name: "Organization",
+  nameJa: "組織管理",
+  enabled: true,
+  order: 2,
+  menus: [
+    // ... 画面ありのメニュー
+  ],
+  services: [
+    {
+      id: "approvalRoute",
+      moduleId: "organization",
+      name: "Approval Route",
+      nameJa: "承認経路取得",
+      description: "Get approval chain based on organization hierarchy",
+      descriptionJa: "組織階層に基づく承認経路を取得します",
+      apiEndpoints: ["/api/organization/approval-route"],
+      enabled: true,
+    },
+    {
+      id: "workflowService",
+      moduleId: "organization",
+      name: "Workflow Service",
+      nameJa: "ワークフロー管理",
+      description: "Create and manage approval requests",
+      descriptionJa: "承認リクエストの作成・管理を行います",
+      apiEndpoints: [
+        "/api/workflow/requests",
+        "/api/workflow/requests/[id]",
+        "/api/workflow/requests/[id]/approve",
+        "/api/workflow/requests/[id]/reject",
+      ],
+      enabled: true,
+    },
+  ],
+};
+```
+
+### サービス追加手順
+
+1. **モジュール定義にサービスを追加**
+   - `services` 配列に `AppService` オブジェクトを追加
+
+2. **APIエンドポイントを実装**
+   - `app/api/{service-path}/route.ts` を作成
+
+3. **サービスロジックを実装**
+   - `lib/services/{service-name}.ts` にビジネスロジックを実装
+
+### メニュー vs サービス 使い分け
+
+| ケース | 選択 |
+|--------|------|
+| ユーザーが直接アクセスする画面 | メニュー |
+| 他機能から呼び出されるAPI | サービス |
+| サイドバーに表示したい | メニュー |
+| バックグラウンド処理 | サービス |
+
 ## コア/アドオンモジュール分離
 
 ```

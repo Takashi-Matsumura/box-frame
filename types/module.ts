@@ -48,6 +48,43 @@ export interface AppModule {
 
   /** このモジュールに属するメニュー一覧 */
   menus: AppMenu[];
+
+  /** このモジュールが提供するサービス一覧（画面を持たないAPI・ロジック） */
+  services?: AppService[];
+}
+
+/**
+ * サービス（画面を持たないAPI・ビジネスロジック）
+ * 例: 承認経路取得、ワークフロー管理、通知送信など
+ *
+ * メニューとの違い:
+ * - メニュー: 画面（UI）を持つ機能。サイドバーに表示され、ユーザーが直接アクセスする
+ * - サービス: 画面を持たないAPIやビジネスロジック。他のモジュールから呼び出される
+ */
+export interface AppService {
+  /** サービスの一意なID */
+  id: string;
+
+  /** 所属するモジュールのID */
+  moduleId: string;
+
+  /** 表示名（英語） */
+  name: string;
+
+  /** 表示名（日本語） */
+  nameJa: string;
+
+  /** 説明文（英語） */
+  description?: string;
+
+  /** 説明文（日本語） */
+  descriptionJa?: string;
+
+  /** APIエンドポイント一覧（ある場合） */
+  apiEndpoints?: string[];
+
+  /** このサービスを有効化するか */
+  enabled: boolean;
 }
 
 /**

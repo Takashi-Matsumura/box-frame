@@ -689,6 +689,7 @@ export function AdminClient({
                     <SelectContent>
                       <SelectItem value="ALL">{t("All Roles", "すべてのロール")}</SelectItem>
                       <SelectItem value="ADMIN">{t("Admin", "管理者")}</SelectItem>
+                      <SelectItem value="EXECUTIVE">{t("Executive", "役員")}</SelectItem>
                       <SelectItem value="MANAGER">{t("Manager", "マネージャー")}</SelectItem>
                       <SelectItem value="USER">{t("User", "ユーザ")}</SelectItem>
                       <SelectItem value="GUEST">{t("Guest", "ゲスト")}</SelectItem>
@@ -1504,9 +1505,11 @@ export function AdminClient({
                                         className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                                           role === "ADMIN"
                                             ? "bg-red-100 text-red-700"
-                                            : role === "MANAGER"
-                                              ? "bg-orange-100 text-orange-700"
-                                              : "bg-blue-100 text-blue-700"
+                                            : role === "EXECUTIVE"
+                                              ? "bg-rose-100 text-rose-700"
+                                              : role === "MANAGER"
+                                                ? "bg-orange-100 text-orange-700"
+                                                : "bg-blue-100 text-blue-700"
                                         }`}
                                       >
                                         {role}

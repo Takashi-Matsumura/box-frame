@@ -76,31 +76,44 @@ export default auth((req) => {
     }
   }
 
+  // Executive routes - accessible by EXECUTIVE and ADMIN only
+  if (pathname.startsWith("/executive")) {
+    if (session.user.role !== "EXECUTIVE" && session.user.role !== "ADMIN") {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
+  }
+
   // Manager routes
-  // Exception: /manager/organization-chart is accessible by USER, MANAGER, and ADMIN
+  // Exception: /manager/organization-chart is accessible by USER, MANAGER, EXECUTIVE, and ADMIN
   if (pathname.startsWith("/manager")) {
     if (pathname === "/manager/organization-chart") {
-      // Allow USER, MANAGER, and ADMIN
+      // Allow USER, MANAGER, EXECUTIVE, and ADMIN
       if (
         session.user.role !== "USER" &&
         session.user.role !== "MANAGER" &&
+        session.user.role !== "EXECUTIVE" &&
         session.user.role !== "ADMIN"
       ) {
         return NextResponse.redirect(new URL("/dashboard", req.url));
       }
     } else {
-      // Other /manager routes require MANAGER or ADMIN
-      if (session.user.role !== "MANAGER" && session.user.role !== "ADMIN") {
+      // Other /manager routes require MANAGER, EXECUTIVE, or ADMIN
+      if (
+        session.user.role !== "MANAGER" &&
+        session.user.role !== "EXECUTIVE" &&
+        session.user.role !== "ADMIN"
+      ) {
         return NextResponse.redirect(new URL("/dashboard", req.url));
       }
     }
   }
 
-  // Back Office routes - accessible by USER, MANAGER, and ADMIN
+  // Back Office routes - accessible by USER, MANAGER, EXECUTIVE, and ADMIN
   if (pathname.startsWith("/backoffice")) {
     if (
       session.user.role !== "USER" &&
       session.user.role !== "MANAGER" &&
+      session.user.role !== "EXECUTIVE" &&
       session.user.role !== "ADMIN"
     ) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
