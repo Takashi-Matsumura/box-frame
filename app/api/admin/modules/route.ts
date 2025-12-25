@@ -93,6 +93,18 @@ export async function GET() {
             requiredRoles: menu.requiredRoles || [],
           })),
           containers: containersWithStatus,
+          mcpServer: module.mcpServer
+            ? {
+                id: module.mcpServer.id,
+                name: module.mcpServer.name,
+                nameJa: module.mcpServer.nameJa,
+                description: module.mcpServer.description,
+                descriptionJa: module.mcpServer.descriptionJa,
+                path: module.mcpServer.path,
+                toolCount: module.mcpServer.toolCount,
+                readOnly: module.mcpServer.readOnly,
+              }
+            : null,
         };
       })
     );

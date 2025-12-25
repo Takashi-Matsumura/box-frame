@@ -106,6 +106,17 @@ interface ContainerStatus {
   isRunning: boolean;
 }
 
+interface McpServerInfo {
+  id: string;
+  name: string;
+  nameJa: string;
+  description?: string;
+  descriptionJa?: string;
+  path: string;
+  toolCount: number;
+  readOnly: boolean;
+}
+
 interface ModuleInfo {
   id: string;
   name: string;
@@ -126,6 +137,7 @@ interface ModuleInfo {
     requiredRoles: string[];
   }>;
   containers: ContainerStatus[];
+  mcpServer: McpServerInfo | null;
 }
 
 interface ModulesData {
@@ -1113,6 +1125,32 @@ export function AdminClient({
                                         </span>
                                       </div>
                                     ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* MCPサーバー */}
+                              {module.mcpServer && (
+                                <div className="mt-4 pt-4 border-t">
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    {t("MCP Server", "MCPサーバ")}
+                                  </div>
+                                  <div className="flex items-center justify-between text-xs">
+                                    <span className="text-muted-foreground">
+                                      {language === "ja" ? module.mcpServer.nameJa : module.mcpServer.name}
+                                    </span>
+                                    <span className="flex items-center gap-1 text-blue-600">
+                                      <span className="w-2 h-2 rounded-full bg-blue-500" />
+                                      {module.mcpServer.toolCount} {t("tools", "ツール")}
+                                      {module.mcpServer.readOnly && (
+                                        <span className="text-muted-foreground ml-1" title={t("Read-only access", "読み取り専用")}>
+                                          (RO)
+                                        </span>
+                                      )}
+                                    </span>
                                   </div>
                                 </div>
                               )}

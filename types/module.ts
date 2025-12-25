@@ -54,6 +54,9 @@ export interface AppModule {
 
   /** このモジュールが依存するDockerコンテナ一覧 */
   containers?: ContainerDependency[];
+
+  /** このモジュールが提供するMCPサーバー */
+  mcpServer?: McpServer;
 }
 
 /**
@@ -83,6 +86,38 @@ export interface ContainerDependency {
 
   /** 説明文（日本語） */
   descriptionJa?: string;
+}
+
+/**
+ * MCPサーバー（外部AI連携用サーバー）
+ *
+ * モジュールが提供するMCPサーバーを定義します。
+ * 外部の生成AIからモジュールの機能を利用可能にします。
+ */
+export interface McpServer {
+  /** MCPサーバーの一意なID */
+  id: string;
+
+  /** 表示名（英語） */
+  name: string;
+
+  /** 表示名（日本語） */
+  nameJa: string;
+
+  /** 説明文（英語） */
+  description?: string;
+
+  /** 説明文（日本語） */
+  descriptionJa?: string;
+
+  /** MCPサーバーのディレクトリパス（プロジェクトルートからの相対パス） */
+  path: string;
+
+  /** 提供するツール数 */
+  toolCount: number;
+
+  /** 読み取り専用かどうか */
+  readOnly: boolean;
 }
 
 /**
