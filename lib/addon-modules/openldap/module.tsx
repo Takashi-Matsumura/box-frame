@@ -54,5 +54,12 @@ export const openldapModule: AppModule = {
     path: "mcp-servers/openldap",
     toolCount: 5,
     readOnly: true,
+    tools: [
+      { name: "ldap_check_status", descriptionJa: "サーバ接続状態を確認" },
+      { name: "ldap_list_users", descriptionJa: "ユーザ一覧を取得" },
+      { name: "ldap_get_user", descriptionJa: "ユーザ詳細を取得" },
+      { name: "ldap_search_users", descriptionJa: "ユーザを検索" },
+      { name: "ldap_user_exists", descriptionJa: "ユーザ存在確認" },
+    ],
   },
 };

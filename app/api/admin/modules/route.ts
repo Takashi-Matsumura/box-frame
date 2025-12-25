@@ -103,6 +103,7 @@ export async function GET() {
                 path: module.mcpServer.path,
                 toolCount: module.mcpServer.toolCount,
                 readOnly: module.mcpServer.readOnly,
+                tools: module.mcpServer.tools,
               }
             : null,
         };

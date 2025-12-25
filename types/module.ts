@@ -118,6 +118,14 @@ export interface McpServer {
 
   /** 読み取り専用かどうか */
   readOnly: boolean;
+
+  /** 提供するツール一覧 */
+  tools: Array<{
+    /** ツール名 */
+    name: string;
+    /** ツール説明（日本語） */
+    descriptionJa: string;
+  }>;
 }
 
 /**

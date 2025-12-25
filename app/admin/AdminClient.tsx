@@ -115,6 +115,10 @@ interface McpServerInfo {
   path: string;
   toolCount: number;
   readOnly: boolean;
+  tools: Array<{
+    name: string;
+    descriptionJa: string;
+  }>;
 }
 
 interface ModuleInfo {
@@ -1582,17 +1586,23 @@ export function AdminClient({
                             </div>
                           )}
 
-                          {/* ツール数 */}
+                          {/* ツール一覧 */}
                           <div className="p-3 bg-card rounded-lg border border-border">
-                            <p className="text-sm font-medium mb-1">
-                              {t("Tools", "ツール数")}
+                            <p className="text-sm font-medium mb-2">
+                              {t("Tools", "ツール")} ({selectedModule.mcpServer.toolCount})
                             </p>
-                            <span className="text-lg font-bold text-blue-600">
-                              {selectedModule.mcpServer.toolCount}
-                            </span>
-                            <span className="text-sm text-muted-foreground ml-1">
-                              {t("tools available", "個のツールを提供")}
-                            </span>
+                            <div className="space-y-1.5">
+                              {selectedModule.mcpServer.tools.map((tool) => (
+                                <div key={tool.name} className="flex items-center gap-2 text-xs">
+                                  <code className="text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-mono">
+                                    {tool.name}
+                                  </code>
+                                  <span className="text-muted-foreground">
+                                    {tool.descriptionJa}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
 
                           {/* アクセスモード */}
