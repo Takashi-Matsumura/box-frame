@@ -13,9 +13,10 @@ import {
   FaUpload,
   FaUsers,
 } from "react-icons/fa";
-import { Info } from "lucide-react";
+import { Info, Menu } from "lucide-react";
 import { getPageTitle } from "@/lib/i18n/page-titles";
 import { useSidebarStore } from "@/lib/stores/sidebar-store";
+import { useIsTabletOrMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -23,6 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useSidebar } from "@/components/ui/sidebar";
 import { NotificationBell } from "@/components/notifications";
 
 interface HeaderProps {
@@ -34,10 +36,27 @@ interface HeaderProps {
   language?: string;
 }
 
+function SidebarToggleButton() {
+  const { toggleSidebar } = useSidebar();
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-9 w-9"
+      onClick={toggleSidebar}
+    >
+      <Menu className="h-5 w-5" />
+      <span className="sr-only">Toggle Sidebar</span>
+    </Button>
+  );
+}
+
 export function Header({ session, language = "en" }: HeaderProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { width, open } = useSidebarStore();
+  const isTabletOrMobile = useIsTabletOrMobile();
   const pageTitle = getPageTitle(pathname, language as "en" | "ja");
 
   // ページ判定
@@ -260,18 +279,23 @@ export function Header({ session, language = "en" }: HeaderProps) {
     <header
       className="bg-card shadow-lg border-b border-border fixed top-0 right-0 z-[8] transition-all duration-300"
       style={{
-        left: session ? (open ? `${width}px` : "4rem") : "0",
+        left: session ? (isTabletOrMobile ? "0" : open ? `${width}px` : "4rem") : "0",
       }}
     >
       <div className="px-6 py-4">
         <div className="flex items-center justify-between">
-          {session ? (
-            <h1 className="text-xl font-bold">{pageTitle}</h1>
-          ) : (
-            <Link href="/" className="text-xl font-bold">
-              BoxFrame
-            </Link>
-          )}
+          <div className="flex items-center gap-3">
+            {session && isTabletOrMobile && (
+              <SidebarToggleButton />
+            )}
+            {session ? (
+              <h1 className="text-xl font-bold">{pageTitle}</h1>
+            ) : (
+              <Link href="/" className="text-xl font-bold">
+                BoxFrame
+              </Link>
+            )}
+          </div>
           {session && (
             <div className="flex items-center gap-2">
               <NotificationBell language={language as "en" | "ja"} />

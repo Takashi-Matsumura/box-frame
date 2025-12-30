@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AccessKeyManager } from "@/components/AccessKeyManager";
 import { useSidebar } from "@/components/ui/sidebar";
+import { useIsTabletOrMobile } from "@/hooks/use-mobile";
 import {
   Dialog,
   DialogContent,
@@ -178,6 +179,7 @@ export function AdminClient({
   const searchParams = useSearchParams();
   const { open } = useSidebar();
   const { width } = useSidebarStore();
+  const isTabletOrMobile = useIsTabletOrMobile();
   const activeTab = (searchParams.get("tab") as TabType) || "users";
 
   // ユーザ管理タブの状態
@@ -558,10 +560,17 @@ export function AdminClient({
     closeDeleteModal,
   ]);
 
+  // ヘッダーの高さを計算（タブがある場合は高くなる）
+  // ヘッダー本体: 約72px + タブナビ: 約44px = 約116px ≈ 7.25rem
+  const headerHeight = "7.25rem";
+
   return (
     <div
       className="fixed inset-0 flex flex-col bg-muted/30 transition-all duration-300"
-      style={{ top: "9rem", left: open ? `${width}px` : "4rem" }}
+      style={{
+        top: headerHeight,
+        left: isTabletOrMobile ? "0" : open ? `${width}px` : "4rem",
+      }}
     >
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto p-6 space-y-6">

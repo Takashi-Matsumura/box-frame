@@ -6,6 +6,7 @@ import type { AppMenu } from "@/types/module";
 import { SidebarInset, SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { useSidebarStore } from "@/lib/stores/sidebar-store";
+import { useIsTabletOrMobile } from "@/hooks/use-mobile";
 
 interface ClientLayoutProps {
   session: Session | null;
@@ -25,7 +26,7 @@ interface ClientLayoutProps {
 
 function ResizeHandle() {
   const { width, setWidth, isModalOpen } = useSidebarStore();
-  const { open } = useSidebar();
+  const { open, isMobile } = useSidebar();
   const isResizingRef = useRef(false);
 
   useEffect(() => {
@@ -56,7 +57,8 @@ function ResizeHandle() {
     document.body.style.userSelect = "none";
   };
 
-  if (!open || isModalOpen) return null;
+  // タブレット/モバイル時は非表示
+  if (!open || isModalOpen || isMobile) return null;
 
   return (
     <div

@@ -301,6 +301,48 @@ GUEST → USER → MANAGER → EXECUTIVE → ADMIN
 - **EXECUTIVE**: 役員（経営層）
 - **ADMIN**: システム管理者（全権限）
 
+## レスポンシブ対応
+
+### ブレークポイント
+
+| サイズ | 幅 | サイドバー表示 |
+|--------|-----|---------------|
+| モバイル | < 768px | オーバーレイ（Sheet） |
+| タブレット | 768px - 1023px | オーバーレイ（Sheet） |
+| デスクトップ | >= 1024px | 固定表示 |
+
+**ベース端末**: iPad Mini（768×1024）
+
+### フック
+
+```typescript
+// hooks/use-mobile.ts
+import { useIsMobile, useIsTabletOrMobile } from "@/hooks/use-mobile";
+
+// モバイルのみ（768px未満）
+const isMobile = useIsMobile();
+
+// タブレット含む（1024px未満）
+const isTabletOrMobile = useIsTabletOrMobile();
+```
+
+### サイドバー動作
+
+- **デスクトップ**: 固定表示、幅調整ハンドル（ResizeHandle）あり
+- **タブレット/モバイル**: オーバーレイ表示（Sheet）、ハンバーガーメニューで開閉
+
+### 実装時の注意
+
+```typescript
+// ✅ タブレット対応のレイアウト
+const isTabletOrMobile = useIsTabletOrMobile();
+<div style={{ left: isTabletOrMobile ? "0" : `${sidebarWidth}px` }}>
+
+// ❌ モバイルのみの判定（タブレットで問題発生）
+const isMobile = useIsMobile();
+<div style={{ left: isMobile ? "0" : `${sidebarWidth}px` }}>
+```
+
 ## 認証アーキテクチャ
 
 ### Edge Runtime対応
