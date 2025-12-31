@@ -229,6 +229,12 @@ AUTH_URL=http://localhost:3000
 
 # データベース
 DATABASE_URL="postgresql://user:password@localhost:5432/dbname?schema=public"
+
+# OAuth（オプション - 管理画面で有効化）
+GOOGLE_CLIENT_ID=<Google OAuthクライアントID>
+GOOGLE_CLIENT_SECRET=<Google OAuthクライアントシークレット>
+GITHUB_CLIENT_ID=<GitHub OAuthクライアントID>
+GITHUB_CLIENT_SECRET=<GitHub OAuthクライアントシークレット>
 ```
 
 ## 重要なルール
@@ -350,7 +356,7 @@ const isMobile = useIsMobile();
 Next.js 15のmiddlewareはEdge Runtimeで動作するため、認証設定を分離：
 
 1. `/auth.config.ts` - Edge Runtime用（middleware）
-   - Google OAuthのみ
+   - Google OAuth / GitHub OAuth
    - ldaptsを含まない
 
 2. `/auth.ts` - Node.js Runtime用（APIルート）
@@ -358,6 +364,19 @@ Next.js 15のmiddlewareはEdge Runtimeで動作するため、認証設定を分
    - Dynamic Importでldaptsを遅延ロード
 
 3. `/middleware.ts` - auth.config.tsを使用
+
+### OAuth設定
+
+OAuth認証は管理画面（システム情報タブ）で個別に有効化/無効化できます。
+
+| プロバイダー | 環境変数 | 管理画面設定キー |
+|-------------|----------|-----------------|
+| Google | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | `google_oauth_enabled` |
+| GitHub | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | `github_oauth_enabled` |
+
+**設定手順:**
+1. 環境変数にクライアントID/シークレットを設定
+2. 管理画面 → システム情報 → 認証設定でトグルを有効化
 
 ### LDAP認証フロー
 

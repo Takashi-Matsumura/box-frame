@@ -1,5 +1,5 @@
 import { OpenLdapLoginForm } from "@/components/OpenLdapLoginForm";
-import { SignInButton } from "@/components/SignInButton";
+import { OAuthButtons } from "@/components/OAuthButtons";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { getLanguage } from "@/lib/i18n/get-language";
@@ -23,17 +23,30 @@ export default async function LoginPage() {
     isOpenLdapEnabled = false;
   }
 
-  // Google OAuth認証の有効/無効を確認
+  // OAuth認証の有効/無効を確認
   let isGoogleOAuthEnabled = false;
+  let isGitHubOAuthEnabled = false;
   try {
-    const setting = await prisma.systemSetting.findUnique({
-      where: { key: "google_oauth_enabled" },
+    const settings = await prisma.systemSetting.findMany({
+      where: {
+        key: {
+          in: ["google_oauth_enabled", "github_oauth_enabled"],
+        },
+      },
     });
-    isGoogleOAuthEnabled = setting?.value === "true";
+    for (const setting of settings) {
+      if (setting.key === "google_oauth_enabled") {
+        isGoogleOAuthEnabled = setting.value === "true";
+      }
+      if (setting.key === "github_oauth_enabled") {
+        isGitHubOAuthEnabled = setting.value === "true";
+      }
+    }
   } catch (error) {
-    console.error("Failed to check Google OAuth setting:", error);
-    isGoogleOAuthEnabled = false;
+    console.error("Failed to check OAuth settings:", error);
   }
+
+  const hasOAuthEnabled = isGoogleOAuthEnabled || isGitHubOAuthEnabled;
 
   return (
     <div className="min-h-[calc(100vh-7rem)] flex items-center justify-center bg-background">
@@ -46,8 +59,8 @@ export default async function LoginPage() {
               <OpenLdapLoginForm language={language} />
             )}
 
-            {/* 両方有効な場合のセパレータ */}
-            {isOpenLdapEnabled && isGoogleOAuthEnabled && (
+            {/* OpenLDAPとOAuthの両方が有効な場合のセパレータ */}
+            {isOpenLdapEnabled && hasOAuthEnabled && (
               <div className="my-6 flex items-center gap-4">
                 <Separator className="flex-1" />
                 <span className="text-sm text-muted-foreground font-medium">
@@ -57,8 +70,13 @@ export default async function LoginPage() {
               </div>
             )}
 
-            {/* Google OAuthボタン */}
-            {isGoogleOAuthEnabled && <SignInButton />}
+            {/* OAuthボタン */}
+            {hasOAuthEnabled && (
+              <OAuthButtons
+                googleEnabled={isGoogleOAuthEnabled}
+                githubEnabled={isGitHubOAuthEnabled}
+              />
+            )}
           </CardContent>
         </Card>
 

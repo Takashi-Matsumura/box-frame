@@ -214,6 +214,10 @@ export function AdminClient({
   const [googleOAuthEnabled, setGoogleOAuthEnabled] = useState(false);
   const [googleOAuthLoading, setGoogleOAuthLoading] = useState(false);
 
+  // GitHub OAuth設定
+  const [gitHubOAuthEnabled, setGitHubOAuthEnabled] = useState(false);
+  const [gitHubOAuthLoading, setGitHubOAuthLoading] = useState(false);
+
   // OpenLDAPテスト認証
   const [testAuthUsername, setTestAuthUsername] = useState("");
   const [testAuthPassword, setTestAuthPassword] = useState("");
@@ -289,12 +293,45 @@ export function AdminClient({
     }
   }, []);
 
-  // システムタブが表示された時にGoogle OAuth設定を取得
+  // GitHub OAuth設定を取得
+  const fetchGitHubOAuthSetting = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/github-oauth");
+      if (response.ok) {
+        const data = await response.json();
+        setGitHubOAuthEnabled(data.enabled);
+      }
+    } catch (error) {
+      console.error("Error fetching GitHub OAuth setting:", error);
+    }
+  }, []);
+
+  // GitHub OAuth設定を切り替え
+  const handleGitHubOAuthToggle = useCallback(async (enabled: boolean) => {
+    setGitHubOAuthLoading(true);
+    try {
+      const response = await fetch("/api/admin/github-oauth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled }),
+      });
+      if (response.ok) {
+        setGitHubOAuthEnabled(enabled);
+      }
+    } catch (error) {
+      console.error("Error updating GitHub OAuth setting:", error);
+    } finally {
+      setGitHubOAuthLoading(false);
+    }
+  }, []);
+
+  // システムタブが表示された時にOAuth設定を取得
   useEffect(() => {
     if (activeTab === "system") {
       fetchGoogleOAuthSetting();
+      fetchGitHubOAuthSetting();
     }
-  }, [activeTab, fetchGoogleOAuthSetting]);
+  }, [activeTab, fetchGoogleOAuthSetting, fetchGitHubOAuthSetting]);
 
   // OpenLDAPテスト認証を実行
   const handleTestAuth = useCallback(async () => {
@@ -678,6 +715,36 @@ export function AdminClient({
                       {t(
                         "To enable Google OAuth, configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in the environment variables.",
                         "Google OAuthを有効にするには、環境変数にGOOGLE_CLIENT_IDとGOOGLE_CLIENT_SECRETを設定してください。"
+                      )}
+                    </p>
+                  )}
+                </div>
+
+                {/* GitHub OAuth */}
+                <div className="p-6 bg-muted rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium text-foreground">
+                        GitHub OAuth
+                      </h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {t(
+                          "Enable GitHub OAuth login on the login page",
+                          "ログイン画面でGitHub OAuthログインを有効にする"
+                        )}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={gitHubOAuthEnabled}
+                      onCheckedChange={handleGitHubOAuthToggle}
+                      disabled={gitHubOAuthLoading}
+                    />
+                  </div>
+                  {!gitHubOAuthEnabled && (
+                    <p className="text-sm text-amber-600 dark:text-amber-400 mt-3">
+                      {t(
+                        "To enable GitHub OAuth, configure GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in the environment variables.",
+                        "GitHub OAuthを有効にするには、環境変数にGITHUB_CLIENT_IDとGITHUB_CLIENT_SECRETを設定してください。"
                       )}
                     </p>
                   )}

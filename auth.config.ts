@@ -2,6 +2,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import type { Role } from "@prisma/client";
 import type { NextAuthConfig } from "next-auth";
 import Google from "next-auth/providers/google";
+import GitHub from "next-auth/providers/github";
 import { prisma } from "@/lib/prisma";
 
 // Lightweight auth config for middleware (Edge Runtime compatible)
@@ -22,14 +23,18 @@ export const authConfig = {
         },
       }),
     }),
+    GitHub({
+      clientId: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET,
+    }),
   ],
   session: {
     strategy: "jwt",
   },
   callbacks: {
     async signIn({ user, account }) {
-      // OAuth プロバイダー（Google）でのサインイン時
-      if (account?.provider === "google" && user.email) {
+      // OAuth プロバイダー（Google/GitHub）でのサインイン時
+      if ((account?.provider === "google" || account?.provider === "github") && user.email) {
         // 既存のユーザを検索
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email },
@@ -74,7 +79,11 @@ export const authConfig = {
             data: { lastSignInAt: new Date() },
           });
 
-          // ログイン通知を発行（Google OAuth）
+          // プロバイダー名の取得
+          const providerName = account.provider === "google" ? "Google" : "GitHub";
+          const providerNameJa = account.provider === "google" ? "Google" : "GitHub";
+
+          // ログイン通知を発行
           await prisma.notification.create({
             data: {
               userId: existingUser.id,
@@ -82,8 +91,8 @@ export const authConfig = {
               priority: "NORMAL",
               title: "New login detected",
               titleJa: "新しいログインを検出しました",
-              message: "You have successfully logged in via Google.",
-              messageJa: "Googleでログインしました。",
+              message: `You have successfully logged in via ${providerName}.`,
+              messageJa: `${providerNameJa}でログインしました。`,
               source: "AUTH",
             },
           }).catch((err) => {
