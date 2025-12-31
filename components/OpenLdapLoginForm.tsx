@@ -6,6 +6,14 @@ import { useState } from "react";
 import { RiShieldUserLine } from "react-icons/ri";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -19,6 +27,11 @@ const translations = {
     signingIn: "Signing in...",
     loginError: "Login failed. Please check your username or password.",
     systemError: "An error occurred during login.",
+    forgotPassword: "Forgot password?",
+    forgotPasswordTitle: "Forgot Your Password?",
+    forgotPasswordDescription:
+      "To reset your password, please contact your system administrator. After the administrator resets your password, you can set a new password at next login.",
+    close: "Close",
   },
   ja: {
     username: "ユーザ名",
@@ -30,6 +43,11 @@ const translations = {
     loginError:
       "ログインに失敗しました。ユーザ名またはパスワードを確認してください。",
     systemError: "ログイン中にエラーが発生しました。",
+    forgotPassword: "パスワードを忘れた場合",
+    forgotPasswordTitle: "パスワードをお忘れですか？",
+    forgotPasswordDescription:
+      "パスワードをリセットするには、システム管理者にお問い合わせください。管理者がパスワードをリセットした後、次回ログイン時に新しいパスワードを設定できます。",
+    close: "閉じる",
   },
 } as const;
 
@@ -43,6 +61,7 @@ export function OpenLdapLoginForm({ language = "ja" }: OpenLdapLoginFormProps) {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const t = translations[language];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -115,6 +134,37 @@ export function OpenLdapLoginForm({ language = "ja" }: OpenLdapLoginFormProps) {
         <RiShieldUserLine className="w-5 h-5" />
         {isLoading ? t.signingIn : t.signInButton}
       </Button>
+
+      {/* パスワードを忘れた場合のリンク */}
+      <div className="text-center">
+        <button
+          type="button"
+          onClick={() => setShowForgotPassword(true)}
+          className="text-sm text-muted-foreground hover:text-foreground hover:underline transition-colors"
+        >
+          {t.forgotPassword}
+        </button>
+      </div>
+
+      {/* パスワードリセット案内ダイアログ */}
+      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t.forgotPasswordTitle}</DialogTitle>
+            <DialogDescription className="pt-2">
+              {t.forgotPasswordDescription}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowForgotPassword(false)}
+            >
+              {t.close}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }
