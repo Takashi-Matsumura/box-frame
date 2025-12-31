@@ -518,20 +518,31 @@ const { logs, total } = await AuditService.getLogs({
 
 ### 対応プロバイダー
 
+#### ローカルLLM（推奨）
+
+APIキー不要でローカルで動作するLLMサーバを使用します。
+
+| サーバ | デフォルトエンドポイント | 備考 |
+|--------|------------------------|------|
+| **llama.cpp** | `http://localhost:8080/v1/chat/completions` | デフォルト、OpenAI互換API |
+| **LM Studio** | `http://localhost:1234/v1/chat/completions` | OpenAI互換API |
+| **Ollama** | `http://localhost:11434/api/chat` | Ollama独自API |
+
+#### クラウドAPI
+
 | プロバイダー | モデル | 備考 |
 |-------------|--------|------|
 | OpenAI | gpt-4o-mini, gpt-4o, gpt-4-turbo | 推奨: gpt-4o-mini |
 | Anthropic | claude-3-haiku, claude-3.5-sonnet, claude-3-opus | 推奨: claude-3-haiku |
-| Local LLM | - | 準備中 |
 
 ### 設定
 
 管理画面の「システム情報」タブでAI設定を行います：
 
 1. AI機能の有効/無効切り替え
-2. プロバイダー選択
-3. モデル選択
-4. APIキー設定
+2. プロバイダー選択（ローカルLLM / OpenAI / Anthropic）
+3. ローカルLLMの場合: サーバ選択、エンドポイントURL、モデル名、接続テスト
+4. クラウドAPIの場合: モデル選択、APIキー設定
 
 ### 使用方法
 
@@ -556,6 +567,7 @@ const result = await AIService.translate({
 - `POST /api/ai/translate` - テキストを翻訳
 - `GET /api/admin/ai` - AI設定を取得（管理者）
 - `PATCH /api/admin/ai` - AI設定を更新（管理者）
+- `POST /api/admin/ai` - ローカルLLM接続テスト（管理者）
 
 ## MCPサーバー
 

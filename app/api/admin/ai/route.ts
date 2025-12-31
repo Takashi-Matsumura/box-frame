@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { AIService } from "@/lib/core-modules/ai/ai-service";
+import { AIService, LOCAL_LLM_DEFAULTS } from "@/lib/core-modules/ai/ai-service";
 import { AuditService } from "@/lib/services/audit-service";
 
 /**
@@ -24,6 +24,7 @@ export async function GET() {
         apiKey: config.apiKey ? "***" + config.apiKey.slice(-4) : null,
         hasApiKey: !!config.apiKey,
       },
+      localLLMDefaults: LOCAL_LLM_DEFAULTS,
     });
   } catch (error) {
     console.error("Error fetching AI config:", error);
@@ -47,13 +48,16 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { enabled, provider, apiKey, model } = body;
+    const { enabled, provider, apiKey, model, localProvider, localEndpoint, localModel } = body;
 
     await AIService.updateConfig({
       ...(enabled !== undefined && { enabled }),
       ...(provider !== undefined && { provider }),
       ...(apiKey !== undefined && { apiKey }),
       ...(model !== undefined && { model }),
+      ...(localProvider !== undefined && { localProvider }),
+      ...(localEndpoint !== undefined && { localEndpoint }),
+      ...(localModel !== undefined && { localModel }),
     });
 
     // 監査ログに記録
@@ -65,6 +69,9 @@ export async function PATCH(request: Request) {
         enabled,
         provider,
         model,
+        localProvider,
+        localEndpoint,
+        localModel,
         apiKeyChanged: apiKey !== undefined,
       },
     }).catch(() => {});
@@ -83,6 +90,36 @@ export async function PATCH(request: Request) {
     console.error("Error updating AI config:", error);
     return NextResponse.json(
       { error: "Failed to update AI config" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * POST /api/admin/ai
+ * ローカルLLM接続テスト（管理者のみ）
+ */
+export async function POST(request: Request) {
+  try {
+    const session = await auth();
+
+    if (!session || session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { action } = body;
+
+    if (action === "test-connection") {
+      const result = await AIService.testLocalConnection();
+      return NextResponse.json(result);
+    }
+
+    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+  } catch (error) {
+    console.error("Error testing AI connection:", error);
+    return NextResponse.json(
+      { error: "Failed to test connection" },
       { status: 500 }
     );
   }

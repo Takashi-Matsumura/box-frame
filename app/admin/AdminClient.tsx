@@ -308,11 +308,22 @@ export function AdminClient({
     apiKey: string | null;
     hasApiKey: boolean;
     model: string;
+    // ローカルLLM設定
+    localProvider: "llama.cpp" | "lm-studio" | "ollama";
+    localEndpoint: string;
+    localModel: string;
+  }
+
+  interface LocalLLMDefaults {
+    [key: string]: { endpoint: string; model: string };
   }
 
   const [aiConfig, setAiConfig] = useState<AIConfig | null>(null);
   const [aiConfigLoading, setAiConfigLoading] = useState(false);
   const [aiApiKeyInput, setAiApiKeyInput] = useState("");
+  const [localLLMDefaults, setLocalLLMDefaults] = useState<LocalLLMDefaults | null>(null);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionTestResult, setConnectionTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [aiSaving, setAiSaving] = useState(false);
 
   // アナウンス用AI翻訳
@@ -693,6 +704,9 @@ export function AdminClient({
 
       const data = await response.json();
       setAiConfig(data.config);
+      if (data.localLLMDefaults) {
+        setLocalLLMDefaults(data.localLLMDefaults);
+      }
     } catch (error) {
       console.error("Error fetching AI config:", error);
     } finally {
@@ -721,11 +735,37 @@ export function AdminClient({
       const data = await response.json();
       setAiConfig(data.config);
       setAiApiKeyInput("");
+      setConnectionTestResult(null);
     } catch (error) {
       console.error("Error updating AI config:", error);
       alert(t("Failed to update AI settings", "AI設定の更新に失敗しました"));
     } finally {
       setAiSaving(false);
+    }
+  };
+
+  // ローカルLLM接続テスト
+  const handleTestLocalConnection = async () => {
+    try {
+      setTestingConnection(true);
+      setConnectionTestResult(null);
+
+      const response = await fetch("/api/admin/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "test-connection" }),
+      });
+
+      const result = await response.json();
+      setConnectionTestResult(result);
+    } catch (error) {
+      console.error("Error testing connection:", error);
+      setConnectionTestResult({
+        success: false,
+        message: t("Connection test failed", "接続テストに失敗しました"),
+      });
+    } finally {
+      setTestingConnection(false);
     }
   };
 
@@ -1186,9 +1226,8 @@ export function AdminClient({
                       </div>
                     </div>
 
-                    {/* プロバイダ・モデル・APIキー設定 */}
+                    {/* プロバイダ選択 */}
                     <div className="p-6 bg-muted rounded-lg space-y-4">
-                      {/* プロバイダ選択 */}
                       <div className="space-y-2">
                         <Label>{t("AI Provider", "AIプロバイダ")}</Label>
                         <Select
@@ -1200,14 +1239,18 @@ export function AdminClient({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="local">
+                              {t("Local LLM", "ローカルLLM")} ({t("Recommended", "推奨")})
+                            </SelectItem>
                             <SelectItem value="openai">OpenAI</SelectItem>
                             <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
-                            <SelectItem value="local" disabled>
-                              {t("Local LLM (Coming Soon)", "ローカルLLM（準備中）")}
-                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <p className="text-xs text-muted-foreground">
+                          {aiConfig.provider === "local" && t(
+                            "Uses a local LLM server. No API key required.",
+                            "ローカルLLMサーバを使用します。APIキー不要です。"
+                          )}
                           {aiConfig.provider === "openai" && t(
                             "Uses OpenAI GPT models for AI features.",
                             "OpenAI GPTモデルを使用します。"
@@ -1219,128 +1262,228 @@ export function AdminClient({
                         </p>
                       </div>
 
-                      {/* モデル選択 */}
-                      <div className="space-y-2">
-                        <Label>{t("Model", "モデル")}</Label>
-                        <Select
-                          value={aiConfig.model}
-                          onValueChange={(value) => handleUpdateAiConfig({ model: value })}
-                          disabled={aiSaving}
-                        >
-                          <SelectTrigger className="w-full md:w-[300px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {aiConfig.provider === "openai" && (
-                              <>
-                                <SelectItem value="gpt-4o-mini">GPT-4o mini ({t("Recommended", "推奨")})</SelectItem>
-                                <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                                <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
-                              </>
-                            )}
-                            {aiConfig.provider === "anthropic" && (
-                              <>
-                                <SelectItem value="claude-3-haiku-20240307">Claude 3 Haiku ({t("Recommended", "推奨")})</SelectItem>
-                                <SelectItem value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</SelectItem>
-                                <SelectItem value="claude-3-opus-20240229">Claude 3 Opus</SelectItem>
-                              </>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* APIキー */}
-                      <div className="space-y-2">
-                        <Label>{t("API Key", "APIキー")}</Label>
-                        {aiConfig.hasApiKey ? (
-                          <div className="flex items-center gap-4">
-                            <div className="flex-1">
-                              <Input
-                                value={aiConfig.apiKey || ""}
-                                disabled
-                                className="font-mono"
-                              />
-                            </div>
-                            <Button
-                              variant="outline"
-                              onClick={() => handleUpdateAiConfig({ apiKey: "" })}
+                      {/* ローカルLLM設定 */}
+                      {aiConfig.provider === "local" && (
+                        <>
+                          {/* ローカルプロバイダ選択 */}
+                          <div className="space-y-2">
+                            <Label>{t("Local LLM Server", "ローカルLLMサーバ")}</Label>
+                            <Select
+                              value={aiConfig.localProvider}
+                              onValueChange={(value) => {
+                                const provider = value as "llama.cpp" | "lm-studio" | "ollama";
+                                const defaults = localLLMDefaults?.[provider];
+                                handleUpdateAiConfig({
+                                  localProvider: provider,
+                                  localEndpoint: defaults?.endpoint || "",
+                                  localModel: defaults?.model || "",
+                                });
+                              }}
                               disabled={aiSaving}
                             >
-                              {t("Remove", "削除")}
-                            </Button>
+                              <SelectTrigger className="w-full md:w-[300px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="llama.cpp">llama.cpp ({t("Default", "デフォルト")})</SelectItem>
+                                <SelectItem value="lm-studio">LM Studio</SelectItem>
+                                <SelectItem value="ollama">Ollama</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
-                        ) : (
+
+                          {/* エンドポイントURL */}
+                          <div className="space-y-2">
+                            <Label>{t("Endpoint URL", "エンドポイントURL")}</Label>
+                            <Input
+                              value={aiConfig.localEndpoint}
+                              onChange={(e) => handleUpdateAiConfig({ localEndpoint: e.target.value })}
+                              placeholder={localLLMDefaults?.[aiConfig.localProvider]?.endpoint || ""}
+                              className="font-mono"
+                              disabled={aiSaving}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              {aiConfig.localProvider === "llama.cpp" && t(
+                                "Default: http://localhost:8080/v1/chat/completions",
+                                "デフォルト: http://localhost:8080/v1/chat/completions"
+                              )}
+                              {aiConfig.localProvider === "lm-studio" && t(
+                                "Default: http://localhost:1234/v1/chat/completions",
+                                "デフォルト: http://localhost:1234/v1/chat/completions"
+                              )}
+                              {aiConfig.localProvider === "ollama" && t(
+                                "Default: http://localhost:11434/api/chat",
+                                "デフォルト: http://localhost:11434/api/chat"
+                              )}
+                            </p>
+                          </div>
+
+                          {/* モデル名 */}
+                          <div className="space-y-2">
+                            <Label>{t("Model Name", "モデル名")}</Label>
+                            <Input
+                              value={aiConfig.localModel}
+                              onChange={(e) => handleUpdateAiConfig({ localModel: e.target.value })}
+                              placeholder={localLLMDefaults?.[aiConfig.localProvider]?.model || "default"}
+                              disabled={aiSaving}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              {aiConfig.localProvider === "ollama"
+                                ? t("e.g., llama3.2, gemma2, mistral", "例: llama3.2, gemma2, mistral")
+                                : t("Leave as 'default' to use the loaded model", "ロード済みモデルを使用する場合は 'default' のまま")}
+                            </p>
+                          </div>
+
+                          {/* 接続テスト */}
                           <div className="flex items-center gap-4">
-                            <div className="flex-1">
-                              <Input
-                                type="password"
-                                value={aiApiKeyInput}
-                                onChange={(e) => setAiApiKeyInput(e.target.value)}
-                                placeholder={
-                                  aiConfig.provider === "openai"
-                                    ? "sk-..."
-                                    : aiConfig.provider === "anthropic"
-                                      ? "sk-ant-..."
-                                      : ""
-                                }
-                                className="font-mono"
-                              />
-                            </div>
                             <Button
-                              onClick={() => handleUpdateAiConfig({ apiKey: aiApiKeyInput })}
-                              disabled={aiSaving || !aiApiKeyInput}
+                              variant="outline"
+                              onClick={handleTestLocalConnection}
+                              disabled={testingConnection || aiSaving}
                             >
-                              {aiSaving ? t("Saving...", "保存中...") : t("Save", "保存")}
+                              {testingConnection
+                                ? t("Testing...", "テスト中...")
+                                : t("Test Connection", "接続テスト")}
                             </Button>
+                            {connectionTestResult && (
+                              <span className={`text-sm ${connectionTestResult.success ? "text-green-600" : "text-red-600"}`}>
+                                {connectionTestResult.success ? "✓ " : "✗ "}
+                                {connectionTestResult.message}
+                              </span>
+                            )}
                           </div>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          {aiConfig.provider === "openai" && (
-                            <>
-                              {t("Get your API key from ", "APIキーは ")}
-                              <a
-                                href="https://platform.openai.com/api-keys"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary hover:underline"
-                              >
-                                OpenAI Platform
-                              </a>
-                              {t(" to use AI features.", " から取得できます。")}
-                            </>
-                          )}
-                          {aiConfig.provider === "anthropic" && (
-                            <>
-                              {t("Get your API key from ", "APIキーは ")}
-                              <a
-                                href="https://console.anthropic.com/settings/keys"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary hover:underline"
-                              >
-                                Anthropic Console
-                              </a>
-                              {t(" to use AI features.", " から取得できます。")}
-                            </>
-                          )}
-                        </p>
-                      </div>
+                        </>
+                      )}
+
+                      {/* クラウドAPI設定 */}
+                      {aiConfig.provider !== "local" && (
+                        <>
+                          {/* モデル選択 */}
+                          <div className="space-y-2">
+                            <Label>{t("Model", "モデル")}</Label>
+                            <Select
+                              value={aiConfig.model}
+                              onValueChange={(value) => handleUpdateAiConfig({ model: value })}
+                              disabled={aiSaving}
+                            >
+                              <SelectTrigger className="w-full md:w-[300px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {aiConfig.provider === "openai" && (
+                                  <>
+                                    <SelectItem value="gpt-4o-mini">GPT-4o mini ({t("Recommended", "推奨")})</SelectItem>
+                                    <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+                                    <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
+                                  </>
+                                )}
+                                {aiConfig.provider === "anthropic" && (
+                                  <>
+                                    <SelectItem value="claude-3-haiku-20240307">Claude 3 Haiku ({t("Recommended", "推奨")})</SelectItem>
+                                    <SelectItem value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</SelectItem>
+                                    <SelectItem value="claude-3-opus-20240229">Claude 3 Opus</SelectItem>
+                                  </>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* APIキー */}
+                          <div className="space-y-2">
+                            <Label>{t("API Key", "APIキー")}</Label>
+                            {aiConfig.hasApiKey ? (
+                              <div className="flex items-center gap-4">
+                                <div className="flex-1">
+                                  <Input
+                                    value={aiConfig.apiKey || ""}
+                                    disabled
+                                    className="font-mono"
+                                  />
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => handleUpdateAiConfig({ apiKey: "" })}
+                                  disabled={aiSaving}
+                                >
+                                  {t("Remove", "削除")}
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-4">
+                                <div className="flex-1">
+                                  <Input
+                                    type="password"
+                                    value={aiApiKeyInput}
+                                    onChange={(e) => setAiApiKeyInput(e.target.value)}
+                                    placeholder={
+                                      aiConfig.provider === "openai"
+                                        ? "sk-..."
+                                        : aiConfig.provider === "anthropic"
+                                          ? "sk-ant-..."
+                                          : ""
+                                    }
+                                    className="font-mono"
+                                  />
+                                </div>
+                                <Button
+                                  onClick={() => handleUpdateAiConfig({ apiKey: aiApiKeyInput })}
+                                  disabled={aiSaving || !aiApiKeyInput}
+                                >
+                                  {aiSaving ? t("Saving...", "保存中...") : t("Save", "保存")}
+                                </Button>
+                              </div>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                              {aiConfig.provider === "openai" && (
+                                <>
+                                  {t("Get your API key from ", "APIキーは ")}
+                                  <a
+                                    href="https://platform.openai.com/api-keys"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline"
+                                  >
+                                    OpenAI Platform
+                                  </a>
+                                  {t(" to use AI features.", " から取得できます。")}
+                                </>
+                              )}
+                              {aiConfig.provider === "anthropic" && (
+                                <>
+                                  {t("Get your API key from ", "APIキーは ")}
+                                  <a
+                                    href="https://console.anthropic.com/settings/keys"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline"
+                                  >
+                                    Anthropic Console
+                                  </a>
+                                  {t(" to use AI features.", " から取得できます。")}
+                                </>
+                              )}
+                            </p>
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     {/* ステータス */}
                     <div className="p-4 rounded-lg border bg-card">
                       <div className="flex items-center gap-3">
                         <div className={`w-3 h-3 rounded-full ${
-                          aiConfig.enabled && aiConfig.hasApiKey
+                          aiConfig.enabled && (aiConfig.provider === "local" ? !!aiConfig.localEndpoint : aiConfig.hasApiKey)
                             ? "bg-green-500"
                             : "bg-gray-400"
                         }`} />
                         <span className="font-medium">
-                          {aiConfig.enabled && aiConfig.hasApiKey
+                          {aiConfig.enabled && (aiConfig.provider === "local" ? !!aiConfig.localEndpoint : aiConfig.hasApiKey)
                             ? t("AI features are ready to use", "AI機能が利用可能です")
                             : !aiConfig.enabled
                               ? t("AI features are disabled", "AI機能が無効です")
-                              : t("API key is not configured", "APIキーが設定されていません")}
+                              : aiConfig.provider === "local"
+                                ? t("Endpoint is not configured", "エンドポイントが設定されていません")
+                                : t("API key is not configured", "APIキーが設定されていません")}
                         </span>
                       </div>
                     </div>
