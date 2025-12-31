@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "@/auth.config";
 import { prisma } from "@/lib/prisma";
 import { NotificationService } from "@/lib/services/notification-service";
+import { AuditService } from "@/lib/services/audit-service";
 
 // Full auth config with LDAP providers (for API routes - Node.js runtime)
 // Extends the base authConfig with additional OpenLDAP provider
@@ -40,6 +41,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               "[Auth] OpenLDAP authentication failed:",
               authResult.error,
             );
+            // ログイン失敗を監査ログに記録
+            await AuditService.log({
+              action: "LOGIN_FAILURE",
+              category: "AUTH",
+              details: {
+                username: credentials.username,
+                provider: "openldap",
+                reason: authResult.error,
+              },
+            }).catch(() => {});
             return null;
           }
 
@@ -150,6 +161,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }).catch((err) => {
             console.error("[Auth] Failed to create login notification:", err);
           });
+
+          // ログイン成功を監査ログに記録
+          await AuditService.log({
+            action: "LOGIN_SUCCESS",
+            category: "AUTH",
+            userId: mapping.user.id,
+            details: {
+              username: credentials.username,
+              provider: "openldap",
+              email: mapping.user.email,
+            },
+          }).catch(() => {});
 
           return {
             id: mapping.user.id,

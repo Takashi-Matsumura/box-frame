@@ -48,7 +48,7 @@ export class NotificationService {
         actionLabelJa: input.actionLabelJa,
         source: input.source,
         sourceId: input.sourceId,
-        metadata: input.metadata ?? undefined,
+        metadata: input.metadata ? JSON.parse(JSON.stringify(input.metadata)) : undefined,
         expiresAt: input.expiresAt,
       },
     });
@@ -91,7 +91,7 @@ export class NotificationService {
         actionLabelJa: input.actionLabelJa,
         source: input.source,
         sourceId: input.sourceId,
-        metadata: input.metadata ?? undefined,
+        metadata: input.metadata ? JSON.parse(JSON.stringify(input.metadata)) : undefined,
         expiresAt: input.expiresAt,
       })),
     });

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NotificationService } from "@/lib/services/notification-service";
+import { AuditService } from "@/lib/services/audit-service";
 
 export async function POST(request: Request) {
   try {
@@ -29,11 +30,38 @@ export async function POST(request: Request) {
       );
     }
 
+    // Get current user to record old role
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true, name: true, email: true },
+    });
+
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const oldRole = currentUser.role;
+
     // Update user role
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { role: role as Role },
     });
+
+    // 監査ログに記録
+    await AuditService.log({
+      action: "USER_ROLE_CHANGE",
+      category: "USER_MANAGEMENT",
+      userId: session.user.id,
+      targetId: userId,
+      targetType: "User",
+      details: {
+        oldRole,
+        newRole: role,
+        targetUserName: currentUser.name,
+        targetUserEmail: currentUser.email,
+      },
+    }).catch(() => {});
 
     // ロール変更通知を発行
     const roleLabels: Record<string, { en: string; ja: string }> = {

@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
+  FaBullhorn,
   FaChartBar,
+  FaClipboardList,
   FaDatabase,
   FaExclamationTriangle,
   FaHistory,
@@ -26,6 +28,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useSidebar } from "@/components/ui/sidebar";
 import { NotificationBell } from "@/components/notifications";
+import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 
 interface HeaderProps {
   session?: {
@@ -151,6 +154,18 @@ export function Header({ session, language = "en" }: HeaderProps) {
       ),
       path: "/admin?tab=modules",
       active: adminTab === "modules",
+    },
+    {
+      name: language === "ja" ? "監査ログ" : "Audit Logs",
+      icon: <FaClipboardList className="w-5 h-5" />,
+      path: "/admin?tab=audit-logs",
+      active: adminTab === "audit-logs",
+    },
+    {
+      name: language === "ja" ? "アナウンス" : "Announcements",
+      icon: <FaBullhorn className="w-5 h-5" />,
+      path: "/admin?tab=announcements",
+      active: adminTab === "announcements",
     },
   ];
 
@@ -282,6 +297,9 @@ export function Header({ session, language = "en" }: HeaderProps) {
         left: session ? (isTabletOrMobile ? "0" : open ? `${width}px` : "4rem") : "0",
       }}
     >
+      {/* システムアナウンスバナー */}
+      <AnnouncementBanner language={language as "en" | "ja"} />
+
       <div className="px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

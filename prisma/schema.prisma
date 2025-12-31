@@ -65,6 +65,8 @@ model User {
   targetedAccessKeys AccessKey[]
   ldapMappings  LdapUserMapping[]
   notifications Notification[]
+  auditLogs     AuditLog[]
+  announcements Announcement[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }
@@ -271,4 +273,51 @@ model Notification {
   @@index([userId])
   @@index([userId, isRead])
   @@index([createdAt])
+}
+
+// ========================================
+// 監査ログ
+// ========================================
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String   // LOGIN_SUCCESS, LOGIN_FAILURE, USER_CREATE, USER_DELETE, etc.
+  category    String   // AUTH, USER_MANAGEMENT, SYSTEM_SETTING, MODULE
+  userId      String?  // 操作を行ったユーザー（ログイン失敗時はnull）
+  targetId    String?  // 操作対象のID
+  targetType  String?  // 操作対象の種類（User, SystemSetting等）
+  details     String?  // JSON形式の詳細情報
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([action])
+  @@index([category])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ========================================
+// システムアナウンス
+// ========================================
+
+model Announcement {
+  id          String    @id @default(cuid())
+  title       String
+  titleJa     String?
+  message     String
+  messageJa   String?
+  level       String    @default("info") // info, warning, critical
+  isActive    Boolean   @default(true)
+  startAt     DateTime  @default(now())
+  endAt       DateTime?
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  creator     User      @relation(fields: [createdBy], references: [id])
+
+  @@index([isActive, startAt, endAt])
 }

@@ -175,10 +175,20 @@ mcp-servers/
 - データ履歴
 - システム設定
 
-## Prismaモデル（23モデル）
+### aiモジュール
+- 生成AI機能を提供するコアモジュール
+- 翻訳API（日英相互翻訳）
+- OpenAI / Anthropic プロバイダー対応
+- 将来的にローカルLLM対応予定
+- 管理画面の「システム情報」タブでAPI設定
+
+## Prismaモデル（25モデル）
 
 ### 認証系
 - Account, Session, User, VerificationToken
+
+### 監査・通知系
+- AuditLog, Notification, Announcement
 
 ### LDAP認証系
 - LdapConfig, LdapUserMapping, LdapAuthLog, OpenLdapConfig
@@ -194,9 +204,6 @@ mcp-servers/
 
 ### システム系
 - SystemSetting
-
-### 通知系（フレーム基盤）
-- Notification
 
 ## 開発コマンド
 
@@ -428,6 +435,127 @@ await NotificationService.broadcast({
 - 英語・日本語両方のタイトル・メッセージを指定
 
 詳細は `.claude/skills/notifications/SKILL.md` を参照。
+
+## 監査ログ（フレーム基盤）
+
+管理者操作とログイン履歴を記録・閲覧するためのフレーム基盤機能です。
+
+### 記録対象
+
+| カテゴリ | アクション | 説明 |
+|---------|-----------|------|
+| AUTH | LOGIN_SUCCESS | ログイン成功 |
+| AUTH | LOGIN_FAILURE | ログイン失敗 |
+| USER_MANAGEMENT | USER_DELETE | ユーザー削除 |
+| USER_MANAGEMENT | USER_ROLE_CHANGE | ロール変更 |
+| SYSTEM_SETTING | ANNOUNCEMENT_CREATE | アナウンス作成 |
+| SYSTEM_SETTING | ANNOUNCEMENT_UPDATE | アナウンス更新 |
+| SYSTEM_SETTING | ANNOUNCEMENT_DELETE | アナウンス削除 |
+| SYSTEM_SETTING | AI_CONFIG_UPDATE | AI設定変更 |
+| MODULE | MODULE_TOGGLE | モジュール有効/無効 |
+
+### 使用方法
+
+```typescript
+import { AuditService } from "@/lib/services/audit-service";
+
+// 監査ログを記録
+await AuditService.log({
+  action: "USER_DELETE",
+  category: "USER_MANAGEMENT",
+  userId: session.user.id,
+  targetId: deletedUserId,
+  targetType: "User",
+  details: { deletedUserName: "user@example.com" },
+}).catch(() => {});
+
+// ログを取得（ページネーション付き）
+const { logs, total } = await AuditService.getLogs({
+  category: "AUTH",
+  limit: 25,
+  offset: 0,
+});
+```
+
+### 管理画面
+
+管理画面の「監査ログ」タブで、カテゴリ・アクションによるフィルタリングとページネーション付きで閲覧可能。
+
+## システムアナウンス（フレーム基盤）
+
+全ユーザーへの告知バナーを表示するためのフレーム基盤機能です。
+
+### 機能
+
+- ヘッダー上部にバナー表示
+- ユーザーが閉じることができる（セッション中のみ非表示）
+- 開始日時・終了日時を設定可能
+- 重要度レベル（info, warning, critical）
+
+### レベル別スタイル
+
+| レベル | 色 | 用途 |
+|--------|-----|------|
+| info | 青色 | 一般的なお知らせ |
+| warning | 黄色 | 注意喚起 |
+| critical | 赤色 | 重要な警告 |
+
+### 管理画面
+
+管理画面の「アナウンス」タブで、アナウンスの作成・編集・削除・有効/無効の切り替えが可能。
+
+### API
+
+- `GET /api/announcements` - 現在有効なアナウンスを取得（全ユーザー）
+- `GET /api/admin/announcements` - 全アナウンスを取得（管理者）
+- `POST /api/admin/announcements` - アナウンスを作成（管理者）
+- `PATCH /api/admin/announcements/[id]` - アナウンスを更新（管理者）
+- `DELETE /api/admin/announcements/[id]` - アナウンスを削除（管理者）
+
+## 生成AI（コアモジュール）
+
+翻訳などのAI機能を提供するコアモジュールです。
+
+### 対応プロバイダー
+
+| プロバイダー | モデル | 備考 |
+|-------------|--------|------|
+| OpenAI | gpt-4o-mini, gpt-4o, gpt-4-turbo | 推奨: gpt-4o-mini |
+| Anthropic | claude-3-haiku, claude-3.5-sonnet, claude-3-opus | 推奨: claude-3-haiku |
+| Local LLM | - | 準備中 |
+
+### 設定
+
+管理画面の「システム情報」タブでAI設定を行います：
+
+1. AI機能の有効/無効切り替え
+2. プロバイダー選択
+3. モデル選択
+4. APIキー設定
+
+### 使用方法
+
+```typescript
+import { AIService } from "@/lib/core-modules/ai/ai-service";
+
+// AI機能が利用可能か確認
+const available = await AIService.isAvailable();
+
+// テキスト翻訳
+const result = await AIService.translate({
+  text: "こんにちは",
+  sourceLanguage: "ja",
+  targetLanguage: "en",
+});
+// result: { translatedText: "Hello", provider: "openai", model: "gpt-4o-mini" }
+```
+
+### API
+
+- `GET /api/ai/translate` - AI翻訳が利用可能か確認
+- `POST /api/ai/translate` - テキストを翻訳
+- `GET /api/admin/ai` - AI設定を取得（管理者）
+- `PATCH /api/admin/ai` - AI設定を更新（管理者）
 
 ## MCPサーバー
 

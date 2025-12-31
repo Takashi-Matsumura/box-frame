@@ -1,4 +1,5 @@
 // コアモジュール（静的インポート）
+import { aiModule } from "@/lib/core-modules/ai";
 import { systemModule } from "@/lib/core-modules/system";
 
 // アドオンモジュール
@@ -79,6 +80,7 @@ export async function getAllModules(): Promise<AppModule[]> {
  */
 export const moduleRegistry: ModuleRegistry = {
   // コアモジュール
+  ai: aiModule,
   system: systemModule,
 
   // アドオンモジュール

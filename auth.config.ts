@@ -98,6 +98,21 @@ export const authConfig = {
           }).catch((err) => {
             console.error("[Auth] Failed to create login notification:", err);
           });
+
+          // ログイン成功を監査ログに記録
+          await prisma.auditLog.create({
+            data: {
+              action: "LOGIN_SUCCESS",
+              category: "AUTH",
+              userId: existingUser.id,
+              details: JSON.stringify({
+                provider: account.provider,
+                email: user.email,
+              }),
+            },
+          }).catch((err) => {
+            console.error("[Auth] Failed to create audit log:", err);
+          });
         }
       }
 

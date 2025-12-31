@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NotificationService } from "@/lib/services/notification-service";
+import { AuditService } from "@/lib/services/audit-service";
 
 /**
  * DELETE /api/admin/users/[id]
@@ -56,6 +57,16 @@ export async function DELETE(
     await prisma.user.delete({
       where: { id },
     });
+
+    // 監査ログに記録
+    await AuditService.log({
+      action: "USER_DELETE",
+      category: "USER_MANAGEMENT",
+      userId: session.user.id,
+      targetId: id,
+      targetType: "User",
+      details: { deletedUser: userInfo },
+    }).catch(() => {});
 
     // 全管理者にユーザー削除通知を発行
     await NotificationService.broadcast({

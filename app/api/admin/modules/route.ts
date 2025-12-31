@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { moduleRegistry } from "@/lib/modules/registry";
 import { prisma } from "@/lib/prisma";
 import { NotificationService } from "@/lib/services/notification-service";
+import { AuditService } from "@/lib/services/audit-service";
 import { OpenLdapService } from "@/lib/ldap/openldap-service";
 
 export async function GET() {
@@ -177,6 +178,20 @@ export async function PATCH(request: Request) {
 
     // ランタイムのモジュールレジストリも更新（再起動まで有効）
     module.enabled = enabled;
+
+    // 監査ログに記録
+    await AuditService.log({
+      action: "MODULE_TOGGLE",
+      category: "MODULE",
+      userId: session.user.id,
+      targetId: moduleId,
+      targetType: "Module",
+      details: {
+        moduleName: module.name,
+        moduleNameJa: module.nameJa,
+        enabled,
+      },
+    }).catch(() => {});
 
     // 全管理者にモジュール状態変更通知を発行
     await NotificationService.broadcast({

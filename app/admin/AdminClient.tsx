@@ -4,6 +4,7 @@ import type { AccessKey, Role } from "@prisma/client";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { FaBullhorn, FaClipboardList } from "react-icons/fa";
 import { AccessKeyManager } from "@/components/AccessKeyManager";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useIsTabletOrMobile } from "@/hooks/use-mobile";
@@ -44,7 +45,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
-import { ChevronLeft, ChevronRight, Search, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit3, Plus, Search, Trash2, X } from "lucide-react";
 import { getModuleIcon } from "@/lib/modules/icons";
 import type { AppMenu } from "@/types/module";
 
@@ -95,7 +96,7 @@ interface AdminClientProps {
   menus: AppMenu[];
 }
 
-type TabType = "system" | "users" | "access-keys" | "modules";
+type TabType = "system" | "users" | "access-keys" | "modules" | "audit-logs" | "announcements";
 
 interface ContainerStatus {
   id: string;
@@ -236,7 +237,100 @@ export function AdminClient({
     };
   } | null>(null);
 
+  // 監査ログの状態
+  interface AuditLog {
+    id: string;
+    action: string;
+    category: string;
+    userId: string | null;
+    targetId: string | null;
+    targetType: string | null;
+    details: string | null;
+    ipAddress: string | null;
+    userAgent: string | null;
+    createdAt: string;
+    user: {
+      id: string;
+      name: string | null;
+      email: string | null;
+    } | null;
+  }
+
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [auditLogsLoading, setAuditLogsLoading] = useState(false);
+  const [auditLogsTotal, setAuditLogsTotal] = useState(0);
+  const [auditLogsPage, setAuditLogsPage] = useState(1);
+  const [auditLogsTotalPages, setAuditLogsTotalPages] = useState(1);
+  const [auditLogsCategoryFilter, setAuditLogsCategoryFilter] = useState<string>("ALL");
+  const [auditLogsActionFilter, setAuditLogsActionFilter] = useState<string>("ALL");
+
+  // アナウンスの状態
+  interface Announcement {
+    id: string;
+    title: string;
+    titleJa: string | null;
+    message: string;
+    messageJa: string | null;
+    level: string;
+    isActive: boolean;
+    startAt: string;
+    endAt: string | null;
+    createdAt: string;
+    creator: {
+      id: string;
+      name: string | null;
+      email: string | null;
+    };
+  }
+
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(false);
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+  const [announcementForm, setAnnouncementForm] = useState({
+    title: "",
+    titleJa: "",
+    message: "",
+    messageJa: "",
+    level: "info",
+    startAt: "",
+    endAt: "",
+  });
+  const [announcementSaving, setAnnouncementSaving] = useState(false);
+  const [showAnnouncementDeleteModal, setShowAnnouncementDeleteModal] = useState(false);
+  const [announcementToDelete, setAnnouncementToDelete] = useState<Announcement | null>(null);
+  const [announcementDeleting, setAnnouncementDeleting] = useState(false);
+
+  // AI設定の状態
+  interface AIConfig {
+    enabled: boolean;
+    provider: "openai" | "anthropic" | "local";
+    apiKey: string | null;
+    hasApiKey: boolean;
+    model: string;
+  }
+
+  const [aiConfig, setAiConfig] = useState<AIConfig | null>(null);
+  const [aiConfigLoading, setAiConfigLoading] = useState(false);
+  const [aiApiKeyInput, setAiApiKeyInput] = useState("");
+  const [aiSaving, setAiSaving] = useState(false);
+
+  // アナウンス用AI翻訳
+  const [aiTranslationAvailable, setAiTranslationAvailable] = useState(false);
+  const [useAiTranslation, setUseAiTranslation] = useState(false);
+  const [aiTranslating, setAiTranslating] = useState(false);
+
   const t = (en: string, ja: string) => (language === "ja" ? ja : en);
+
+  // datetime-local入力用にローカル時刻をフォーマット (YYYY-MM-DDTHH:MM)
+  const formatLocalDateTime = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
 
   // OpenLDAPステータスを取得
   const fetchOpenLdapStatus = useCallback(async () => {
@@ -332,6 +426,308 @@ export function AdminClient({
       fetchGitHubOAuthSetting();
     }
   }, [activeTab, fetchGoogleOAuthSetting, fetchGitHubOAuthSetting]);
+
+  // 監査ログを取得
+  const fetchAuditLogs = useCallback(async () => {
+    if (activeTab !== "audit-logs") return;
+
+    try {
+      setAuditLogsLoading(true);
+      const params = new URLSearchParams({
+        page: auditLogsPage.toString(),
+        limit: "25",
+        ...(auditLogsCategoryFilter !== "ALL" && { category: auditLogsCategoryFilter }),
+        ...(auditLogsActionFilter !== "ALL" && { action: auditLogsActionFilter }),
+      });
+
+      const response = await fetch(`/api/admin/audit-logs?${params}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch audit logs");
+      }
+
+      const data = await response.json();
+      setAuditLogs(data.logs);
+      setAuditLogsTotal(data.total);
+      setAuditLogsTotalPages(Math.ceil(data.total / 25));
+    } catch (error) {
+      console.error("Error fetching audit logs:", error);
+    } finally {
+      setAuditLogsLoading(false);
+    }
+  }, [activeTab, auditLogsPage, auditLogsCategoryFilter, auditLogsActionFilter]);
+
+  useEffect(() => {
+    fetchAuditLogs();
+  }, [fetchAuditLogs]);
+
+  // アナウンスを取得
+  const fetchAnnouncements = useCallback(async () => {
+    if (activeTab !== "announcements") return;
+
+    try {
+      setAnnouncementsLoading(true);
+      const response = await fetch("/api/admin/announcements");
+      if (!response.ok) {
+        throw new Error("Failed to fetch announcements");
+      }
+
+      const data = await response.json();
+      setAnnouncements(data.announcements);
+    } catch (error) {
+      console.error("Error fetching announcements:", error);
+    } finally {
+      setAnnouncementsLoading(false);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    fetchAnnouncements();
+  }, [fetchAnnouncements]);
+
+  // アナウンスモーダルを開く（新規作成）
+  const openNewAnnouncementModal = async () => {
+    setEditingAnnouncement(null);
+    setAnnouncementForm({
+      title: "",
+      titleJa: "",
+      message: "",
+      messageJa: "",
+      level: "info",
+      startAt: formatLocalDateTime(new Date()),
+      endAt: "",
+    });
+    setUseAiTranslation(false);
+    setShowAnnouncementModal(true);
+
+    // AI翻訳の利用可否をチェック
+    try {
+      const response = await fetch("/api/ai/translate");
+      if (response.ok) {
+        const data = await response.json();
+        setAiTranslationAvailable(data.available);
+        if (data.available) {
+          setUseAiTranslation(true); // デフォルトでON
+        }
+      }
+    } catch {
+      setAiTranslationAvailable(false);
+    }
+  };
+
+  // アナウンスモーダルを開く（編集）
+  const openEditAnnouncementModal = async (announcement: Announcement) => {
+    setEditingAnnouncement(announcement);
+    setAnnouncementForm({
+      title: announcement.title,
+      titleJa: announcement.titleJa || "",
+      message: announcement.message,
+      messageJa: announcement.messageJa || "",
+      level: announcement.level,
+      startAt: formatLocalDateTime(new Date(announcement.startAt)),
+      endAt: announcement.endAt ? formatLocalDateTime(new Date(announcement.endAt)) : "",
+    });
+    setUseAiTranslation(false);
+    setShowAnnouncementModal(true);
+
+    // AI翻訳の利用可否をチェック
+    try {
+      const response = await fetch("/api/ai/translate");
+      if (response.ok) {
+        const data = await response.json();
+        setAiTranslationAvailable(data.available);
+      }
+    } catch {
+      setAiTranslationAvailable(false);
+    }
+  };
+
+  // アナウンスを保存
+  const handleSaveAnnouncement = async () => {
+    if (!announcementForm.titleJa || !announcementForm.messageJa) {
+      alert(t("Title and message are required", "タイトルとメッセージは必須です"));
+      return;
+    }
+
+    try {
+      setAnnouncementSaving(true);
+
+      let titleEn = announcementForm.title;
+      let messageEn = announcementForm.message;
+
+      // AI翻訳が有効で、英語フィールドが空の場合は翻訳を実行
+      if (useAiTranslation && aiTranslationAvailable) {
+        if (!titleEn && announcementForm.titleJa) {
+          setAiTranslating(true);
+          try {
+            const response = await fetch("/api/ai/translate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                text: announcementForm.titleJa,
+                sourceLanguage: "ja",
+                targetLanguage: "en",
+              }),
+            });
+            if (response.ok) {
+              const data = await response.json();
+              titleEn = data.translatedText;
+            }
+          } catch (error) {
+            console.error("Error translating title:", error);
+          }
+        }
+
+        if (!messageEn && announcementForm.messageJa) {
+          try {
+            const response = await fetch("/api/ai/translate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                text: announcementForm.messageJa,
+                sourceLanguage: "ja",
+                targetLanguage: "en",
+              }),
+            });
+            if (response.ok) {
+              const data = await response.json();
+              messageEn = data.translatedText;
+            }
+          } catch (error) {
+            console.error("Error translating message:", error);
+          }
+        }
+        setAiTranslating(false);
+      }
+
+      const url = editingAnnouncement
+        ? `/api/admin/announcements/${editingAnnouncement.id}`
+        : "/api/admin/announcements";
+      const method = editingAnnouncement ? "PATCH" : "POST";
+
+      // 日本語が必須、英語は任意（翻訳結果または日本語をフォールバック）
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: titleEn || announcementForm.titleJa,
+          titleJa: announcementForm.titleJa,
+          message: messageEn || announcementForm.messageJa,
+          messageJa: announcementForm.messageJa,
+          level: announcementForm.level,
+          startAt: announcementForm.startAt,
+          endAt: announcementForm.endAt || null,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save announcement");
+      }
+
+      setShowAnnouncementModal(false);
+      await fetchAnnouncements();
+    } catch (error) {
+      console.error("Error saving announcement:", error);
+      alert(t("Failed to save announcement", "アナウンスの保存に失敗しました"));
+    } finally {
+      setAnnouncementSaving(false);
+    }
+  };
+
+  // アナウンスの有効/無効を切り替え
+  const handleToggleAnnouncement = async (id: string, isActive: boolean) => {
+    try {
+      const response = await fetch(`/api/admin/announcements/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update announcement");
+      }
+
+      setAnnouncements((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, isActive } : a))
+      );
+    } catch (error) {
+      console.error("Error toggling announcement:", error);
+      alert(t("Failed to update announcement", "アナウンスの更新に失敗しました"));
+    }
+  };
+
+  // アナウンスを削除
+  const handleDeleteAnnouncement = async () => {
+    if (!announcementToDelete) return;
+
+    try {
+      setAnnouncementDeleting(true);
+      const response = await fetch(`/api/admin/announcements/${announcementToDelete.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete announcement");
+      }
+
+      setShowAnnouncementDeleteModal(false);
+      setAnnouncementToDelete(null);
+      await fetchAnnouncements();
+    } catch (error) {
+      console.error("Error deleting announcement:", error);
+      alert(t("Failed to delete announcement", "アナウンスの削除に失敗しました"));
+    } finally {
+      setAnnouncementDeleting(false);
+    }
+  };
+
+  // AI設定を取得
+  const fetchAiConfig = useCallback(async () => {
+    if (activeTab !== "system") return;
+
+    try {
+      setAiConfigLoading(true);
+      const response = await fetch("/api/admin/ai");
+      if (!response.ok) {
+        throw new Error("Failed to fetch AI config");
+      }
+
+      const data = await response.json();
+      setAiConfig(data.config);
+    } catch (error) {
+      console.error("Error fetching AI config:", error);
+    } finally {
+      setAiConfigLoading(false);
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    fetchAiConfig();
+  }, [fetchAiConfig]);
+
+  // AI設定を更新
+  const handleUpdateAiConfig = async (updates: Partial<AIConfig & { apiKey?: string }>) => {
+    try {
+      setAiSaving(true);
+      const response = await fetch("/api/admin/ai", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update AI config");
+      }
+
+      const data = await response.json();
+      setAiConfig(data.config);
+      setAiApiKeyInput("");
+    } catch (error) {
+      console.error("Error updating AI config:", error);
+      alert(t("Failed to update AI settings", "AI設定の更新に失敗しました"));
+    } finally {
+      setAiSaving(false);
+    }
+  };
 
   // OpenLDAPテスト認証を実行
   const handleTestAuth = useCallback(async () => {
@@ -749,6 +1145,207 @@ export function AdminClient({
                     </p>
                   )}
                 </div>
+              </div>
+
+              {/* AI設定 */}
+              <div className="space-y-4 mt-8">
+                <h2 className="text-2xl font-semibold">
+                  {t("AI Settings", "AI設定")}
+                </h2>
+
+                {aiConfigLoading && (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {t("Loading...", "読み込み中...")}
+                    </p>
+                  </div>
+                )}
+
+                {!aiConfigLoading && aiConfig && (
+                  <div className="space-y-4">
+                    {/* 有効/無効 */}
+                    <div className="p-6 bg-muted rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-medium text-foreground">
+                            {t("Enable AI Features", "AI機能を有効化")}
+                          </h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {t(
+                              "Enable AI-powered features like translation.",
+                              "翻訳などのAI機能を有効にします。"
+                            )}
+                          </p>
+                        </div>
+                        <Switch
+                          checked={aiConfig.enabled}
+                          onCheckedChange={(checked) => handleUpdateAiConfig({ enabled: checked })}
+                          disabled={aiSaving}
+                        />
+                      </div>
+                    </div>
+
+                    {/* プロバイダ・モデル・APIキー設定 */}
+                    <div className="p-6 bg-muted rounded-lg space-y-4">
+                      {/* プロバイダ選択 */}
+                      <div className="space-y-2">
+                        <Label>{t("AI Provider", "AIプロバイダ")}</Label>
+                        <Select
+                          value={aiConfig.provider}
+                          onValueChange={(value) => handleUpdateAiConfig({ provider: value as "openai" | "anthropic" | "local" })}
+                          disabled={aiSaving}
+                        >
+                          <SelectTrigger className="w-full md:w-[300px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="openai">OpenAI</SelectItem>
+                            <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
+                            <SelectItem value="local" disabled>
+                              {t("Local LLM (Coming Soon)", "ローカルLLM（準備中）")}
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                          {aiConfig.provider === "openai" && t(
+                            "Uses OpenAI GPT models for AI features.",
+                            "OpenAI GPTモデルを使用します。"
+                          )}
+                          {aiConfig.provider === "anthropic" && t(
+                            "Uses Anthropic Claude models for AI features.",
+                            "Anthropic Claudeモデルを使用します。"
+                          )}
+                        </p>
+                      </div>
+
+                      {/* モデル選択 */}
+                      <div className="space-y-2">
+                        <Label>{t("Model", "モデル")}</Label>
+                        <Select
+                          value={aiConfig.model}
+                          onValueChange={(value) => handleUpdateAiConfig({ model: value })}
+                          disabled={aiSaving}
+                        >
+                          <SelectTrigger className="w-full md:w-[300px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {aiConfig.provider === "openai" && (
+                              <>
+                                <SelectItem value="gpt-4o-mini">GPT-4o mini ({t("Recommended", "推奨")})</SelectItem>
+                                <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+                                <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
+                              </>
+                            )}
+                            {aiConfig.provider === "anthropic" && (
+                              <>
+                                <SelectItem value="claude-3-haiku-20240307">Claude 3 Haiku ({t("Recommended", "推奨")})</SelectItem>
+                                <SelectItem value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</SelectItem>
+                                <SelectItem value="claude-3-opus-20240229">Claude 3 Opus</SelectItem>
+                              </>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* APIキー */}
+                      <div className="space-y-2">
+                        <Label>{t("API Key", "APIキー")}</Label>
+                        {aiConfig.hasApiKey ? (
+                          <div className="flex items-center gap-4">
+                            <div className="flex-1">
+                              <Input
+                                value={aiConfig.apiKey || ""}
+                                disabled
+                                className="font-mono"
+                              />
+                            </div>
+                            <Button
+                              variant="outline"
+                              onClick={() => handleUpdateAiConfig({ apiKey: "" })}
+                              disabled={aiSaving}
+                            >
+                              {t("Remove", "削除")}
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-4">
+                            <div className="flex-1">
+                              <Input
+                                type="password"
+                                value={aiApiKeyInput}
+                                onChange={(e) => setAiApiKeyInput(e.target.value)}
+                                placeholder={
+                                  aiConfig.provider === "openai"
+                                    ? "sk-..."
+                                    : aiConfig.provider === "anthropic"
+                                      ? "sk-ant-..."
+                                      : ""
+                                }
+                                className="font-mono"
+                              />
+                            </div>
+                            <Button
+                              onClick={() => handleUpdateAiConfig({ apiKey: aiApiKeyInput })}
+                              disabled={aiSaving || !aiApiKeyInput}
+                            >
+                              {aiSaving ? t("Saving...", "保存中...") : t("Save", "保存")}
+                            </Button>
+                          </div>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {aiConfig.provider === "openai" && (
+                            <>
+                              {t("Get your API key from ", "APIキーは ")}
+                              <a
+                                href="https://platform.openai.com/api-keys"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline"
+                              >
+                                OpenAI Platform
+                              </a>
+                              {t(" to use AI features.", " から取得できます。")}
+                            </>
+                          )}
+                          {aiConfig.provider === "anthropic" && (
+                            <>
+                              {t("Get your API key from ", "APIキーは ")}
+                              <a
+                                href="https://console.anthropic.com/settings/keys"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline"
+                              >
+                                Anthropic Console
+                              </a>
+                              {t(" to use AI features.", " から取得できます。")}
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* ステータス */}
+                    <div className="p-4 rounded-lg border bg-card">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${
+                          aiConfig.enabled && aiConfig.hasApiKey
+                            ? "bg-green-500"
+                            : "bg-gray-400"
+                        }`} />
+                        <span className="font-medium">
+                          {aiConfig.enabled && aiConfig.hasApiKey
+                            ? t("AI features are ready to use", "AI機能が利用可能です")
+                            : !aiConfig.enabled
+                              ? t("AI features are disabled", "AI機能が無効です")
+                              : t("API key is not configured", "APIキーが設定されていません")}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               </CardContent>
             </Card>
@@ -1832,6 +2429,411 @@ export function AdminClient({
               )}
             </Card>
           )}
+
+          {/* 監査ログタブ */}
+          {activeTab === "audit-logs" && (
+            <Card>
+              <CardContent className="p-6">
+                {/* フィルター */}
+                <div className="flex flex-wrap gap-4 mb-6">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      {t("Category", "カテゴリ")}:
+                    </Label>
+                    <Select
+                      value={auditLogsCategoryFilter}
+                      onValueChange={(value) => {
+                        setAuditLogsCategoryFilter(value);
+                        setAuditLogsPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder={t("All Categories", "すべてのカテゴリ")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ALL">{t("All", "すべて")}</SelectItem>
+                        <SelectItem value="AUTH">{t("Authentication", "認証")}</SelectItem>
+                        <SelectItem value="USER_MANAGEMENT">{t("User Management", "ユーザ管理")}</SelectItem>
+                        <SelectItem value="SYSTEM_SETTING">{t("System Settings", "システム設定")}</SelectItem>
+                        <SelectItem value="MODULE">{t("Module", "モジュール")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      {t("Action", "アクション")}:
+                    </Label>
+                    <Select
+                      value={auditLogsActionFilter}
+                      onValueChange={(value) => {
+                        setAuditLogsActionFilter(value);
+                        setAuditLogsPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder={t("All Actions", "すべてのアクション")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ALL">{t("All", "すべて")}</SelectItem>
+                        <SelectItem value="LOGIN_SUCCESS">{t("Login Success", "ログイン成功")}</SelectItem>
+                        <SelectItem value="LOGIN_FAILURE">{t("Login Failure", "ログイン失敗")}</SelectItem>
+                        <SelectItem value="LOGOUT">{t("Logout", "ログアウト")}</SelectItem>
+                        <SelectItem value="USER_CREATE">{t("User Create", "ユーザ作成")}</SelectItem>
+                        <SelectItem value="USER_DELETE">{t("User Delete", "ユーザ削除")}</SelectItem>
+                        <SelectItem value="USER_ROLE_CHANGE">{t("Role Change", "ロール変更")}</SelectItem>
+                        <SelectItem value="MODULE_TOGGLE">{t("Module Toggle", "モジュール切替")}</SelectItem>
+                        <SelectItem value="ANNOUNCEMENT_CREATE">{t("Announcement Create", "アナウンス作成")}</SelectItem>
+                        <SelectItem value="ANNOUNCEMENT_UPDATE">{t("Announcement Update", "アナウンス更新")}</SelectItem>
+                        <SelectItem value="ANNOUNCEMENT_DELETE">{t("Announcement Delete", "アナウンス削除")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* ローディング */}
+                {auditLogsLoading && (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+                    <p className="mt-4 text-muted-foreground">
+                      {t("Loading...", "読み込み中...")}
+                    </p>
+                  </div>
+                )}
+
+                {/* ログテーブル */}
+                {!auditLogsLoading && auditLogs.length > 0 && (
+                  <>
+                    {/* ページネーション（上部） */}
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-sm text-muted-foreground">
+                        {t("Total", "合計")}: <span className="font-medium text-foreground">{auditLogsTotal}</span>
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setAuditLogsPage((p) => Math.max(1, p - 1))}
+                          disabled={auditLogsPage === 1}
+                          className="gap-1"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          {t("Previous", "前へ")}
+                        </Button>
+                        <div className="flex items-center gap-1 px-2">
+                          <span className="text-sm font-medium">{auditLogsPage}</span>
+                          <span className="text-sm text-muted-foreground">/</span>
+                          <span className="text-sm text-muted-foreground">{auditLogsTotalPages || 1}</span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setAuditLogsPage((p) => Math.min(auditLogsTotalPages, p + 1))}
+                          disabled={auditLogsPage >= auditLogsTotalPages}
+                          className="gap-1"
+                        >
+                          {t("Next", "次へ")}
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* テーブル */}
+                    <div className="rounded-lg border overflow-hidden">
+                      <div className="overflow-y-auto max-h-[calc(100vh-28rem)]">
+                        <Table>
+                          <TableHeader className="sticky top-0 bg-muted/50 z-10">
+                            <TableRow>
+                              <TableHead className="w-[160px]">{t("Date/Time", "日時")}</TableHead>
+                              <TableHead className="w-[140px]">{t("Category", "カテゴリ")}</TableHead>
+                              <TableHead className="w-[160px]">{t("Action", "アクション")}</TableHead>
+                              <TableHead className="w-[180px]">{t("User", "ユーザ")}</TableHead>
+                              <TableHead>{t("Details", "詳細")}</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {auditLogs.map((log) => {
+                              const details = log.details ? JSON.parse(log.details) : null;
+                              const isSuccess = log.action.includes("SUCCESS") || log.action.includes("CREATE");
+                              const isFailure = log.action.includes("FAILURE") || log.action.includes("DELETE");
+
+                              return (
+                                <TableRow key={log.id}>
+                                  <TableCell className="text-sm">
+                                    {new Date(log.createdAt).toLocaleString(
+                                      language === "ja" ? "ja-JP" : "en-US",
+                                      {
+                                        year: "numeric",
+                                        month: "short",
+                                        day: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      }
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline" className={
+                                      log.category === "AUTH"
+                                        ? "bg-blue-50 text-blue-700 border-blue-200"
+                                        : log.category === "USER_MANAGEMENT"
+                                          ? "bg-green-50 text-green-700 border-green-200"
+                                          : log.category === "SYSTEM_SETTING"
+                                            ? "bg-purple-50 text-purple-700 border-purple-200"
+                                            : "bg-orange-50 text-orange-700 border-orange-200"
+                                    }>
+                                      {log.category === "AUTH" && t("Auth", "認証")}
+                                      {log.category === "USER_MANAGEMENT" && t("User", "ユーザ")}
+                                      {log.category === "SYSTEM_SETTING" && t("System", "システム")}
+                                      {log.category === "MODULE" && t("Module", "モジュール")}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge variant="outline" className={
+                                      isSuccess
+                                        ? "bg-green-50 text-green-700 border-green-200"
+                                        : isFailure
+                                          ? "bg-red-50 text-red-700 border-red-200"
+                                          : "bg-gray-50 text-gray-700 border-gray-200"
+                                    }>
+                                      {log.action}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    {log.user ? (
+                                      <div className="flex flex-col">
+                                        <span className="text-sm font-medium">{log.user.name || "-"}</span>
+                                        <span className="text-xs text-muted-foreground">{log.user.email}</span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-sm text-muted-foreground">-</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    {details && (
+                                      <div className="text-xs text-muted-foreground space-y-0.5">
+                                        {details.provider && (
+                                          <p>{t("Provider", "プロバイダ")}: {details.provider}</p>
+                                        )}
+                                        {details.username && (
+                                          <p>{t("Username", "ユーザ名")}: {details.username}</p>
+                                        )}
+                                        {details.email && !log.user?.email && (
+                                          <p>{t("Email", "メール")}: {details.email}</p>
+                                        )}
+                                        {details.reason && (
+                                          <p className="text-red-600">{t("Reason", "理由")}: {details.reason}</p>
+                                        )}
+                                        {details.title && (
+                                          <p>{t("Title", "タイトル")}: {details.title}</p>
+                                        )}
+                                        {details.oldRole && details.newRole && (
+                                          <p>{details.oldRole} → {details.newRole}</p>
+                                        )}
+                                      </div>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* データなし */}
+                {!auditLogsLoading && auditLogs.length === 0 && (
+                  <div className="text-center py-12">
+                    <FaClipboardList className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">
+                      {t("No audit logs found", "監査ログがありません")}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* アナウンスタブ */}
+          {activeTab === "announcements" && (
+            <Card>
+              <CardContent className="p-6">
+                {/* ヘッダー */}
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-lg font-semibold">
+                      {t("System Announcements", "システムアナウンス")}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {t(
+                        "Create and manage system-wide announcements.",
+                        "システム全体のアナウンスを作成・管理できます。"
+                      )}
+                    </p>
+                  </div>
+                  <Button onClick={openNewAnnouncementModal} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    {t("New Announcement", "新規作成")}
+                  </Button>
+                </div>
+
+                {/* ローディング */}
+                {announcementsLoading && (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+                    <p className="mt-4 text-muted-foreground">
+                      {t("Loading...", "読み込み中...")}
+                    </p>
+                  </div>
+                )}
+
+                {/* アナウンス一覧 */}
+                {!announcementsLoading && announcements.length > 0 && (
+                  <div className="space-y-4">
+                    {announcements.map((announcement) => {
+                      const now = new Date();
+                      const startAt = new Date(announcement.startAt);
+                      const endAt = announcement.endAt ? new Date(announcement.endAt) : null;
+                      const isScheduled = startAt > now;
+                      const isExpired = endAt && endAt < now;
+                      const isLive = announcement.isActive && !isScheduled && !isExpired;
+
+                      return (
+                        <div
+                          key={announcement.id}
+                          className={`p-4 rounded-lg border ${
+                            announcement.level === "critical"
+                              ? "bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800"
+                              : announcement.level === "warning"
+                                ? "bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800"
+                                : "bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800"
+                          } ${!announcement.isActive && "opacity-60"}`}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge variant="outline" className={
+                                  announcement.level === "critical"
+                                    ? "bg-red-100 text-red-700 border-red-300"
+                                    : announcement.level === "warning"
+                                      ? "bg-amber-100 text-amber-700 border-amber-300"
+                                      : "bg-blue-100 text-blue-700 border-blue-300"
+                                }>
+                                  {announcement.level === "critical" && t("Critical", "重要")}
+                                  {announcement.level === "warning" && t("Warning", "警告")}
+                                  {announcement.level === "info" && t("Info", "お知らせ")}
+                                </Badge>
+                                {isLive && (
+                                  <Badge className="bg-green-100 text-green-700 border-green-300">
+                                    {t("Live", "配信中")}
+                                  </Badge>
+                                )}
+                                {isScheduled && (
+                                  <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-300">
+                                    {t("Scheduled", "予約済み")}
+                                  </Badge>
+                                )}
+                                {isExpired && (
+                                  <Badge variant="outline" className="bg-gray-100 text-gray-500 border-gray-300">
+                                    {t("Expired", "終了")}
+                                  </Badge>
+                                )}
+                              </div>
+
+                              <h4 className="font-semibold text-foreground mb-1">
+                                {language === "ja" && announcement.titleJa ? announcement.titleJa : announcement.title}
+                              </h4>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {language === "ja" && announcement.messageJa ? announcement.messageJa : announcement.message}
+                              </p>
+
+                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                <span>
+                                  {t("Start", "開始")}: {new Date(announcement.startAt).toLocaleString(
+                                    language === "ja" ? "ja-JP" : "en-US",
+                                    { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }
+                                  )}
+                                </span>
+                                {announcement.endAt && (
+                                  <span>
+                                    {t("End", "終了")}: {new Date(announcement.endAt).toLocaleString(
+                                      language === "ja" ? "ja-JP" : "en-US",
+                                      { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }
+                                    )}
+                                  </span>
+                                )}
+                                <span>
+                                  {t("By", "作成者")}: {announcement.creator.name || announcement.creator.email}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={announcement.isActive}
+                                onCheckedChange={(checked) => handleToggleAnnouncement(announcement.id, checked)}
+                              />
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => openEditAnnouncementModal(announcement)}
+                                    >
+                                      <Edit3 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{t("Edit", "編集")}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                      onClick={() => {
+                                        setAnnouncementToDelete(announcement);
+                                        setShowAnnouncementDeleteModal(true);
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{t("Delete", "削除")}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* データなし */}
+                {!announcementsLoading && announcements.length === 0 && (
+                  <div className="text-center py-12">
+                    <FaBullhorn className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground mb-4">
+                      {t("No announcements yet", "アナウンスはまだありません")}
+                    </p>
+                    <Button onClick={openNewAnnouncementModal} variant="outline" className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      {t("Create First Announcement", "最初のアナウンスを作成")}
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
@@ -1861,6 +2863,215 @@ export function AdminClient({
               disabled={deleting}
             >
               {deleting ? t("Deleting...", "削除中...") : t("Delete", "削除")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* アナウンス作成/編集モーダル */}
+      <Dialog open={showAnnouncementModal} onOpenChange={(open) => !open && setShowAnnouncementModal(false)}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingAnnouncement
+                ? t("Edit Announcement", "アナウンスを編集")
+                : t("New Announcement", "新規アナウンス")}
+            </DialogTitle>
+            <DialogDescription>
+              {t(
+                "Create announcements to notify all users about important information.",
+                "重要な情報を全ユーザに通知するアナウンスを作成します。"
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* タイトル（日本語） */}
+            <div className="space-y-2">
+              <Label htmlFor="titleJa">{t("Title (Japanese)", "タイトル（日本語）")} *</Label>
+              <Input
+                id="titleJa"
+                value={announcementForm.titleJa}
+                onChange={(e) => setAnnouncementForm((f) => ({ ...f, titleJa: e.target.value }))}
+                placeholder={t("Enter title in Japanese", "日本語でタイトルを入力")}
+              />
+            </div>
+
+            {/* タイトル（英語） */}
+            <div className="space-y-2">
+              <Label htmlFor="title">{t("Title (English)", "タイトル（英語）")}</Label>
+              <Input
+                id="title"
+                value={announcementForm.title}
+                onChange={(e) => setAnnouncementForm((f) => ({ ...f, title: e.target.value }))}
+                placeholder={t("Enter title in English (optional)", "英語でタイトルを入力（任意）")}
+              />
+            </div>
+
+            {/* メッセージ（日本語） */}
+            <div className="space-y-2">
+              <Label htmlFor="messageJa">{t("Message (Japanese)", "メッセージ（日本語）")} *</Label>
+              <Input
+                id="messageJa"
+                value={announcementForm.messageJa}
+                onChange={(e) => setAnnouncementForm((f) => ({ ...f, messageJa: e.target.value }))}
+                placeholder={t("Enter message in Japanese", "日本語でメッセージを入力")}
+              />
+            </div>
+
+            {/* メッセージ（英語） */}
+            <div className="space-y-2">
+              <Label htmlFor="message">{t("Message (English)", "メッセージ（英語）")}</Label>
+              <Input
+                id="message"
+                value={announcementForm.message}
+                onChange={(e) => setAnnouncementForm((f) => ({ ...f, message: e.target.value }))}
+                placeholder={t("Enter message in English (optional)", "英語でメッセージを入力（任意）")}
+              />
+            </div>
+
+            {/* レベル */}
+            <div className="space-y-2">
+              <Label>{t("Level", "重要度")}</Label>
+              <Select
+                value={announcementForm.level}
+                onValueChange={(value) => setAnnouncementForm((f) => ({ ...f, level: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="info">{t("Info", "お知らせ")}</SelectItem>
+                  <SelectItem value="warning">{t("Warning", "警告")}</SelectItem>
+                  <SelectItem value="critical">{t("Critical", "重要")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* AI翻訳トグル */}
+            {aiTranslationAvailable && (
+              <div className="flex items-center justify-between p-3 rounded-lg border bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-3">
+                  <svg
+                    className="w-5 h-5 text-blue-600 dark:text-blue-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                    />
+                  </svg>
+                  <div>
+                    <Label className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                      {t("AI Translation", "AI翻訳")}
+                    </Label>
+                    <p className="text-xs text-blue-600 dark:text-blue-400">
+                      {t(
+                        "Automatically translate to English if empty",
+                        "英語が空の場合、自動で翻訳します"
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={useAiTranslation}
+                  onCheckedChange={setUseAiTranslation}
+                  disabled={announcementSaving || aiTranslating}
+                />
+              </div>
+            )}
+
+            {/* 開始日時・終了日時 */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="startAt">{t("Start Date/Time", "開始日時")}</Label>
+                <Input
+                  id="startAt"
+                  type="datetime-local"
+                  value={announcementForm.startAt}
+                  onChange={(e) => setAnnouncementForm((f) => ({ ...f, startAt: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="endAt">{t("End Date/Time", "終了日時")}</Label>
+                <Input
+                  id="endAt"
+                  type="datetime-local"
+                  value={announcementForm.endAt}
+                  onChange={(e) => setAnnouncementForm((f) => ({ ...f, endAt: e.target.value }))}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t("Leave empty for no end date", "空欄の場合は終了日時なし")}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowAnnouncementModal(false)}
+              disabled={announcementSaving || aiTranslating}
+            >
+              {t("Cancel", "キャンセル")}
+            </Button>
+            <Button
+              onClick={handleSaveAnnouncement}
+              disabled={announcementSaving || aiTranslating || !announcementForm.titleJa || !announcementForm.messageJa}
+            >
+              {aiTranslating
+                ? t("Translating...", "翻訳中...")
+                : announcementSaving
+                  ? t("Saving...", "保存中...")
+                  : editingAnnouncement
+                    ? t("Update", "更新")
+                    : t("Create", "作成")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* アナウンス削除確認モーダル */}
+      <Dialog
+        open={showAnnouncementDeleteModal && !!announcementToDelete}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowAnnouncementDeleteModal(false);
+            setAnnouncementToDelete(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("Delete Announcement", "アナウンスを削除")}</DialogTitle>
+            <DialogDescription>
+              {announcementToDelete && t(
+                `Are you sure you want to delete "${announcementToDelete.title}"? This action cannot be undone.`,
+                `「${announcementToDelete.title}」を削除してもよろしいですか？この操作は取り消せません。`,
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAnnouncementDeleteModal(false);
+                setAnnouncementToDelete(null);
+              }}
+              disabled={announcementDeleting}
+            >
+              {t("Cancel", "キャンセル")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAnnouncement}
+              disabled={announcementDeleting}
+            >
+              {announcementDeleting ? t("Deleting...", "削除中...") : t("Delete", "削除")}
             </Button>
           </DialogFooter>
         </DialogContent>
