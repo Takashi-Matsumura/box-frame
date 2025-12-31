@@ -214,8 +214,25 @@ npx prisma studio    # Prisma Studio起動
 ### 対応プロバイダ
 
 - Google OAuth（管理者が有効/無効を切り替え可能）
+- GitHub OAuth（管理者が有効/無効を切り替え可能）
 - OpenLDAP
 - 二要素認証 (TOTP)
+
+### OAuth設定
+
+管理画面（`/admin`）のシステム設定タブでOAuthプロバイダを有効/無効に切り替えできます。
+
+環境変数に以下を設定してください:
+
+```env
+# Google OAuth
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+
+# GitHub OAuth
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+```
 
 ### 二要素認証 (2FA)
 
