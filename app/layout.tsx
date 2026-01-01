@@ -127,13 +127,14 @@ export default async function RootLayout({
 
     // 表示するメニューグループを抽出してソート
     // 1. メニューが存在するグループ
-    // 2. ユーザのロールでアクセス可能なグループ
+    // 2. ユーザのロールでアクセス可能なグループ（ADMINは全セクション表示）
     const activeGroupIds = Object.keys(groupedMenus);
+    const isAdmin = session.user.role === "ADMIN";
     sortedMenuGroups = Object.values(menuGroups)
       .filter(
         (group) =>
           activeGroupIds.includes(group.id) &&
-          canAccessMenuGroup(group.id, session.user.role),
+          (isAdmin || canAccessMenuGroup(group.id, session.user.role)),
       )
       .sort((a, b) => a.order - b.order);
   }
