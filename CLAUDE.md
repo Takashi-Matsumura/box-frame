@@ -138,7 +138,8 @@ lib/
   ├── modules/              # モジュール定義（registry.tsx）
   ├── core-modules/         # コアモジュール
   │   ├── organization/     # 組織管理モジュール
-  │   └── system/           # システムモジュール
+  │   ├── system/           # システムモジュール
+  │   └── ai/               # 生成AIモジュール
   ├── services/             # フレーム基盤サービス
   │   └── notification-service.ts  # 通知サービス
   ├── stores/               # Zustandストア
@@ -177,9 +178,13 @@ mcp-servers/
 
 ### aiモジュール
 - 生成AI機能を提供するコアモジュール
+- AIチャット（ChatGPT風UI、ストリーミング対応）
 - 翻訳API（日英相互翻訳）
-- OpenAI / Anthropic プロバイダー対応
-- 将来的にローカルLLM対応予定
+- OpenAI / Anthropic / ローカルLLM対応
+  - llama.cpp（OpenAI互換API）
+  - LM Studio
+  - Ollama
+- トークン統計表示（コンテキスト使用量、トークン/秒）
 - 管理画面の「システム情報」タブでAPI設定
 
 ## Prismaモデル（25モデル）

@@ -74,6 +74,31 @@ export interface TranslateResponse {
 }
 
 /**
+ * チャットメッセージ
+ */
+export interface ChatMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
+
+/**
+ * チャットリクエスト
+ */
+export interface ChatRequest {
+  messages: ChatMessage[];
+  systemPrompt?: string;
+}
+
+/**
+ * チャットレスポンス
+ */
+export interface ChatResponse {
+  message: string;
+  provider: AIProvider;
+  model: string;
+}
+
+/**
  * AIサービス
  *
  * 翻訳などのAI機能を提供します。
@@ -196,6 +221,86 @@ export class AIService {
       const message = error instanceof Error ? error.message : "Unknown error";
       return { success: false, message: `Connection failed: ${message}` };
     }
+  }
+
+  /**
+   * ローカルLLMの実際のモデル名を取得
+   */
+  static async getLocalModelName(): Promise<string | null> {
+    const config = await this.getConfig();
+
+    if (config.provider !== "local") {
+      return null;
+    }
+
+    try {
+      if (config.localProvider === "ollama") {
+        // Ollamaは設定されたモデル名をそのまま返す
+        return config.localModel;
+      } else {
+        // OpenAI互換API (llama.cpp, LM Studio) - /v1/models から取得
+        const response = await fetch(
+          config.localEndpoint.replace("/v1/chat/completions", "/v1/models"),
+          { method: "GET" }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          // llama.cpp: data.data[0].id にモデル名が入っている
+          if (data.data && data.data.length > 0) {
+            const rawModelName = data.data[0].id;
+            return this.parseModelName(rawModelName);
+          }
+        }
+      }
+    } catch {
+      // エラー時は null を返す
+    }
+    return null;
+  }
+
+  /**
+   * モデル名をパースして短い表示名を取得
+   * 例: "/Users/.../bartowski_google_gemma-3n-E4B-it-GGUF_google_gemma-3n-E4B-it-Q6_K.gguf"
+   *   → "gemma-3n-E4B-it-Q6_K"
+   */
+  private static parseModelName(rawName: string): string {
+    // パスから最後の部分（ファイル名）を取得
+    let name = rawName.split("/").pop() || rawName;
+
+    // .gguf 拡張子を除去
+    name = name.replace(/\.gguf$/i, "");
+
+    // よくあるパターンを処理
+    // bartowski_google_gemma-3n-E4B-it-GGUF_google_gemma-3n-E4B-it-Q6_K
+    // → 後半部分（実際のモデル名+量子化）を抽出
+
+    // "_GGUF_" で分割して後半を取得
+    if (name.includes("_GGUF_")) {
+      name = name.split("_GGUF_").pop() || name;
+    }
+
+    // "GGUF_" で始まる場合も処理
+    if (name.startsWith("GGUF_")) {
+      name = name.substring(5);
+    }
+
+    // プレフィックス（bartowski_, TheBloke_ など）を除去
+    const prefixPatterns = [
+      /^bartowski_/i,
+      /^thebloke_/i,
+      /^lmstudio-community_/i,
+      /^huggingface_/i,
+    ];
+    for (const pattern of prefixPatterns) {
+      name = name.replace(pattern, "");
+    }
+
+    // google_ などのベンダープレフィックスを除去（モデル名自体に含まれている場合）
+    name = name.replace(/^google_/i, "");
+    name = name.replace(/^meta_/i, "");
+    name = name.replace(/^mistral_/i, "");
+
+    return name;
   }
 
   /**
@@ -438,6 +543,226 @@ export class AIService {
 
     return {
       translatedText,
+      provider: "local",
+      model: `ollama/${config.localModel}`,
+    };
+  }
+
+  /**
+   * チャット
+   */
+  static async chat(request: ChatRequest): Promise<ChatResponse> {
+    const config = await this.getConfig();
+
+    if (!config.enabled) {
+      throw new Error("AI is not enabled");
+    }
+
+    // デフォルトのシステムプロンプト
+    const defaultSystemPrompt = "You are a helpful AI assistant. Be concise and helpful in your responses. Respond in the same language as the user's message.";
+    const systemPrompt = request.systemPrompt || defaultSystemPrompt;
+
+    // システムプロンプトをメッセージの先頭に追加
+    const messagesWithSystem: ChatMessage[] = [
+      { role: "system", content: systemPrompt },
+      ...request.messages.filter((m) => m.role !== "system"),
+    ];
+
+    switch (config.provider) {
+      case "openai":
+        if (!config.apiKey) {
+          throw new Error("API key is not configured");
+        }
+        return this.chatWithOpenAI(messagesWithSystem, config);
+      case "anthropic":
+        if (!config.apiKey) {
+          throw new Error("API key is not configured");
+        }
+        return this.chatWithAnthropic(messagesWithSystem, config);
+      case "local":
+        return this.chatWithLocal(messagesWithSystem, config);
+      default:
+        throw new Error(`Unknown provider: ${config.provider}`);
+    }
+  }
+
+  /**
+   * OpenAI APIでチャット
+   */
+  private static async chatWithOpenAI(
+    messages: ChatMessage[],
+    config: AIConfig
+  ): Promise<ChatResponse> {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${config.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: config.model || "gpt-4o-mini",
+        messages,
+        temperature: 0.7,
+        max_tokens: 2000,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error?.message || `OpenAI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const message = data.choices?.[0]?.message?.content?.trim();
+
+    if (!message) {
+      throw new Error("No response received from OpenAI");
+    }
+
+    return {
+      message,
+      provider: "openai",
+      model: config.model,
+    };
+  }
+
+  /**
+   * Anthropic APIでチャット
+   */
+  private static async chatWithAnthropic(
+    messages: ChatMessage[],
+    config: AIConfig
+  ): Promise<ChatResponse> {
+    // Anthropicはsystemをmessagesから分離する必要がある
+    const systemMessage = messages.find((m) => m.role === "system");
+    const chatMessages = messages
+      .filter((m) => m.role !== "system")
+      .map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      }));
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": config.apiKey!,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: config.model || "claude-3-haiku-20240307",
+        max_tokens: 2000,
+        system: systemMessage?.content,
+        messages: chatMessages,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error?.message || `Anthropic API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const message = data.content?.[0]?.text?.trim();
+
+    if (!message) {
+      throw new Error("No response received from Anthropic");
+    }
+
+    return {
+      message,
+      provider: "anthropic",
+      model: config.model,
+    };
+  }
+
+  /**
+   * ローカルLLMでチャット
+   */
+  private static async chatWithLocal(
+    messages: ChatMessage[],
+    config: AIConfig
+  ): Promise<ChatResponse> {
+    if (config.localProvider === "ollama") {
+      return this.chatWithOllama(messages, config);
+    } else {
+      // llama.cpp と LM Studio は OpenAI互換API
+      return this.chatWithOpenAICompatible(messages, config);
+    }
+  }
+
+  /**
+   * OpenAI互換APIでチャット (llama.cpp, LM Studio)
+   */
+  private static async chatWithOpenAICompatible(
+    messages: ChatMessage[],
+    config: AIConfig
+  ): Promise<ChatResponse> {
+    const response = await fetch(config.localEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: config.localModel || "default",
+        messages,
+        temperature: 0.7,
+        max_tokens: 2000,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      throw new Error(`Local LLM error (${response.status}): ${errorText}`);
+    }
+
+    const data = await response.json();
+    const message = data.choices?.[0]?.message?.content?.trim();
+
+    if (!message) {
+      throw new Error(`No response received from ${config.localProvider}`);
+    }
+
+    return {
+      message,
+      provider: "local",
+      model: `${config.localProvider}/${config.localModel}`,
+    };
+  }
+
+  /**
+   * Ollama APIでチャット
+   */
+  private static async chatWithOllama(
+    messages: ChatMessage[],
+    config: AIConfig
+  ): Promise<ChatResponse> {
+    const response = await fetch(config.localEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: config.localModel || "llama3.2",
+        messages,
+        stream: false,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "");
+      throw new Error(`Ollama error (${response.status}): ${errorText}`);
+    }
+
+    const data = await response.json();
+    const message = data.message?.content?.trim();
+
+    if (!message) {
+      throw new Error("No response received from Ollama");
+    }
+
+    return {
+      message,
       provider: "local",
       model: `ollama/${config.localModel}`,
     };
