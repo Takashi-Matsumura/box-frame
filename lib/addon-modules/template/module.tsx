@@ -42,7 +42,7 @@ export const templateModule: AppModule = {
       name: "Template", // 英語名
       nameJa: "テンプレート", // 日本語名
       path: "/template", // URLパス
-      menuGroup: "user", // メニューグループ: "user" | "manager" | "admin"
+      menuGroup: "user", // メニューグループ: "guest" | "user" | "manager" | "executive" | "admin"
       requiredRoles: ["USER", "MANAGER", "ADMIN"], // アクセス可能なロール
       enabled: true, // メニューの有効/無効
       order: 10, // グループ内の表示順序

@@ -12,13 +12,14 @@ export type Language = "en" | "ja";
 /**
  * メニューグループID
  * サイドバーでの表示グループを定義
+ * ロール階層: GUEST → USER → MANAGER → EXECUTIVE → ADMIN
  */
 export type MenuGroupId =
+  | "guest"
   | "user"
   | "manager"
-  | "backoffice"
-  | "admin"
-  | "permission";
+  | "executive"
+  | "admin";
 
 /**
  * 日付範囲型

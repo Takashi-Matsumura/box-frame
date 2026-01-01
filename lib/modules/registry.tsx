@@ -16,28 +16,43 @@ import type {
 /**
  * メニューグループの定義
  * サイドバーでの表示グループ
+ * ロール階層に対応: GUEST → USER → MANAGER → EXECUTIVE → ADMIN
  */
 export const menuGroups: Record<string, MenuGroup> = {
+  guest: {
+    id: "guest",
+    name: "GUEST",
+    nameJa: "ゲスト",
+    color: "text-gray-600",
+    order: 1,
+  },
   user: {
     id: "user",
     name: "USER",
     nameJa: "ユーザ",
     color: "text-cyan-700",
-    order: 1,
+    order: 2,
   },
   manager: {
     id: "manager",
     name: "MANAGER",
     nameJa: "マネージャー",
-    color: "text-blue-700",
-    order: 2,
+    color: "text-green-700",
+    order: 3,
+  },
+  executive: {
+    id: "executive",
+    name: "EXECUTIVE",
+    nameJa: "エグゼクティブ",
+    color: "text-rose-700",
+    order: 4,
   },
   admin: {
     id: "admin",
     name: "ADMIN",
     nameJa: "管理者",
     color: "text-purple-700",
-    order: 3,
+    order: 5,
   },
 };
 

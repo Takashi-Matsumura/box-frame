@@ -1,5 +1,43 @@
 import type { Role } from "@prisma/client";
-import type { AppMenu, AppModule } from "@/types/module";
+import type { AppMenu, AppModule, MenuGroup } from "@/types/module";
+import type { MenuGroupId } from "@/types/common";
+
+/**
+ * ロール階層の定義
+ * 上位ロールは下位ロールのセクションにもアクセス可能
+ */
+const ROLE_HIERARCHY: Record<Role, MenuGroupId[]> = {
+  GUEST: ["guest"],
+  USER: ["guest", "user"],
+  MANAGER: ["guest", "user", "manager"],
+  EXECUTIVE: ["guest", "user", "manager", "executive"],
+  ADMIN: ["guest", "user", "manager", "executive", "admin"],
+};
+
+/**
+ * ユーザのロールに基づいてアクセス可能なメニューグループを取得
+ */
+export function getAccessibleMenuGroups(
+  userRole: Role,
+  allMenuGroups: Record<string, MenuGroup>,
+): MenuGroup[] {
+  const accessibleGroupIds = ROLE_HIERARCHY[userRole] || [];
+
+  return Object.values(allMenuGroups)
+    .filter((group) => accessibleGroupIds.includes(group.id as MenuGroupId))
+    .sort((a, b) => a.order - b.order);
+}
+
+/**
+ * メニューグループがユーザのロールでアクセス可能かチェック
+ */
+export function canAccessMenuGroup(
+  groupId: string,
+  userRole: Role,
+): boolean {
+  const accessibleGroupIds = ROLE_HIERARCHY[userRole] || [];
+  return accessibleGroupIds.includes(groupId as MenuGroupId);
+}
 
 /**
  * ユーザがメニューにアクセスできるかチェック

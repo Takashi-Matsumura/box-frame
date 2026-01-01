@@ -7,6 +7,7 @@ import { Header } from "@/components/Header";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { getUserAccessibleMenus } from "@/lib/access-keys";
 import {
+  canAccessMenuGroup,
   getAccessibleMenus,
   groupMenusByMenuGroup,
 } from "@/lib/modules/access-control";
@@ -125,9 +126,15 @@ export default async function RootLayout({
     groupedMenus = groupMenusByMenuGroup(accessibleMenus);
 
     // 表示するメニューグループを抽出してソート
+    // 1. メニューが存在するグループ
+    // 2. ユーザのロールでアクセス可能なグループ
     const activeGroupIds = Object.keys(groupedMenus);
     sortedMenuGroups = Object.values(menuGroups)
-      .filter((group) => activeGroupIds.includes(group.id))
+      .filter(
+        (group) =>
+          activeGroupIds.includes(group.id) &&
+          canAccessMenuGroup(group.id, session.user.role),
+      )
       .sort((a, b) => a.order - b.order);
   }
 

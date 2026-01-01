@@ -302,22 +302,32 @@ const t = translations[language];
 
 | ロール | 色 | Tailwind クラス |
 |--------|-----|-----------------|
-| USER | 青 | `bg-blue-600` |
-| MANAGER | 緑/シアン | `bg-green-600` / `bg-cyan-100` |
-| EXECUTIVE | ローズ | `bg-rose-600` / `bg-rose-100` |
-| ADMIN | 紫 | `bg-purple-600` |
+| GUEST | グレー | `bg-gray-600` |
+| USER | 青/シアン | `bg-blue-600` / `bg-cyan-700` |
+| MANAGER | 緑 | `bg-green-600` / `bg-green-700` |
+| EXECUTIVE | ローズ | `bg-rose-600` / `bg-rose-700` |
+| ADMIN | 紫 | `bg-purple-600` / `bg-purple-700` |
 
-### ロール階層
+### ロール階層とメニューセクション
 
 ```
 GUEST → USER → MANAGER → EXECUTIVE → ADMIN
 ```
 
-- **GUEST**: 未認証/制限付きアクセス
-- **USER**: 一般社員
-- **MANAGER**: 管理職（部下を持つ）
-- **EXECUTIVE**: 役員（経営層）
-- **ADMIN**: システム管理者（全権限）
+| ロール | 説明 | 表示されるセクション |
+|--------|------|---------------------|
+| GUEST | 未認証/制限付き | ゲスト |
+| USER | 一般社員 | ゲスト、ユーザ |
+| MANAGER | 管理職 | ゲスト、ユーザ、マネージャー |
+| EXECUTIVE | 役員（経営層） | ゲスト、ユーザ、マネージャー、エグゼクティブ |
+| ADMIN | システム管理者 | 全セクション |
+
+**メニューグループ（セクション）:**
+```typescript
+type MenuGroupId = "guest" | "user" | "manager" | "executive" | "admin";
+```
+
+各メニューは `menuGroup` プロパティでセクションを指定します。上位ロールは下位ロールのセクションも表示されます。
 
 ## レスポンシブ対応
 
