@@ -584,6 +584,123 @@ const result = await AIService.translate({
 - `PATCH /api/admin/ai` - AI設定を更新（管理者）
 - `POST /api/admin/ai` - ローカルLLM接続テスト（管理者）
 
+### 外部モジュール向けAPIサービス
+
+他のモジュールからAI機能を利用するためのAPIサービスです。
+
+#### 汎用テキスト生成 `/api/ai/services/generate`
+
+カスタムプロンプトでテキストを生成します。
+
+```typescript
+// リクエスト
+const response = await fetch("/api/ai/services/generate", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    input: "売上データ: 1月100万円、2月150万円、3月120万円",
+    systemPrompt: "あなたはビジネスアナリストです。データを分析してください。",
+    temperature: 0.5, // オプション（0-2、デフォルト0.7）
+    maxTokens: 1000,  // オプション（デフォルト2000）
+  }),
+});
+
+// レスポンス
+{
+  "output": "分析結果...",
+  "provider": "local",
+  "model": "llama.cpp/gemma-3n"
+}
+```
+
+#### 要約 `/api/ai/services/summarize`
+
+テキストを要約します。
+
+```typescript
+// リクエスト
+const response = await fetch("/api/ai/services/summarize", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    text: "長い議事録テキスト...",
+    length: "short", // "short" | "medium" | "long"（オプション）
+    language: "ja",  // "ja" | "en"（オプション）
+  }),
+});
+
+// レスポンス
+{
+  "summary": "要約されたテキスト...",
+  "provider": "local",
+  "model": "llama.cpp/gemma-3n"
+}
+```
+
+#### データ抽出 `/api/ai/services/extract`
+
+テキストから構造化データを抽出します。
+
+```typescript
+// リクエスト
+const response = await fetch("/api/ai/services/extract", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    text: "田中太郎さん（35歳）は東京都在住で、エンジニアとして働いています。",
+    schema: [
+      { name: "name", description: "人物の名前", type: "string", required: true },
+      { name: "age", description: "年齢", type: "number" },
+      { name: "location", description: "居住地", type: "string" },
+      { name: "occupation", description: "職業", type: "string" },
+    ],
+    language: "ja", // オプション
+  }),
+});
+
+// レスポンス
+{
+  "data": {
+    "name": "田中太郎",
+    "age": 35,
+    "location": "東京都",
+    "occupation": "エンジニア"
+  },
+  "provider": "local",
+  "model": "llama.cpp/gemma-3n"
+}
+```
+
+### AIServiceの直接利用
+
+API経由ではなく、サーバーサイドから直接AIServiceを利用することもできます。
+
+```typescript
+import { AIService } from "@/lib/core-modules/ai";
+
+// 汎用テキスト生成
+const result = await AIService.generate({
+  input: "入力テキスト",
+  systemPrompt: "AIへの指示",
+  temperature: 0.5,
+});
+
+// 要約
+const summary = await AIService.summarize({
+  text: "長いテキスト",
+  length: "short",
+  language: "ja",
+});
+
+// データ抽出
+const extracted = await AIService.extract({
+  text: "非構造化テキスト",
+  schema: [
+    { name: "field1", description: "説明", type: "string" },
+  ],
+});
+```
+
 ## MCPサーバー
 
 外部の生成AIからBoxFrameの機能を利用可能にするMCPサーバーを提供しています。
