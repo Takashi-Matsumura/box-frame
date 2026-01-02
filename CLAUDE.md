@@ -230,7 +230,74 @@ npx prisma db push && npm run db:seed
 
 # テスト
 npm run test
+
+# テスト（カバレッジ付き）
+npm run test:coverage
+
+# 特定のテストのみ実行
+npm run test -- --testPathPatterns="access-control"
 ```
+
+## テスト戦略
+
+「仕様通りにフレームが設計されているか」を確認するためのテスト方針です。
+
+### テスト方針
+
+| 対象 | 方針 | 理由 |
+|------|------|------|
+| バックエンドAPI | 厳密にテスト | 外部モジュールが依存する契約 |
+| アクセス制御 | 厳密にテスト | セキュリティリスク |
+| フロントエンド | 手動確認中心 | 柔軟な変更に対応 |
+
+### テスト対象
+
+1. **外部モジュール向けAPI（契約テスト）** - 最優先
+   - `/api/ai/services/generate`
+   - `/api/ai/services/summarize`
+   - `/api/ai/services/extract`
+   - `/api/ai/translate`
+
+2. **アクセス制御ロジック** - 高優先
+   - `canAccessMenu()`
+   - `canAccessModule()`
+   - `canAccessMenuGroup()`
+   - `getAccessibleMenus()`
+
+3. **AIService（サービス層）** - 中優先
+   - `generate()`
+   - `summarize()`
+   - `extract()`
+
+### テストファイル構成
+
+```
+__tests__/
+├── api/
+│   └── ai/
+│       ├── services/
+│       │   ├── generate.test.ts    # 8テスト
+│       │   ├── summarize.test.ts   # 8テスト
+│       │   └── extract.test.ts     # 12テスト
+│       └── translate.test.ts       # 13テスト
+└── lib/
+    ├── modules/
+    │   └── access-control.test.ts  # 21テスト
+    └── core-modules/
+        └── ai/
+            └── ai-service.test.ts  # 15テスト
+
+jest.config.ts    # Jest設定
+jest.setup.ts     # グローバルモック
+```
+
+### モック戦略
+
+| 依存 | モック方法 |
+|------|-----------|
+| Prisma | `jest.mock("@/lib/prisma")` |
+| 外部API | `global.fetch = jest.fn()` |
+| 認証 | `jest.mock("@/auth")` |
 
 ## 環境変数
 
