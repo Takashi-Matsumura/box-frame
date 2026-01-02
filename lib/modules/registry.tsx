@@ -4,7 +4,7 @@ import { systemModule } from "@/lib/core-modules/system";
 
 // アドオンモジュール
 import { openldapModule } from "@/lib/addon-modules/openldap";
-import { templateModule } from "@/lib/addon-modules/template";
+import { organizationModule } from "@/lib/addon-modules/organization";
 import { prisma } from "@/lib/prisma";
 import type {
   AppMenu,
@@ -100,7 +100,7 @@ export const moduleRegistry: ModuleRegistry = {
 
   // アドオンモジュール
   openldap: openldapModule,
-  template: templateModule, // テンプレートモジュール（参考用）
+  organization: organizationModule,
 };
 
 /**

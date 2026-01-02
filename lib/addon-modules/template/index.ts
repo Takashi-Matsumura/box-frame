@@ -1,1 +1,0 @@
-export { templateModule } from "./module";
