@@ -813,6 +813,100 @@ npm run build
 
 詳細は `mcp-servers/openldap/README.md` を参照。
 
+## 派生プロジェクト向け運用方針
+
+BoxFrameをクローンして業務アプリを開発する際のルールです。
+
+### ディレクトリ構成
+
+```
+project/
+├── lib/
+│   ├── core-modules/       # フレーム提供（編集禁止）
+│   │   ├── organization/
+│   │   ├── system/
+│   │   └── ai/
+│   └── addon-modules/      # 業務モジュール（追加のみ）
+│       └── workflow/       # 例: ワークフローモジュール
+│       └── expense/        # 例: 経費精算モジュール
+├── app/
+│   └── (menus)/
+│       ├── (admin)/        # フレーム提供
+│       ├── (user)/         # フレーム提供
+│       └── (business)/     # 業務画面（追加のみ）
+└── components/
+    ├── ui/                 # フレーム提供（編集禁止）
+    └── business/           # 業務コンポーネント（追加のみ）
+```
+
+### 編集禁止ディレクトリ
+
+以下はフレーム提供のため、直接編集しないこと：
+
+| ディレクトリ | 理由 |
+|-------------|------|
+| `lib/core-modules/` | コアモジュール |
+| `lib/modules/registry.tsx` の既存定義 | モジュールレジストリ |
+| `components/ui/` | 共通UIコンポーネント |
+| `lib/services/` | フレーム基盤サービス |
+
+### 業務モジュールの配置先
+
+| 種別 | 配置先 |
+|------|--------|
+| モジュール定義 | `lib/addon-modules/<module-name>/` |
+| 画面（ページ） | `app/(menus)/(business)/<path>/` |
+| コンポーネント | `components/business/` |
+| API | `app/api/<module-name>/` |
+
+### フレーム改修が必要な場合
+
+```
+業務開発中にフレーム改修が必要
+              ↓
+      BoxFrame本体にIssue作成
+              ↓
+       ┌──────┴──────┐
+       ↓             ↓
+    急ぎでない      急ぎ
+       ↓             ↓
+    本家の対応    一時的にローカル修正
+    を待つ        （コメントで明記）
+                     ↓
+                  本家にPR作成
+                     ↓
+                  マージ後、
+                  ローカル修正を削除
+```
+
+### upstreamの設定
+
+```bash
+# BoxFrame本体をupstreamとして追加
+git remote add upstream https://github.com/Takashi-Matsumura/box-frame.git
+
+# フレーム更新の取り込み
+git fetch upstream
+git merge upstream/main
+
+# Issue作成（ghコマンド）
+gh issue create --repo Takashi-Matsumura/box-frame \
+  --title "機能提案: ○○" \
+  --body "業務開発中に必要になった機能です..."
+```
+
+### 一時的なローカル修正のルール
+
+やむを得ずフレームを一時修正する場合：
+
+```typescript
+// ========================================
+// TEMPORARY FIX: BoxFrame Issue #123
+// TODO: 本家マージ後に削除
+// ========================================
+// 修正内容の説明
+```
+
 ## ビルド情報
 
 - ルート数: 39
