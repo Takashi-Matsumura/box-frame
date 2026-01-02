@@ -1,3 +1,5 @@
+import { appConfig } from "@/lib/config/app";
+
 export const dashboardTranslations = {
   en: {
     title: "Dashboard",
@@ -6,8 +8,7 @@ export const dashboardTranslations = {
     today: "Today",
     // Message Section
     messageTitle: "About This Application",
-    messageDescription:
-      "BoxFrame is a modular framework for back-office operations. Add menus and features through plugins, and manage access control based on roles.",
+    messageDescription: `${appConfig.name} is a ${appConfig.description.toLowerCase()}. Add menus and features through plugins, and manage access control based on roles.`,
     featureModular: "Modular Architecture",
     featureModularDesc: "Extend menus and features via plugins",
     featureRoles: "Role-Based Access",
@@ -42,8 +43,7 @@ export const dashboardTranslations = {
     today: "今日",
     // Message Section
     messageTitle: "このアプリケーションについて",
-    messageDescription:
-      "BoxFrameは、バックオフィス業務を支援するモジュラーフレームワークです。プラグイン形式でメニューと機能を拡張し、ロールに応じたアクセス制御を行います。",
+    messageDescription: `${appConfig.name}は、${appConfig.descriptionJa}です。プラグイン形式でメニューと機能を拡張し、ロールに応じたアクセス制御を行います。`,
     featureModular: "モジュラーアーキテクチャ",
     featureModularDesc: "プラグイン形式でメニューと機能を拡張",
     featureRoles: "権限ベースのアクセス制御",

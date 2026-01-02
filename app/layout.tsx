@@ -6,6 +6,7 @@ import { ClientLayout } from "@/components/ClientLayout";
 import { Header } from "@/components/Header";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { getUserAccessibleMenus } from "@/lib/access-keys";
+import { appConfig } from "@/lib/config/app";
 import {
   canAccessMenuGroup,
   getAccessibleMenus,
@@ -27,9 +28,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BoxFrame",
-  description:
-    "Backoffice Transformation One - 社内業務システムプラットフォーム",
+  title: appConfig.name,
+  description: appConfig.description,
 };
 
 export const dynamic = "force-dynamic";

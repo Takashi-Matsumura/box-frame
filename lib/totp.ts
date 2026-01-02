@@ -1,7 +1,8 @@
 import { authenticator } from "otplib";
 import * as QRCode from "qrcode";
+import { appConfig } from "@/lib/config/app";
 
-const APP_NAME = "BoxFrame";
+const APP_NAME = appConfig.name;
 
 /**
  * Generate a new TOTP secret

@@ -2,6 +2,7 @@
 
 import { PanelLeft } from "lucide-react";
 import { useCallback, useEffect } from "react";
+import { appConfig } from "@/lib/config/app";
 import {
   SidebarHeader,
   SidebarMenu,
@@ -38,7 +39,7 @@ export function SidebarHeaderContent({ language }: SidebarHeaderContentProps) {
             onClick={handleToggle}
             tooltip={language === "ja" ? "サイドバー切替" : "Toggle Sidebar"}
           >
-            <span className="text-xl font-bold truncate group-data-[collapsible=icon]:hidden flex-1 text-left">BoxFrame</span>
+            <span className="text-xl font-bold truncate group-data-[collapsible=icon]:hidden flex-1 text-left">{appConfig.name}</span>
             <PanelLeft className="size-5 shrink-0" />
           </SidebarMenuButton>
         </SidebarMenuItem>

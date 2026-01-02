@@ -1,3 +1,4 @@
+import { appConfig } from "@/lib/config/app";
 import { getMenuByPath } from "@/lib/modules/registry";
 
 /**
@@ -289,7 +290,7 @@ export function getPageTitle(pathname: string, language: "en" | "ja"): string {
     return language === "ja" ? menu.nameJa : menu.name;
   }
 
-  return "BoxFrame";
+  return appConfig.name;
 }
 
 export function getPageDescription(

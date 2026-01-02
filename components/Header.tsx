@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { appConfig } from "@/lib/config/app";
 import {
   FaBullhorn,
   FaChartBar,
@@ -310,7 +311,7 @@ export function Header({ session, language = "en" }: HeaderProps) {
               <h1 className="text-xl font-bold">{pageTitle}</h1>
             ) : (
               <Link href="/" className="text-xl font-bold">
-                BoxFrame
+                {appConfig.name}
               </Link>
             )}
           </div>
