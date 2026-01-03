@@ -126,6 +126,18 @@ export const dataManagementTranslations = {
     scheduleSuccess: "Publish scheduled successfully",
     unpublished: "Not published",
     noPublishDate: "No publish date set",
+
+    // Import Cancel
+    cancelImport: "Cancel Import",
+    cancelImportTitle: "Cancel Import",
+    cancelImportDescription: "This will rollback the import and restore the previous data state.",
+    cancelImportConfirm: "Are you sure you want to cancel this import? This action cannot be undone.",
+    cancelImportSuccess: "Import cancelled successfully",
+    cancelImportError: "Failed to cancel import",
+    noImportToCancel: "No import to cancel",
+    importedAt: "Imported at",
+    affectedRecords: "Affected records",
+    cancellingImport: "Cancelling import...",
   },
   ja: {
     title: "組織データ管理",
@@ -254,6 +266,18 @@ export const dataManagementTranslations = {
     scheduleSuccess: "公開を予約しました",
     unpublished: "未公開",
     noPublishDate: "公開日未設定",
+
+    // Import Cancel
+    cancelImport: "インポート取消",
+    cancelImportTitle: "インポート取消",
+    cancelImportDescription: "インポートをロールバックし、前回の状態に戻します。",
+    cancelImportConfirm: "このインポートを取り消しますか？この操作は元に戻せません。",
+    cancelImportSuccess: "インポートを取り消しました",
+    cancelImportError: "インポートの取り消しに失敗しました",
+    noImportToCancel: "取り消すインポートがありません",
+    importedAt: "インポート日時",
+    affectedRecords: "対象レコード数",
+    cancellingImport: "取り消し中...",
   },
 } as const;
 

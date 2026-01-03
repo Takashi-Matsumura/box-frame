@@ -25,6 +25,9 @@ export interface ImportResult {
     totalRecords: number;
     created: number;
     updated?: number;
+    transferred?: number;
+    promoted?: number;
+    retired?: number;
     skipped?: number;
     errors?: number;
   };

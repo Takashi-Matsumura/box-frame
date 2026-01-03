@@ -120,6 +120,16 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
   const [publishAction, setPublishAction] = useState<"publish" | "schedule">("publish");
   const [updatingPublish, setUpdatingPublish] = useState(false);
 
+  // Cancel import
+  const [cancelStatus, setCancelStatus] = useState<{
+    canCancel: boolean;
+    batchId?: string;
+    importedAt?: string;
+    changeLogCount?: number;
+  } | null>(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancellingImport, setCancellingImport] = useState(false);
+
   // Fetch organization data
   const fetchOrgData = useCallback(async () => {
     try {
@@ -151,10 +161,24 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
     }
   }, [organizationId]);
 
+  // Fetch cancel status
+  const fetchCancelStatus = useCallback(async () => {
+    try {
+      const response = await fetch("/api/admin/organization/import/cancel");
+      if (response.ok) {
+        const data = await response.json();
+        setCancelStatus(data);
+      }
+    } catch (err) {
+      console.error("Error fetching cancel status:", err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchOrgData();
     fetchPublishSettings();
-  }, [fetchOrgData, fetchPublishSettings]);
+    fetchCancelStatus();
+  }, [fetchOrgData, fetchPublishSettings, fetchCancelStatus]);
 
   // Handle publish action
   const handlePublishAction = async () => {
@@ -213,6 +237,34 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
       console.error("Error canceling schedule:", err);
     } finally {
       setUpdatingPublish(false);
+    }
+  };
+
+  // Cancel import (rollback)
+  const handleCancelImport = async () => {
+    try {
+      setCancellingImport(true);
+      const response = await fetch("/api/admin/organization/import/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to cancel import");
+      }
+
+      // Refresh all data
+      await Promise.all([
+        fetchOrgData(),
+        fetchPublishSettings(),
+        fetchCancelStatus(),
+      ]);
+      setShowCancelDialog(false);
+    } catch (err) {
+      console.error("Error cancelling import:", err);
+    } finally {
+      setCancellingImport(false);
     }
   };
 
@@ -435,12 +487,23 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
 
             {/* Action Buttons */}
             {publishSettings.status === "DRAFT" && (
-              <Button
-                size="sm"
-                onClick={() => setShowPublishDialog(true)}
-              >
-                {t.setPublishDate}
-              </Button>
+              <>
+                {cancelStatus?.canCancel && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setShowCancelDialog(true)}
+                  >
+                    {t.cancelImport}
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  onClick={() => setShowPublishDialog(true)}
+                >
+                  {t.setPublishDate}
+                </Button>
+              </>
             )}
             {publishSettings.status === "SCHEDULED" && (
               <Button
@@ -786,6 +849,61 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
                 disabled={updatingPublish || (publishAction === "schedule" && !publishDate)}
               >
                 {updatingPublish ? t.loading : publishAction === "publish" ? t.publishNow : t.schedulePublish}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Import Dialog */}
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>{t.cancelImportTitle}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Description */}
+            <p className="text-sm text-muted-foreground">
+              {t.cancelImportDescription}
+            </p>
+
+            {/* Import Info */}
+            {cancelStatus?.canCancel && (
+              <div className="p-3 bg-muted rounded-md space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t.importedAt}:</span>
+                  <span>{formatDate(cancelStatus.importedAt || null)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t.affectedRecords}:</span>
+                  <span>{cancelStatus.changeLogCount}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Warning */}
+            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+              <p className="text-sm text-destructive">
+                {t.cancelImportConfirm}
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowCancelDialog(false)}
+                disabled={cancellingImport}
+              >
+                {t.cancel}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleCancelImport}
+                disabled={cancellingImport}
+              >
+                {cancellingImport ? t.cancellingImport : t.cancelImport}
               </Button>
             </div>
           </div>

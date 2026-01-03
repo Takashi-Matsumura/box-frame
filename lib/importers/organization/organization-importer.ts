@@ -1,11 +1,14 @@
 /**
  * 組織図インポーター
  * 組織図専用のインポートロジックを実装
+ * 履歴記録機能を統合
  */
 
 import { prisma } from "@/lib/prisma";
+import type { ChangeType, Employee, Prisma } from "@prisma/client";
 import { BaseImporter, type ImportResult } from "../base-importer";
 import { processEmployeeData } from "./parser";
+import { HistoryRecorder } from "@/lib/history/history-recorder";
 import type {
   CSVEmployeeRow,
   FieldChange,
@@ -220,6 +223,107 @@ export class OrganizationImporter extends BaseImporter<
   }
 
   /**
+   * 変更タイプを判定
+   */
+  private determineChangeType(
+    existing: Employee & {
+      department: { name: string } | null;
+      section: { name: string } | null;
+      course: { name: string } | null;
+    },
+    newData: ProcessedEmployee,
+    changes: FieldChange[]
+  ): ChangeType {
+    // 退職からの復職
+    if (!existing.isActive) {
+      return "REJOINING";
+    }
+
+    // 所属変更（異動）
+    const hasDepartmentChange = changes.some(
+      (c) =>
+        c.fieldName === "department" ||
+        c.fieldName === "section" ||
+        c.fieldName === "course"
+    );
+    if (hasDepartmentChange) {
+      return "TRANSFER";
+    }
+
+    // 役職変更（昇進/降格）
+    const hasPositionChange = changes.some(
+      (c) => c.fieldName === "position" || c.fieldName === "positionCode"
+    );
+    if (hasPositionChange) {
+      return "PROMOTION";
+    }
+
+    // その他の更新
+    return "UPDATE";
+  }
+
+  /**
+   * 社員履歴を記録
+   */
+  private async recordEmployeeHistory(
+    tx: Prisma.TransactionClient,
+    employee: Employee & {
+      department: { id: string; name: string };
+      section: { id: string; name: string } | null;
+      course: { id: string; name: string } | null;
+    },
+    changeType: ChangeType,
+    changeReason: string | null,
+    changedBy: string,
+    effectiveDate: Date
+  ): Promise<void> {
+    // 既存の履歴の validTo を更新
+    await tx.employeeHistory.updateMany({
+      where: {
+        employeeId: employee.id,
+        validTo: null,
+      },
+      data: {
+        validTo: effectiveDate,
+      },
+    });
+
+    // 新しい履歴レコードを作成
+    await tx.employeeHistory.create({
+      data: {
+        employeeId: employee.id,
+        validFrom: effectiveDate,
+        validTo: null,
+        name: employee.name,
+        nameKana: employee.nameKana,
+        email: employee.email || "",
+        profileImage: employee.profileImage,
+        phone: employee.phone,
+        position: employee.position,
+        positionCode: employee.positionCode,
+        qualificationGrade: employee.qualificationGrade,
+        qualificationGradeCode: employee.qualificationGradeCode,
+        employmentType: employee.employmentType,
+        employmentTypeCode: employee.employmentTypeCode,
+        departmentCode: employee.departmentCode,
+        joinDate: employee.joinDate,
+        birthDate: employee.birthDate,
+        isActive: employee.isActive,
+        organizationId: employee.organizationId,
+        departmentId: employee.departmentId,
+        departmentName: employee.department.name,
+        sectionId: employee.sectionId,
+        sectionName: employee.section?.name,
+        courseId: employee.courseId,
+        courseName: employee.course?.name,
+        changeType,
+        changeReason,
+        changedBy,
+      },
+    });
+  }
+
+  /**
    * データベースにインポート
    */
   async importToDatabase(
@@ -229,6 +333,10 @@ export class OrganizationImporter extends BaseImporter<
     console.log(
       `Starting database import for ${employees.length} employees...`
     );
+
+    // バッチIDを生成
+    const batchId = HistoryRecorder.generateBatchId();
+    const effectiveDate = new Date();
 
     try {
       const result = await prisma.$transaction(async (tx) => {
@@ -382,15 +490,33 @@ export class OrganizationImporter extends BaseImporter<
           }
         }
 
-        // 社員を作成または更新
+        // 社員を作成または更新（履歴記録付き）
         let createdCount = 0;
         let updatedCount = 0;
         let skippedCount = 0;
+        let transferredCount = 0;
+        let promotedCount = 0;
+        const changeLogEntries: {
+          entityType: string;
+          entityId: string;
+          changeType: ChangeType;
+          fieldName?: string;
+          oldValue?: string;
+          newValue?: string;
+          changeDescription?: string;
+          batchId: string;
+          changedBy: string;
+        }[] = [];
 
         for (const emp of employees) {
           const existing = await tx.employee.findFirst({
             where: {
               OR: [{ employeeId: emp.employeeId }, { email: emp.email }],
+            },
+            include: {
+              department: true,
+              section: true,
+              course: true,
             },
           });
 
@@ -408,33 +534,101 @@ export class OrganizationImporter extends BaseImporter<
             ? courseMap.get(`${emp.department}/${emp.section}/${emp.course}`)
             : undefined;
 
+          // 部門名を取得
+          const dept = await tx.department.findUnique({
+            where: { id: deptId },
+          });
+          const section = sectionId
+            ? await tx.section.findUnique({ where: { id: sectionId } })
+            : null;
+          const course = courseId
+            ? await tx.course.findUnique({ where: { id: courseId } })
+            : null;
+
           if (existing) {
-            await tx.employee.update({
-              where: { id: existing.id },
-              data: {
-                name: emp.name,
-                nameKana: emp.nameKana,
-                email: emp.email || null,
-                phone: emp.phone,
-                position: emp.position,
-                positionCode: emp.positionCode,
-                qualificationGrade: emp.qualificationGrade,
-                qualificationGradeCode: emp.qualificationGradeCode,
-                employmentType: emp.employmentType,
-                employmentTypeCode: emp.employmentTypeCode,
-                departmentCode: emp.departmentCode,
-                joinDate: emp.joinDate,
-                birthDate: emp.birthDate,
-                isActive: true,
-                organizationId: org.id,
-                departmentId: deptId,
-                sectionId,
-                courseId,
-              },
-            });
-            updatedCount++;
+            // 変更を検出
+            const changes = this.detectFieldChanges(existing, emp);
+
+            if (changes.length > 0) {
+              // 変更タイプを判定
+              const changeType = this.determineChangeType(
+                existing,
+                emp,
+                changes
+              );
+
+              // 社員データを更新
+              const updatedEmployee = await tx.employee.update({
+                where: { id: existing.id },
+                data: {
+                  name: emp.name,
+                  nameKana: emp.nameKana,
+                  email: emp.email || null,
+                  phone: emp.phone,
+                  position: emp.position,
+                  positionCode: emp.positionCode,
+                  qualificationGrade: emp.qualificationGrade,
+                  qualificationGradeCode: emp.qualificationGradeCode,
+                  employmentType: emp.employmentType,
+                  employmentTypeCode: emp.employmentTypeCode,
+                  departmentCode: emp.departmentCode,
+                  joinDate: emp.joinDate,
+                  birthDate: emp.birthDate,
+                  isActive: true,
+                  organizationId: org.id,
+                  departmentId: deptId,
+                  sectionId,
+                  courseId,
+                },
+                include: {
+                  department: true,
+                  section: true,
+                  course: true,
+                },
+              });
+
+              // 履歴を記録
+              await this.recordEmployeeHistory(
+                tx,
+                updatedEmployee,
+                changeType,
+                `インポートによる${changeType === "TRANSFER" ? "異動" : changeType === "PROMOTION" ? "昇進" : "更新"}`,
+                changedBy,
+                effectiveDate
+              );
+
+              // 変更ログエントリを追加
+              for (const change of changes) {
+                changeLogEntries.push({
+                  entityType: "Employee",
+                  entityId: updatedEmployee.id,
+                  changeType,
+                  fieldName: change.fieldName,
+                  oldValue: change.oldValue,
+                  newValue: change.newValue,
+                  changeDescription: `${change.fieldNameJa}: ${change.oldValue || "(なし)"} → ${change.newValue || "(なし)"}`,
+                  batchId,
+                  changedBy,
+                });
+              }
+
+              // カウント更新
+              if (changeType === "TRANSFER") {
+                transferredCount++;
+              } else if (changeType === "PROMOTION") {
+                promotedCount++;
+              }
+              updatedCount++;
+            } else {
+              // 変更なし - データは同じだがisActiveをtrueに
+              await tx.employee.update({
+                where: { id: existing.id },
+                data: { isActive: true },
+              });
+            }
           } else {
-            await tx.employee.create({
+            // 新規社員を作成
+            const newEmployee = await tx.employee.create({
               data: {
                 employeeId: emp.employeeId,
                 name: emp.name,
@@ -456,42 +650,113 @@ export class OrganizationImporter extends BaseImporter<
                 sectionId,
                 courseId,
               },
+              include: {
+                department: true,
+                section: true,
+                course: true,
+              },
             });
+
+            // 新規社員の履歴を記録
+            await this.recordEmployeeHistory(
+              tx,
+              newEmployee,
+              "CREATE",
+              "インポートによる新規登録",
+              changedBy,
+              effectiveDate
+            );
+
+            // 変更ログエントリを追加
+            changeLogEntries.push({
+              entityType: "Employee",
+              entityId: newEmployee.id,
+              changeType: "CREATE",
+              changeDescription: `新規登録: ${emp.name} (${emp.employeeId})`,
+              batchId,
+              changedBy,
+            });
+
             createdCount++;
           }
         }
 
-        // 退職者を isActive = false に更新
+        // 退職者を検出して処理
         const newEmployeeIds = employees.map((e) => e.employeeId);
-        const retiredResult = await tx.employee.updateMany({
+        const retiredEmployees = await tx.employee.findMany({
           where: {
             isActive: true,
             employeeId: {
               notIn: newEmployeeIds,
             },
           },
-          data: {
-            isActive: false,
+          include: {
+            department: true,
+            section: true,
+            course: true,
           },
         });
 
+        // 退職者を isActive = false に更新し、履歴を記録
+        for (const retired of retiredEmployees) {
+          await tx.employee.update({
+            where: { id: retired.id },
+            data: { isActive: false },
+          });
+
+          // 退職履歴を記録
+          await this.recordEmployeeHistory(
+            tx,
+            { ...retired, isActive: false },
+            "RETIREMENT",
+            "インポートデータに存在しないため退職扱い",
+            changedBy,
+            effectiveDate
+          );
+
+          // 変更ログエントリを追加
+          changeLogEntries.push({
+            entityType: "Employee",
+            entityId: retired.id,
+            changeType: "RETIREMENT",
+            fieldName: "isActive",
+            oldValue: "true",
+            newValue: "false",
+            changeDescription: `退職: ${retired.name} (${retired.employeeId})`,
+            batchId,
+            changedBy,
+          });
+        }
+
         console.log(
-          `Marked ${retiredResult.count} employees as inactive (retired)`
+          `Marked ${retiredEmployees.length} employees as inactive (retired)`
         );
+
+        // 変更ログを一括記録
+        if (changeLogEntries.length > 0) {
+          await tx.changeLog.createMany({
+            data: changeLogEntries,
+          });
+          console.log(`Recorded ${changeLogEntries.length} change log entries`);
+        }
 
         // 管理者を自動割り当て
         await this.assignManagers(tx, departmentMap, sectionMap, courseMap);
 
         return {
           organizationId: org.id,
+          batchId,
           totalEmployees: employees.length,
           employeesCreated: createdCount,
           employeesUpdated: updatedCount,
           employeesSkipped: skippedCount,
-          employeesRetired: retiredResult.count,
+          employeesRetired: retiredEmployees.length,
+          employeesTransferred: transferredCount,
+          employeesPromoted: promotedCount,
           departmentsCreated: departmentMap.size,
           sectionsCreated: sectionMap.size,
           coursesCreated: courseMap.size,
+          changeLogCount: changeLogEntries.length,
         };
       });
 
@@ -503,6 +768,7 @@ export class OrganizationImporter extends BaseImporter<
             pending: true,
             importedAt: new Date().toISOString(),
             importedBy: changedBy,
+            batchId: result.batchId,
           }),
         },
         create: {
@@ -511,18 +777,37 @@ export class OrganizationImporter extends BaseImporter<
             pending: true,
             importedAt: new Date().toISOString(),
             importedBy: changedBy,
+            batchId: result.batchId,
           }),
         },
       });
 
+      // 結果メッセージを構築
+      const messageParts = [`作成: ${result.employeesCreated}名`];
+      if (result.employeesTransferred > 0) {
+        messageParts.push(`異動: ${result.employeesTransferred}名`);
+      }
+      if (result.employeesPromoted > 0) {
+        messageParts.push(`昇進: ${result.employeesPromoted}名`);
+      }
+      if (result.employeesUpdated - result.employeesTransferred - result.employeesPromoted > 0) {
+        messageParts.push(`更新: ${result.employeesUpdated - result.employeesTransferred - result.employeesPromoted}名`);
+      }
+      if (result.employeesRetired > 0) {
+        messageParts.push(`退職: ${result.employeesRetired}名`);
+      }
+
       return {
         success: true,
-        message: `インポートが完了しました（作成: ${result.employeesCreated}名、更新: ${result.employeesUpdated}名、退職: ${result.employeesRetired}名）`,
+        message: `インポートが完了しました（${messageParts.join("、")}）`,
         data: result,
         statistics: {
           totalRecords: result.totalEmployees,
           created: result.employeesCreated,
           updated: result.employeesUpdated,
+          transferred: result.employeesTransferred,
+          promoted: result.employeesPromoted,
+          retired: result.employeesRetired,
           skipped: result.employeesSkipped,
         },
       };
