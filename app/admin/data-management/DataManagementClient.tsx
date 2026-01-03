@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { FaUpload, FaUsers, FaHistory, FaPlus } from "react-icons/fa";
+import { FaUpload, FaUsers, FaHistory, FaPlus, FaSitemap } from "react-icons/fa";
 import { dataManagementTranslations } from "./translations";
 import { ImportTab } from "./components/ImportTab";
 import { EmployeesTab } from "./components/EmployeesTab";
 import { HistoryTab } from "./components/HistoryTab";
+import { OrganizeTab } from "./components/OrganizeTab";
 
 interface Organization {
   id: string;
@@ -71,6 +72,7 @@ export function DataManagementClient({
   const tabs = [
     { id: "import", label: t.import, icon: FaUpload },
     { id: "employees", label: t.employees, icon: FaUsers },
+    { id: "organize", label: t.organize, icon: FaSitemap },
     { id: "history", label: t.history, icon: FaHistory },
   ];
 
@@ -186,6 +188,13 @@ export function DataManagementClient({
             )}
             {tab === "employees" && (
               <EmployeesTab
+                organizationId={selectedOrgId}
+                language={language}
+                t={t}
+              />
+            )}
+            {tab === "organize" && (
+              <OrganizeTab
                 organizationId={selectedOrgId}
                 language={language}
                 t={t}

@@ -1,6 +1,6 @@
 "use client";
 
-import { FaUserPlus, FaUserEdit, FaExchangeAlt, FaUserMinus, FaExclamationCircle, FaTimes } from "react-icons/fa";
+import { FaUserPlus, FaUserEdit, FaExchangeAlt, FaUserMinus, FaUserSlash, FaExclamationCircle, FaTimes } from "react-icons/fa";
 import type { DataManagementTranslation } from "../translations";
 import type { PreviewResult } from "@/lib/importers/organization/types";
 
@@ -51,7 +51,7 @@ export function PreviewDialog({
           ) : (
             <div className="space-y-6">
               {/* Summary Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <SummaryCard
                   icon={FaUserPlus}
                   label={t.newEmployees}
@@ -76,6 +76,14 @@ export function PreviewDialog({
                   count={preview.retiredEmployees.length}
                   color="red"
                 />
+                {preview.excludedDuplicates.length > 0 && (
+                  <SummaryCard
+                    icon={FaUserSlash}
+                    label={t.excludedDuplicates}
+                    count={preview.excludedDuplicates.length}
+                    color="orange"
+                  />
+                )}
               </div>
 
               {/* New Employees */}
@@ -243,6 +251,38 @@ export function PreviewDialog({
                 </Section>
               )}
 
+              {/* Excluded Duplicates */}
+              {preview.excludedDuplicates.length > 0 && (
+                <Section
+                  title={t.excludedDuplicates}
+                  icon={FaUserSlash}
+                  color="orange"
+                >
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted">
+                      <tr>
+                        <th className="px-3 py-2 text-left">{t.employeeId}</th>
+                        <th className="px-3 py-2 text-left">{t.name}</th>
+                        <th className="px-3 py-2 text-left">{t.position}</th>
+                        <th className="px-3 py-2 text-left">{t.excludedReason}</th>
+                        <th className="px-3 py-2 text-left">{t.keptEmployeeId}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {preview.excludedDuplicates.map((dup) => (
+                        <tr key={dup.employeeId} className="border-b border-border">
+                          <td className="px-3 py-2 text-muted-foreground line-through">{dup.employeeId}</td>
+                          <td className="px-3 py-2">{dup.name}</td>
+                          <td className="px-3 py-2">{dup.position}</td>
+                          <td className="px-3 py-2 text-orange-600 dark:text-orange-400">{dup.reason}</td>
+                          <td className="px-3 py-2 text-green-600 dark:text-green-400">{dup.keptEmployeeId}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </Section>
+              )}
+
               {/* Errors */}
               {preview.errors.length > 0 && (
                 <Section
@@ -252,7 +292,7 @@ export function PreviewDialog({
                 >
                   <ul className="space-y-1">
                     {preview.errors.map((err, i) => (
-                      <li key={i} className="text-sm text-red-600">
+                      <li key={i} className="text-sm text-red-600 dark:text-red-400">
                         {language === "ja" ? `行 ${err.row}: ` : `Row ${err.row}: `}
                         {err.message}
                       </li>
@@ -298,20 +338,22 @@ function SummaryCard({
   icon: React.ElementType;
   label: string;
   count: number;
-  color: "green" | "blue" | "yellow" | "red";
+  color: "green" | "blue" | "yellow" | "red" | "orange";
 }) {
   const colorClasses = {
-    green: "bg-green-50 border-green-200 text-green-700",
-    blue: "bg-blue-50 border-blue-200 text-blue-700",
-    yellow: "bg-yellow-50 border-yellow-200 text-yellow-700",
-    red: "bg-red-50 border-red-200 text-red-700",
+    green: "bg-green-50 border-green-200 text-green-700 dark:bg-green-900/30 dark:border-green-800 dark:text-green-300",
+    blue: "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300",
+    yellow: "bg-yellow-50 border-yellow-200 text-yellow-700 dark:bg-yellow-900/30 dark:border-yellow-800 dark:text-yellow-300",
+    red: "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/30 dark:border-red-800 dark:text-red-300",
+    orange: "bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/30 dark:border-orange-800 dark:text-orange-300",
   };
 
   const iconColors = {
-    green: "text-green-600",
-    blue: "text-blue-600",
-    yellow: "text-yellow-600",
-    red: "text-red-600",
+    green: "text-green-600 dark:text-green-400",
+    blue: "text-blue-600 dark:text-blue-400",
+    yellow: "text-yellow-600 dark:text-yellow-400",
+    red: "text-red-600 dark:text-red-400",
+    orange: "text-orange-600 dark:text-orange-400",
   };
 
   return (
@@ -333,14 +375,15 @@ function Section({
 }: {
   title: string;
   icon: React.ElementType;
-  color: "green" | "blue" | "yellow" | "red";
+  color: "green" | "blue" | "yellow" | "red" | "orange";
   children: React.ReactNode;
 }) {
   const iconColors = {
-    green: "text-green-600",
-    blue: "text-blue-600",
-    yellow: "text-yellow-600",
-    red: "text-red-600",
+    green: "text-green-600 dark:text-green-400",
+    blue: "text-blue-600 dark:text-blue-400",
+    yellow: "text-yellow-600 dark:text-yellow-400",
+    red: "text-red-600 dark:text-red-400",
+    orange: "text-orange-600 dark:text-orange-400",
   };
 
   return (

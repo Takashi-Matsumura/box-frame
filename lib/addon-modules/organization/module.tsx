@@ -19,6 +19,21 @@ export const organizationModule: AppModule = {
   dependencies: ["system"],
   menus: [
     {
+      id: "organizationChart",
+      moduleId: "organization",
+      name: "Organization Chart",
+      nameJa: "組織図",
+      path: "/organization-chart",
+      menuGroup: "user",
+      requiredRoles: ["USER", "MANAGER", "EXECUTIVE", "ADMIN"],
+      enabled: true,
+      order: 10,
+      icon: getMenuIcon("organizationChart", "organization"),
+      description: "View organization structure and employees",
+      descriptionJa: "組織構造と社員を閲覧",
+      isImplemented: true,
+    },
+    {
       id: "dataManagement",
       moduleId: "organization",
       name: "Organization Data Management",

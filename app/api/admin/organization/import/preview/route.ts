@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { processEmployeeData } from "@/lib/importers/organization/parser";
-import type { CSVEmployeeRow, PreviewResult, FieldChange } from "@/lib/importers/organization/types";
+import { processEmployeeDataWithDeduplication } from "@/lib/importers/organization/parser";
+import type { CSVEmployeeRow, PreviewResult, FieldChange, ExcludedDuplicateInfo } from "@/lib/importers/organization/types";
 
 /**
  * POST /api/admin/organization/import/preview
@@ -49,8 +49,20 @@ export async function POST(request: Request) {
       );
     }
 
-    // CSVデータを処理
-    const processedData = processEmployeeData(data);
+    // CSVデータを処理（役員・顧問の重複除去を含む）
+    const { employees: processedData, excludedDuplicates } =
+      processEmployeeDataWithDeduplication(data);
+
+    // 除外された重複社員の情報を変換
+    const excludedDuplicateInfos: ExcludedDuplicateInfo[] = excludedDuplicates.map(
+      (dup) => ({
+        employeeId: dup.employee.employeeId,
+        name: dup.employee.name,
+        position: dup.employee.position,
+        reason: dup.reason,
+        keptEmployeeId: dup.keptEmployeeId,
+      })
+    );
 
     // 既存社員を取得
     const existingEmployees = await prisma.employee.findMany({
@@ -74,6 +86,7 @@ export async function POST(request: Request) {
       updatedEmployees: [],
       transferredEmployees: [],
       retiredEmployees: [],
+      excludedDuplicates: excludedDuplicateInfos,
       errors: [],
     };
 

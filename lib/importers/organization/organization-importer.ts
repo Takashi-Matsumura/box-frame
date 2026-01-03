@@ -115,6 +115,7 @@ export class OrganizationImporter extends BaseImporter<
       updatedEmployees,
       transferredEmployees,
       retiredEmployees,
+      excludedDuplicates: [],
       errors,
     };
   }

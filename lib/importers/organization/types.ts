@@ -49,6 +49,17 @@ export interface ProcessedEmployee {
 }
 
 /**
+ * 除外された重複社員
+ */
+export interface ExcludedDuplicateInfo {
+  employeeId: string;
+  name: string;
+  position: string;
+  reason: string;
+  keptEmployeeId: string;
+}
+
+/**
  * プレビュー結果
  */
 export interface PreviewResult {
@@ -68,6 +79,7 @@ export interface PreviewResult {
     name: string;
     department: string;
   }[];
+  excludedDuplicates: ExcludedDuplicateInfo[];
   errors: {
     row: number;
     message: string;

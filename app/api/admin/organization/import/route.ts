@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { processEmployeeData } from "@/lib/importers/organization/parser";
+import { processEmployeeDataWithDeduplication } from "@/lib/importers/organization/parser";
 import { HistoryRecorder } from "@/lib/history";
 import type { CSVEmployeeRow } from "@/lib/importers/organization/types";
 
@@ -54,8 +54,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // CSVデータを処理
-    const processedData = processEmployeeData(data);
+    // CSVデータを処理（役員・顧問の重複除去を含む）
+    const { employees: processedData, excludedDuplicates } = processEmployeeDataWithDeduplication(data);
 
     // バッチIDを生成
     const batchId = HistoryRecorder.generateBatchId();
@@ -69,6 +69,7 @@ export async function POST(request: Request) {
       updated: 0,
       transferred: 0,
       retired: 0,
+      excludedDuplicates: excludedDuplicates.length,
       errors: 0,
     };
 
@@ -245,12 +246,24 @@ export async function POST(request: Request) {
             }
           } else {
             // 新規社員を作成
+            // メール重複チェック（同じメールアドレスの社員が既に存在する場合はnullに）
+            let emailToUse: string | null = processed.email || null;
+            if (emailToUse) {
+              const emailExists = await tx.employee.findFirst({
+                where: { email: emailToUse },
+              });
+              if (emailExists) {
+                console.log(`Email conflict: ${emailToUse} already exists for ${emailExists.employeeId}, setting null for ${processed.employeeId}`);
+                emailToUse = null;
+              }
+            }
+
             const newEmployee = await tx.employee.create({
               data: {
                 employeeId: processed.employeeId,
                 name: processed.name,
                 nameKana: processed.nameKana,
-                email: processed.email || null,
+                email: emailToUse,
                 phone: processed.phone,
                 position: processed.position,
                 positionCode: processed.positionCode,
@@ -275,7 +288,7 @@ export async function POST(request: Request) {
                 validFrom: now,
                 name: processed.name,
                 nameKana: processed.nameKana,
-                email: processed.email || "",
+                email: emailToUse || "",
                 phone: processed.phone,
                 position: processed.position,
                 positionCode: processed.positionCode,
@@ -385,7 +398,7 @@ export async function POST(request: Request) {
       changeType: "IMPORT",
       batchId,
       changedBy,
-      changeDescription: `インポート完了: 新規${statistics.created}名, 更新${statistics.updated}名, 異動${statistics.transferred}名, 退職${statistics.retired}名`,
+      changeDescription: `インポート完了: 新規${statistics.created}名, 更新${statistics.updated}名, 異動${statistics.transferred}名, 退職${statistics.retired}名, 重複除外${statistics.excludedDuplicates}名`,
     });
 
     return NextResponse.json({

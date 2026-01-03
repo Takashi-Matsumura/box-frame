@@ -20,10 +20,23 @@ function excelSerialToDate(serial: number): Date {
 /**
  * 日付文字列をパース（和暦対応・Excelシリアル対応）
  */
-function parseDate(dateStr: string | undefined): Date | undefined {
-  if (!dateStr || dateStr.trim() === "") return undefined;
+function parseDate(dateStr: string | number | undefined): Date | undefined {
+  if (dateStr === undefined || dateStr === null || dateStr === "") return undefined;
 
-  const cleanedStr = dateStr.replace(/^g+e?\s*/i, "").trim();
+  // 数値の場合はExcelシリアル日付として処理
+  if (typeof dateStr === "number") {
+    // 妥当な範囲（1900年〜2100年）のみ変換
+    if (dateStr >= 1 && dateStr <= 73050) {
+      return excelSerialToDate(dateStr);
+    }
+    return undefined;
+  }
+
+  // 文字列の場合
+  const strValue = String(dateStr).trim();
+  if (strValue === "") return undefined;
+
+  const cleanedStr = strValue.replace(/^g+e?\s*/i, "").trim();
 
   // Excelシリアル日付形式（5桁の数字: 35065 など）
   if (/^\d{5}$/.test(cleanedStr)) {
@@ -198,15 +211,47 @@ function convertToZenkana(str: string | undefined): string | undefined {
 }
 
 /**
+ * 役員・顧問を示す所属コードのプレフィックス
+ * このパターンで始まる所属コードを持つ社員は役員・顧問として扱う
+ */
+const EXECUTIVE_DEPARTMENT_CODE_PREFIX = "999999";
+
+/**
+ * 役員・顧問の本部名
+ */
+export const EXECUTIVES_DEPARTMENT_NAME = "役員・顧問";
+
+/**
+ * 所属コードが役員・顧問を示すコードかどうかを判定
+ * 所属コードが「999999」で始まる場合は役員・顧問として扱う
+ */
+export function isExecutiveDepartmentCode(departmentCode: string | undefined): boolean {
+  if (!departmentCode) return false;
+  return departmentCode.startsWith(EXECUTIVE_DEPARTMENT_CODE_PREFIX);
+}
+
+/**
  * 所属文字列を本部・部・課に分割
  * 例: "PFO本部　データビジネスセンター　ファシリティ管理グループ"
  *   → { department: "PFO本部", section: "データビジネスセンター", course: "ファシリティ管理グループ" }
  */
-function parseAffiliation(affiliation: string): {
+function parseAffiliation(
+  affiliation: string,
+  departmentCode?: string
+): {
   department: string;
   section?: string;
   course?: string;
 } {
+  // 所属コードが「999999*」の場合は役員・顧問本部に配置
+  if (isExecutiveDepartmentCode(departmentCode)) {
+    return {
+      department: EXECUTIVES_DEPARTMENT_NAME,
+      section: undefined,
+      course: undefined,
+    };
+  }
+
   // 全角スペースまたは半角スペース（連続含む）で分割
   const parts = affiliation
     .trim()
@@ -225,14 +270,32 @@ function parseAffiliation(affiliation: string): {
  */
 export function processEmployeeData(rows: CSVEmployeeRow[]): ProcessedEmployee[] {
   return rows
-    .filter((row) => row.社員番号 && row.氏名 && row.所属)
-    .map((row) => {
-      // 所属を本部・部・課に分割
-      const affiliation = parseAffiliation(row.所属!);
+    .filter((row) => {
+      // 社員番号と氏名は必須
+      if (!row.社員番号 || !row.氏名) return false;
 
-      // 明示的なセクション/コース列があればそちらを優先
-      const section = row.セクション?.trim() || affiliation.section;
-      const course = row.コース?.trim() || affiliation.course;
+      // 役員・顧問（所属コード999999*）の場合は「所属」が空でもOK
+      const departmentCode = row.所属コード?.trim() || "";
+      if (isExecutiveDepartmentCode(departmentCode)) return true;
+
+      // 一般社員は「所属」が必須
+      return !!row.所属;
+    })
+    .map((row) => {
+      const position = row.役職?.trim() || "一般";
+      const departmentCode = row.所属コード?.trim();
+
+      // 所属を本部・部・課に分割（所属コードが999999*の場合は役員・顧問本部に配置）
+      const affiliation = parseAffiliation(row.所属 || "", departmentCode);
+
+      // 役員・顧問の場合はセクション/コースは設定しない
+      const isExec = isExecutiveDepartmentCode(departmentCode);
+      const section = isExec
+        ? undefined
+        : row.セクション?.trim() || affiliation.section;
+      const course = isExec
+        ? undefined
+        : row.コース?.trim() || affiliation.course;
 
       return {
         employeeId: row.社員番号!.trim(),
@@ -240,10 +303,10 @@ export function processEmployeeData(rows: CSVEmployeeRow[]): ProcessedEmployee[]
         nameKana: convertToZenkana(row["氏名(フリガナ)"]?.trim()),
         email: row["社用e-Mail１"]?.trim() || "",
         department: affiliation.department,
-        departmentCode: row.所属コード?.trim(),
+        departmentCode: isExec ? "9999999" : row.所属コード?.trim(), // 役員・顧問は特別なコード
         section,
         course,
-        position: row.役職?.trim() || "一般",
+        position,
         positionCode: row.役職コード?.trim(),
         phone: row.電話番号?.trim(),
         joinDate: parseDate(row.入社年月日),
@@ -254,4 +317,77 @@ export function processEmployeeData(rows: CSVEmployeeRow[]): ProcessedEmployee[]
         employmentTypeCode: row.雇用区分コード?.trim(),
       };
     });
+}
+
+/**
+ * 除外された重複社員の情報
+ */
+export interface ExcludedDuplicate {
+  employee: ProcessedEmployee;
+  reason: string;
+  keptEmployeeId: string;
+}
+
+/**
+ * 重複除去を含む処理結果
+ */
+export interface ProcessedDataWithDuplicates {
+  employees: ProcessedEmployee[];
+  excludedDuplicates: ExcludedDuplicate[];
+}
+
+/**
+ * CSVデータを処理し、役員・顧問の重複を除去
+ * 同一氏名の役員・顧問がいる場合、社員番号が若いものを残す
+ */
+export function processEmployeeDataWithDeduplication(
+  rows: CSVEmployeeRow[]
+): ProcessedDataWithDuplicates {
+  const processed = processEmployeeData(rows);
+  const excludedDuplicates: ExcludedDuplicate[] = [];
+
+  // 役員・顧問とそれ以外を分離
+  const executives = processed.filter(
+    (e) => e.department === EXECUTIVES_DEPARTMENT_NAME
+  );
+  const nonExecutives = processed.filter(
+    (e) => e.department !== EXECUTIVES_DEPARTMENT_NAME
+  );
+
+  // 役員・顧問の重複を検出（氏名でグループ化）
+  const executivesByName = new Map<string, ProcessedEmployee[]>();
+  for (const exec of executives) {
+    // 氏名からスペースを除去して比較（「天久 進」と「天久進」を同一視）
+    const normalizedName = exec.name.replace(/\s+/g, "");
+    const existing = executivesByName.get(normalizedName) || [];
+    existing.push(exec);
+    executivesByName.set(normalizedName, existing);
+  }
+
+  // 重複がある場合、社員番号が最も若いものを残す
+  const deduplicatedExecutives: ProcessedEmployee[] = [];
+  for (const [, execs] of executivesByName) {
+    if (execs.length === 1) {
+      deduplicatedExecutives.push(execs[0]);
+    } else {
+      // 社員番号でソート（文字列比較）
+      execs.sort((a, b) => a.employeeId.localeCompare(b.employeeId));
+      const kept = execs[0];
+      deduplicatedExecutives.push(kept);
+
+      // 除外された社員を記録
+      for (let i = 1; i < execs.length; i++) {
+        excludedDuplicates.push({
+          employee: execs[i],
+          reason: "役員・顧問の重複（同一氏名）",
+          keptEmployeeId: kept.employeeId,
+        });
+      }
+    }
+  }
+
+  return {
+    employees: [...deduplicatedExecutives, ...nonExecutives],
+    excludedDuplicates,
+  };
 }

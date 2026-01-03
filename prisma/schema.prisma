@@ -326,17 +326,29 @@ model Announcement {
 // 会社組織管理システム
 // ========================================
 
+enum OrganizationStatus {
+  DRAFT      // 下書き（編集中）
+  SCHEDULED  // 公開予定（公開日待ち）
+  PUBLISHED  // 公開中
+  ARCHIVED   // アーカイブ済み
+}
+
 // 組織（会社）
 model Organization {
   id                    String                @id @default(cuid())
   name                  String                @unique
   description           String?
+  status                OrganizationStatus    @default(DRAFT)
+  publishAt             DateTime?             // 公開予定日時
+  publishedAt           DateTime?             // 実際に公開された日時
   createdAt             DateTime              @default(now())
   updatedAt             DateTime              @updatedAt
   departments           Department[]
   employees             Employee[]
   employeeHistories     EmployeeHistory[]     @relation("OrganizationEmployeeHistories")
   organizationHistories OrganizationHistory[] @relation("OrganizationHistories")
+
+  @@index([status, publishAt])
 }
 
 // 本部（Department）
