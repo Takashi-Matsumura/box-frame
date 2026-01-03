@@ -107,20 +107,6 @@ app/(menus)/(admin)/data-import/
 - スナップショット - スナップショット作成・復元
 - データ削除 - 全データ削除（危険な操作）
 
-### データ履歴管理画面
-
-```
-app/(menus)/(admin)/data-history/
-├── page.tsx                    # サーバーコンポーネント
-├── DataHistoryClient.tsx       # クライアントコンポーネント
-└── translations.ts             # 翻訳
-```
-
-**タブ構成:**
-- 変更履歴 - データ変更ログ一覧
-- 社員履歴検索
-- 組織履歴表示
-
 ## 手動スクリプト
 
 ```bash

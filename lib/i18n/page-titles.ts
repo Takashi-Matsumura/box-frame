@@ -34,7 +34,6 @@ export const pageTitles = {
     "/admin/users": "User Management",
     "/admin/access-keys": "Access Key Management",
     "/data-import": "Data Import",
-    "/data-history": "Data History",
     "/evaluation-master": "Evaluation Settings",
     "/user/my-evaluation": "My Evaluation",
     "/user/my-evaluation/[periodId]/detail": "Evaluation Details",
@@ -82,7 +81,6 @@ export const pageTitles = {
     "/admin/users": "ユーザ管理",
     "/admin/access-keys": "アクセスキー管理",
     "/data-import": "データインポート",
-    "/data-history": "データ履歴",
     "/evaluation-master": "評価環境管理",
     "/user/my-evaluation": "わたしの評価",
     "/user/my-evaluation/[periodId]/detail": "評価詳細",
@@ -140,7 +138,6 @@ export const pageDescriptions = {
     "/admin/users": "Manage user accounts and permissions",
     "/admin/access-keys": "Manage access keys for enhanced features",
     "/data-import": "Import employee and organization data from CSV/XLSX files",
-    "/data-history": "View and manage data change history and snapshots",
     "/evaluation-master":
       "Manage evaluation periods, weights, growth categories, and evaluation relationships",
     "/user/my-evaluation": "View and manage your performance evaluations",
@@ -198,7 +195,6 @@ export const pageDescriptions = {
     "/admin/users": "ユーザアカウントと権限を管理",
     "/admin/access-keys": "機能拡張のためのアクセスキーを管理",
     "/data-import": "CSV/XLSXファイルから社員データと組織データをインポート",
-    "/data-history": "データ変更履歴とスナップショットの表示・管理",
     "/evaluation-master":
       "評価期間、重み設定、成長カテゴリー、評価関係を管理します",
     "/user/my-evaluation": "あなたの人事評価を確認・管理します",

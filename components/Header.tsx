@@ -9,9 +9,7 @@ import {
   FaClipboardList,
   FaDatabase,
   FaExclamationTriangle,
-  FaHistory,
   FaInfoCircle,
-  FaSitemap,
   FaTrash,
   FaUpload,
   FaUsers,
@@ -68,7 +66,6 @@ export function Header({ session, language = "en" }: HeaderProps) {
     pathname === "/manager/analytics" || pathname === "/analytics";
   const isAdmin = pathname === "/admin";
   const isDataImport = pathname === "/data-import";
-  const isDataHistory = pathname === "/data-history";
   const isSettings = pathname === "/settings";
 
   // 組織分析タブ
@@ -190,29 +187,6 @@ export function Header({ session, language = "en" }: HeaderProps) {
       icon: <FaTrash className="w-5 h-5" />,
       path: "/data-import?tab=delete",
       active: dataImportTab === "delete",
-    },
-  ];
-
-  // データ履歴タブ
-  const dataHistoryTab = searchParams.get("tab") || "changes";
-  const dataHistoryTabs = [
-    {
-      name: language === "ja" ? "変更履歴" : "Change History",
-      icon: <FaHistory className="w-5 h-5" />,
-      path: "/data-history?tab=changes",
-      active: dataHistoryTab === "changes",
-    },
-    {
-      name: language === "ja" ? "社員履歴" : "Employee History",
-      icon: <FaUsers className="w-5 h-5" />,
-      path: "/data-history?tab=employee",
-      active: dataHistoryTab === "employee",
-    },
-    {
-      name: language === "ja" ? "組織履歴" : "Organization History",
-      icon: <FaSitemap className="w-5 h-5" />,
-      path: "/data-history?tab=organization",
-      active: dataHistoryTab === "organization",
     },
   ];
 
@@ -342,7 +316,6 @@ export function Header({ session, language = "en" }: HeaderProps) {
       {isAnalytics && renderTabs(analyticsTabs, "Analytics Tabs")}
       {isAdmin && renderTabs(adminTabs, "Admin Tabs")}
       {isDataImport && renderTabs(dataImportTabs, "Data Import Tabs")}
-      {isDataHistory && renderTabs(dataHistoryTabs, "Data History Tabs")}
       {isSettings && renderTabs(settingsTabs, "Settings Tabs")}
     </header>
   );

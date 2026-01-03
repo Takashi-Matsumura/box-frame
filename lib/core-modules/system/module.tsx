@@ -5,7 +5,7 @@ import type { AppModule } from "@/types/module";
  *
  * システムの基本機能と管理機能を提供します。
  * - 全社員: ダッシュボード
- * - 管理者: ユーザ管理、アクセスキー管理、データ履歴管理
+ * - 管理者: ユーザ管理、アクセスキー管理
  */
 export const systemModule: AppModule = {
   id: "system",
@@ -120,36 +120,6 @@ export const systemModule: AppModule = {
             strokeLinejoin="round"
             strokeWidth={2}
             d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
-          />
-        </svg>
-      ),
-    },
-    {
-      id: "dataHistory",
-      moduleId: "system",
-      name: "Data History",
-      nameJa: "データ履歴",
-      path: "/data-history",
-      menuGroup: "admin",
-      requiredRoles: ["ADMIN"],
-      enabled: true,
-      order: 99,
-      description: "Manage all data history and snapshots across modules",
-      descriptionJa: "全モジュールのデータ履歴とスナップショットを管理します",
-      icon: (
-        <svg
-          key="dataHistory-icon"
-          className="w-5 h-5 flex-shrink-0"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            key="icon-path"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
           />
         </svg>
       ),
