@@ -598,19 +598,22 @@ model EvaluationPeriod {
   organizationGoals OrganizationGoal[]
   customEvaluators  CustomEvaluator[]
   exclusions        EvaluationExclusion[]
+  positionGroups    PositionGroup[]
 
   @@index([year, term])
   @@index([status])
 }
 
-// 重み設定（資格等級別）
+// 重み設定（役職×等級別）
 model EvaluationWeight {
   id                String           @id @default(cuid())
 
   periodId          String
   period            EvaluationPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
 
-  gradeCode         String           // "G1", "G2", ... or "DEFAULT"
+  positionCode      String  @default("DEFAULT")  // 役職コード（"000", "200", "300"... or "DEFAULT"）
+  positionName      String?          // 役職名（表示用）
+  gradeCode         String           // 等級コード（"G1", "E3"... or "ALL" = 全等級共通）
 
   // 重み（%、合計100）
   resultsWeight     Int              @default(30)   // 結果評価
@@ -620,7 +623,7 @@ model EvaluationWeight {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  @@unique([periodId, gradeCode])
+  @@unique([periodId, positionCode, gradeCode])
 }
 
 // 組織目標・実績（結果評価用）
@@ -704,15 +707,19 @@ model EvaluationExclusion {
 // プロセス評価項目マスタ
 model ProcessCategory {
   id                String   @id @default(cuid())
-  name              String   // "主体性"
-  nameEn            String?  // "Initiative"
+  name              String   // カテゴリー名（例：「Aクラスプロジェクト」）
+  nameEn            String?  // 英語名
+  categoryCode      String   @default("A") // カテゴリーコード（"A", "B", "C", "D"）
   description       String?  // 説明文
+  minItemCount      Int      @default(0)   // 最小選択項目数（0-5）
+  scores            String   @default("{}") // 4段階評価スコアのJSON（例：{ "T4": 110, "T3": 100, "T2": 80, "T1": 60 }）
   sortOrder         Int      @default(0)
   isActive          Boolean  @default(true)
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
+  @@unique([categoryCode])
   @@index([isActive, sortOrder])
 }
 
@@ -722,7 +729,12 @@ model GrowthCategory {
   name              String   // "専門スキル向上"
   nameEn            String?  // "Professional Skill Improvement"
   description       String?  // 説明文
-  coefficient       Float    @default(1.0)  // スコア係数
+  coefficient       Float    @default(1.0)  // スコア係数（後方互換用）
+  // 達成度別スコア（T1=期待以下, T2=期待通り, T3=期待以上, T4=大幅超過）
+  scoreT1           Float    @default(0.5)  // T1達成時のスコア
+  scoreT2           Float    @default(1.0)  // T2達成時のスコア
+  scoreT3           Float    @default(1.5)  // T3達成時のスコア
+  scoreT4           Float    @default(2.0)  // T4達成時のスコア
   sortOrder         Int      @default(0)
   isActive          Boolean  @default(true)
 
@@ -730,6 +742,25 @@ model GrowthCategory {
   updatedAt         DateTime @updatedAt
 
   @@index([isActive, sortOrder])
+}
+
+// 役職グループ（表示順序・結合管理用）
+model PositionGroup {
+  id                String           @id @default(cuid())
+
+  periodId          String
+  period            EvaluationPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+  name              String           // グループ名（例：「上級管理職」、空なら単一役職）
+  nameEn            String?          // 英語名
+  displayOrder      Int              @default(0)  // 表示順序
+  positionCodes     Json             // 含まれる役職コードの配列 ["100", "103", "002"]
+
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([periodId, name])
+  @@index([periodId, displayOrder])
 }
 
 // 評価データ
