@@ -75,8 +75,8 @@ export async function POST(request: Request) {
 
     // 組織構造のキャッシュ（パフォーマンス最適化）
     const departmentCache = new Map<string, { id: string; name: string; code: string | null }>();
-    const sectionCache = new Map<string, { id: string; name: string }>();
-    const courseCache = new Map<string, { id: string; name: string }>();
+    const sectionCache = new Map<string, { id: string; name: string; code: string | null }>();
+    const courseCache = new Map<string, { id: string; name: string; code: string | null }>();
 
     // トランザクションでインポート実行（タイムアウト延長: 5分）
     await prisma.$transaction(async (tx) => {
@@ -100,9 +100,15 @@ export async function POST(request: Request) {
               dbDept = await tx.department.create({
                 data: {
                   name: processed.department,
-                  code: processed.departmentCode,
+                  code: processed.departmentCode,  // 本部コード（1-2桁目）
                   organizationId,
                 },
+              });
+            } else if (processed.departmentCode && dbDept.code !== processed.departmentCode) {
+              // 既存部門のコードを更新
+              dbDept = await tx.department.update({
+                where: { id: dbDept.id },
+                data: { code: processed.departmentCode },
               });
             }
             department = { id: dbDept.id, name: dbDept.name, code: dbDept.code };
@@ -110,7 +116,7 @@ export async function POST(request: Request) {
           }
 
           // 部（Section）を取得または作成（キャッシュ利用）
-          let section: { id: string; name: string } | null = null;
+          let section: { id: string; name: string; code: string | null } | null = null;
           if (processed.section) {
             const sectKey = `${department.id}:${processed.section}`;
             section = sectionCache.get(sectKey) || null;
@@ -127,17 +133,24 @@ export async function POST(request: Request) {
                 dbSect = await tx.section.create({
                   data: {
                     name: processed.section,
+                    code: processed.sectionCode,  // 部コード（3-4桁目）
                     departmentId: department.id,
                   },
                 });
+              } else if (processed.sectionCode && dbSect.code !== processed.sectionCode) {
+                // 既存セクションのコードを更新
+                dbSect = await tx.section.update({
+                  where: { id: dbSect.id },
+                  data: { code: processed.sectionCode },
+                });
               }
-              section = { id: dbSect.id, name: dbSect.name };
+              section = { id: dbSect.id, name: dbSect.name, code: dbSect.code };
               sectionCache.set(sectKey, section);
             }
           }
 
           // 課（Course）を取得または作成（キャッシュ利用）
-          let course: { id: string; name: string } | null = null;
+          let course: { id: string; name: string; code: string | null } | null = null;
           if (processed.course && section) {
             const courseKey = `${section.id}:${processed.course}`;
             course = courseCache.get(courseKey) || null;
@@ -154,11 +167,18 @@ export async function POST(request: Request) {
                 dbCourse = await tx.course.create({
                   data: {
                     name: processed.course,
+                    code: processed.courseCode,  // 課コード（5-7桁目）
                     sectionId: section.id,
                   },
                 });
+              } else if (processed.courseCode && dbCourse.code !== processed.courseCode) {
+                // 既存コースのコードを更新
+                dbCourse = await tx.course.update({
+                  where: { id: dbCourse.id },
+                  data: { code: processed.courseCode },
+                });
               }
-              course = { id: dbCourse.id, name: dbCourse.name };
+              course = { id: dbCourse.id, name: dbCourse.name, code: dbCourse.code };
               courseCache.set(courseKey, course);
             }
           }
@@ -173,6 +193,21 @@ export async function POST(request: Request) {
             // 既存社員を更新
             const oldDepartmentId = existing.departmentId;
             const isTransfer = oldDepartmentId !== department.id;
+
+            // メール重複チェック（別の社員が同じメールを使用していないか）
+            let emailToUse: string | null = processed.email || null;
+            if (emailToUse && emailToUse !== existing.email) {
+              const emailConflict = await tx.employee.findFirst({
+                where: {
+                  email: emailToUse,
+                  id: { not: existing.id }
+                },
+              });
+              if (emailConflict) {
+                console.log(`Email conflict on update: ${emailToUse} already used by ${emailConflict.employeeId}, keeping original for ${processed.employeeId}`);
+                emailToUse = existing.email;  // 元のメールを維持
+              }
+            }
 
             // 前の履歴のvalidToを更新
             await tx.employeeHistory.updateMany({
@@ -190,13 +225,14 @@ export async function POST(request: Request) {
               data: {
                 name: processed.name,
                 nameKana: processed.nameKana,
-                email: processed.email || null,
+                email: emailToUse,
                 phone: processed.phone,
                 position: processed.position,
                 positionCode: processed.positionCode,
                 departmentId: department.id,
                 sectionId: section?.id || null,
                 courseId: course?.id || null,
+                departmentCode: processed.affiliationCode,  // 7桁の所属コード
                 qualificationGrade: processed.qualificationGrade,
                 qualificationGradeCode: processed.qualificationGradeCode,
                 employmentType: processed.employmentType,
@@ -214,7 +250,7 @@ export async function POST(request: Request) {
                 validFrom: now,
                 name: processed.name,
                 nameKana: processed.nameKana,
-                email: processed.email || "",
+                email: emailToUse || "",
                 phone: processed.phone,
                 position: processed.position,
                 positionCode: processed.positionCode,
@@ -222,7 +258,7 @@ export async function POST(request: Request) {
                 qualificationGradeCode: processed.qualificationGradeCode,
                 employmentType: processed.employmentType,
                 employmentTypeCode: processed.employmentTypeCode,
-                departmentCode: processed.departmentCode,
+                departmentCode: processed.affiliationCode,  // 7桁の所属コード
                 joinDate: processed.joinDate,
                 birthDate: processed.birthDate,
                 isActive: true,
@@ -271,6 +307,7 @@ export async function POST(request: Request) {
                 departmentId: department.id,
                 sectionId: section?.id || null,
                 courseId: course?.id || null,
+                departmentCode: processed.affiliationCode,  // 7桁の所属コード
                 qualificationGrade: processed.qualificationGrade,
                 qualificationGradeCode: processed.qualificationGradeCode,
                 employmentType: processed.employmentType,
@@ -296,7 +333,7 @@ export async function POST(request: Request) {
                 qualificationGradeCode: processed.qualificationGradeCode,
                 employmentType: processed.employmentType,
                 employmentTypeCode: processed.employmentTypeCode,
-                departmentCode: processed.departmentCode,
+                departmentCode: processed.affiliationCode,  // 7桁の所属コード
                 joinDate: processed.joinDate,
                 birthDate: processed.birthDate,
                 isActive: true,

@@ -217,6 +217,43 @@ function convertToZenkana(str: string | undefined): string | undefined {
 const EXECUTIVE_DEPARTMENT_CODE_PREFIX = "999999";
 
 /**
+ * 所属コード（7桁）を解析して本部・部・課コードに分解
+ *
+ * 所属コードの構造:
+ * - 1-2桁目: 本部コード（例: "04"）
+ * - 3-4桁目: 部コード（例: "01"）
+ * - 5-7桁目: 課コード（例: "000"）
+ *
+ * 例: "0401000" → { department: "04", section: "01", course: "000" }
+ */
+export interface ParsedAffiliationCode {
+  departmentCode: string;   // 本部コード（1-2桁目）
+  sectionCode: string;      // 部コード（3-4桁目）
+  courseCode: string;       // 課コード（5-7桁目）
+  fullCode: string;         // 元の7桁コード
+}
+
+export function parseAffiliationCode(code: string | undefined): ParsedAffiliationCode | undefined {
+  if (!code) return undefined;
+
+  // 数値のみを抽出して正規化
+  const normalized = code.trim().replace(/\D/g, "");
+
+  // 7桁未満の場合は左側を0埋め
+  const padded = normalized.padStart(7, "0");
+
+  // 7桁を超える場合は最初の7桁を使用
+  const sevenDigit = padded.substring(0, 7);
+
+  return {
+    departmentCode: sevenDigit.substring(0, 2),  // 1-2桁目: 本部コード
+    sectionCode: sevenDigit.substring(2, 4),     // 3-4桁目: 部コード
+    courseCode: sevenDigit.substring(4, 7),      // 5-7桁目: 課コード
+    fullCode: sevenDigit,
+  };
+}
+
+/**
  * 役員・顧問の本部名
  */
 export const EXECUTIVES_DEPARTMENT_NAME = "役員・顧問";
@@ -283,13 +320,16 @@ export function processEmployeeData(rows: CSVEmployeeRow[]): ProcessedEmployee[]
     })
     .map((row) => {
       const position = row.役職?.trim() || "一般";
-      const departmentCode = row.所属コード?.trim();
+      const rawAffiliationCode = row.所属コード?.trim();
+
+      // 所属コードを解析（7桁 → 本部2桁 + 部2桁 + 課3桁）
+      const parsedCode = parseAffiliationCode(rawAffiliationCode);
 
       // 所属を本部・部・課に分割（所属コードが999999*の場合は役員・顧問本部に配置）
-      const affiliation = parseAffiliation(row.所属 || "", departmentCode);
+      const affiliation = parseAffiliation(row.所属 || "", rawAffiliationCode);
 
       // 役員・顧問の場合はセクション/コースは設定しない
-      const isExec = isExecutiveDepartmentCode(departmentCode);
+      const isExec = isExecutiveDepartmentCode(rawAffiliationCode);
       const section = isExec
         ? undefined
         : row.セクション?.trim() || affiliation.section;
@@ -303,9 +343,12 @@ export function processEmployeeData(rows: CSVEmployeeRow[]): ProcessedEmployee[]
         nameKana: convertToZenkana(row["氏名(フリガナ)"]?.trim()),
         email: row["社用e-Mail１"]?.trim() || "",
         department: affiliation.department,
-        departmentCode: isExec ? "9999999" : row.所属コード?.trim(), // 役員・顧問は特別なコード
+        departmentCode: isExec ? "99" : parsedCode?.departmentCode,   // 本部コード（1-2桁目）
         section,
+        sectionCode: isExec ? undefined : parsedCode?.sectionCode,    // 部コード（3-4桁目）
         course,
+        courseCode: isExec ? undefined : parsedCode?.courseCode,      // 課コード（5-7桁目）
+        affiliationCode: isExec ? "9999999" : parsedCode?.fullCode,   // 元の7桁コード
         position,
         positionCode: row.役職コード?.trim(),
         phone: row.電話番号?.trim(),

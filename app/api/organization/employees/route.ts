@@ -108,13 +108,13 @@ export async function GET(request: Request) {
       where,
       include: {
         department: {
-          select: { id: true, name: true },
+          select: { id: true, name: true, code: true },
         },
         section: {
-          select: { id: true, name: true },
+          select: { id: true, name: true, code: true },
         },
         course: {
-          select: { id: true, name: true },
+          select: { id: true, name: true, code: true },
         },
       },
     });
