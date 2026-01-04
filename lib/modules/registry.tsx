@@ -3,6 +3,7 @@ import { aiModule } from "@/lib/core-modules/ai";
 import { systemModule } from "@/lib/core-modules/system";
 
 // アドオンモジュール
+import { evaluationModule } from "@/lib/addon-modules/evaluation/module";
 import { openldapModule } from "@/lib/addon-modules/openldap";
 import { organizationModule } from "@/lib/addon-modules/organization";
 import { prisma } from "@/lib/prisma";
@@ -99,6 +100,7 @@ export const moduleRegistry: ModuleRegistry = {
   system: systemModule,
 
   // アドオンモジュール
+  evaluation: evaluationModule,
   openldap: openldapModule,
   organization: organizationModule,
 };

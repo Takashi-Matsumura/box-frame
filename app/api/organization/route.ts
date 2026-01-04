@@ -70,8 +70,7 @@ export async function GET() {
     }
 
     // 本部一覧を取得（社員数、部、課を含む）
-    // 本部: 所属コード順（昇順）でソート
-    // 部・課: インポート時の作成順（createdAt）でソート（元データの順序を保持）
+    // 本部・部・課: 所属コード順（昇順）でソート
     const departments = await prisma.department.findMany({
       where: { organizationId: organization.id },
       orderBy: [
@@ -87,7 +86,8 @@ export async function GET() {
         },
         sections: {
           orderBy: [
-            { createdAt: "asc" },
+            { code: { sort: "asc", nulls: "last" } },
+            { name: "asc" },
           ],
           include: {
             _count: {
@@ -98,7 +98,8 @@ export async function GET() {
             },
             courses: {
               orderBy: [
-                { createdAt: "asc" },
+                { code: { sort: "asc", nulls: "last" } },
+                { name: "asc" },
               ],
               include: {
                 _count: {

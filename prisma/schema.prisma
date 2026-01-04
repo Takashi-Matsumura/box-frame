@@ -437,6 +437,14 @@ model Employee {
   managedSections    Section[]         @relation("SectionManager")
   managedCourses     Course[]          @relation("CourseManager")
   histories          EmployeeHistory[] @relation("EmployeeHistories")
+
+  // 人事評価モジュール関連
+  evaluations        Evaluation[]      @relation("evaluations")
+  evaluationsGiven   Evaluation[]      @relation("evaluationsGiven")
+  evaluationGoals    EvaluationGoal[]
+  customEvaluatees   CustomEvaluator[] @relation("customEvaluatee")
+  customEvaluators   CustomEvaluator[] @relation("customEvaluator")
+  exclusions         EvaluationExclusion[]
 }
 
 // ========================================
@@ -547,4 +555,259 @@ model ChangeLog {
   @@index([changedBy])
   @@index([changedAt])
   @@index([batchId])
+}
+
+// ========================================
+// 人事評価システム
+// ========================================
+
+// 評価期間ステータス
+enum EvaluationPeriodStatus {
+  DRAFT       // 準備中
+  ACTIVE      // 評価実施中
+  REVIEW      // レビュー期間
+  CLOSED      // 完了
+}
+
+// 評価ステータス
+enum EvaluationStatus {
+  PENDING     // 未評価
+  IN_PROGRESS // 評価中
+  COMPLETED   // 評価完了
+  CONFIRMED   // 確定済み
+}
+
+// 評価期間
+model EvaluationPeriod {
+  id                String                 @id @default(cuid())
+  name              String                 // "2024年度 上期評価"
+  year              Int                    // 2024
+  term              String                 // "H1" | "H2" | "ANNUAL"
+  status            EvaluationPeriodStatus @default(DRAFT)
+
+  // 期間
+  startDate         DateTime
+  endDate           DateTime
+
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  evaluations       Evaluation[]
+  goals             EvaluationGoal[]
+  weights           EvaluationWeight[]
+  organizationGoals OrganizationGoal[]
+  customEvaluators  CustomEvaluator[]
+  exclusions        EvaluationExclusion[]
+
+  @@index([year, term])
+  @@index([status])
+}
+
+// 重み設定（資格等級別）
+model EvaluationWeight {
+  id                String           @id @default(cuid())
+
+  periodId          String
+  period            EvaluationPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+  gradeCode         String           // "G1", "G2", ... or "DEFAULT"
+
+  // 重み（%、合計100）
+  resultsWeight     Int              @default(30)   // 結果評価
+  processWeight     Int              @default(40)   // プロセス評価
+  growthWeight      Int              @default(30)   // 成長評価
+
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([periodId, gradeCode])
+}
+
+// 組織目標・実績（結果評価用）
+model OrganizationGoal {
+  id                String           @id @default(cuid())
+
+  periodId          String
+  period            EvaluationPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+  // 対象組織（Department/Section/Course のいずれか）
+  organizationType  String           // "DEPARTMENT" | "SECTION" | "COURSE"
+  organizationId    String
+  organizationName  String
+
+  // 目標・実績
+  targetProfit      Float?           // 目標利益
+  actualProfit      Float?           // 実績利益
+  achievementRate   Float?           // 達成率（%）
+
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([periodId, organizationType, organizationId])
+  @@index([periodId])
+}
+
+// カスタム評価者関係
+model CustomEvaluator {
+  id                String            @id @default(cuid())
+
+  employeeId        String
+  employee          Employee          @relation("customEvaluatee", fields: [employeeId], references: [id], onDelete: Cascade)
+
+  evaluatorId       String
+  evaluator         Employee          @relation("customEvaluator", fields: [evaluatorId], references: [id], onDelete: Cascade)
+
+  periodId          String?           // null = 全期間有効
+  period            EvaluationPeriod? @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+  // 有効期間（期間を限定する場合）
+  effectiveFrom     DateTime?
+  effectiveTo       DateTime?
+
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@unique([employeeId, periodId])
+  @@index([evaluatorId])
+}
+
+// 評価対象外理由
+enum ExclusionReason {
+  MATERNITY_LEAVE     // 育児休業
+  SICK_LEAVE          // 病気休職
+  RESIGNATION         // 退職予定
+  SECONDMENT          // 出向中
+  PROBATION           // 試用期間
+  OTHER               // その他
+}
+
+// 評価対象外設定
+model EvaluationExclusion {
+  id                String            @id @default(cuid())
+
+  employeeId        String
+  employee          Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  periodId          String?           // null = 全期間対象外
+  period            EvaluationPeriod? @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+  reason            ExclusionReason   @default(OTHER)
+  note              String?           // 補足説明
+
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@unique([employeeId, periodId])
+  @@index([reason])
+}
+
+// プロセス評価項目マスタ
+model ProcessCategory {
+  id                String   @id @default(cuid())
+  name              String   // "主体性"
+  nameEn            String?  // "Initiative"
+  description       String?  // 説明文
+  sortOrder         Int      @default(0)
+  isActive          Boolean  @default(true)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+// 成長評価カテゴリマスタ
+model GrowthCategory {
+  id                String   @id @default(cuid())
+  name              String   // "専門スキル向上"
+  nameEn            String?  // "Professional Skill Improvement"
+  description       String?  // 説明文
+  coefficient       Float    @default(1.0)  // スコア係数
+  sortOrder         Int      @default(0)
+  isActive          Boolean  @default(true)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+// 評価データ
+model Evaluation {
+  id                String           @id @default(cuid())
+
+  // 関連
+  periodId          String
+  period            EvaluationPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  employeeId        String
+  employee          Employee         @relation("evaluations", fields: [employeeId], references: [id])
+  evaluatorId       String?
+  evaluator         Employee?        @relation("evaluationsGiven", fields: [evaluatorId], references: [id])
+
+  // スナップショット（評価時点の情報）
+  departmentName    String?
+  sectionName       String?
+  courseName        String?
+  positionName      String?
+  gradeCode         String?          // 資格等級コード
+
+  // ========== 基準1: 結果評価 ==========
+  score1            Float?           // 結果評価スコア（自動計算）
+  score1Comment     String?
+
+  // ========== 基準2: プロセス評価 ==========
+  // JSON: {"主体性": 3, "協調性": 4, ...}
+  processScores     Json?
+  score2            Float?           // プロセス評価スコア（平均）
+  score2Comment     String?
+
+  // ========== 基準3: 成長評価 ==========
+  growthCategoryId  String?          // 選択した成長カテゴリ
+  growthLevel       Int?             // T1=1, T2=2, T3=3, T4=4
+  score3            Float?           // 成長評価スコア（レベル × 係数）
+  score3Comment     String?
+
+  // ========== 最終評価 ==========
+  // 加重スコア（保存用）
+  weightedScore1    Float?
+  weightedScore2    Float?
+  weightedScore3    Float?
+
+  finalScore        Float?           // 最終スコア
+  finalGrade        String?          // S/A/B/C/D
+  overallComment    String?          // 総合コメント
+
+  // ステータス
+  status            EvaluationStatus @default(PENDING)
+
+  // メタ情報
+  evaluatedAt       DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([periodId, employeeId])
+  @@index([periodId])
+  @@index([employeeId])
+  @@index([evaluatorId])
+  @@index([status])
+}
+
+// 目標設定（オプション機能）
+model EvaluationGoal {
+  id                String           @id @default(cuid())
+
+  periodId          String
+  period            EvaluationPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  employeeId        String
+  employee          Employee         @relation(fields: [employeeId], references: [id])
+
+  // 目標（JSON配列）
+  goals             Json             @default("[]")
+  // 自己振り返り
+  selfReflection    String?
+
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([periodId, employeeId])
 }

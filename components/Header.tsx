@@ -9,7 +9,10 @@ import {
   FaClipboardList,
   FaDatabase,
   FaExclamationTriangle,
+  FaHistory,
   FaInfoCircle,
+  FaSitemap,
+  FaStar,
   FaTrash,
   FaUpload,
   FaUsers,
@@ -67,6 +70,8 @@ export function Header({ session, language = "en" }: HeaderProps) {
   const isAdmin = pathname === "/admin";
   const isDataImport = pathname === "/data-import";
   const isSettings = pathname === "/settings";
+  const isDataManagement = pathname === "/admin/data-management";
+  const isEvaluationMaster = pathname === "/admin/evaluation-master";
 
   // 組織分析タブ
   const analyticsTab = searchParams.get("tab") || "overview";
@@ -241,6 +246,64 @@ export function Header({ session, language = "en" }: HeaderProps) {
     },
   ];
 
+  // 組織データ管理タブ
+  const dataManagementTab = searchParams.get("tab") || "import";
+  const dataManagementTabs = [
+    {
+      name: language === "ja" ? "インポート" : "Import",
+      icon: <FaUpload className="w-5 h-5" />,
+      path: "/admin/data-management?tab=import",
+      active: dataManagementTab === "import",
+    },
+    {
+      name: language === "ja" ? "社員一覧" : "Employees",
+      icon: <FaUsers className="w-5 h-5" />,
+      path: "/admin/data-management?tab=employees",
+      active: dataManagementTab === "employees",
+    },
+    {
+      name: language === "ja" ? "組織整備" : "Organize",
+      icon: <FaSitemap className="w-5 h-5" />,
+      path: "/admin/data-management?tab=organize",
+      active: dataManagementTab === "organize",
+    },
+    {
+      name: language === "ja" ? "履歴" : "History",
+      icon: <FaHistory className="w-5 h-5" />,
+      path: "/admin/data-management?tab=history",
+      active: dataManagementTab === "history",
+    },
+  ];
+
+  // 人事評価マスタタブ
+  const evaluationMasterTab = searchParams.get("tab") || "periods";
+  const evaluationMasterTabs = [
+    {
+      name: language === "ja" ? "評価期間" : "Periods",
+      icon: <FaStar className="w-5 h-5" />,
+      path: "/admin/evaluation-master?tab=periods",
+      active: evaluationMasterTab === "periods",
+    },
+    {
+      name: language === "ja" ? "評価ウェイト" : "Weights",
+      icon: <FaStar className="w-5 h-5" />,
+      path: "/admin/evaluation-master?tab=weights",
+      active: evaluationMasterTab === "weights",
+    },
+    {
+      name: language === "ja" ? "プロセス評価" : "Process Categories",
+      icon: <FaStar className="w-5 h-5" />,
+      path: "/admin/evaluation-master?tab=processCategories",
+      active: evaluationMasterTab === "processCategories",
+    },
+    {
+      name: language === "ja" ? "成長評価" : "Growth Categories",
+      icon: <FaStar className="w-5 h-5" />,
+      path: "/admin/evaluation-master?tab=growthCategories",
+      active: evaluationMasterTab === "growthCategories",
+    },
+  ];
+
   const renderTabs = (tabs: typeof analyticsTabs, label: string) => (
     <div className="border-t border-border bg-muted">
       <nav className="flex gap-1 px-6" aria-label={label}>
@@ -317,6 +380,8 @@ export function Header({ session, language = "en" }: HeaderProps) {
       {isAdmin && renderTabs(adminTabs, "Admin Tabs")}
       {isDataImport && renderTabs(dataImportTabs, "Data Import Tabs")}
       {isSettings && renderTabs(settingsTabs, "Settings Tabs")}
+      {isDataManagement && renderTabs(dataManagementTabs, "Data Management Tabs")}
+      {isEvaluationMaster && renderTabs(evaluationMasterTabs, "Evaluation Master Tabs")}
     </header>
   );
 }
