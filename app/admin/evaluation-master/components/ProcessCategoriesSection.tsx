@@ -4,14 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -22,20 +14,45 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2, GripVertical } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Plus, Pencil, Trash2, Languages, Loader2 } from "lucide-react";
 import { evaluationMasterTranslations } from "../translations";
 
 interface ProcessCategory {
   id: string;
   name: string;
   nameEn: string | null;
+  categoryCode: string;
   description: string | null;
+  minItemCount: number;
+  scores: string;
   sortOrder: number;
   isActive: boolean;
 }
 
 interface ProcessCategoriesSectionProps {
   language: "en" | "ja";
+}
+
+interface CategoryFormData {
+  name: string;
+  nameEn: string;
+  categoryCode: string;
+  description: string;
+  minItemCount: number;
+  isActive: boolean;
+  scores: {
+    T4: number;
+    T3: number;
+    T2: number;
+    T1: number;
+  };
 }
 
 export default function ProcessCategoriesSection({
@@ -46,14 +63,17 @@ export default function ProcessCategoriesSection({
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [translating, setTranslating] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ProcessCategory | null>(null);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CategoryFormData>({
     name: "",
     nameEn: "",
+    categoryCode: "A",
     description: "",
-    sortOrder: 0,
+    minItemCount: 2,
     isActive: true,
+    scores: { T4: 110, T3: 100, T2: 80, T1: 60 },
   });
 
   const fetchCategories = useCallback(async () => {
@@ -74,13 +94,23 @@ export default function ProcessCategoriesSection({
     fetchCategories();
   }, [fetchCategories]);
 
+  const parseScores = (scoresJson: string) => {
+    try {
+      return JSON.parse(scoresJson);
+    } catch {
+      return { T4: 110, T3: 100, T2: 80, T1: 60 };
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: "",
       nameEn: "",
+      categoryCode: "A",
       description: "",
-      sortOrder: categories.length + 1,
+      minItemCount: 2,
       isActive: true,
+      scores: { T4: 110, T3: 100, T2: 80, T1: 60 },
     });
     setEditingCategory(null);
   };
@@ -91,15 +121,44 @@ export default function ProcessCategoriesSection({
       setFormData({
         name: category.name,
         nameEn: category.nameEn || "",
+        categoryCode: category.categoryCode || "A",
         description: category.description || "",
-        sortOrder: category.sortOrder,
-        isActive: category.isActive,
+        minItemCount: category.minItemCount ?? 0,
+        isActive: category.isActive ?? true,
+        scores: parseScores(category.scores),
       });
     } else {
       resetForm();
-      setFormData((prev) => ({ ...prev, sortOrder: categories.length + 1 }));
     }
     setIsDialogOpen(true);
+  };
+
+  const handleTranslate = async () => {
+    if (!formData.name) return;
+
+    setTranslating(true);
+    try {
+      const res = await fetch("/api/ai/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: formData.name,
+          sourceLanguage: "ja",
+          targetLanguage: "en",
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.translatedText) {
+          setFormData({ ...formData, nameEn: data.translatedText });
+        }
+      }
+    } catch (error) {
+      console.error("Translation failed:", error);
+    } finally {
+      setTranslating(false);
+    }
   };
 
   const handleSave = async () => {
@@ -148,22 +207,6 @@ export default function ProcessCategoriesSection({
     }
   };
 
-  const handleToggleActive = async (category: ProcessCategory) => {
-    try {
-      const res = await fetch(`/api/evaluation/process-categories/${category.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive: !category.isActive }),
-      });
-
-      if (res.ok) {
-        fetchCategories();
-      }
-    } catch (error) {
-      console.error("Failed to toggle category:", error);
-    }
-  };
-
   if (loading) {
     return <div className="text-center py-8 text-muted-foreground">{t.loading}</div>;
   }
@@ -186,13 +229,14 @@ export default function ProcessCategoriesSection({
               {t.addCategory}
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
                 {editingCategory ? t.edit : t.addCategory}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-4">
+              {/* カテゴリー名 */}
               <div className="space-y-2">
                 <Label>{t.categoryName}</Label>
                 <Input
@@ -200,19 +244,40 @@ export default function ProcessCategoriesSection({
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  placeholder="コミュニケーション"
+                  placeholder={language === "ja" ? "例：Aクラスプロセス" : "e.g., A Class Process"}
                 />
               </div>
+
+              {/* 英語名 */}
               <div className="space-y-2">
-                <Label>{t.categoryNameEn}</Label>
+                <div className="flex items-center justify-between">
+                  <Label>{t.categoryNameEn}</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleTranslate}
+                    disabled={!formData.name || translating}
+                    className="h-6 px-2 text-xs"
+                  >
+                    {translating ? (
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    ) : (
+                      <Languages className="w-3 h-3 mr-1" />
+                    )}
+                    AI翻訳
+                  </Button>
+                </div>
                 <Input
                   value={formData.nameEn}
                   onChange={(e) =>
                     setFormData({ ...formData, nameEn: e.target.value })
                   }
-                  placeholder="Communication"
+                  placeholder="e.g., A Class Process"
                 />
               </div>
+
+              {/* 説明 */}
               <div className="space-y-2">
                 <Label>{t.description}</Label>
                 <Textarea
@@ -220,37 +285,90 @@ export default function ProcessCategoriesSection({
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  placeholder="評価項目の説明..."
-                  rows={3}
+                  placeholder={language === "ja" ? "カテゴリーの説明を入力" : "Enter category description"}
+                  rows={2}
                 />
               </div>
+
+              {/* クラスと最小選択項目数 */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>{t.sortOrder}</Label>
+                  <Label>{t.categoryClass}</Label>
+                  <Select
+                    value={formData.categoryCode}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, categoryCode: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="A">{t.classA}</SelectItem>
+                      <SelectItem value="B">{t.classB}</SelectItem>
+                      <SelectItem value="C">{t.classC}</SelectItem>
+                      <SelectItem value="D">{t.classD}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>{t.minItemCount}</Label>
                   <Input
                     type="number"
-                    min={1}
-                    value={formData.sortOrder}
+                    min={0}
+                    max={5}
+                    value={formData.minItemCount ?? 0}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        sortOrder: parseInt(e.target.value) || 1,
+                        minItemCount: parseInt(e.target.value) || 0,
                       })
                     }
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t.isActive}</Label>
-                  <div className="pt-2">
-                    <Switch
-                      checked={formData.isActive}
-                      onCheckedChange={(checked) =>
-                        setFormData({ ...formData, isActive: checked })
-                      }
-                    />
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {t.minItemCountHint}
+                  </p>
                 </div>
               </div>
+
+              {/* 達成度別スコア */}
+              <div className="space-y-2">
+                <Label>{t.tierScores}</Label>
+                <div className="grid grid-cols-4 gap-3">
+                  {(["T4", "T3", "T2", "T1"] as const).map((tier) => (
+                    <div key={tier} className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">{tier}</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={formData.scores?.[tier] ?? 0}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            scores: {
+                              ...formData.scores,
+                              [tier]: parseInt(e.target.value) || 0,
+                            },
+                          })
+                        }
+                        className="text-center"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 有効/無効 */}
+              <div className="flex items-center gap-3">
+                <Label>{t.isActive}</Label>
+                <Switch
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, isActive: checked })
+                  }
+                />
+              </div>
+
               <div className="flex justify-end gap-3 mt-6">
                 <Button
                   variant="outline"
@@ -270,43 +388,70 @@ export default function ProcessCategoriesSection({
         </Dialog>
       </div>
 
+      {/* カード形式の一覧 */}
       {categories.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">{t.noData}</div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12"></TableHead>
-              <TableHead>{t.sortOrder}</TableHead>
-              <TableHead>{t.categoryName}</TableHead>
-              <TableHead>{t.categoryNameEn}</TableHead>
-              <TableHead>{t.description}</TableHead>
-              <TableHead>{t.isActive}</TableHead>
-              <TableHead>{t.actions}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {categories.map((category) => (
-              <TableRow key={category.id}>
-                <TableCell>
-                  <GripVertical className="w-4 h-4 text-muted-foreground cursor-move" />
-                </TableCell>
-                <TableCell>{category.sortOrder}</TableCell>
-                <TableCell className="font-medium">{category.name}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {category.nameEn || "-"}
-                </TableCell>
-                <TableCell className="max-w-xs truncate text-muted-foreground">
-                  {category.description || "-"}
-                </TableCell>
-                <TableCell>
-                  <Switch
-                    checked={category.isActive}
-                    onCheckedChange={() => handleToggleActive(category)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
+        <div className="space-y-4">
+          {categories.map((category) => {
+            const scores = parseScores(category.scores);
+            return (
+              <div
+                key={category.id}
+                className={`bg-card border rounded-lg p-6 ${
+                  !category.isActive ? "opacity-50" : ""
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-lg font-medium">{category.name}</h3>
+                      <Badge variant="secondary">
+                        {t.categoryClass}: {category.categoryCode}
+                      </Badge>
+                      {!category.isActive && (
+                        <Badge variant="outline">
+                          {t.inactive}
+                        </Badge>
+                      )}
+                    </div>
+                    {category.nameEn && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {category.nameEn}
+                      </p>
+                    )}
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {category.description || "-"}
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {t.minItemCount}:
+                      </span>
+                      <Badge variant="outline">
+                        {category.minItemCount}
+                        {t.itemsOrMore}
+                      </Badge>
+                    </div>
+
+                    {/* ティアスコア - T4が最高、T1が最低 */}
+                    <div className="mt-4 grid grid-cols-4 gap-4">
+                      {(["T4", "T3", "T2", "T1"] as const).map((tier) => (
+                        <div
+                          key={tier}
+                          className="bg-muted rounded-lg p-3 text-center"
+                        >
+                          <div className="text-xs font-medium text-muted-foreground">
+                            {tier}
+                          </div>
+                          <div className="mt-1 text-lg font-semibold">
+                            {scores[tier] || "-"}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="ml-4 flex flex-col gap-2">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -322,11 +467,11 @@ export default function ProcessCategoriesSection({
                       <Trash2 className="w-4 h-4 text-destructive" />
                     </Button>
                   </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );

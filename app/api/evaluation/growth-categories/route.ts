@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, nameEn, description, coefficient, sortOrder } = body;
+    const { name, nameEn, description, coefficient, scoreT1, scoreT2, scoreT3, scoreT4, sortOrder } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -59,7 +59,11 @@ export async function POST(request: Request) {
         name,
         nameEn,
         description,
-        coefficient: coefficient || 1.0,
+        coefficient: coefficient ?? 1.0,
+        scoreT1: scoreT1 ?? 0.5,
+        scoreT2: scoreT2 ?? 1.0,
+        scoreT3: scoreT3 ?? 1.5,
+        scoreT4: scoreT4 ?? 2.0,
         sortOrder: sortOrder || 0,
       },
     });

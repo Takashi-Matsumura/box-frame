@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, nameEn, description, sortOrder } = body;
+    const { name, nameEn, categoryCode, description, minItemCount, scores, sortOrder } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -54,11 +54,17 @@ export async function POST(request: Request) {
       );
     }
 
+    // scoresがオブジェクトの場合はJSON文字列に変換
+    const scoresJson = typeof scores === "object" ? JSON.stringify(scores) : scores || "{}";
+
     const category = await prisma.processCategory.create({
       data: {
         name,
         nameEn,
+        categoryCode: categoryCode || "A",
         description,
+        minItemCount: minItemCount ?? 0,
+        scores: scoresJson,
         sortOrder: sortOrder || 0,
       },
     });

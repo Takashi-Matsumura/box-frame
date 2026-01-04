@@ -49,7 +49,7 @@ export async function PATCH(
 
   try {
     const body = await request.json();
-    const { name, nameEn, description, coefficient, sortOrder, isActive } = body;
+    const { name, nameEn, description, coefficient, scoreT1, scoreT2, scoreT3, scoreT4, sortOrder, isActive } = body;
 
     const category = await prisma.growthCategory.update({
       where: { id },
@@ -58,6 +58,10 @@ export async function PATCH(
         ...(nameEn !== undefined && { nameEn }),
         ...(description !== undefined && { description }),
         ...(coefficient !== undefined && { coefficient }),
+        ...(scoreT1 !== undefined && { scoreT1 }),
+        ...(scoreT2 !== undefined && { scoreT2 }),
+        ...(scoreT3 !== undefined && { scoreT3 }),
+        ...(scoreT4 !== undefined && { scoreT4 }),
         ...(sortOrder !== undefined && { sortOrder }),
         ...(isActive !== undefined && { isActive }),
       },

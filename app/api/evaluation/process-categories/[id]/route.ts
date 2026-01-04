@@ -49,14 +49,22 @@ export async function PATCH(
 
   try {
     const body = await request.json();
-    const { name, nameEn, description, sortOrder, isActive } = body;
+    const { name, nameEn, categoryCode, description, minItemCount, scores, sortOrder, isActive } = body;
+
+    // scoresがオブジェクトの場合はJSON文字列に変換
+    const scoresJson = scores !== undefined
+      ? (typeof scores === "object" ? JSON.stringify(scores) : scores)
+      : undefined;
 
     const category = await prisma.processCategory.update({
       where: { id },
       data: {
         ...(name !== undefined && { name }),
         ...(nameEn !== undefined && { nameEn }),
+        ...(categoryCode !== undefined && { categoryCode }),
         ...(description !== undefined && { description }),
+        ...(minItemCount !== undefined && { minItemCount }),
+        ...(scoresJson !== undefined && { scores: scoresJson }),
         ...(sortOrder !== undefined && { sortOrder }),
         ...(isActive !== undefined && { isActive }),
       },

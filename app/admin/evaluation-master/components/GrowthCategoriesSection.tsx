@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2, GripVertical } from "lucide-react";
+import { Plus, Pencil, Trash2, GripVertical, Languages, Loader2 } from "lucide-react";
 import { evaluationMasterTranslations } from "../translations";
 
 interface GrowthCategory {
@@ -30,6 +30,10 @@ interface GrowthCategory {
   nameEn: string | null;
   description: string | null;
   coefficient: number;
+  scoreT1: number;
+  scoreT2: number;
+  scoreT3: number;
+  scoreT4: number;
   sortOrder: number;
   isActive: boolean;
 }
@@ -46,6 +50,7 @@ export default function GrowthCategoriesSection({
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [translating, setTranslating] = useState(false);
   const [editingCategory, setEditingCategory] = useState<GrowthCategory | null>(null);
 
   const [formData, setFormData] = useState({
@@ -53,6 +58,10 @@ export default function GrowthCategoriesSection({
     nameEn: "",
     description: "",
     coefficient: 1.0,
+    scoreT1: 0.5,
+    scoreT2: 1.0,
+    scoreT3: 1.5,
+    scoreT4: 2.0,
     sortOrder: 0,
     isActive: true,
   });
@@ -81,6 +90,10 @@ export default function GrowthCategoriesSection({
       nameEn: "",
       description: "",
       coefficient: 1.0,
+      scoreT1: 0.5,
+      scoreT2: 1.0,
+      scoreT3: 1.5,
+      scoreT4: 2.0,
       sortOrder: categories.length + 1,
       isActive: true,
     });
@@ -94,7 +107,11 @@ export default function GrowthCategoriesSection({
         name: category.name,
         nameEn: category.nameEn || "",
         description: category.description || "",
-        coefficient: category.coefficient,
+        coefficient: category.coefficient ?? 1.0,
+        scoreT1: category.scoreT1 ?? 0.5,
+        scoreT2: category.scoreT2 ?? 1.0,
+        scoreT3: category.scoreT3 ?? 1.5,
+        scoreT4: category.scoreT4 ?? 2.0,
         sortOrder: category.sortOrder,
         isActive: category.isActive,
       });
@@ -103,6 +120,34 @@ export default function GrowthCategoriesSection({
       setFormData((prev) => ({ ...prev, sortOrder: categories.length + 1 }));
     }
     setIsDialogOpen(true);
+  };
+
+  const handleTranslate = async () => {
+    if (!formData.name) return;
+
+    setTranslating(true);
+    try {
+      const res = await fetch("/api/ai/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: formData.name,
+          sourceLanguage: "ja",
+          targetLanguage: "en",
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.translatedText) {
+          setFormData({ ...formData, nameEn: data.translatedText });
+        }
+      }
+    } catch (error) {
+      console.error("Translation failed:", error);
+    } finally {
+      setTranslating(false);
+    }
   };
 
   const handleSave = async () => {
@@ -207,7 +252,24 @@ export default function GrowthCategoriesSection({
                 />
               </div>
               <div className="space-y-2">
-                <Label>{t.categoryNameEn}</Label>
+                <div className="flex items-center justify-between">
+                  <Label>{t.categoryNameEn}</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleTranslate}
+                    disabled={!formData.name || translating}
+                    className="h-6 px-2 text-xs"
+                  >
+                    {translating ? (
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    ) : (
+                      <Languages className="w-3 h-3 mr-1" />
+                    )}
+                    AI翻訳
+                  </Button>
+                </div>
                 <Input
                   value={formData.nameEn}
                   onChange={(e) =>
@@ -227,23 +289,86 @@ export default function GrowthCategoriesSection({
                   rows={3}
                 />
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>{t.coefficient}</Label>
-                  <Input
-                    type="number"
-                    min={0.1}
-                    max={5.0}
-                    step={0.1}
-                    value={formData.coefficient}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        coefficient: parseFloat(e.target.value) || 1.0,
-                      })
-                    }
-                  />
+              {/* 達成度別スコア */}
+              <div className="space-y-2">
+                <Label>{t.achievementLevelScores}</Label>
+                <div className="grid grid-cols-4 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">
+                      {t.scoreT4} ({t.t4Description})
+                    </Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={10}
+                      step={0.1}
+                      value={formData.scoreT4}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          scoreT4: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">
+                      {t.scoreT3} ({t.t3Description})
+                    </Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={10}
+                      step={0.1}
+                      value={formData.scoreT3}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          scoreT3: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">
+                      {t.scoreT2} ({t.t2Description})
+                    </Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={10}
+                      step={0.1}
+                      value={formData.scoreT2}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          scoreT2: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">
+                      {t.scoreT1} ({t.t1Description})
+                    </Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={10}
+                      step={0.1}
+                      value={formData.scoreT1}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          scoreT1: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                    />
+                  </div>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t.sortOrder}</Label>
                   <Input
@@ -299,7 +424,10 @@ export default function GrowthCategoriesSection({
               <TableHead>{t.sortOrder}</TableHead>
               <TableHead>{t.categoryName}</TableHead>
               <TableHead>{t.categoryNameEn}</TableHead>
-              <TableHead>{t.coefficient}</TableHead>
+              <TableHead className="text-center">{t.scoreT4}</TableHead>
+              <TableHead className="text-center">{t.scoreT3}</TableHead>
+              <TableHead className="text-center">{t.scoreT2}</TableHead>
+              <TableHead className="text-center">{t.scoreT1}</TableHead>
               <TableHead>{t.description}</TableHead>
               <TableHead>{t.isActive}</TableHead>
               <TableHead>{t.actions}</TableHead>
@@ -316,8 +444,17 @@ export default function GrowthCategoriesSection({
                 <TableCell className="text-muted-foreground">
                   {category.nameEn || "-"}
                 </TableCell>
-                <TableCell>
-                  <span className="font-mono text-sm">×{category.coefficient.toFixed(1)}</span>
+                <TableCell className="text-center">
+                  <span className="font-mono text-sm">{(category.scoreT4 ?? 2.0).toFixed(1)}</span>
+                </TableCell>
+                <TableCell className="text-center">
+                  <span className="font-mono text-sm">{(category.scoreT3 ?? 1.5).toFixed(1)}</span>
+                </TableCell>
+                <TableCell className="text-center">
+                  <span className="font-mono text-sm">{(category.scoreT2 ?? 1.0).toFixed(1)}</span>
+                </TableCell>
+                <TableCell className="text-center">
+                  <span className="font-mono text-sm">{(category.scoreT1 ?? 0.5).toFixed(1)}</span>
                 </TableCell>
                 <TableCell className="max-w-xs truncate text-muted-foreground">
                   {category.description || "-"}
