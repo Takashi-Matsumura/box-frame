@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import {
-  FaCheckCircle,
-  FaPlus,
-  FaTimes,
-  FaProjectDiagram,
-  FaClipboardCheck,
-} from "react-icons/fa";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Plus, X, FolderKanban, ClipboardCheck, CheckCircle2 } from "lucide-react";
 
 // プロジェクト難易度チェック項目
 const difficultyChecks = [
@@ -136,178 +135,168 @@ export function ProcessEvaluationSupport({
         const checkedCount = Object.values(project.checks).filter(Boolean).length;
 
         return (
-          <div
-            key={project.id}
-            className="bg-green-50 rounded-lg p-4 border border-green-200"
-          >
-            {/* プロジェクトヘッダー */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <FaProjectDiagram className="w-5 h-5 text-green-600" />
-                <span className="font-bold text-gray-900">
-                  {language === "ja" ? `プロジェクト ${index + 1}` : `Project ${index + 1}`}
-                </span>
-              </div>
-              {projects.length > 1 && (
-                <button
-                  onClick={() => removeProject(project.id)}
-                  className="text-red-500 hover:text-red-700 text-sm flex items-center gap-1"
-                >
-                  <FaTimes className="w-4 h-4" />
-                  <span>{language === "ja" ? "削除" : "Remove"}</span>
-                </button>
-              )}
-            </div>
-
-            {/* プロジェクト名 */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {language === "ja" ? "プロジェクト名" : "Project Name"}
-              </label>
-              <input
-                type="text"
-                value={project.name}
-                onChange={(e) => updateProject(project.id, { name: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder={language === "ja" ? "プロジェクト名を入力" : "Enter project name"}
-              />
-            </div>
-
-            {/* 難易度チェックリスト */}
-            <div className="mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <FaClipboardCheck className="w-4 h-4 text-green-600" />
-                <span className="text-sm font-medium text-gray-700">
-                  {language === "ja" ? "難易度チェックリスト" : "Difficulty Checklist"}
-                </span>
-                <span className="text-xs text-gray-500">
-                  ({checkedCount}/5 {language === "ja" ? "項目選択" : "selected"})
-                </span>
-              </div>
-              <div className="bg-white rounded-lg p-3 space-y-2">
-                {difficultyChecks.map((check) => (
-                  <label
-                    key={check.id}
-                    className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded"
+          <Card key={project.id}>
+            <CardContent className="p-4 space-y-4">
+              {/* プロジェクトヘッダー */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FolderKanban className="w-5 h-5 text-green-500 dark:text-green-400" />
+                  <span className="font-medium">
+                    {language === "ja" ? `プロジェクト ${index + 1}` : `Project ${index + 1}`}
+                  </span>
+                </div>
+                {projects.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeProject(project.id)}
+                    className="text-destructive hover:text-destructive"
                   >
-                    <input
-                      type="checkbox"
-                      checked={project.checks[check.id] || false}
-                      onChange={() => toggleCheck(project.id, check.id)}
-                      className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                    />
-                    <span className="text-sm text-gray-700">
-                      {language === "ja" ? check.labelJa : check.labelEn}
-                    </span>
-                  </label>
-                ))}
+                    <X className="w-4 h-4 mr-1" />
+                    {language === "ja" ? "削除" : "Remove"}
+                  </Button>
+                )}
               </div>
-            </div>
 
-            {/* プロジェクトクラス表示 */}
-            <div className="flex items-center gap-4 mb-4">
-              <span className="text-sm font-medium text-gray-700">
-                {language === "ja" ? "プロジェクトクラス:" : "Project Class:"}
-              </span>
-              <span
-                className={`px-3 py-1 rounded-full text-sm font-bold ${
-                  projectClass === "A"
-                    ? "bg-red-100 text-red-700"
-                    : projectClass === "B"
-                    ? "bg-yellow-100 text-yellow-700"
-                    : "bg-blue-100 text-blue-700"
-                }`}
-              >
-                {language === "ja"
-                  ? projectClass === "A"
-                    ? "クラスA（高難度）"
-                    : projectClass === "B"
-                    ? "クラスB（中難度）"
-                    : "クラスC（標準）"
-                  : projectClass === "A"
-                  ? "Class A (High)"
-                  : projectClass === "B"
-                  ? "Class B (Medium)"
-                  : "Class C (Standard)"}
-              </span>
-            </div>
+              {/* プロジェクト名 */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  {language === "ja" ? "プロジェクト名" : "Project Name"}
+                </label>
+                <Input
+                  value={project.name}
+                  onChange={(e) => updateProject(project.id, { name: e.target.value })}
+                  placeholder={language === "ja" ? "プロジェクト名を入力" : "Enter project name"}
+                />
+              </div>
 
-            {/* 達成度選択 */}
-            <div className="mb-4">
-              <span className="text-sm font-medium text-gray-700 block mb-2">
-                {language === "ja" ? "達成度" : "Achievement Level"}
-              </span>
-              <div className="flex gap-2">
-                {achievementLevels.map((level) => {
-                  const score = scoreMatrix[projectClass]?.[level.level] ?? 0;
-                  return (
-                    <button
-                      key={level.level}
-                      onClick={() => updateProject(project.id, { achievement: level.level })}
-                      className={`flex-1 py-2 px-3 rounded-lg border-2 text-center transition-all ${
-                        project.achievement === level.level
-                          ? "border-green-600 bg-green-100 shadow-md"
-                          : "border-gray-300 bg-white hover:border-green-400 hover:bg-green-50"
-                      }`}
-                      title={language === "ja" ? level.descJa : level.descEn}
+              {/* 難易度チェックリスト */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <ClipboardCheck className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">
+                    {language === "ja" ? "難易度チェックリスト" : "Difficulty Checklist"}
+                  </span>
+                  <Badge variant="secondary" className="text-xs">
+                    {checkedCount}/5
+                  </Badge>
+                </div>
+                <div className="rounded-lg border p-3 space-y-2">
+                  {difficultyChecks.map((check) => (
+                    <label
+                      key={check.id}
+                      className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 px-2 py-1.5 rounded-md transition-colors"
                     >
-                      <p className="font-bold text-sm text-gray-900">
-                        {level.level} - {score.toFixed(1)}
-                      </p>
-                      <p className="text-xs text-gray-600 mt-0.5">
-                        {language === "ja" ? level.labelJa : level.labelEn}
-                      </p>
-                    </button>
-                  );
-                })}
+                      <Checkbox
+                        checked={project.checks[check.id] || false}
+                        onCheckedChange={() => toggleCheck(project.id, check.id)}
+                      />
+                      <span className="text-sm">
+                        {language === "ja" ? check.labelJa : check.labelEn}
+                      </span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            {/* プロジェクトスコア */}
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-green-200">
-              <span className="text-sm text-gray-600">
-                {language === "ja" ? "プロジェクトスコア:" : "Project Score:"}
-              </span>
-              <span className="text-xl font-bold text-green-700">
-                {projectScore.toFixed(1)}
-              </span>
-            </div>
-          </div>
+              {/* プロジェクトクラス表示 */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium">
+                  {language === "ja" ? "プロジェクトクラス:" : "Project Class:"}
+                </span>
+                <Badge
+                  variant={projectClass === "A" ? "default" : projectClass === "B" ? "secondary" : "outline"}
+                >
+                  {language === "ja"
+                    ? projectClass === "A"
+                      ? "クラスA（高難度）"
+                      : projectClass === "B"
+                      ? "クラスB（中難度）"
+                      : "クラスC（標準）"
+                    : projectClass === "A"
+                    ? "Class A (High)"
+                    : projectClass === "B"
+                    ? "Class B (Medium)"
+                    : "Class C (Standard)"}
+                </Badge>
+              </div>
+
+              {/* 達成度選択 */}
+              <div>
+                <span className="text-sm font-medium mb-3 block">
+                  {language === "ja" ? "達成度" : "Achievement Level"}
+                </span>
+                <div className="grid grid-cols-4 gap-2">
+                  {achievementLevels.map((level) => {
+                    const score = scoreMatrix[projectClass]?.[level.level] ?? 0;
+                    const isSelected = project.achievement === level.level;
+                    return (
+                      <button
+                        key={level.level}
+                        onClick={() => updateProject(project.id, { achievement: level.level })}
+                        className={`p-3 rounded-lg border text-center transition-all ${
+                          isSelected
+                            ? "border-green-500 bg-green-500/10 dark:border-green-400 dark:bg-green-400/10"
+                            : "border-border hover:border-green-500/50 hover:bg-muted/50"
+                        }`}
+                        title={language === "ja" ? level.descJa : level.descEn}
+                      >
+                        <p className={`font-bold text-sm ${isSelected ? "text-green-600 dark:text-green-400" : ""}`}>
+                          {level.level}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {language === "ja" ? level.labelJa : level.labelEn}
+                        </p>
+                        <p className={`text-sm font-medium mt-1 ${isSelected ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+                          {score.toFixed(1)}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* プロジェクトスコア */}
+              <div className="flex items-center justify-end gap-2 pt-2 border-t">
+                <span className="text-sm text-muted-foreground">
+                  {language === "ja" ? "プロジェクトスコア:" : "Project Score:"}
+                </span>
+                <span className="text-xl font-bold text-green-600 dark:text-green-400">
+                  {projectScore.toFixed(1)}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
         );
       })}
 
       {/* プロジェクト追加ボタン */}
       {projects.length < 3 && (
-        <button
+        <Button
+          variant="outline"
           onClick={addProject}
-          className="w-full py-3 border-2 border-dashed border-green-400 text-green-600 rounded-lg hover:bg-green-50 transition-colors flex items-center justify-center gap-2"
+          className="w-full"
         >
-          <FaPlus className="w-4 h-4" />
-          <span className="font-medium">
-            {language === "ja" ? "プロジェクトを追加" : "Add Project"}
-          </span>
-        </button>
+          <Plus className="w-4 h-4 mr-2" />
+          {language === "ja" ? "プロジェクトを追加" : "Add Project"}
+        </Button>
       )}
 
       {/* 最終スコア表示 */}
-      <div className="bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FaCheckCircle className="w-5 h-5 text-green-600" />
-            <span className="text-sm font-bold text-gray-900">
-              {language === "ja" ? "プロセス評価最終スコア" : "Final Process Evaluation Score"}
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">
-              ({projects.filter((p) => p.name.trim()).length}{" "}
-              {language === "ja" ? "プロジェクトの平均" : "project(s) average"})
-            </span>
-            <span className="text-3xl font-bold text-green-700">
-              {averageScore.toFixed(1)}
-            </span>
-          </div>
+      <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+        <div className="flex items-center gap-2">
+          <CheckCircle2 className="w-5 h-5 text-green-500 dark:text-green-400" />
+          <span className="font-medium">
+            {language === "ja" ? "プロセス評価最終スコア" : "Final Process Evaluation Score"}
+          </span>
+          <span className="text-sm text-muted-foreground">
+            ({projects.filter((p) => p.name.trim()).length}{" "}
+            {language === "ja" ? "プロジェクトの平均" : "project(s) average"})
+          </span>
         </div>
+        <span className="text-2xl font-bold text-green-600 dark:text-green-400">
+          {averageScore.toFixed(1)}
+        </span>
       </div>
     </div>
   );
