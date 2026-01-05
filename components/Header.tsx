@@ -285,7 +285,7 @@ export function Header({ session, language = "en" }: HeaderProps) {
       active: evaluationMasterTab === "periods",
     },
     {
-      name: language === "ja" ? "評価ウェイト" : "Weights",
+      name: language === "ja" ? "評価重み" : "Weights",
       icon: <FaStar className="w-5 h-5" />,
       path: "/admin/evaluation-master?tab=weights",
       active: evaluationMasterTab === "weights",
