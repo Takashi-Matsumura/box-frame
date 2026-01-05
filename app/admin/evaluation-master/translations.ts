@@ -33,6 +33,16 @@ export const evaluationMasterTranslations = {
     changeStatus: "Change Status",
     confirmDelete: "Are you sure you want to delete this period?",
     noPeriods: "No evaluation periods found",
+    revertToDraft: "Revert to Draft",
+    revertToActive: "Revert to Active",
+    revertToReview: "Revert to Review",
+    confirmRevertToDraft: "Are you sure you want to revert this period to Draft status? Employees will no longer be able to enter evaluations.",
+    confirmRevertToActive: "Are you sure you want to revert this period to Active status? The review process will be reset.",
+    confirmRevertToReview: "Are you sure you want to reopen this period for review?",
+    advanceToReview: "Start Review",
+    advanceToClosed: "Close Period",
+    confirmAdvanceToReview: "Are you sure you want to start the review phase? Employees will no longer be able to modify their self-evaluations.",
+    confirmAdvanceToClosed: "Are you sure you want to close this period? You can reopen it for review if needed.",
 
     // Weights
     weightsTitle: "Weight Settings",
@@ -89,6 +99,7 @@ export const evaluationMasterTranslations = {
     split: "Split",
     noGroupsYet: "Position groups not configured. Click 'Detect Combinations' to initialize.",
     positionGroupsUpdated: "Position groups updated",
+    deleteGroup: "Delete Group",
 
     // Organization Goals
     goalsTitle: "Organization Goals",
@@ -195,6 +206,16 @@ export const evaluationMasterTranslations = {
     changeStatus: "ステータス変更",
     confirmDelete: "この評価期間を削除しますか？",
     noPeriods: "評価期間がありません",
+    revertToDraft: "準備中に戻す",
+    revertToActive: "評価中に戻す",
+    revertToReview: "レビューに戻す",
+    confirmRevertToDraft: "この評価期間を準備中に戻しますか？社員は評価を入力できなくなります。",
+    confirmRevertToActive: "この評価期間を評価中に戻しますか？レビュープロセスがリセットされます。",
+    confirmRevertToReview: "この評価期間をレビュー状態に戻しますか？",
+    advanceToReview: "レビュー開始",
+    advanceToClosed: "期間を完了",
+    confirmAdvanceToReview: "レビューフェーズを開始しますか？社員は自己評価を変更できなくなります。",
+    confirmAdvanceToClosed: "この評価期間を完了しますか？完了後も必要に応じてレビュー状態に戻すことができます。",
 
     // Weights
     weightsTitle: "重み設定",
@@ -251,6 +272,7 @@ export const evaluationMasterTranslations = {
     split: "分離",
     noGroupsYet: "役職グループが未設定です。「組み合わせ検出」をクリックして初期化してください。",
     positionGroupsUpdated: "役職グループを更新しました",
+    deleteGroup: "グループを削除",
 
     // Organization Goals
     goalsTitle: "組織目標",

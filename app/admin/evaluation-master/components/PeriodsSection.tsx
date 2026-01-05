@@ -19,6 +19,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -27,7 +38,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Play, RefreshCw, Trash2, CheckCircle } from "lucide-react";
+import { Plus, Play, RefreshCw, Trash2, CheckCircle, Undo2, Lock } from "lucide-react";
 import { evaluationMasterTranslations } from "../translations";
 
 interface Period {
@@ -333,6 +344,7 @@ export default function PeriodsSection({
                 <TableCell>{period._count.evaluations}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
+                    {/* DRAFT状態: 生成ボタンと開始ボタン */}
                     {period.status === "DRAFT" && (
                       <>
                         <Button
@@ -343,6 +355,7 @@ export default function PeriodsSection({
                             handleGenerate(period.id);
                           }}
                           disabled={generating === period.id}
+                          title={t.generateEvaluations}
                         >
                           {generating === period.id ? (
                             <RefreshCw className="w-4 h-4 animate-spin" />
@@ -358,24 +371,171 @@ export default function PeriodsSection({
                               e.stopPropagation();
                               handleStatusChange(period.id, "ACTIVE");
                             }}
+                            title={t.statusActive}
                           >
                             <Play className="w-4 h-4" />
                           </Button>
                         )}
                       </>
                     )}
+
+                    {/* ACTIVE状態: レビュー開始ボタンと戻すボタン */}
                     {period.status === "ACTIVE" && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleStatusChange(period.id, "REVIEW");
-                        }}
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                      </Button>
+                      <>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => e.stopPropagation()}
+                              title={t.advanceToReview}
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>{t.advanceToReview}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {t.confirmAdvanceToReview}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleStatusChange(period.id, "REVIEW")}
+                              >
+                                {t.advanceToReview}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => e.stopPropagation()}
+                              title={t.revertToDraft}
+                            >
+                              <Undo2 className="w-4 h-4 text-muted-foreground" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>{t.revertToDraft}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {t.confirmRevertToDraft}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleStatusChange(period.id, "DRAFT")}
+                              >
+                                {t.revertToDraft}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </>
                     )}
+
+                    {/* REVIEW状態: 完了ボタンと戻すボタン */}
+                    {period.status === "REVIEW" && (
+                      <>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => e.stopPropagation()}
+                              title={t.advanceToClosed}
+                            >
+                              <Lock className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>{t.advanceToClosed}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {t.confirmAdvanceToClosed}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleStatusChange(period.id, "CLOSED")}
+                              >
+                                {t.advanceToClosed}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => e.stopPropagation()}
+                              title={t.revertToActive}
+                            >
+                              <Undo2 className="w-4 h-4 text-muted-foreground" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>{t.revertToActive}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {t.confirmRevertToActive}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleStatusChange(period.id, "ACTIVE")}
+                              >
+                                {t.revertToActive}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </>
+                    )}
+
+                    {/* CLOSED状態: 戻すボタンのみ */}
+                    {period.status === "CLOSED" && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => e.stopPropagation()}
+                            title={t.revertToReview}
+                          >
+                            <Undo2 className="w-4 h-4 text-muted-foreground" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>{t.revertToReview}</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {t.confirmRevertToReview}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleStatusChange(period.id, "REVIEW")}
+                            >
+                              {t.revertToReview}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+
+                    {/* 削除ボタン（評価が0件の場合のみ） */}
                     {period._count.evaluations === 0 && (
                       <Button
                         variant="ghost"
@@ -384,6 +544,7 @@ export default function PeriodsSection({
                           e.stopPropagation();
                           handleDelete(period.id);
                         }}
+                        title={t.delete}
                       >
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>

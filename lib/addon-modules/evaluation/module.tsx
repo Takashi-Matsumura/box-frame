@@ -37,12 +37,12 @@ export const evaluationModule: AppModule = {
       descriptionJa: "自分の評価結果の確認と目標設定",
       isImplemented: false,
     },
-    // マネージャー向けメニュー: 部下評価
+    // マネージャー向けメニュー: 人事評価
     {
       id: "teamEvaluations",
       moduleId: "evaluation",
-      name: "Team Evaluations",
-      nameJa: "部下評価",
+      name: "HR Evaluation",
+      nameJa: "人事評価",
       path: "/manager/evaluations",
       menuGroup: "manager",
       requiredRoles: ["MANAGER", "EXECUTIVE", "ADMIN"],
@@ -51,7 +51,7 @@ export const evaluationModule: AppModule = {
       icon: getMenuIcon("teamEvaluations", "evaluation"),
       description: "Evaluate team members performance",
       descriptionJa: "チームメンバーの評価入力",
-      isImplemented: false,
+      isImplemented: true,
     },
     // マネージャー向けメニュー: 評価者設定
     {
@@ -67,7 +67,7 @@ export const evaluationModule: AppModule = {
       icon: getMenuIcon("evaluatorSettings", "evaluation"),
       description: "Configure custom evaluators for team members",
       descriptionJa: "部下のカスタム評価者を設定",
-      isImplemented: false,
+      isImplemented: true,
     },
     // 管理者向けメニュー: 評価マスタ管理
     {
@@ -83,7 +83,7 @@ export const evaluationModule: AppModule = {
       icon: getMenuIcon("evaluationMaster", "evaluation"),
       description: "Manage evaluation periods, weights, and categories",
       descriptionJa: "評価期間・重み・カテゴリの管理",
-      isImplemented: false,
+      isImplemented: true,
     },
   ],
   services: [

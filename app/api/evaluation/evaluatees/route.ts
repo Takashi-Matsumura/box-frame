@@ -25,6 +25,67 @@ export async function GET(request: Request) {
       );
     }
 
+    // デバッグログ
+    console.log("[evaluatees] Session user:", session.user?.email, "Role:", session.user?.role);
+
+    // ADMINの場合は全評価を取得（Employeeの紐付け不要）
+    if (session.user?.role === "ADMIN") {
+      console.log("[evaluatees] ADMIN user detected, fetching all evaluations");
+      const evaluations = await prisma.evaluation.findMany({
+        where: { periodId },
+        include: {
+          employee: {
+            include: {
+              department: true,
+              section: true,
+              course: true,
+            },
+          },
+        },
+      });
+
+      // カスタムソート: 本部コード → 部コード → 課コード → 役職コード（000は最後） → 氏名
+      const sortedEvaluations = evaluations.sort((a, b) => {
+        const empA = a.employee;
+        const empB = b.employee;
+
+        // 1. 本部コード
+        const deptCodeA = empA.department?.code || "zz";
+        const deptCodeB = empB.department?.code || "zz";
+        if (deptCodeA !== deptCodeB) return deptCodeA.localeCompare(deptCodeB);
+
+        // 2. 部コード（nullは本部直属として先頭）
+        const secCodeA = empA.section?.code || "";
+        const secCodeB = empB.section?.code || "";
+        if (!secCodeA && secCodeB) return -1;
+        if (secCodeA && !secCodeB) return 1;
+        if (secCodeA !== secCodeB) return secCodeA.localeCompare(secCodeB);
+
+        // 3. 課コード（nullは部直属として先頭）
+        const courseCodeA = empA.course?.code || "";
+        const courseCodeB = empB.course?.code || "";
+        if (!courseCodeA && courseCodeB) return -1;
+        if (courseCodeA && !courseCodeB) return 1;
+        if (courseCodeA !== courseCodeB) return courseCodeA.localeCompare(courseCodeB);
+
+        // 4. 役職コード（000=一般は最後、それ以外は昇順）
+        const posCodeA = empA.positionCode || "999";
+        const posCodeB = empB.positionCode || "999";
+        const isGeneralA = posCodeA === "000";
+        const isGeneralB = posCodeB === "000";
+        if (isGeneralA && !isGeneralB) return 1;
+        if (!isGeneralA && isGeneralB) return -1;
+        if (posCodeA !== posCodeB) return posCodeA.localeCompare(posCodeB);
+
+        // 5. 氏名（フリガナ優先）
+        const nameA = empA.nameKana || empA.name;
+        const nameB = empB.nameKana || empB.name;
+        return nameA.localeCompare(nameB, "ja");
+      });
+
+      return NextResponse.json(sortedEvaluations);
+    }
+
     // 評価者のEmployeeを取得
     const evaluatorEmployee = await prisma.employee.findFirst({
       where: {

@@ -109,6 +109,90 @@ export const evaluationsTranslations = {
     // Validation
     allFieldsRequired: "Please fill in all evaluation fields",
     weightSum: "Weights must sum to 100%",
+
+    // Filter (ADMIN only)
+    searchPlaceholder: "Search by name or ID...",
+    allDepartments: "All Departments",
+    allSections: "All Sections",
+    allCourses: "All Courses",
+    allStatuses: "All Statuses",
+    incompleteOnly: "Incomplete Only",
+    filtered: "filtered",
+    clearFilter: "Clear",
+
+    // Score Cards
+    scoreCard: {
+      results: "Results Evaluation",
+      process: "Process Evaluation",
+      growth: "Growth Evaluation",
+      final: "Final Score",
+      expanded: "Expanded",
+      clickToExpand: "Click to expand",
+      weighted: "Weighted",
+    },
+
+    // Results Panel
+    resultsPanel: {
+      title: "Results Evaluation Details",
+      organizationTarget: "Organization Target",
+      actual: "Actual",
+      achievementRate: "Achievement Rate",
+      scoreConversion: "Score Conversion Table",
+      rate120: "120% or above",
+      rate100: "100% or above",
+      rate80: "80% or above",
+      rateBelow80: "Below 80%",
+      calculatedScore: "Calculated Score",
+    },
+
+    // Process Panel
+    processPanel: {
+      title: "Process Evaluation Details",
+      addProject: "Add Project",
+      projectName: "Project Name",
+      projectClass: "Project Class",
+      difficultyChecklist: "Difficulty Checklist",
+      check1: "Involves cross-departmental coordination",
+      check2: "Multiple stakeholders involved",
+      check3: "Significant budget responsibility",
+      check4: "New challenge with no precedent",
+      check5: "High strategic importance",
+      classA: "Class A (High Difficulty)",
+      classB: "Class B (Medium Difficulty)",
+      classC: "Class C (Standard)",
+      achievement: "Achievement Level",
+      projectScore: "Project Score",
+      averageScore: "Average Score",
+      applyScore: "Apply This Score",
+      removeProject: "Remove",
+    },
+
+    // Growth Panel
+    growthPanel: {
+      title: "Growth Evaluation Details",
+      selectCategory: "Select Category",
+      categoryPlaceholder: "Please select a category",
+      achievementLevel: "Achievement Level",
+      t4: "T4 - Exceptional",
+      t4desc: "Far exceeded expectations with significant organizational impact",
+      t3: "T3 - Exceeded",
+      t3desc: "Exceeded targets and created high added value",
+      t2: "T2 - As Expected",
+      t2desc: "Met targets as planned with standard results",
+      t1: "T1 - Needs Improvement",
+      t1desc: "Did not meet targets; improvement needed",
+      calculationFormula: "Score = Base Score × Coefficient",
+      applyScore: "Apply This Score",
+    },
+
+    // Final Score Panel
+    finalPanel: {
+      title: "Final Score Calculation",
+      incomplete: "Incomplete",
+      complete: "Complete",
+      scoreBreakdown: "Score Breakdown",
+      missingItems: "Missing Items",
+    },
   },
   ja: {
     title: "部下評価",
@@ -220,6 +304,90 @@ export const evaluationsTranslations = {
     // Validation
     allFieldsRequired: "すべての評価項目を入力してください",
     weightSum: "重みの合計は100%である必要があります",
+
+    // Filter (ADMIN only)
+    searchPlaceholder: "社員名・社員番号で検索...",
+    allDepartments: "すべての本部",
+    allSections: "すべての部",
+    allCourses: "すべての課",
+    allStatuses: "すべてのステータス",
+    incompleteOnly: "未完了のみ",
+    filtered: "件表示中",
+    clearFilter: "クリア",
+
+    // Score Cards
+    scoreCard: {
+      results: "結果評価",
+      process: "プロセス評価",
+      growth: "成長評価",
+      final: "最終スコア",
+      expanded: "展開中",
+      clickToExpand: "クリックで展開",
+      weighted: "加重スコア",
+    },
+
+    // Results Panel
+    resultsPanel: {
+      title: "結果評価の算定根拠",
+      organizationTarget: "組織目標",
+      actual: "実績",
+      achievementRate: "達成率",
+      scoreConversion: "スコア変換テーブル",
+      rate120: "120%以上",
+      rate100: "100%以上",
+      rate80: "80%以上",
+      rateBelow80: "80%未満",
+      calculatedScore: "算出スコア",
+    },
+
+    // Process Panel
+    processPanel: {
+      title: "プロセス評価の算定根拠",
+      addProject: "プロジェクトを追加",
+      projectName: "プロジェクト名",
+      projectClass: "プロジェクトクラス",
+      difficultyChecklist: "難易度チェックリスト",
+      check1: "部門横断の調整が必要",
+      check2: "複数のステークホルダーが関与",
+      check3: "重要な予算責任を負う",
+      check4: "前例のない新しい挑戦",
+      check5: "戦略的重要度が高い",
+      classA: "クラスA（高難度）",
+      classB: "クラスB（中難度）",
+      classC: "クラスC（標準）",
+      achievement: "達成度",
+      projectScore: "プロジェクトスコア",
+      averageScore: "平均スコア",
+      applyScore: "このスコアを適用",
+      removeProject: "削除",
+    },
+
+    // Growth Panel
+    growthPanel: {
+      title: "成長評価の算定根拠",
+      selectCategory: "カテゴリを選択",
+      categoryPlaceholder: "カテゴリを選択してください",
+      achievementLevel: "達成度",
+      t4: "T4 - 卓越した水準",
+      t4desc: "期待を大幅に上回る成果を上げ、組織の優位性に顕著なインパクトを与えた",
+      t3: "T3 - 期待を超過",
+      t3desc: "目標を上回る成果を達成し、高い付加価値を創出した",
+      t2: "T2 - 期待通り",
+      t2desc: "計画通り目標を概ね達成し、標準的な成果を示した",
+      t1: "T1 - 改善を要する",
+      t1desc: "目標達成に至らず、改善策の検討・実行が必要である",
+      calculationFormula: "スコア = ベーススコア × 係数",
+      applyScore: "このスコアを適用",
+    },
+
+    // Final Score Panel
+    finalPanel: {
+      title: "最終スコア計算",
+      incomplete: "未入力",
+      complete: "入力済",
+      scoreBreakdown: "スコア内訳",
+      missingItems: "未入力項目",
+    },
   },
 } as const;
 

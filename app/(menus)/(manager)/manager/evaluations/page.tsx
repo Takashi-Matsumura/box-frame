@@ -24,5 +24,11 @@ export default async function EvaluationsPage() {
 
   const language = (user?.language || "ja") as "en" | "ja";
 
-  return <EvaluationsClient language={language} userId={session.user.id} />;
+  return (
+    <EvaluationsClient
+      language={language}
+      userId={session.user.id}
+      userRole={session.user.role}
+    />
+  );
 }
