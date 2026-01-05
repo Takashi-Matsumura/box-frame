@@ -6,6 +6,32 @@ import { upsertWeight, deleteWeight } from "@/lib/addon-modules/evaluation";
 // 評価対象外の部門名
 const EXCLUDED_DEPARTMENT_NAMES = ["役員・顧問"];
 
+/**
+ * 等級コードのソート順序を取得
+ * "000" (アルバイト・パート・嘱託) は末尾に配置
+ */
+function getGradeCodeSortOrder(gradeCode: string): number {
+  if (gradeCode === "000") return 9999; // 末尾に配置
+  if (gradeCode === "ALL") return -1; // 先頭に配置
+  if (gradeCode === "DEFAULT") return -2;
+  // アルファベット+数字のコードは通常のASCII順
+  return 0;
+}
+
+/**
+ * 等級コードをカスタムソート
+ */
+function compareGradeCodes(a: string, b: string): number {
+  const orderA = getGradeCodeSortOrder(a);
+  const orderB = getGradeCodeSortOrder(b);
+
+  if (orderA !== orderB) {
+    return orderA - orderB;
+  }
+  // 同じ優先度の場合は通常の文字列比較
+  return a.localeCompare(b);
+}
+
 interface PositionGradeCombination {
   positionCode: string;
   positionName: string;
@@ -168,7 +194,16 @@ export async function GET(request: Request) {
       })
     );
 
-    return NextResponse.json(weightsWithCount);
+    // 等級コードでカスタムソート（"000"を末尾に配置）
+    const sortedWeights = weightsWithCount.sort((a, b) => {
+      // まず役職コードで比較
+      const posCompare = a.positionCode.localeCompare(b.positionCode);
+      if (posCompare !== 0) return posCompare;
+      // 同じ役職内では等級コードでカスタムソート
+      return compareGradeCodes(a.gradeCode, b.gradeCode);
+    });
+
+    return NextResponse.json(sortedWeights);
   } catch (error) {
     console.error("Error fetching weights:", error);
     return NextResponse.json(
@@ -273,10 +308,13 @@ async function detectMissingCombinations(periodId: string | null) {
     return true;
   });
 
-  // 役職ごとの統計を配列に変換
-  const positionStats = Array.from(positionMap.values()).sort((a, b) =>
-    a.positionCode.localeCompare(b.positionCode)
-  );
+  // 役職ごとの統計を配列に変換（各役職内の等級もカスタムソート）
+  const positionStats = Array.from(positionMap.values())
+    .map((pos) => ({
+      ...pos,
+      grades: pos.grades.sort((a, b) => compareGradeCodes(a.gradeCode, b.gradeCode)),
+    }))
+    .sort((a, b) => a.positionCode.localeCompare(b.positionCode));
 
   return {
     allCombinations,

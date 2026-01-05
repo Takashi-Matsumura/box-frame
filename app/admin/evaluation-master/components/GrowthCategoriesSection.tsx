@@ -289,6 +289,32 @@ export default function GrowthCategoriesSection({
                   rows={3}
                 />
               </div>
+              {/* 係数（難易度調整） */}
+              <div className="space-y-2">
+                <Label>
+                  {language === "ja" ? "係数（難易度調整）" : "Coefficient (Difficulty Adjustment)"}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {language === "ja"
+                    ? "最終スコア = 達成度スコア × 係数。カテゴリごとの難易度差を調整できます。"
+                    : "Final Score = Achievement Score × Coefficient. Adjusts for difficulty differences between categories."}
+                </p>
+                <Input
+                  type="number"
+                  min={0.1}
+                  max={3.0}
+                  step={0.1}
+                  value={formData.coefficient}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      coefficient: parseFloat(e.target.value) || 1.0,
+                    })
+                  }
+                  className="w-32"
+                />
+              </div>
+
               {/* 達成度別スコア */}
               <div className="space-y-2">
                 <Label>{t.achievementLevelScores}</Label>
@@ -423,7 +449,7 @@ export default function GrowthCategoriesSection({
               <TableHead className="w-12"></TableHead>
               <TableHead>{t.sortOrder}</TableHead>
               <TableHead>{t.categoryName}</TableHead>
-              <TableHead>{t.categoryNameEn}</TableHead>
+              <TableHead className="text-center">{language === "ja" ? "係数" : "Coef."}</TableHead>
               <TableHead className="text-center">{t.scoreT4}</TableHead>
               <TableHead className="text-center">{t.scoreT3}</TableHead>
               <TableHead className="text-center">{t.scoreT2}</TableHead>
@@ -441,8 +467,10 @@ export default function GrowthCategoriesSection({
                 </TableCell>
                 <TableCell>{category.sortOrder}</TableCell>
                 <TableCell className="font-medium">{category.name}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {category.nameEn || "-"}
+                <TableCell className="text-center">
+                  <span className="font-mono text-sm font-medium text-purple-600 dark:text-purple-400">
+                    ×{(category.coefficient ?? 1.0).toFixed(1)}
+                  </span>
                 </TableCell>
                 <TableCell className="text-center">
                   <span className="font-mono text-sm">{(category.scoreT4 ?? 2.0).toFixed(1)}</span>

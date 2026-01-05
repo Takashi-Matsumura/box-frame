@@ -114,12 +114,25 @@ DELETE /api/evaluation/position-groups?id={groupId}
 | name | string | カテゴリ名（日本語） |
 | nameEn | string | カテゴリ名（英語） |
 | description | string | 説明 |
+| coefficient | number | 係数（難易度調整、デフォルト: 1.0） |
 | scoreT4 | number | T4（大きく上回った）のスコア |
 | scoreT3 | number | T3（上回った）のスコア |
 | scoreT2 | number | T2（達成）のスコア |
 | scoreT1 | number | T1（未達成）のスコア |
 | sortOrder | number | 表示順序 |
 | isActive | boolean | 有効/無効 |
+
+#### 係数（Coefficient）による難易度調整
+
+カテゴリごとの難易度差を調整するため、係数を設定できる。
+
+```
+最終成長スコア = 達成度スコア × 係数
+```
+
+例：
+- 資格取得（難しい）: 係数 1.2 → T3達成時 100.0 × 1.2 = 120.0
+- 業務改善（標準）: 係数 1.0 → T3達成時 100.0 × 1.0 = 100.0
 
 ### プロセス評価カテゴリ（Process Categories）
 

@@ -5,7 +5,7 @@ import {
   calculateProcessScore,
   calculateGrowthScore,
   calculateFinalScore,
-  getWeightsForGrade,
+  getWeightsForPositionGrade,
 } from "@/lib/addon-modules/evaluation";
 
 interface RouteParams {
@@ -59,9 +59,10 @@ export async function GET(request: Request, { params }: RouteParams) {
       orderBy: { sortOrder: "asc" },
     });
 
-    // 重みを取得
-    const weights = await getWeightsForGrade(
+    // 重みを取得（役職×等級で検索）
+    const weights = await getWeightsForPositionGrade(
       evaluation.periodId,
+      evaluation.employee.positionCode,
       evaluation.gradeCode
     );
 
@@ -120,6 +121,8 @@ export async function GET(request: Request, { params }: RouteParams) {
         department: evaluation.employee.department,
         section: evaluation.employee.section,
         course: evaluation.employee.course,
+        birthDate: evaluation.employee.birthDate,
+        joinDate: evaluation.employee.joinDate,
       },
       weights: {
         resultsWeight: weights.resultsWeight,
@@ -176,9 +179,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       overallComment,
     } = body;
 
-    // 現在の評価を取得
+    // 現在の評価を取得（重み検索用にemployeeも含む）
     const evaluation = await prisma.evaluation.findUnique({
       where: { id },
+      include: { employee: true },
     });
 
     if (!evaluation) {
@@ -188,9 +192,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       );
     }
 
-    // 重みを取得
-    const weights = await getWeightsForGrade(
+    // 重みを取得（役職×等級で検索）
+    const weights = await getWeightsForPositionGrade(
       evaluation.periodId,
+      evaluation.employee.positionCode,
       evaluation.gradeCode
     );
 

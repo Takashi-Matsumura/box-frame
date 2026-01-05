@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { getWeightsForGrade } from "@/lib/addon-modules/evaluation";
+import { getWeightsForPositionGrade } from "@/lib/addon-modules/evaluation";
 
 /**
  * GET /api/evaluation/my-evaluation
@@ -70,9 +70,10 @@ export async function GET(request: NextRequest) {
         orderBy: { sortOrder: "asc" },
       });
 
-      // 重みを取得
-      const weights = await getWeightsForGrade(
+      // 重みを取得（役職×等級で検索）
+      const weights = await getWeightsForPositionGrade(
         evaluation.periodId,
+        employee.positionCode,
         evaluation.gradeCode
       );
 

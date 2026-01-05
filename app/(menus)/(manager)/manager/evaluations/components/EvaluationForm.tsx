@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,13 +11,14 @@ import {
   TrendingUp,
   Award,
   Trophy,
-  Save,
-  Check,
   ChevronDown,
   ChevronUp,
   AlertCircle,
   CheckCircle2,
   User,
+  Loader2,
+  Cloud,
+  CloudOff,
 } from "lucide-react";
 import { evaluationsTranslations } from "../translations";
 import { ProcessEvaluationSupport } from "./ProcessEvaluationSupport";
@@ -27,7 +28,10 @@ interface ProcessCategory {
   id: string;
   name: string;
   nameEn: string | null;
+  categoryCode: string;
   description: string | null;
+  minItemCount: number;
+  scores: string;
 }
 
 interface GrowthCategory {
@@ -36,6 +40,10 @@ interface GrowthCategory {
   nameEn: string | null;
   description: string | null;
   coefficient: number;
+  scoreT1: number;
+  scoreT2: number;
+  scoreT3: number;
+  scoreT4: number;
 }
 
 interface EvaluationData {
@@ -62,6 +70,8 @@ interface EvaluationData {
     department: { name: string } | null;
     section: { name: string } | null;
     course: { name: string } | null;
+    birthDate: string | null;
+    joinDate: string | null;
   };
   weights: {
     resultsWeight: number;
@@ -85,6 +95,41 @@ interface EvaluationFormProps {
 }
 
 type ActivePanel = "results" | "process" | "growth" | "final" | null;
+
+// 年齢計算ヘルパー
+function calculateAge(birthDate: string | null): number | null {
+  if (!birthDate) return null;
+  const birth = new Date(birthDate);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+// 勤続年数計算ヘルパー
+function calculateTenure(joinDate: string | null, language: "en" | "ja"): string | null {
+  if (!joinDate) return null;
+  const join = new Date(joinDate);
+  const today = new Date();
+  const years = today.getFullYear() - join.getFullYear();
+  const months = today.getMonth() - join.getMonth();
+  const totalMonths = years * 12 + months;
+  const finalYears = Math.floor(totalMonths / 12);
+  const finalMonths = totalMonths % 12;
+
+  if (language === "ja") {
+    if (finalYears > 0 && finalMonths > 0) return `${finalYears}年${finalMonths}ヶ月`;
+    if (finalYears > 0) return `${finalYears}年`;
+    return `${finalMonths}ヶ月`;
+  } else {
+    if (finalYears > 0 && finalMonths > 0) return `${finalYears}y ${finalMonths}m`;
+    if (finalYears > 0) return `${finalYears}y`;
+    return `${finalMonths}m`;
+  }
+}
 
 interface Project {
   id: string;
@@ -257,9 +302,12 @@ export default function EvaluationForm({
   const t = evaluationsTranslations[language];
   const [evaluation, setEvaluation] = useState<EvaluationData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [completing, setCompleting] = useState(false);
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
+
+  // オートセーブ用state
+  const [autoSaveStatus, setAutoSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitializedRef = useRef(false);
 
   // Form state
   const [score1, setScore1] = useState<number>(0);
@@ -287,6 +335,15 @@ export default function EvaluationForm({
           setGrowthLevel(levelMap[data.growthLevel] || "T2");
         }
         if (data.evaluatorComment) setEvaluatorComment(data.evaluatorComment);
+
+        // プロセス評価データを復元
+        if (data.processScores && typeof data.processScores === "object") {
+          // processScoresがProcess[]形式で保存されている場合
+          const savedProcesses = data.processScores as unknown;
+          if (Array.isArray(savedProcesses) && savedProcesses.length > 0) {
+            setProcessProjects(savedProcesses as Project[]);
+          }
+        }
 
         // Calculate results score if not saved
         if (!data.score1 && data.organizationGoal?.achievementRate) {
@@ -371,8 +428,13 @@ export default function EvaluationForm({
     []
   );
 
-  const handleSave = async () => {
-    setSaving(true);
+  // オートセーブ実行関数
+  const performAutoSave = useCallback(async () => {
+    if (!evaluation || evaluation.status === "COMPLETED" || evaluation.status === "CONFIRMED") {
+      return;
+    }
+
+    setAutoSaveStatus("saving");
     try {
       const levelMap: Record<string, number> = { T1: 1, T2: 2, T3: 3, T4: 4 };
       const numericLevel = levelMap[growthLevel] || 2;
@@ -384,6 +446,7 @@ export default function EvaluationForm({
           score1,
           score2,
           score3,
+          processScores: processProjects, // プロセス詳細データを保存
           growthCategoryId,
           growthLevel: numericLevel,
           finalScore,
@@ -394,60 +457,57 @@ export default function EvaluationForm({
       });
 
       if (res.ok) {
-        alert(t.saveSuccess);
-        fetchEvaluation();
+        setAutoSaveStatus("saved");
+        // 3秒後にステータスをリセット
+        setTimeout(() => setAutoSaveStatus("idle"), 3000);
       } else {
-        alert(t.saveError);
+        setAutoSaveStatus("error");
       }
     } catch (error) {
-      console.error("Failed to save evaluation:", error);
-      alert(t.saveError);
-    } finally {
-      setSaving(false);
+      console.error("Auto-save failed:", error);
+      setAutoSaveStatus("error");
     }
-  };
+  }, [evaluation, evaluationId, score1, score2, score3, processProjects, growthCategoryId, growthLevel, finalScore, finalGrade, evaluatorComment]);
 
-  const handleComplete = async () => {
-    if (!confirm(t.confirmComplete)) return;
+  // デバウンス付きオートセーブトリガー
+  const triggerAutoSave = useCallback(() => {
+    if (!isInitializedRef.current) return;
 
-    if (!isAllComplete) {
-      alert(t.allFieldsRequired);
-      return;
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
     }
 
-    setCompleting(true);
-    try {
-      const levelMap: Record<string, number> = { T1: 1, T2: 2, T3: 3, T4: 4 };
-      const numericLevel = levelMap[growthLevel] || 2;
+    autoSaveTimerRef.current = setTimeout(() => {
+      performAutoSave();
+    }, 2000); // 2秒後に保存
+  }, [performAutoSave]);
 
-      const res = await fetch(`/api/evaluation/${evaluationId}/complete`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          score1,
-          score2,
-          score3,
-          growthCategoryId,
-          growthLevel: numericLevel,
-          finalScore,
-          finalGrade,
-          evaluatorComment,
-        }),
-      });
+  // データ変更時にオートセーブをトリガー
+  useEffect(() => {
+    if (isInitializedRef.current) {
+      triggerAutoSave();
+    }
+  }, [score1, score2, score3, processProjects, growthCategoryId, growthLevel, evaluatorComment, triggerAutoSave]);
 
-      if (res.ok) {
-        alert(t.completeSuccess);
-        onBack();
-      } else {
-        alert(t.completeError);
+  // 初期化完了をマーク（初回ロード時のオートセーブを防ぐ）
+  useEffect(() => {
+    if (evaluation && !isInitializedRef.current) {
+      // 少し遅延させて初期化完了をマーク
+      const timer = setTimeout(() => {
+        isInitializedRef.current = true;
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [evaluation]);
+
+  // クリーンアップ
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
       }
-    } catch (error) {
-      console.error("Failed to complete evaluation:", error);
-      alert(t.completeError);
-    } finally {
-      setCompleting(false);
-    }
-  };
+    };
+  }, []);
 
   if (loading || !evaluation) {
     return (
@@ -483,9 +543,28 @@ export default function EvaluationForm({
                 {evaluation.employee.course && ` / ${evaluation.employee.course.name}`}
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground">{t.employeeNumber}</p>
-              <p className="font-mono text-sm">{evaluation.employee.employeeNumber}</p>
+            <div className="flex items-center gap-6">
+              {/* 年齢・勤続年数 */}
+              {(evaluation.employee.birthDate || evaluation.employee.joinDate) && (
+                <div className="flex items-center gap-4 text-sm">
+                  {evaluation.employee.birthDate && (
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">{language === "ja" ? "年齢" : "Age"}</p>
+                      <p className="font-medium">{calculateAge(evaluation.employee.birthDate)}{language === "ja" ? "歳" : ""}</p>
+                    </div>
+                  )}
+                  {evaluation.employee.joinDate && (
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">{language === "ja" ? "勤続" : "Tenure"}</p>
+                      <p className="font-medium">{calculateTenure(evaluation.employee.joinDate, language)}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">{t.employeeNumber}</p>
+                <p className="font-mono text-sm">{evaluation.employee.employeeNumber}</p>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -546,6 +625,12 @@ export default function EvaluationForm({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* 説明文 */}
+            <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
+              {language === "ja"
+                ? "結果評価は、評価期間終了後に実績が確定した段階で、期末時点の達成率が管理者によってシステムに登録されます。評価者が個別に入力する必要はありません。"
+                : "Results evaluation is determined by the achievement rate at the end of the period, which is registered in the system by administrators after the actual results are finalized."}
+            </p>
             {evaluation.organizationGoal ? (
               <>
                 {/* 目標と実績 */}
@@ -635,8 +720,9 @@ export default function EvaluationForm({
           <CardContent>
             <ProcessEvaluationSupport
               language={language}
+              processCategories={evaluation.processCategories}
               onScoreCalculated={handleProcessScoreCalculated}
-              initialProjects={processProjects.length > 0 ? processProjects : undefined}
+              initialProcesses={processProjects.length > 0 ? processProjects : undefined}
             />
           </CardContent>
         </Card>
@@ -667,10 +753,44 @@ export default function EvaluationForm({
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <Trophy className="w-5 h-5 text-amber-500 dark:text-amber-400" />
-              {language === "ja" ? "最終スコア計算" : "Final Score Calculation"}
+              {language === "ja" ? "総合評価の計算方法" : "Final Score Calculation Method"}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* 計算式の説明 */}
+            <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+              <p className="text-sm font-medium">
+                {language === "ja" ? "計算式" : "Formula"}
+              </p>
+              <p className="font-mono text-sm bg-background p-2 rounded border">
+                {language === "ja"
+                  ? "最終スコア = (結果×結果重み) + (プロセス×プロセス重み) + (成長×成長重み)"
+                  : "Final = (Results×Weight) + (Process×Weight) + (Growth×Weight)"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {language === "ja"
+                  ? `重み設定の出典: ${evaluation.employee.position || "役職"} / ${evaluation.employee.qualificationGrade || "等級"} に基づく評価マスター設定`
+                  : `Weight source: Evaluation master settings based on ${evaluation.employee.position || "Position"} / ${evaluation.employee.qualificationGrade || "Grade"}`}
+              </p>
+            </div>
+
+            {/* 未入力警告 */}
+            {!isAllComplete && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+                <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5 shrink-0" />
+                <div className="text-sm">
+                  <p className="font-medium text-yellow-600 dark:text-yellow-400">
+                    {language === "ja" ? "未入力の評価項目があります" : "Some evaluation items are incomplete"}
+                  </p>
+                  <p className="text-muted-foreground mt-1">
+                    {language === "ja"
+                      ? "すべての評価項目を入力すると、正確な最終スコアが算出されます。"
+                      : "Enter all evaluation items to calculate the accurate final score."}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* スコア内訳 */}
             <div className="rounded-lg border">
               <table className="w-full">
@@ -790,36 +910,58 @@ export default function EvaluationForm({
         </Card>
       )}
 
-      {/* Comments */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">{t.evaluatorComment}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            value={evaluatorComment}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-              setEvaluatorComment(e.target.value)
-            }
-            placeholder={t.commentPlaceholder}
-            rows={4}
-            disabled={isReadOnly}
-            className="resize-none"
-          />
-        </CardContent>
-      </Card>
+      {/* Comments - 最終スコアパネルでのみ表示 */}
+      {activePanel === "final" && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">{t.evaluatorComment}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              value={evaluatorComment}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setEvaluatorComment(e.target.value)
+              }
+              placeholder={t.commentPlaceholder}
+              rows={4}
+              disabled={isReadOnly}
+              className="resize-none"
+            />
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Actions */}
+      {/* オートセーブステータス表示 */}
       {!isReadOnly && (
-        <div className="flex justify-end gap-4 pb-8">
-          <Button variant="outline" onClick={handleSave} disabled={saving}>
-            <Save className="w-4 h-4 mr-2" />
-            {saving ? t.saving : t.save}
-          </Button>
-          <Button onClick={handleComplete} disabled={completing || !isAllComplete}>
-            <Check className="w-4 h-4 mr-2" />
-            {completing ? t.completing : t.complete}
-          </Button>
+        <div className="flex justify-end items-center gap-2 pb-8 text-sm text-muted-foreground">
+          {autoSaveStatus === "saving" && (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>{language === "ja" ? "保存中..." : "Saving..."}</span>
+            </>
+          )}
+          {autoSaveStatus === "saved" && (
+            <>
+              <Cloud className="w-4 h-4 text-green-500" />
+              <span className="text-green-600 dark:text-green-400">
+                {language === "ja" ? "保存しました" : "Saved"}
+              </span>
+            </>
+          )}
+          {autoSaveStatus === "error" && (
+            <>
+              <CloudOff className="w-4 h-4 text-destructive" />
+              <span className="text-destructive">
+                {language === "ja" ? "保存に失敗しました" : "Save failed"}
+              </span>
+            </>
+          )}
+          {autoSaveStatus === "idle" && (
+            <>
+              <Cloud className="w-4 h-4" />
+              <span>{language === "ja" ? "自動保存" : "Auto-save"}</span>
+            </>
+          )}
         </div>
       )}
     </div>

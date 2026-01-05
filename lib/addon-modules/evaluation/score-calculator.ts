@@ -143,15 +143,16 @@ export async function recalculateEvaluationScore(
 ): Promise<ScoreResult | null> {
   const evaluation = await prisma.evaluation.findUnique({
     where: { id: evaluationId },
-    include: { period: true },
+    include: { period: true, employee: true },
   });
 
   if (!evaluation) return null;
 
-  // 重みを取得
-  const { getWeightsForGrade } = await import("./weight-helper");
-  const weights = await getWeightsForGrade(
+  // 重みを取得（役職×等級で検索）
+  const { getWeightsForPositionGrade } = await import("./weight-helper");
+  const weights = await getWeightsForPositionGrade(
     evaluation.periodId,
+    evaluation.employee.positionCode,
     evaluation.gradeCode || null
   );
 
