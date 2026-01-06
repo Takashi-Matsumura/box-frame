@@ -1008,6 +1008,61 @@ export function AdminClient({
     }
   }, [t]);
 
+  // メニューの有効/無効を切り替え
+  const handleToggleMenu = useCallback(async (menuId: string, enabled: boolean) => {
+    try {
+      const response = await fetch("/api/admin/modules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ menuId, enabled }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to update menu");
+      }
+
+      // ローカルの状態を更新
+      setModulesData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          modules: prev.modules.map((m) => ({
+            ...m,
+            menus: m.menus.map((menu) =>
+              menu.id === menuId ? { ...menu, enabled } : menu
+            ),
+            menuCount: m.menus.filter((menu) =>
+              menu.id === menuId ? enabled : menu.enabled
+            ).length,
+          })),
+        };
+      });
+
+      // 選択中のモジュールも更新
+      setSelectedModule((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          menus: prev.menus.map((menu) =>
+            menu.id === menuId ? { ...menu, enabled } : menu
+          ),
+          menuCount: prev.menus.filter((menu) =>
+            menu.id === menuId ? enabled : menu.enabled
+          ).length,
+        };
+      });
+    } catch (error) {
+      console.error("Error toggling menu:", error);
+      alert(
+        t(
+          error instanceof Error ? error.message : "Failed to update menu",
+          error instanceof Error ? error.message : "メニューの更新に失敗しました"
+        )
+      );
+    }
+  }, [t]);
+
   // モジュールデータを取得
   const fetchModules = useCallback(async () => {
     if (activeTab !== "modules") return;
@@ -2982,17 +3037,16 @@ export function AdminClient({
                                     min={0}
                                     max={999}
                                   />
-                                  <span
-                                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                      menu.enabled
-                                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                        : "bg-muted text-muted-foreground"
-                                    }`}
-                                  >
-                                    {menu.enabled
-                                      ? t("Enabled", "有効")
-                                      : t("Disabled", "無効")}
-                                  </span>
+                                  <div className="flex items-center gap-1">
+                                    <Switch
+                                      checked={menu.enabled}
+                                      onCheckedChange={(checked) => handleToggleMenu(menu.id, checked)}
+                                      className="scale-75"
+                                    />
+                                    <span className={`text-xs ${menu.enabled ? "text-green-700" : "text-muted-foreground"}`}>
+                                      {menu.enabled ? t("Enabled", "有効") : t("Disabled", "無効")}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                             ))}
@@ -3093,6 +3147,7 @@ export function AdminClient({
                         <SelectItem value="USER_DELETE">{t("User Delete", "ユーザ削除")}</SelectItem>
                         <SelectItem value="USER_ROLE_CHANGE">{t("Role Change", "ロール変更")}</SelectItem>
                         <SelectItem value="MODULE_TOGGLE">{t("Module Toggle", "モジュール切替")}</SelectItem>
+                        <SelectItem value="MENU_TOGGLE">{t("Menu Toggle", "メニュー切替")}</SelectItem>
                         <SelectItem value="ANNOUNCEMENT_CREATE">{t("Announcement Create", "アナウンス作成")}</SelectItem>
                         <SelectItem value="ANNOUNCEMENT_UPDATE">{t("Announcement Update", "アナウンス更新")}</SelectItem>
                         <SelectItem value="ANNOUNCEMENT_DELETE">{t("Announcement Delete", "アナウンス削除")}</SelectItem>
