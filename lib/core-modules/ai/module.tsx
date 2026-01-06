@@ -17,6 +17,15 @@ export const aiModule: AppModule = {
   description: "AI-powered features including chat and translation",
   descriptionJa: "AIチャットや翻訳などのAI機能を提供します",
   dependencies: [], // コアモジュール：依存なし
+  containers: [
+    {
+      id: "airag-backend",
+      name: "AI RAG Backend",
+      nameJa: "AI RAGバックエンド",
+      healthCheckUrl: "/api/rag-backend-health",
+      required: false, // RAGはオプション機能
+    },
+  ],
   icon: (
     <svg
       key="ai-icon"
@@ -105,6 +114,21 @@ export const aiModule: AppModule = {
       description: "Extract structured data from unstructured text",
       descriptionJa: "テキストから構造化データを抽出",
       apiEndpoints: ["/api/ai/services/extract"],
+      enabled: true,
+    },
+    {
+      id: "rag",
+      moduleId: "ai",
+      name: "RAG (Retrieval-Augmented Generation)",
+      nameJa: "RAG（検索拡張生成）",
+      description:
+        "AI responses enhanced with document retrieval for context-aware answers",
+      descriptionJa: "ドキュメント検索によりコンテキストを考慮したAI回答を生成",
+      apiEndpoints: [
+        "/api/rag-backend/documents",
+        "/api/rag-backend/rag/query",
+        "/api/rag-backend/chat/completions",
+      ],
       enabled: true,
     },
   ],

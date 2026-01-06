@@ -1,13 +1,13 @@
-export { aiModule } from "./module";
 export {
-  AIService,
-  type AIProvider,
   type AIConfig,
+  type AIProvider,
+  AIService,
+  type ExtractField,
+  type ExtractRequest,
+  type ExtractResponse,
   type GenerateRequest,
   type GenerateResponse,
   type SummarizeRequest,
   type SummarizeResponse,
-  type ExtractRequest,
-  type ExtractField,
-  type ExtractResponse,
 } from "./ai-service";
+export { aiModule } from "./module";

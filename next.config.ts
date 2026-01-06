@@ -24,12 +24,25 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // /uploads/profiles/* を /api/uploads/profiles/* にリライト
+  // リライト設定
   async rewrites() {
+    const ragBackendUrl = process.env.RAG_BACKEND_URL || "http://localhost:8000";
+
     return [
+      // /uploads/profiles/* を /api/uploads/profiles/* にリライト
       {
         source: "/uploads/profiles/:path*",
         destination: "/api/uploads/profiles/:path*",
+      },
+      // RAG Backend APIプロキシ
+      {
+        source: "/api/rag-backend/:path*",
+        destination: `${ragBackendUrl}/api/:path*`,
+      },
+      // RAG Backend ヘルスチェック
+      {
+        source: "/api/rag-backend-health",
+        destination: `${ragBackendUrl}/health`,
       },
     ];
   },

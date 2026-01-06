@@ -856,3 +856,57 @@ model EvaluationGoal {
 
   @@unique([periodId, employeeId])
 }
+
+// ========================================
+// RAG（生成AIモジュール - 汎用）
+// ========================================
+
+// RAGドキュメント（汎用）
+model RagDocument {
+  id                String   @id @default(cuid())
+
+  // スコープ（どのモジュール用か）
+  scope             String   @default("general")  // "evaluation", "hr", "general" 等
+
+  title             String   // ドキュメントタイトル
+  titleJa           String?  // 日本語タイトル
+  content           String   // ドキュメント内容
+  category          String   @default("general")  // スコープ内のカテゴリ
+  tags              String?  // タグ（カンマ区切り）
+
+  // ベクトル埋め込み（JSON配列として保存）
+  embedding         Json?    // float[]
+  embeddingModel    String?  // 使用したモデル名
+
+  // メタデータ
+  source            String?  // 情報源
+  isActive          Boolean  @default(true)
+  sortOrder         Int      @default(0)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([scope, isActive])
+  @@index([scope, category, isActive])
+  @@index([isActive, sortOrder])
+}
+
+// RAGチャット履歴（汎用）
+model RagChat {
+  id                String   @id @default(cuid())
+
+  // スコープ（どのモジュール用か）
+  scope             String   @default("general")  // "evaluation", "hr", "general" 等
+  contextId         String?  // 関連するコンテキストID（評価ID等）
+
+  userId            String   // ユーザーID
+  question          String   // ユーザーの質問
+  answer            String   // AIの回答
+  ragEnabled        Boolean  @default(true)  // RAGを使用したか
+  relevantDocIds    Json?    // 使用したドキュメントID配列
+
+  createdAt         DateTime @default(now())
+
+  @@index([scope, contextId])
+  @@index([userId, createdAt])
+}

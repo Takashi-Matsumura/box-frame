@@ -45,7 +45,36 @@ services:
       - ./docker/openldap/bootstrap:/container/service/slapd/assets/config/bootstrap/ldif/custom
     command: --copy-service
 
+  # AI RAG Backend (ChromaDB + sentence-transformers)
+  airag-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: boxframe-airag-backend
+    restart: unless-stopped
+    environment:
+      - CHROMA_PERSIST_DIR=/app/chroma_data
+      - EMBEDDING_MODEL=intfloat/multilingual-e5-small
+      - LLM_BASE_URL=${LLM_BASE_URL:-http://host.docker.internal:8080}
+      - CHUNK_SIZE=500
+      - CHUNK_OVERLAP=50
+      - RAG_TOP_K=5
+      - RAG_SIMILARITY_THRESHOLD=0.3
+    volumes:
+      - chroma_data:/app/chroma_data
+      - model_cache:/app/model_cache
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
 volumes:
   postgres_data:
   openldap_data:
   openldap_config:
+  chroma_data:
+  model_cache:
