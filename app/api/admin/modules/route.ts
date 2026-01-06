@@ -14,18 +14,25 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // メニュー順序のオーバーライドを取得
-    const menuOrderSettings = await prisma.systemSetting.findMany({
+    // メニュー順序と有効状態のオーバーライドを取得
+    const menuSettings = await prisma.systemSetting.findMany({
       where: {
-        key: {
-          startsWith: "menu_order_",
-        },
+        OR: [
+          { key: { startsWith: "menu_order_" } },
+          { key: { startsWith: "menu_enabled_" } },
+        ],
       },
     });
     const menuOrderOverrides: Record<string, number> = {};
-    for (const setting of menuOrderSettings) {
-      const menuId = setting.key.replace("menu_order_", "");
-      menuOrderOverrides[menuId] = parseInt(setting.value, 10);
+    const menuEnabledOverrides: Record<string, boolean> = {};
+    for (const setting of menuSettings) {
+      if (setting.key.startsWith("menu_order_")) {
+        const menuId = setting.key.replace("menu_order_", "");
+        menuOrderOverrides[menuId] = parseInt(setting.value, 10);
+      } else if (setting.key.startsWith("menu_enabled_")) {
+        const menuId = setting.key.replace("menu_enabled_", "");
+        menuEnabledOverrides[menuId] = setting.value === "true";
+      }
     }
 
     // コンテナステータスをチェックする関数
@@ -82,14 +89,14 @@ export async function GET() {
           descriptionJa: module.descriptionJa,
           enabled: module.enabled,
           type: isCore ? ("core" as const) : ("addon" as const),
-          menuCount: module.menus.filter((m) => m.enabled).length,
+          menuCount: module.menus.filter((m) => menuEnabledOverrides[m.id] ?? m.enabled).length,
           menus: module.menus.map((menu) => ({
             id: menu.id,
             name: menu.name,
             nameJa: menu.nameJa,
             path: menu.path,
             menuGroup: menu.menuGroup,
-            enabled: menu.enabled,
+            enabled: menuEnabledOverrides[menu.id] ?? menu.enabled,
             order: menuOrderOverrides[menu.id] ?? menu.order,
             requiredRoles: menu.requiredRoles || [],
           })),
@@ -214,6 +221,82 @@ export async function PATCH(request: Request) {
     });
   } catch (error) {
     console.error("Error updating module:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const session = await auth();
+
+    if (!session || session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { menuId, enabled } = await request.json();
+
+    if (!menuId || typeof enabled !== "boolean") {
+      return NextResponse.json(
+        { error: "Menu ID and enabled status are required" },
+        { status: 400 }
+      );
+    }
+
+    // メニューが存在するか確認
+    let menuFound = false;
+    let foundModule: (typeof moduleRegistry)[string] | null = null;
+    let foundMenu: { id: string; name: string; nameJa?: string } | null = null;
+    for (const module of Object.values(moduleRegistry)) {
+      const menu = module.menus.find((m) => m.id === menuId);
+      if (menu) {
+        menuFound = true;
+        foundModule = module;
+        foundMenu = menu;
+        break;
+      }
+    }
+
+    if (!menuFound || !foundModule || !foundMenu) {
+      return NextResponse.json(
+        { error: "Menu not found" },
+        { status: 404 }
+      );
+    }
+
+    // SystemSettingに保存
+    const settingKey = `menu_enabled_${menuId}`;
+    await prisma.systemSetting.upsert({
+      where: { key: settingKey },
+      update: { value: enabled.toString() },
+      create: { key: settingKey, value: enabled.toString() },
+    });
+
+    // 監査ログに記録
+    await AuditService.log({
+      action: "MENU_TOGGLE",
+      category: "MODULE",
+      userId: session.user.id,
+      targetId: menuId,
+      targetType: "Menu",
+      details: {
+        menuName: foundMenu.name,
+        menuNameJa: foundMenu.nameJa,
+        moduleName: foundModule.name,
+        moduleNameJa: foundModule.nameJa,
+        enabled,
+      },
+    }).catch(() => {});
+
+    return NextResponse.json({
+      success: true,
+      menuId,
+      enabled,
+    });
+  } catch (error) {
+    console.error("Error updating menu:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
