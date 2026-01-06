@@ -11,6 +11,9 @@ import {
   AlertCircle,
   CheckCircle2,
   RefreshCw,
+  ChevronDown,
+  ChevronRight,
+  File,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,11 +22,22 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
-interface Document {
-  id: string;
-  content: string;
-  metadata: Record<string, string>;
-  created_at?: string;
+interface DocumentInfo {
+  filename: string;
+  file_type: string;
+  chunk_count: number;
+  upload_timestamp: string;
+  total_chars: number;
+}
+
+interface DocumentContent {
+  filename: string;
+  total_chunks: number;
+  chunks: {
+    chunk_index: number;
+    content: string;
+    char_count: number;
+  }[];
 }
 
 interface EvaluationRagClientProps {
@@ -38,6 +52,7 @@ const translations = {
     healthy: "接続中",
     unhealthy: "未接続",
     documentCount: "登録ドキュメント数",
+    documents: "件",
     chunks: "チャンク",
     addDocument: "ドキュメント追加",
     documentTitle: "タイトル",
@@ -60,8 +75,13 @@ const translations = {
     deleteSuccess: "ドキュメントを削除しました",
     deleteError: "ドキュメントの削除に失敗しました",
     confirmDelete: "このドキュメントを削除してもよろしいですか？",
-    preview: "プレビュー",
     characters: "文字",
+    chunkInfo: "チャンクに分割",
+    totalChars: "文字",
+    viewContent: "内容を表示",
+    hideContent: "内容を隠す",
+    loading: "読み込み中...",
+    uploadedAt: "登録日時",
   },
   en: {
     title: "Evaluation AI Knowledge",
@@ -70,6 +90,7 @@ const translations = {
     healthy: "Connected",
     unhealthy: "Disconnected",
     documentCount: "Registered Documents",
+    documents: "docs",
     chunks: "chunks",
     addDocument: "Add Document",
     documentTitle: "Title",
@@ -92,8 +113,13 @@ const translations = {
     deleteSuccess: "Document deleted successfully",
     deleteError: "Failed to delete document",
     confirmDelete: "Are you sure you want to delete this document?",
-    preview: "Preview",
     characters: "characters",
+    chunkInfo: "chunks",
+    totalChars: "chars",
+    viewContent: "View content",
+    hideContent: "Hide content",
+    loading: "Loading...",
+    uploadedAt: "Uploaded at",
   },
 };
 
@@ -101,12 +127,17 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
   const t = translations[language];
 
   const [backendStatus, setBackendStatus] = useState<"unknown" | "healthy" | "unhealthy">("unknown");
-  const [documentCount, setDocumentCount] = useState(0);
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [totalChunks, setTotalChunks] = useState(0);
+  const [documents, setDocuments] = useState<DocumentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingFilename, setDeletingFilename] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Expanded document content
+  const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
+  const [docContent, setDocContent] = useState<DocumentContent | null>(null);
+  const [loadingContent, setLoadingContent] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -119,7 +150,7 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
       const res = await fetch("/api/rag-backend/documents/count");
       if (res.ok) {
         const data = await res.json();
-        setDocumentCount(data.total_chunks || 0);
+        setTotalChunks(data.total_chunks || 0);
         setBackendStatus("healthy");
       } else {
         setBackendStatus("unhealthy");
@@ -129,11 +160,11 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
     }
   }, []);
 
-  // Fetch documents list
+  // Fetch documents list (grouped by filename)
   const fetchDocuments = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/rag-backend/documents");
+      const res = await fetch("/api/rag-backend/documents/list");
       if (res.ok) {
         const data = await res.json();
         setDocuments(data.documents || []);
@@ -149,6 +180,31 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
     fetchStatus();
     fetchDocuments();
   }, [fetchStatus, fetchDocuments]);
+
+  // Fetch document content
+  const fetchDocumentContent = async (filename: string) => {
+    if (expandedDoc === filename) {
+      setExpandedDoc(null);
+      setDocContent(null);
+      return;
+    }
+
+    setExpandedDoc(filename);
+    setLoadingContent(true);
+    setDocContent(null);
+
+    try {
+      const res = await fetch(`/api/rag-backend/documents/content/${encodeURIComponent(filename)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setDocContent(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch document content:", error);
+    } finally {
+      setLoadingContent(false);
+    }
+  };
 
   // Register document
   const handleRegister = async () => {
@@ -189,20 +245,25 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
     }
   };
 
-  // Delete document
-  const handleDelete = async (docId: string) => {
+  // Delete document (by filename - deletes all chunks)
+  const handleDelete = async (filename: string) => {
     if (!confirm(t.confirmDelete)) return;
 
-    setDeletingId(docId);
+    setDeletingFilename(filename);
     setMessage(null);
 
     try {
-      const res = await fetch(`/api/rag-backend/documents/by-id/${docId}`, {
+      const res = await fetch(`/api/rag-backend/documents/${encodeURIComponent(filename)}`, {
         method: "DELETE",
       });
 
       if (res.ok) {
         setMessage({ type: "success", text: t.deleteSuccess });
+        // Clear expanded content if deleted
+        if (expandedDoc === filename) {
+          setExpandedDoc(null);
+          setDocContent(null);
+        }
         // Refresh data
         await fetchStatus();
         await fetchDocuments();
@@ -214,7 +275,7 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
       console.error("Failed to delete document:", error);
       setMessage({ type: "error", text: t.deleteError });
     } finally {
-      setDeletingId(null);
+      setDeletingFilename(null);
     }
   };
 
@@ -222,6 +283,22 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
   const handleRefresh = async () => {
     await fetchStatus();
     await fetchDocuments();
+  };
+
+  // Format timestamp
+  const formatTimestamp = (timestamp: string) => {
+    if (!timestamp) return "-";
+    try {
+      return new Date(timestamp).toLocaleString(language === "ja" ? "ja-JP" : "en-US");
+    } catch {
+      return timestamp;
+    }
+  };
+
+  // Get display name from filename
+  const getDisplayName = (filename: string) => {
+    // Remove .md extension if present
+    return filename.replace(/\.md$/, "");
   };
 
   return (
@@ -265,9 +342,14 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
                 <FileText className="h-5 w-5 text-muted-foreground" />
                 <span className="text-sm font-medium">{t.documentCount}</span>
               </div>
-              <Badge variant="outline">
-                {documentCount} {t.chunks}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">
+                  {documents.length} {t.documents}
+                </Badge>
+                <Badge variant="secondary">
+                  {totalChunks} {t.chunks}
+                </Badge>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -384,45 +466,78 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
               <p>{t.noDocuments}</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {documents.map((doc) => (
                 <div
-                  key={doc.id}
-                  className="p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                  key={doc.filename}
+                  className="rounded-lg border bg-card overflow-hidden"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium truncate">
-                          {doc.metadata?.title || "Untitled"}
-                        </span>
-                        {doc.metadata?.category && (
-                          <Badge variant="outline" className="text-xs">
-                            {doc.metadata.category}
-                          </Badge>
+                  {/* Document Header */}
+                  <div className="p-4 flex items-center justify-between gap-4">
+                    <button
+                      onClick={() => fetchDocumentContent(doc.filename)}
+                      className="flex items-center gap-3 flex-1 min-w-0 text-left hover:bg-muted/50 -m-2 p-2 rounded-lg transition-colors"
+                    >
+                      <div className="shrink-0">
+                        {expandedDoc === doc.filename ? (
+                          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="h-5 w-5 text-muted-foreground" />
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {doc.content}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        ID: {doc.id.slice(0, 8)}...
-                      </p>
-                    </div>
+                      <File className="h-5 w-5 text-primary shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{getDisplayName(doc.filename)}</p>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                          <span>{doc.chunk_count} {t.chunkInfo}</span>
+                          <span>{doc.total_chars.toLocaleString()} {t.totalChars}</span>
+                          {doc.upload_timestamp && (
+                            <span>{formatTimestamp(doc.upload_timestamp)}</span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleDelete(doc.id)}
-                      disabled={deletingId === doc.id}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => handleDelete(doc.filename)}
+                      disabled={deletingFilename === doc.filename}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
                     >
-                      {deletingId === doc.id ? (
+                      {deletingFilename === doc.filename ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Trash2 className="h-4 w-4" />
                       )}
                     </Button>
                   </div>
+
+                  {/* Expanded Content */}
+                  {expandedDoc === doc.filename && (
+                    <div className="border-t bg-muted/30 p-4">
+                      {loadingContent ? (
+                        <div className="flex items-center justify-center py-4">
+                          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                          <span className="ml-2 text-sm text-muted-foreground">{t.loading}</span>
+                        </div>
+                      ) : docContent ? (
+                        <div className="space-y-3">
+                          {docContent.chunks.map((chunk, index) => (
+                            <div key={index} className="text-sm">
+                              {docContent.chunks.length > 1 && (
+                                <div className="text-xs text-muted-foreground mb-1">
+                                  Chunk {chunk.chunk_index + 1} / {docContent.total_chunks}
+                                </div>
+                              )}
+                              <div className="bg-background rounded-lg p-3 border whitespace-pre-wrap font-mono text-xs">
+                                {chunk.content}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
