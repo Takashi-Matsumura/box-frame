@@ -10,7 +10,7 @@
  */
 
 import type { ReactElement } from "react";
-import { RiShieldUserLine } from "react-icons/ri";
+import { RiShieldUserLine, RiUserSharedLine } from "react-icons/ri";
 
 /**
  * アイコンのSVGパス定義
@@ -129,6 +129,7 @@ export const textIcons: Record<string, string> = {
  */
 export const reactIcons: Record<string, (className: string) => ReactElement> = {
   openldap: (className) => <RiShieldUserLine className={className} />,
+  "ldap-migration": (className) => <RiUserSharedLine className={className} />,
 } as const;
 
 /**

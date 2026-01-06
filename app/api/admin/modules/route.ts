@@ -28,6 +28,20 @@ export async function GET() {
       menuOrderOverrides[menuId] = parseInt(setting.value, 10);
     }
 
+    // モジュール有効状態のオーバーライドを取得
+    const moduleEnabledSettings = await prisma.systemSetting.findMany({
+      where: {
+        key: {
+          startsWith: "module_enabled_",
+        },
+      },
+    });
+    const moduleEnabledOverrides: Record<string, boolean> = {};
+    for (const setting of moduleEnabledSettings) {
+      const moduleId = setting.key.replace("module_enabled_", "");
+      moduleEnabledOverrides[moduleId] = setting.value === "true";
+    }
+
     // コンテナステータスをチェックする関数
     const checkContainerStatus = async (containerId: string): Promise<boolean> => {
       try {
@@ -74,13 +88,16 @@ export async function GET() {
             )
           : [];
 
+        // モジュール有効状態: SystemSettingの値があればそれを使用、なければデフォルト値
+        const isEnabled = moduleEnabledOverrides[module.id] ?? module.enabled;
+
         return {
           id: module.id,
           name: module.name,
           nameJa: module.nameJa,
           description: module.description,
           descriptionJa: module.descriptionJa,
-          enabled: module.enabled,
+          enabled: isEnabled,
           type: isCore ? ("core" as const) : ("addon" as const),
           menuCount: module.menus.filter((m) => m.enabled).length,
           menus: module.menus.map((menu) => ({

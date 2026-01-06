@@ -4,6 +4,7 @@ import { systemModule } from "@/lib/core-modules/system";
 
 // アドオンモジュール
 import { evaluationModule } from "@/lib/addon-modules/evaluation/module";
+import { ldapMigrationModule } from "@/lib/addon-modules/ldap-migration";
 import { openldapModule } from "@/lib/addon-modules/openldap";
 import { organizationModule } from "@/lib/addon-modules/organization";
 import { prisma } from "@/lib/prisma";
@@ -101,6 +102,7 @@ export const moduleRegistry: ModuleRegistry = {
 
   // アドオンモジュール
   evaluation: evaluationModule,
+  "ldap-migration": ldapMigrationModule,
   openldap: openldapModule,
   organization: organizationModule,
 };
