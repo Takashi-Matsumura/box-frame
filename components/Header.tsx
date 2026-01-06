@@ -72,6 +72,7 @@ export function Header({ session, language = "en" }: HeaderProps) {
   const isSettings = pathname === "/settings";
   const isDataManagement = pathname === "/admin/data-management";
   const isEvaluationMaster = pathname === "/admin/evaluation-master";
+  const isEvaluationRag = pathname === "/admin/evaluation-rag";
 
   // 組織分析タブ
   const analyticsTab = searchParams.get("tab") || "overview";
@@ -304,6 +305,23 @@ export function Header({ session, language = "en" }: HeaderProps) {
     },
   ];
 
+  // 評価AIサポートタブ
+  const evaluationRagTab = searchParams.get("tab") || "knowledge-base";
+  const evaluationRagTabs = [
+    {
+      name: language === "ja" ? "ナレッジベース" : "Knowledge Base",
+      icon: <FaDatabase className="w-5 h-5" />,
+      path: "/admin/evaluation-rag?tab=knowledge-base",
+      active: evaluationRagTab === "knowledge-base",
+    },
+    {
+      name: language === "ja" ? "システムプロンプト" : "System Prompt",
+      icon: <FaStar className="w-5 h-5" />,
+      path: "/admin/evaluation-rag?tab=system-prompt",
+      active: evaluationRagTab === "system-prompt",
+    },
+  ];
+
   const renderTabs = (tabs: typeof analyticsTabs, label: string) => (
     <div className="border-t border-border bg-muted">
       <nav className="flex gap-1 px-6" aria-label={label}>
@@ -382,6 +400,7 @@ export function Header({ session, language = "en" }: HeaderProps) {
       {isSettings && renderTabs(settingsTabs, "Settings Tabs")}
       {isDataManagement && renderTabs(dataManagementTabs, "Data Management Tabs")}
       {isEvaluationMaster && renderTabs(evaluationMasterTabs, "Evaluation Master Tabs")}
+      {isEvaluationRag && renderTabs(evaluationRagTabs, "Evaluation AI Support Tabs")}
     </header>
   );
 }
