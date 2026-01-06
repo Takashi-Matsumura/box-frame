@@ -140,6 +140,8 @@ lib/
   │   ├── organization/     # 組織管理モジュール
   │   ├── system/           # システムモジュール
   │   └── ai/               # 生成AIモジュール
+  ├── addon-modules/        # アドオンモジュール
+  │   └── ldap-migration/   # LDAPマイグレーション
   ├── services/             # フレーム基盤サービス
   │   └── notification-service.ts  # 通知サービス
   ├── stores/               # Zustandストア
@@ -199,7 +201,40 @@ mcp-servers/
 - トークン統計表示（コンテキスト使用量、トークン/秒）
 - 管理画面の「システム情報」タブでAPI設定
 
-## Prismaモデル（25モデル）
+## アドオンモジュール
+
+### ldap-migrationモジュール（LDAPマイグレーション）
+
+レガシーLDAPからOpenLDAPへのLazy Migration機能を提供するアドオンモジュールです。
+
+**認証フロー:**
+```
+1. ユーザーがOpenLDAPでログイン試行
+2. 認証失敗 & このモジュールが有効な場合
+3. レガシーLDAPで認証を試行
+4. 成功した場合:
+   - 会社組織(Employee)からメールで検索し社員情報取得
+   - OpenLDAPに新規ユーザーを自動作成
+   - User/LdapUserMappingを作成（migrated=true）
+5. マイグレーション完了後はモジュールを無効化するだけで運用可能
+```
+
+**設定場所:** モジュール管理画面（`/admin?tab=modules`）でモジュールを選択
+
+**設定項目:**
+- サーバURL: `ldap://ldap.example.com:389`
+- ベースDN: `ou=Users,dc=example,dc=com`
+- 検索フィルタ: `(uid={username})`
+- タイムアウト: ミリ秒
+
+**テスト機能:**
+- 接続テスト: サーバへの接続確認
+- ユーザー検索: ユーザー名でLDAP検索
+- 認証テスト: ユーザー名/パスワードで認証確認
+
+**依存:** openldapモジュール
+
+## Prismaモデル（26モデル）
 
 ### 認証系
 - Account, Session, User, VerificationToken
@@ -208,7 +243,7 @@ mcp-servers/
 - AuditLog, Notification, Announcement
 
 ### LDAP認証系
-- LdapConfig, LdapUserMapping, LdapAuthLog, OpenLdapConfig
+- LdapConfig, LdapUserMapping, LdapAuthLog, OpenLdapConfig, LegacyLdapConfig
 
 ### アクセス制御系
 - Permission, AccessKey, AccessKeyPermission, UserAccessKey
