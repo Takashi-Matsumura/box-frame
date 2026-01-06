@@ -61,21 +61,28 @@ export const menuGroups: Record<string, MenuGroup> = {
 /**
  * 全モジュールを取得
  * moduleRegistryから有効なモジュールを動的に取得
- * メニュー順序のオーバーライドをデータベースから適用
+ * メニュー順序と有効状態のオーバーライドをデータベースから適用
  */
 export async function getAllModules(): Promise<AppModule[]> {
-  // メニュー順序のオーバーライドを取得
-  const menuOrderSettings = await prisma.systemSetting.findMany({
+  // メニュー順序と有効状態のオーバーライドを取得
+  const menuSettings = await prisma.systemSetting.findMany({
     where: {
-      key: {
-        startsWith: "menu_order_",
-      },
+      OR: [
+        { key: { startsWith: "menu_order_" } },
+        { key: { startsWith: "menu_enabled_" } },
+      ],
     },
   });
   const menuOrderOverrides: Record<string, number> = {};
-  for (const setting of menuOrderSettings) {
-    const menuId = setting.key.replace("menu_order_", "");
-    menuOrderOverrides[menuId] = parseInt(setting.value, 10);
+  const menuEnabledOverrides: Record<string, boolean> = {};
+  for (const setting of menuSettings) {
+    if (setting.key.startsWith("menu_order_")) {
+      const menuId = setting.key.replace("menu_order_", "");
+      menuOrderOverrides[menuId] = parseInt(setting.value, 10);
+    } else if (setting.key.startsWith("menu_enabled_")) {
+      const menuId = setting.key.replace("menu_enabled_", "");
+      menuEnabledOverrides[menuId] = setting.value === "true";
+    }
   }
 
   return Object.values(moduleRegistry)
@@ -85,6 +92,7 @@ export async function getAllModules(): Promise<AppModule[]> {
       menus: module.menus.map((menu) => ({
         ...menu,
         order: menuOrderOverrides[menu.id] ?? menu.order,
+        enabled: menuEnabledOverrides[menu.id] ?? menu.enabled,
       })),
     }));
 }
