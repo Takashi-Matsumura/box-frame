@@ -1,6 +1,7 @@
 """LLM client for llama.cpp server."""
 
 import logging
+import json
 from typing import List, Dict, Any, AsyncGenerator
 import httpx
 
@@ -73,7 +74,21 @@ class LLMClient:
                                 if data == "[DONE]":
                                     break
 
-                                yield data
+                                # Parse llama.cpp format and extract content
+                                try:
+                                    parsed = json.loads(data)
+                                    # llama.cpp format: {"choices": [{"delta": {"content": "..."}}]}
+                                    choices = parsed.get("choices", [])
+                                    if choices:
+                                        delta = choices[0].get("delta", {})
+                                        content = delta.get("content", "")
+                                        if content:
+                                            # Return in simplified format for frontend
+                                            yield json.dumps({"content": content})
+                                except json.JSONDecodeError:
+                                    # Pass through if not valid JSON
+                                    logger.warning(f"Failed to parse LLM response: {data}")
+                                    continue
 
                 else:
                     # Non-streaming response
