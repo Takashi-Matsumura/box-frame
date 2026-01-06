@@ -25,6 +25,12 @@ class TextUploadRequest(BaseModel):
     filename: str
 
 
+class DocumentCreateRequest(BaseModel):
+    """Simple document creation request."""
+    content: str
+    metadata: dict = {}
+
+
 @router.post("/upload", response_model=DocumentUploadResponse)
 async def upload_document(file: UploadFile = File(...)):
     """
@@ -318,4 +324,128 @@ async def get_document_count():
         raise HTTPException(
             status_code=500,
             detail=f"Failed to count documents: {str(e)}"
+        )
+
+
+@router.post("")
+async def create_document(request: DocumentCreateRequest):
+    """
+    Create a document from plain text content.
+
+    Simple API for adding text to RAG knowledge base.
+    """
+    try:
+        text = clean_text(request.content)
+
+        if not text.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Content is empty"
+            )
+
+        title = request.metadata.get("title", "Untitled")
+        category = request.metadata.get("category", "general")
+        filename = f"{title}.md"
+
+        # Create chunks with metadata
+        chunk_ids, chunks, metadatas = create_chunks_with_metadata(
+            text=text,
+            filename=filename,
+            file_type="markdown",
+        )
+
+        # Add category to metadata
+        for m in metadatas:
+            m["category"] = category
+            m["title"] = title
+
+        # Generate embeddings for chunks
+        logger.info(f"Generating embeddings for {len(chunks)} chunks...")
+        embeddings = embedding_model.encode_documents(chunks)
+
+        # Add to vector database
+        vector_db.add_documents(
+            ids=chunk_ids,
+            documents=chunks,
+            embeddings=embeddings,
+            metadatas=metadatas,
+        )
+
+        logger.info(f"Created document '{title}': {len(chunks)} chunks")
+
+        return {
+            "success": True,
+            "id": chunk_ids[0] if chunk_ids else None,
+            "message": f"Document '{title}' created successfully",
+            "chunk_count": len(chunks),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to create document: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create document: {str(e)}"
+        )
+
+
+@router.get("")
+async def get_documents():
+    """
+    Get all documents in simplified format.
+
+    Returns individual chunks with their IDs for management.
+    """
+    try:
+        results = vector_db.get_all_documents()
+
+        documents = []
+        for i, doc_id in enumerate(results["ids"]):
+            metadata = results["metadatas"][i]
+            documents.append({
+                "id": doc_id,
+                "content": results["documents"][i][:200] + "..." if len(results["documents"][i]) > 200 else results["documents"][i],
+                "metadata": {
+                    "title": metadata.get("title", metadata.get("filename", "Untitled")),
+                    "category": metadata.get("category", ""),
+                    "filename": metadata.get("filename", ""),
+                },
+                "created_at": metadata.get("upload_timestamp", ""),
+            })
+
+        return {
+            "documents": documents,
+            "total": len(documents),
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get documents: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get documents: {str(e)}"
+        )
+
+
+@router.delete("/by-id/{doc_id}")
+async def delete_document_by_id(doc_id: str):
+    """Delete a single document chunk by its ID."""
+    try:
+        logger.info(f"Deleting document by ID: {doc_id}")
+
+        # Delete the specific document
+        vector_db.delete_documents([doc_id])
+
+        logger.info(f"Deleted document: {doc_id}")
+
+        return {
+            "success": True,
+            "message": f"Document deleted successfully",
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to delete document: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete document: {str(e)}"
         )

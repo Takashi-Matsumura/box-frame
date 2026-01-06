@@ -85,6 +85,22 @@ export const evaluationModule: AppModule = {
       descriptionJa: "評価期間・重み・カテゴリの管理",
       isImplemented: true,
     },
+    // 管理者向けメニュー: 評価AIナレッジ管理
+    {
+      id: "evaluationRag",
+      moduleId: "evaluation",
+      name: "Evaluation AI Knowledge",
+      nameJa: "評価AIナレッジ",
+      path: "/admin/evaluation-rag",
+      menuGroup: "admin",
+      requiredRoles: ["ADMIN"],
+      enabled: true,
+      order: 75,
+      icon: getMenuIcon("evaluationRag", "evaluation"),
+      description: "Manage RAG knowledge base for AI assistant",
+      descriptionJa: "AIアシスタント用のナレッジベース管理",
+      isImplemented: true,
+    },
   ],
   services: [
     {
