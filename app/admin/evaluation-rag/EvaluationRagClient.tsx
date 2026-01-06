@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   Database,
   FileText,
@@ -14,6 +16,8 @@ import {
   ChevronDown,
   ChevronRight,
   File,
+  Eye,
+  Code,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,6 +86,8 @@ const translations = {
     hideContent: "内容を隠す",
     loading: "読み込み中...",
     uploadedAt: "登録日時",
+    preview: "プレビュー",
+    source: "ソース",
   },
   en: {
     title: "Evaluation AI Knowledge",
@@ -120,6 +126,8 @@ const translations = {
     hideContent: "Hide content",
     loading: "Loading...",
     uploadedAt: "Uploaded at",
+    preview: "Preview",
+    source: "Source",
   },
 };
 
@@ -138,6 +146,7 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
   const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
   const [docContent, setDocContent] = useState<DocumentContent | null>(null);
   const [loadingContent, setLoadingContent] = useState(false);
+  const [viewMode, setViewMode] = useState<"preview" | "source">("preview");
 
   // Form state
   const [title, setTitle] = useState("");
@@ -514,26 +523,157 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
 
                   {/* Expanded Content */}
                   {expandedDoc === doc.filename && (
-                    <div className="border-t bg-muted/30 p-4">
+                    <div className="border-t bg-muted/30">
                       {loadingContent ? (
-                        <div className="flex items-center justify-center py-4">
+                        <div className="flex items-center justify-center py-8">
                           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                           <span className="ml-2 text-sm text-muted-foreground">{t.loading}</span>
                         </div>
                       ) : docContent ? (
-                        <div className="space-y-3">
-                          {docContent.chunks.map((chunk, index) => (
-                            <div key={index} className="text-sm">
-                              {docContent.chunks.length > 1 && (
-                                <div className="text-xs text-muted-foreground mb-1">
-                                  Chunk {chunk.chunk_index + 1} / {docContent.total_chunks}
+                        <div>
+                          {/* View Mode Toggle */}
+                          <div className="flex items-center gap-2 p-3 border-b bg-muted/50">
+                            <Button
+                              variant={viewMode === "preview" ? "default" : "ghost"}
+                              size="sm"
+                              onClick={() => setViewMode("preview")}
+                              className="h-7 text-xs"
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              {t.preview}
+                            </Button>
+                            <Button
+                              variant={viewMode === "source" ? "default" : "ghost"}
+                              size="sm"
+                              onClick={() => setViewMode("source")}
+                              className="h-7 text-xs"
+                            >
+                              <Code className="h-3 w-3 mr-1" />
+                              {t.source}
+                            </Button>
+                          </div>
+
+                          {/* Document Content */}
+                          <div className="p-4 max-h-[500px] overflow-y-auto">
+                            {(() => {
+                              // Combine all chunks into a single document
+                              const fullContent = docContent.chunks
+                                .sort((a, b) => a.chunk_index - b.chunk_index)
+                                .map((chunk) => chunk.content)
+                                .join("\n\n");
+
+                              if (viewMode === "source") {
+                                return (
+                                  <pre className="bg-background rounded-lg p-4 border whitespace-pre-wrap font-mono text-xs leading-relaxed">
+                                    {fullContent}
+                                  </pre>
+                                );
+                              }
+
+                              return (
+                                <div className="bg-background rounded-lg p-4 border">
+                                  <div className="markdown-preview">
+                                    <ReactMarkdown
+                                      remarkPlugins={[remarkGfm]}
+                                      components={{
+                                        p: ({ children }) => (
+                                          <p className="my-2 leading-relaxed text-sm">{children}</p>
+                                        ),
+                                        ul: ({ children }) => (
+                                          <ul className="my-2 ml-4 list-disc space-y-1 text-sm">
+                                            {children}
+                                          </ul>
+                                        ),
+                                        ol: ({ children }) => (
+                                          <ol className="my-2 ml-4 list-decimal space-y-1 text-sm">
+                                            {children}
+                                          </ol>
+                                        ),
+                                        li: ({ children }) => (
+                                          <li className="leading-relaxed">{children}</li>
+                                        ),
+                                        h1: ({ children }) => (
+                                          <h1 className="text-xl font-bold my-4 pb-2 border-b">
+                                            {children}
+                                          </h1>
+                                        ),
+                                        h2: ({ children }) => (
+                                          <h2 className="text-lg font-bold my-3 pb-1 border-b">
+                                            {children}
+                                          </h2>
+                                        ),
+                                        h3: ({ children }) => (
+                                          <h3 className="text-base font-bold my-2">
+                                            {children}
+                                          </h3>
+                                        ),
+                                        h4: ({ children }) => (
+                                          <h4 className="text-sm font-bold my-2">
+                                            {children}
+                                          </h4>
+                                        ),
+                                        strong: ({ children }) => (
+                                          <strong className="font-semibold">
+                                            {children}
+                                          </strong>
+                                        ),
+                                        em: ({ children }) => (
+                                          <em className="italic">{children}</em>
+                                        ),
+                                        code: ({ children }) => (
+                                          <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">
+                                            {children}
+                                          </code>
+                                        ),
+                                        pre: ({ children }) => (
+                                          <pre className="bg-muted p-3 rounded my-3 overflow-x-auto text-xs">
+                                            {children}
+                                          </pre>
+                                        ),
+                                        blockquote: ({ children }) => (
+                                          <blockquote className="border-l-4 border-primary/50 pl-4 my-3 italic text-muted-foreground">
+                                            {children}
+                                          </blockquote>
+                                        ),
+                                        hr: () => (
+                                          <hr className="my-4 border-border" />
+                                        ),
+                                        a: ({ href, children }) => (
+                                          <a
+                                            href={href}
+                                            className="text-primary hover:underline"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                          >
+                                            {children}
+                                          </a>
+                                        ),
+                                        table: ({ children }) => (
+                                          <div className="my-3 overflow-x-auto">
+                                            <table className="min-w-full border-collapse border border-border text-sm">
+                                              {children}
+                                            </table>
+                                          </div>
+                                        ),
+                                        th: ({ children }) => (
+                                          <th className="border border-border bg-muted px-3 py-2 text-left font-semibold">
+                                            {children}
+                                          </th>
+                                        ),
+                                        td: ({ children }) => (
+                                          <td className="border border-border px-3 py-2">
+                                            {children}
+                                          </td>
+                                        ),
+                                      }}
+                                    >
+                                      {fullContent}
+                                    </ReactMarkdown>
+                                  </div>
                                 </div>
-                              )}
-                              <div className="bg-background rounded-lg p-3 border whitespace-pre-wrap font-mono text-xs">
-                                {chunk.content}
-                              </div>
-                            </div>
-                          ))}
+                              );
+                            })()}
+                          </div>
                         </div>
                       ) : null}
                     </div>
