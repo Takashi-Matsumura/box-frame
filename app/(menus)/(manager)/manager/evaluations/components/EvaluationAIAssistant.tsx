@@ -68,7 +68,7 @@ const QUICK_ACTIONS = {
   ],
 };
 
-const SYSTEM_PROMPT = {
+const DEFAULT_SYSTEM_PROMPT = {
   ja: `あなたは人事評価の専門アシスタントです。評価者が適切な評価を行えるようサポートします。
 回答は具体的かつ実践的なアドバイスを心がけてください。
 - 評価のポイントや基準について説明できます
@@ -82,6 +82,8 @@ Please provide specific and practical advice.
 - You can support setting growth goals
 Please respond in English concisely.`,
 };
+
+const SYSTEM_PROMPT_STORAGE_KEY = "evaluation-ai-system-prompt";
 
 export function EvaluationAIAssistant({
   language,
@@ -98,6 +100,7 @@ export function EvaluationAIAssistant({
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -172,6 +175,22 @@ export function EvaluationAIAssistant({
     fetchBackendStatus();
   }, [fetchBackendStatus]);
 
+  // localStorageからシステムプロンプトを読み込む
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SYSTEM_PROMPT_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setSystemPrompt({
+          ja: parsed.ja || DEFAULT_SYSTEM_PROMPT.ja,
+          en: parsed.en || DEFAULT_SYSTEM_PROMPT.en,
+        });
+      }
+    } catch {
+      // エラー時はデフォルトを使用
+    }
+  }, []);
+
   // メッセージが追加されたらスクロール
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -225,7 +244,7 @@ export function EvaluationAIAssistant({
 
     try {
       // システムプロンプトを構築
-      let systemContent = SYSTEM_PROMPT[language];
+      let systemContent = systemPrompt[language];
       if (employeeInfo) {
         systemContent += `\n\n${language === "ja" ? "【評価対象者情報】" : "【Employee Information】"}\n${employeeInfo}`;
       }

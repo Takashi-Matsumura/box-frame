@@ -248,8 +248,90 @@ model ProcessCategory {
 <div className="w-9">{/* 削除ボタン（0設定時のみ） */}</div>
 ```
 
+## 評価AIサポート
+
+評価者を支援するAIアシスタント機能。RAGによるナレッジベース参照とシステムプロンプトのカスタマイズが可能。
+
+### ディレクトリ構成
+
+```
+app/admin/evaluation-rag/
+├── page.tsx                    # 評価AIサポートページ
+└── EvaluationRagClient.tsx     # クライアントコンポーネント
+
+app/(menus)/(manager)/manager/evaluations/components/
+└── EvaluationAIAssistant.tsx   # AIアシスタントUI
+```
+
+### フレームタブ構成
+
+`/admin/evaluation-rag` ページはフレームヘッダーにタブを表示：
+
+| タブ | URLパラメータ | 説明 |
+|------|---------------|------|
+| ナレッジベース | `?tab=knowledge-base` | RAGドキュメント管理 |
+| システムプロンプト | `?tab=system-prompt` | AIアシスタントの動作設定 |
+
+### ナレッジベース管理
+
+RAGバックエンド（Python FastAPI + ChromaDB）と連携し、評価関連ドキュメントを管理。
+
+```typescript
+// ドキュメント登録
+POST /api/rag-backend/documents
+{
+  content: "マークダウン形式のコンテンツ",
+  metadata: {
+    title: "評価ガイドライン",
+    category: "evaluation"
+  }
+}
+
+// ドキュメント一覧取得
+GET /api/rag-backend/documents/list
+
+// ドキュメント削除
+DELETE /api/rag-backend/documents/{filename}
+```
+
+### システムプロンプト設定
+
+AIアシスタントの動作を定義するシステムプロンプトをカスタマイズ可能。
+
+**保存先**: `localStorage` (キー: `evaluation-ai-system-prompt`)
+
+```typescript
+// 保存形式
+{
+  ja: "日本語プロンプト",
+  en: "English prompt"
+}
+```
+
+**デフォルトプロンプト**:
+```
+あなたは人事評価の専門アシスタントです。評価者が適切な評価を行えるようサポートします。
+回答は具体的かつ実践的なアドバイスを心がけてください。
+- 評価のポイントや基準について説明できます
+- フィードバックの書き方をアドバイスできます
+- 成長目標の設定をサポートできます
+回答は日本語で簡潔に行ってください。
+```
+
+### AIアシスタント
+
+人事評価画面（`/manager/evaluations`）の右サイドパネルに表示されるAIチャット機能。
+
+**機能**:
+- RAGによるナレッジベース参照（トグルで有効/無効切り替え可能）
+- SSEストリーミングレスポンス
+- マークダウンレンダリング
+- クイックアクション（評価のポイント、フィードバック例、成長目標設定）
+- システムプロンプトのカスタマイズ反映
+
 ## 注意事項
 
 - **DEFAULTエントリは不要**: フォールバックはコード内のハードコード値で対応
 - **空グループの削除**: 全ての重みを削除した役職グループは手動で削除可能
 - **評価期間ごとに独立**: 重み設定・役職グループは評価期間に紐づく
+- **システムプロンプト**: localStorageに保存されるため、ブラウザごとに設定が必要

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -18,6 +19,9 @@ import {
   File,
   Eye,
   Code,
+  Bot,
+  Save,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,10 +52,27 @@ interface EvaluationRagClientProps {
   language: "en" | "ja";
 }
 
+// デフォルトのシステムプロンプト
+const DEFAULT_SYSTEM_PROMPT = {
+  ja: `あなたは人事評価の専門アシスタントです。評価者が適切な評価を行えるようサポートします。
+回答は具体的かつ実践的なアドバイスを心がけてください。
+- 評価のポイントや基準について説明できます
+- フィードバックの書き方をアドバイスできます
+- 成長目標の設定をサポートできます
+回答は日本語で簡潔に行ってください。`,
+  en: `You are a professional HR evaluation assistant. You help evaluators conduct appropriate evaluations.
+Please provide specific and practical advice.
+- You can explain evaluation points and criteria
+- You can advise on how to write feedback
+- You can support setting growth goals
+Please respond in English concisely.`,
+};
+
+const STORAGE_KEY = "evaluation-ai-system-prompt";
+
 const translations = {
   ja: {
-    title: "評価AIナレッジ",
-    description: "AIアシスタントが参照するナレッジベースを管理します",
+    // Knowledge Base
     backendStatus: "バックエンド状態",
     healthy: "接続中",
     unhealthy: "未接続",
@@ -82,16 +103,23 @@ const translations = {
     characters: "文字",
     chunkInfo: "チャンクに分割",
     totalChars: "文字",
-    viewContent: "内容を表示",
-    hideContent: "内容を隠す",
     loading: "読み込み中...",
-    uploadedAt: "登録日時",
     preview: "プレビュー",
     source: "ソース",
+    // System Prompt
+    systemPromptTitle: "AIアシスタントのシステムプロンプト",
+    systemPromptDescription: "AIアシスタントの動作や回答スタイルを定義するプロンプトです",
+    systemPromptJa: "日本語プロンプト",
+    systemPromptEn: "英語プロンプト",
+    save: "保存",
+    saving: "保存中...",
+    saved: "保存しました",
+    resetToDefault: "デフォルトに戻す",
+    confirmReset: "システムプロンプトをデフォルトに戻しますか？",
+    currentPrompt: "現在のプロンプト",
   },
   en: {
-    title: "Evaluation AI Knowledge",
-    description: "Manage the knowledge base referenced by the AI assistant",
+    // Knowledge Base
     backendStatus: "Backend Status",
     healthy: "Connected",
     unhealthy: "Disconnected",
@@ -122,18 +150,29 @@ const translations = {
     characters: "characters",
     chunkInfo: "chunks",
     totalChars: "chars",
-    viewContent: "View content",
-    hideContent: "Hide content",
     loading: "Loading...",
-    uploadedAt: "Uploaded at",
     preview: "Preview",
     source: "Source",
+    // System Prompt
+    systemPromptTitle: "AI Assistant System Prompt",
+    systemPromptDescription: "Define the behavior and response style of the AI assistant",
+    systemPromptJa: "Japanese Prompt",
+    systemPromptEn: "English Prompt",
+    save: "Save",
+    saving: "Saving...",
+    saved: "Saved",
+    resetToDefault: "Reset to Default",
+    confirmReset: "Reset the system prompt to default?",
+    currentPrompt: "Current Prompt",
   },
 };
 
 export default function EvaluationRagClient({ language }: EvaluationRagClientProps) {
   const t = translations[language];
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get("tab") || "knowledge-base";
 
+  // Knowledge Base state
   const [backendStatus, setBackendStatus] = useState<"unknown" | "healthy" | "unhealthy">("unknown");
   const [totalChunks, setTotalChunks] = useState(0);
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
@@ -141,17 +180,33 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
   const [isRegistering, setIsRegistering] = useState(false);
   const [deletingFilename, setDeletingFilename] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
-  // Expanded document content
   const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
   const [docContent, setDocContent] = useState<DocumentContent | null>(null);
   const [loadingContent, setLoadingContent] = useState(false);
   const [viewMode, setViewMode] = useState<"preview" | "source">("preview");
-
-  // Form state
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("evaluation");
   const [content, setContent] = useState("");
+
+  // System Prompt state
+  const [systemPromptJa, setSystemPromptJa] = useState(DEFAULT_SYSTEM_PROMPT.ja);
+  const [systemPromptEn, setSystemPromptEn] = useState(DEFAULT_SYSTEM_PROMPT.en);
+  const [isSavingPrompt, setIsSavingPrompt] = useState(false);
+  const [promptMessage, setPromptMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Load system prompt from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.ja) setSystemPromptJa(parsed.ja);
+        if (parsed.en) setSystemPromptEn(parsed.en);
+      } catch {
+        // Ignore parse error
+      }
+    }
+  }, []);
 
   // Fetch backend status and document count
   const fetchStatus = useCallback(async () => {
@@ -169,7 +224,7 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
     }
   }, []);
 
-  // Fetch documents list (grouped by filename)
+  // Fetch documents list
   const fetchDocuments = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -239,7 +294,6 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
         setMessage({ type: "success", text: t.registerSuccess });
         setTitle("");
         setContent("");
-        // Refresh data
         await fetchStatus();
         await fetchDocuments();
       } else {
@@ -254,7 +308,7 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
     }
   };
 
-  // Delete document (by filename - deletes all chunks)
+  // Delete document
   const handleDelete = async (filename: string) => {
     if (!confirm(t.confirmDelete)) return;
 
@@ -268,12 +322,10 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
 
       if (res.ok) {
         setMessage({ type: "success", text: t.deleteSuccess });
-        // Clear expanded content if deleted
         if (expandedDoc === filename) {
           setExpandedDoc(null);
           setDocContent(null);
         }
-        // Refresh data
         await fetchStatus();
         await fetchDocuments();
       } else {
@@ -294,6 +346,34 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
     await fetchDocuments();
   };
 
+  // Save system prompt
+  const handleSavePrompt = () => {
+    setIsSavingPrompt(true);
+    setPromptMessage(null);
+
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        ja: systemPromptJa,
+        en: systemPromptEn,
+      }));
+      setPromptMessage({ type: "success", text: t.saved });
+    } catch {
+      setPromptMessage({ type: "error", text: t.error });
+    } finally {
+      setIsSavingPrompt(false);
+    }
+  };
+
+  // Reset system prompt
+  const handleResetPrompt = () => {
+    if (!confirm(t.confirmReset)) return;
+
+    setSystemPromptJa(DEFAULT_SYSTEM_PROMPT.ja);
+    setSystemPromptEn(DEFAULT_SYSTEM_PROMPT.en);
+    localStorage.removeItem(STORAGE_KEY);
+    setPromptMessage({ type: "success", text: t.saved });
+  };
+
   // Format timestamp
   const formatTimestamp = (timestamp: string) => {
     if (!timestamp) return "-";
@@ -306,384 +386,382 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
 
   // Get display name from filename
   const getDisplayName = (filename: string) => {
-    // Remove .md extension if present
     return filename.replace(/\.md$/, "");
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">{t.title}</h1>
-        <p className="text-muted-foreground">{t.description}</p>
-      </div>
+    <div className="container mx-auto py-6 mt-8">
+      {/* Knowledge Base Tab */}
+      {activeTab === "knowledge-base" && (
+        <div className="space-y-6">
+          {/* Status Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Database className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm font-medium">{t.backendStatus}</span>
+                  </div>
+                  <Badge variant={backendStatus === "healthy" ? "default" : "destructive"}>
+                    {backendStatus === "healthy" ? (
+                      <>
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        {t.healthy}
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        {t.unhealthy}
+                      </>
+                    )}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
 
-      {/* Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Database className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium">{t.backendStatus}</span>
-              </div>
-              <Badge variant={backendStatus === "healthy" ? "default" : "destructive"}>
-                {backendStatus === "healthy" ? (
-                  <>
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    {t.healthy}
-                  </>
-                ) : (
-                  <>
-                    <AlertCircle className="h-3 w-3 mr-1" />
-                    {t.unhealthy}
-                  </>
-                )}
-              </Badge>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm font-medium">{t.documentCount}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">
+                      {documents.length} {t.documents}
+                    </Badge>
+                    <Badge variant="secondary">
+                      {totalChunks} {t.chunks}
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Message */}
+          {message && (
+            <div
+              className={`p-4 rounded-lg flex items-center gap-2 ${
+                message.type === "success"
+                  ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                  : "bg-red-500/10 text-red-600 dark:text-red-400"
+              }`}
+            >
+              {message.type === "success" ? (
+                <CheckCircle2 className="h-5 w-5" />
+              ) : (
+                <AlertCircle className="h-5 w-5" />
+              )}
+              {message.text}
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm font-medium">{t.documentCount}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">
-                  {documents.length} {t.documents}
-                </Badge>
-                <Badge variant="secondary">
-                  {totalChunks} {t.chunks}
-                </Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Message */}
-      {message && (
-        <div
-          className={`p-4 rounded-lg flex items-center gap-2 ${
-            message.type === "success"
-              ? "bg-green-500/10 text-green-600 dark:text-green-400"
-              : "bg-red-500/10 text-red-600 dark:text-red-400"
-          }`}
-        >
-          {message.type === "success" ? (
-            <CheckCircle2 className="h-5 w-5" />
-          ) : (
-            <AlertCircle className="h-5 w-5" />
           )}
-          {message.text}
+
+          {/* Add Document Form */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Plus className="h-5 w-5" />
+                {t.addDocument}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">{t.documentTitle}</Label>
+                  <Input
+                    id="title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder={t.documentTitlePlaceholder}
+                    disabled={backendStatus !== "healthy" || isRegistering}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category">{t.documentCategory}</Label>
+                  <Input
+                    id="category"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    placeholder={t.documentCategoryPlaceholder}
+                    disabled={backendStatus !== "healthy" || isRegistering}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="content">{t.documentContent}</Label>
+                  <span className="text-xs text-muted-foreground">
+                    {content.length} {t.characters}
+                  </span>
+                </div>
+                <Textarea
+                  id="content"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder={t.documentContentPlaceholder}
+                  rows={6}
+                  disabled={backendStatus !== "healthy" || isRegistering}
+                />
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleRegister}
+                  disabled={backendStatus !== "healthy" || isRegistering || !content.trim()}
+                >
+                  {isRegistering ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      {t.registering}
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      {t.register}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Documents List */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  {t.registeredDocuments}
+                </CardTitle>
+                <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+                  {t.refresh}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : documents.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-2 opacity-30" />
+                  <p>{t.noDocuments}</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {documents.map((doc) => (
+                    <div key={doc.filename} className="rounded-lg border bg-card overflow-hidden">
+                      <div className="p-4 flex items-center justify-between gap-4">
+                        <button
+                          onClick={() => fetchDocumentContent(doc.filename)}
+                          className="flex items-center gap-3 flex-1 min-w-0 text-left hover:bg-muted/50 -m-2 p-2 rounded-lg transition-colors"
+                        >
+                          <div className="shrink-0">
+                            {expandedDoc === doc.filename ? (
+                              <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                            )}
+                          </div>
+                          <File className="h-5 w-5 text-primary shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{getDisplayName(doc.filename)}</p>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                              <span>{doc.chunk_count} {t.chunkInfo}</span>
+                              <span>{doc.total_chars.toLocaleString()} {t.totalChars}</span>
+                              {doc.upload_timestamp && (
+                                <span>{formatTimestamp(doc.upload_timestamp)}</span>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(doc.filename)}
+                          disabled={deletingFilename === doc.filename}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                        >
+                          {deletingFilename === doc.filename ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+
+                      {expandedDoc === doc.filename && (
+                        <div className="border-t bg-muted/30">
+                          {loadingContent ? (
+                            <div className="flex items-center justify-center py-8">
+                              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                              <span className="ml-2 text-sm text-muted-foreground">{t.loading}</span>
+                            </div>
+                          ) : docContent ? (
+                            <div>
+                              <div className="flex items-center gap-2 p-3 border-b bg-muted/50">
+                                <Button
+                                  variant={viewMode === "preview" ? "default" : "ghost"}
+                                  size="sm"
+                                  onClick={() => setViewMode("preview")}
+                                  className="h-7 text-xs"
+                                >
+                                  <Eye className="h-3 w-3 mr-1" />
+                                  {t.preview}
+                                </Button>
+                                <Button
+                                  variant={viewMode === "source" ? "default" : "ghost"}
+                                  size="sm"
+                                  onClick={() => setViewMode("source")}
+                                  className="h-7 text-xs"
+                                >
+                                  <Code className="h-3 w-3 mr-1" />
+                                  {t.source}
+                                </Button>
+                              </div>
+
+                              <div className="p-4 max-h-[500px] overflow-y-auto">
+                                {(() => {
+                                  const fullContent = docContent.chunks
+                                    .sort((a, b) => a.chunk_index - b.chunk_index)
+                                    .map((chunk) => chunk.content)
+                                    .join("\n\n");
+
+                                  if (viewMode === "source") {
+                                    return (
+                                      <pre className="bg-background rounded-lg p-4 border whitespace-pre-wrap font-mono text-xs leading-relaxed">
+                                        {fullContent}
+                                      </pre>
+                                    );
+                                  }
+
+                                  return (
+                                    <div className="bg-background rounded-lg p-4 border">
+                                      <div className="markdown-preview">
+                                        <ReactMarkdown
+                                          remarkPlugins={[remarkGfm]}
+                                          components={{
+                                            p: ({ children }) => <p className="my-2 leading-relaxed text-sm">{children}</p>,
+                                            ul: ({ children }) => <ul className="my-2 ml-4 list-disc space-y-1 text-sm">{children}</ul>,
+                                            ol: ({ children }) => <ol className="my-2 ml-4 list-decimal space-y-1 text-sm">{children}</ol>,
+                                            li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                                            h1: ({ children }) => <h1 className="text-xl font-bold my-4 pb-2 border-b">{children}</h1>,
+                                            h2: ({ children }) => <h2 className="text-lg font-bold my-3 pb-1 border-b">{children}</h2>,
+                                            h3: ({ children }) => <h3 className="text-base font-bold my-2">{children}</h3>,
+                                            h4: ({ children }) => <h4 className="text-sm font-bold my-2">{children}</h4>,
+                                            strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                                            em: ({ children }) => <em className="italic">{children}</em>,
+                                            code: ({ children }) => <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>,
+                                            pre: ({ children }) => <pre className="bg-muted p-3 rounded my-3 overflow-x-auto text-xs">{children}</pre>,
+                                            blockquote: ({ children }) => <blockquote className="border-l-4 border-primary/50 pl-4 my-3 italic text-muted-foreground">{children}</blockquote>,
+                                            hr: () => <hr className="my-4 border-border" />,
+                                            a: ({ href, children }) => <a href={href} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">{children}</a>,
+                                            table: ({ children }) => <div className="my-3 overflow-x-auto"><table className="min-w-full border-collapse border border-border text-sm">{children}</table></div>,
+                                            th: ({ children }) => <th className="border border-border bg-muted px-3 py-2 text-left font-semibold">{children}</th>,
+                                            td: ({ children }) => <td className="border border-border px-3 py-2">{children}</td>,
+                                          }}
+                                        >
+                                          {fullContent}
+                                        </ReactMarkdown>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
 
-      {/* Add Document Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5" />
-            {t.addDocument}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">{t.documentTitle}</Label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder={t.documentTitlePlaceholder}
-                disabled={backendStatus !== "healthy" || isRegistering}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="category">{t.documentCategory}</Label>
-              <Input
-                id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder={t.documentCategoryPlaceholder}
-                disabled={backendStatus !== "healthy" || isRegistering}
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="content">{t.documentContent}</Label>
-              <span className="text-xs text-muted-foreground">
-                {content.length} {t.characters}
-              </span>
-            </div>
-            <Textarea
-              id="content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder={t.documentContentPlaceholder}
-              rows={6}
-              disabled={backendStatus !== "healthy" || isRegistering}
-            />
-          </div>
-          <div className="flex justify-end">
-            <Button
-              onClick={handleRegister}
-              disabled={backendStatus !== "healthy" || isRegistering || !content.trim()}
+      {/* System Prompt Tab */}
+      {activeTab === "system-prompt" && (
+        <div className="space-y-6">
+          {/* Message */}
+          {promptMessage && (
+            <div
+              className={`p-4 rounded-lg flex items-center gap-2 ${
+                promptMessage.type === "success"
+                  ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                  : "bg-red-500/10 text-red-600 dark:text-red-400"
+              }`}
             >
-              {isRegistering ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {t.registering}
-                </>
+              {promptMessage.type === "success" ? (
+                <CheckCircle2 className="h-5 w-5" />
               ) : (
-                <>
-                  <Upload className="h-4 w-4 mr-2" />
-                  {t.register}
-                </>
+                <AlertCircle className="h-5 w-5" />
               )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Documents List */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              {t.registeredDocuments}
-            </CardTitle>
-            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
-              {t.refresh}
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : documents.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <FileText className="h-12 w-12 mx-auto mb-2 opacity-30" />
-              <p>{t.noDocuments}</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {documents.map((doc) => (
-                <div
-                  key={doc.filename}
-                  className="rounded-lg border bg-card overflow-hidden"
-                >
-                  {/* Document Header */}
-                  <div className="p-4 flex items-center justify-between gap-4">
-                    <button
-                      onClick={() => fetchDocumentContent(doc.filename)}
-                      className="flex items-center gap-3 flex-1 min-w-0 text-left hover:bg-muted/50 -m-2 p-2 rounded-lg transition-colors"
-                    >
-                      <div className="shrink-0">
-                        {expandedDoc === doc.filename ? (
-                          <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                        )}
-                      </div>
-                      <File className="h-5 w-5 text-primary shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{getDisplayName(doc.filename)}</p>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                          <span>{doc.chunk_count} {t.chunkInfo}</span>
-                          <span>{doc.total_chars.toLocaleString()} {t.totalChars}</span>
-                          {doc.upload_timestamp && (
-                            <span>{formatTimestamp(doc.upload_timestamp)}</span>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(doc.filename)}
-                      disabled={deletingFilename === doc.filename}
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                    >
-                      {deletingFilename === doc.filename ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-
-                  {/* Expanded Content */}
-                  {expandedDoc === doc.filename && (
-                    <div className="border-t bg-muted/30">
-                      {loadingContent ? (
-                        <div className="flex items-center justify-center py-8">
-                          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                          <span className="ml-2 text-sm text-muted-foreground">{t.loading}</span>
-                        </div>
-                      ) : docContent ? (
-                        <div>
-                          {/* View Mode Toggle */}
-                          <div className="flex items-center gap-2 p-3 border-b bg-muted/50">
-                            <Button
-                              variant={viewMode === "preview" ? "default" : "ghost"}
-                              size="sm"
-                              onClick={() => setViewMode("preview")}
-                              className="h-7 text-xs"
-                            >
-                              <Eye className="h-3 w-3 mr-1" />
-                              {t.preview}
-                            </Button>
-                            <Button
-                              variant={viewMode === "source" ? "default" : "ghost"}
-                              size="sm"
-                              onClick={() => setViewMode("source")}
-                              className="h-7 text-xs"
-                            >
-                              <Code className="h-3 w-3 mr-1" />
-                              {t.source}
-                            </Button>
-                          </div>
-
-                          {/* Document Content */}
-                          <div className="p-4 max-h-[500px] overflow-y-auto">
-                            {(() => {
-                              // Combine all chunks into a single document
-                              const fullContent = docContent.chunks
-                                .sort((a, b) => a.chunk_index - b.chunk_index)
-                                .map((chunk) => chunk.content)
-                                .join("\n\n");
-
-                              if (viewMode === "source") {
-                                return (
-                                  <pre className="bg-background rounded-lg p-4 border whitespace-pre-wrap font-mono text-xs leading-relaxed">
-                                    {fullContent}
-                                  </pre>
-                                );
-                              }
-
-                              return (
-                                <div className="bg-background rounded-lg p-4 border">
-                                  <div className="markdown-preview">
-                                    <ReactMarkdown
-                                      remarkPlugins={[remarkGfm]}
-                                      components={{
-                                        p: ({ children }) => (
-                                          <p className="my-2 leading-relaxed text-sm">{children}</p>
-                                        ),
-                                        ul: ({ children }) => (
-                                          <ul className="my-2 ml-4 list-disc space-y-1 text-sm">
-                                            {children}
-                                          </ul>
-                                        ),
-                                        ol: ({ children }) => (
-                                          <ol className="my-2 ml-4 list-decimal space-y-1 text-sm">
-                                            {children}
-                                          </ol>
-                                        ),
-                                        li: ({ children }) => (
-                                          <li className="leading-relaxed">{children}</li>
-                                        ),
-                                        h1: ({ children }) => (
-                                          <h1 className="text-xl font-bold my-4 pb-2 border-b">
-                                            {children}
-                                          </h1>
-                                        ),
-                                        h2: ({ children }) => (
-                                          <h2 className="text-lg font-bold my-3 pb-1 border-b">
-                                            {children}
-                                          </h2>
-                                        ),
-                                        h3: ({ children }) => (
-                                          <h3 className="text-base font-bold my-2">
-                                            {children}
-                                          </h3>
-                                        ),
-                                        h4: ({ children }) => (
-                                          <h4 className="text-sm font-bold my-2">
-                                            {children}
-                                          </h4>
-                                        ),
-                                        strong: ({ children }) => (
-                                          <strong className="font-semibold">
-                                            {children}
-                                          </strong>
-                                        ),
-                                        em: ({ children }) => (
-                                          <em className="italic">{children}</em>
-                                        ),
-                                        code: ({ children }) => (
-                                          <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">
-                                            {children}
-                                          </code>
-                                        ),
-                                        pre: ({ children }) => (
-                                          <pre className="bg-muted p-3 rounded my-3 overflow-x-auto text-xs">
-                                            {children}
-                                          </pre>
-                                        ),
-                                        blockquote: ({ children }) => (
-                                          <blockquote className="border-l-4 border-primary/50 pl-4 my-3 italic text-muted-foreground">
-                                            {children}
-                                          </blockquote>
-                                        ),
-                                        hr: () => (
-                                          <hr className="my-4 border-border" />
-                                        ),
-                                        a: ({ href, children }) => (
-                                          <a
-                                            href={href}
-                                            className="text-primary hover:underline"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                          >
-                                            {children}
-                                          </a>
-                                        ),
-                                        table: ({ children }) => (
-                                          <div className="my-3 overflow-x-auto">
-                                            <table className="min-w-full border-collapse border border-border text-sm">
-                                              {children}
-                                            </table>
-                                          </div>
-                                        ),
-                                        th: ({ children }) => (
-                                          <th className="border border-border bg-muted px-3 py-2 text-left font-semibold">
-                                            {children}
-                                          </th>
-                                        ),
-                                        td: ({ children }) => (
-                                          <td className="border border-border px-3 py-2">
-                                            {children}
-                                          </td>
-                                        ),
-                                      }}
-                                    >
-                                      {fullContent}
-                                    </ReactMarkdown>
-                                  </div>
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                  )}
-                </div>
-              ))}
+              {promptMessage.text}
             </div>
           )}
-        </CardContent>
-      </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bot className="h-5 w-5" />
+                {t.systemPromptTitle}
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">{t.systemPromptDescription}</p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Japanese Prompt */}
+              <div className="space-y-2">
+                <Label htmlFor="prompt-ja">{t.systemPromptJa}</Label>
+                <Textarea
+                  id="prompt-ja"
+                  value={systemPromptJa}
+                  onChange={(e) => setSystemPromptJa(e.target.value)}
+                  rows={8}
+                  className="font-mono text-sm"
+                />
+              </div>
+
+              {/* English Prompt */}
+              <div className="space-y-2">
+                <Label htmlFor="prompt-en">{t.systemPromptEn}</Label>
+                <Textarea
+                  id="prompt-en"
+                  value={systemPromptEn}
+                  onChange={(e) => setSystemPromptEn(e.target.value)}
+                  rows={8}
+                  className="font-mono text-sm"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-between pt-4 border-t">
+                <Button variant="outline" onClick={handleResetPrompt}>
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  {t.resetToDefault}
+                </Button>
+                <Button onClick={handleSavePrompt} disabled={isSavingPrompt}>
+                  {isSavingPrompt ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      {t.saving}
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      {t.save}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
