@@ -17,7 +17,8 @@ export function estimateTokens(text: string): number {
   if (!text) return 0;
 
   // 日本語文字（ひらがな、カタカナ、漢字）をカウント
-  const japaneseChars = text.match(/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/g)?.length || 0;
+  const japaneseChars =
+    text.match(/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/g)?.length || 0;
 
   // 非日本語部分の長さ
   const nonJapaneseLength = text.length - japaneseChars;
@@ -33,7 +34,9 @@ export function estimateTokens(text: string): number {
 /**
  * メッセージ配列の総トークン数を推定
  */
-export function estimateMessagesTokens(messages: { role: string; content: string }[]): number {
+export function estimateMessagesTokens(
+  messages: { role: string; content: string }[],
+): number {
   let total = 0;
 
   for (const msg of messages) {
@@ -71,7 +74,11 @@ export function getContextWindowSize(provider: string, model: string): number {
   }
 
   // Local LLMs - common context sizes
-  if (provider === "ollama" || provider === "llama.cpp" || provider === "lm-studio") {
+  if (
+    provider === "ollama" ||
+    provider === "llama.cpp" ||
+    provider === "lm-studio"
+  ) {
     // Gemma models
     if (model.toLowerCase().includes("gemma")) {
       if (model.includes("3n") || model.includes("2b")) return 8192;
@@ -101,7 +108,7 @@ export function getContextWindowSize(provider: string, model: string): number {
 export function calculateContextUsage(
   inputTokens: number,
   outputTokens: number,
-  contextWindow: number
+  contextWindow: number,
 ): {
   used: number;
   total: number;

@@ -19,10 +19,13 @@ import {
   Loader2,
   Cloud,
   CloudOff,
+  Bot,
+  ChevronLeft,
 } from "lucide-react";
 import { evaluationsTranslations } from "../translations";
 import { ProcessEvaluationSupport } from "./ProcessEvaluationSupport";
 import { GrowthEvaluationSupport } from "./GrowthEvaluationSupport";
+import { EvaluationAIAssistant } from "./EvaluationAIAssistant";
 
 interface ProcessCategory {
   id: string;
@@ -318,6 +321,9 @@ export default function EvaluationForm({
   const [growthLevel, setGrowthLevel] = useState<string>("T2");
   const [evaluatorComment, setEvaluatorComment] = useState("");
 
+  // AIアシスタント用state
+  const [aiAssistantExpanded, setAiAssistantExpanded] = useState(true);
+
   const fetchEvaluation = useCallback(async () => {
     try {
       const res = await fetch(`/api/evaluation/${evaluationId}`);
@@ -509,6 +515,18 @@ export default function EvaluationForm({
     };
   }, []);
 
+  // AIアシスタント用の社員情報を構築
+  const buildEmployeeInfo = () => {
+    if (!evaluation) return "";
+    const emp = evaluation.employee;
+    const lines = [];
+    lines.push(`${language === "ja" ? "氏名" : "Name"}: ${getEmployeeName(emp)}`);
+    if (emp.position) lines.push(`${language === "ja" ? "役職" : "Position"}: ${emp.position}`);
+    if (emp.qualificationGrade) lines.push(`${language === "ja" ? "等級" : "Grade"}: ${emp.qualificationGrade}`);
+    if (emp.department) lines.push(`${language === "ja" ? "所属" : "Department"}: ${emp.department.name}`);
+    return lines.join("\n");
+  };
+
   if (loading || !evaluation) {
     return (
       <div className="max-w-5xl mx-auto mt-8">
@@ -520,12 +538,15 @@ export default function EvaluationForm({
   const isReadOnly = evaluation.status === "COMPLETED" || evaluation.status === "CONFIRMED";
 
   return (
-    <div className="max-w-5xl mx-auto mt-4 space-y-4">
-      {/* Back Button */}
-      <Button variant="ghost" onClick={onBack} className="mb-2">
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        {t.back}
-      </Button>
+    <div className="flex gap-4 h-[calc(100vh-8rem)]">
+      {/* 左側: 評価フォーム（独立スクロール） */}
+      <div className={`flex-1 overflow-y-auto pr-2 ${aiAssistantExpanded ? "max-w-4xl" : "max-w-5xl mx-auto"}`}>
+        <div className="space-y-4 py-4">
+        {/* Back Button */}
+        <Button variant="ghost" onClick={onBack} className="mb-2">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          {t.back}
+        </Button>
 
       {/* Employee Info Header */}
       <Card>
@@ -962,6 +983,35 @@ export default function EvaluationForm({
               <span>{language === "ja" ? "自動保存" : "Auto-save"}</span>
             </>
           )}
+        </div>
+      )}
+        </div>
+      </div>
+
+      {/* 右側: AIアシスタント（固定） */}
+      {aiAssistantExpanded ? (
+        <div className="w-80 shrink-0 h-full">
+          <EvaluationAIAssistant
+            language={language}
+            evaluationId={evaluationId}
+            employeeInfo={buildEmployeeInfo()}
+            onToggleExpand={setAiAssistantExpanded}
+          />
+        </div>
+      ) : (
+        <div className="fixed right-4 top-1/2 -translate-y-1/2 z-50">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setAiAssistantExpanded(true)}
+            className="h-12 w-12 rounded-full shadow-lg bg-card hover:bg-accent"
+            title={language === "ja" ? "AIアシスタントを開く" : "Open AI Assistant"}
+          >
+            <div className="flex items-center gap-1">
+              <ChevronLeft className="h-4 w-4" />
+              <Bot className="h-5 w-5 text-primary" />
+            </div>
+          </Button>
         </div>
       )}
     </div>

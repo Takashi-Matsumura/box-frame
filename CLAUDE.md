@@ -200,6 +200,25 @@ mcp-servers/
   - Ollama
 - トークン統計表示（コンテキスト使用量、トークン/秒）
 - 管理画面の「システム情報」タブでAPI設定
+- RAGバックエンド（Python FastAPI）
+  - ChromaDB: ベクトルデータベース
+  - sentence-transformers: 埋め込みモデル（multilingual-e5-small）
+  - ドキュメント登録・検索・チャット機能
+  - SSEストリーミング対応
+
+**RAGバックエンド起動:**
+```bash
+# Dockerで起動
+docker compose up -d airag-backend
+
+# ヘルスチェック
+curl http://localhost:8000/health
+```
+
+**人事評価モジュールでの利用:**
+- 評価画面右側にAIアシスタントパネルを表示
+- RAGを使用した評価アドバイス機能
+- クイックアクション（評価ポイント、フィードバック例、成長目標）
 
 ## アドオンモジュール
 
