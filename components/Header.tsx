@@ -292,6 +292,12 @@ export function Header({ session, language = "en" }: HeaderProps) {
       active: evaluationMasterTab === "weights",
     },
     {
+      name: language === "ja" ? "結果評価" : "Results Evaluation",
+      icon: <FaStar className="w-5 h-5" />,
+      path: "/admin/evaluation-master?tab=organizationGoals",
+      active: evaluationMasterTab === "organizationGoals",
+    },
+    {
       name: language === "ja" ? "プロセス評価" : "Process Categories",
       icon: <FaStar className="w-5 h-5" />,
       path: "/admin/evaluation-master?tab=processCategories",

@@ -77,32 +77,35 @@ export async function GET(request: NextRequest) {
         evaluation.gradeCode
       );
 
-      // 組織目標（結果評価用）を取得
-      let organizationGoal = null;
+      // 結果評価データ（Criteria1）を取得（課→部→本部の優先順）
+      let criteria1Result = null;
       if (employee.courseId) {
-        organizationGoal = await prisma.organizationGoal.findFirst({
+        criteria1Result = await prisma.criteria1Result.findFirst({
           where: {
             periodId: evaluation.periodId,
-            organizationType: "COURSE",
+            organizationLevel: "COURSE",
             organizationId: employee.courseId,
+            isActive: true,
           },
         });
       }
-      if (!organizationGoal && employee.sectionId) {
-        organizationGoal = await prisma.organizationGoal.findFirst({
+      if (!criteria1Result && employee.sectionId) {
+        criteria1Result = await prisma.criteria1Result.findFirst({
           where: {
             periodId: evaluation.periodId,
-            organizationType: "SECTION",
+            organizationLevel: "SECTION",
             organizationId: employee.sectionId,
+            isActive: true,
           },
         });
       }
-      if (!organizationGoal && employee.departmentId) {
-        organizationGoal = await prisma.organizationGoal.findFirst({
+      if (!criteria1Result && employee.departmentId) {
+        criteria1Result = await prisma.criteria1Result.findFirst({
           where: {
             periodId: evaluation.periodId,
-            organizationType: "DEPARTMENT",
+            organizationLevel: "DEPARTMENT",
             organizationId: employee.departmentId,
+            isActive: true,
           },
         });
       }
@@ -146,11 +149,12 @@ export async function GET(request: NextRequest) {
           processWeight: weights.processWeight,
           growthWeight: weights.growthWeight,
         },
-        organizationGoal: organizationGoal
+        // フロントエンド互換性のためキー名はorganizationGoalを維持
+        organizationGoal: criteria1Result
           ? {
-              targetValue: organizationGoal.targetProfit || 0,
-              actualValue: organizationGoal.actualProfit,
-              achievementRate: organizationGoal.achievementRate,
+              targetValue: criteria1Result.targetProfit || 0,
+              actualValue: criteria1Result.actualProfit,
+              achievementRate: criteria1Result.achievementRate,
             }
           : null,
         processCategories,

@@ -541,7 +541,7 @@ export default function EvaluationForm({
     <div className="flex gap-4 h-[calc(100vh-8rem)]">
       {/* 左側: 評価フォーム（独立スクロール） */}
       <div className={`flex-1 overflow-y-auto pr-2 ${aiAssistantExpanded ? "max-w-4xl" : "max-w-5xl mx-auto"}`}>
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 px-0.5">
         {/* Back Button */}
         <Button variant="ghost" onClick={onBack} className="mb-2">
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -658,7 +658,7 @@ export default function EvaluationForm({
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center p-4 rounded-lg bg-muted/50">
                     <p className="text-sm text-muted-foreground">
-                      {language === "ja" ? "組織目標" : "Target"}
+                      {language === "ja" ? "目標" : "Target"}
                     </p>
                     <p className="text-2xl font-bold">
                       {evaluation.organizationGoal.targetValue.toLocaleString()}

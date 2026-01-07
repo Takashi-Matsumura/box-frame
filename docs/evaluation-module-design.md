@@ -129,7 +129,7 @@
 └────────┬────────┘
          │
          │  ┌─────────────────┐
-         │  │OrganizationGoal │ 組織目標・実績
+         │  │Criteria1Result  │ 結果評価データ
          │  ├─────────────────┤
          │  │ periodId        │
          │  │ departmentId    │
@@ -224,9 +224,9 @@ model EvaluationWeight {
 }
 
 // =====================================================
-// 組織目標・実績（結果評価用）
+// 結果評価データ（Criteria1）
 // =====================================================
-model OrganizationGoal {
+model Criteria1Result {
   id                String   @id @default(cuid())
 
   periodId          String
@@ -651,13 +651,13 @@ function calculateFinalScore(
 | POST | `/api/evaluation/weights` | 重み設定作成・更新 |
 | DELETE | `/api/evaluation/weights/[id]` | 重み設定削除 |
 
-### 7.3 組織目標（ADMIN）
+### 7.3 結果評価（ADMIN）
 
 | メソッド | エンドポイント | 説明 |
 |----------|---------------|------|
-| GET | `/api/evaluation/organization-goals?periodId=xxx` | 組織目標一覧 |
-| POST | `/api/evaluation/organization-goals` | 組織目標作成・更新 |
-| POST | `/api/evaluation/organization-goals/sync` | 結果評価スコア反映 |
+| GET | `/api/evaluation/criteria1?periodId=xxx` | 結果評価一覧 |
+| POST | `/api/evaluation/criteria1` | 結果評価作成・更新 |
+| POST | `/api/evaluation/criteria1/sync-scores` | 評価スコア反映 |
 
 ### 7.4 カスタム評価者（ADMIN/MANAGER）
 
@@ -720,7 +720,7 @@ function calculateFinalScore(
 |------|------|
 | 評価期間 | 期間の作成・ステータス管理・評価データ生成 |
 | 重み設定 | 資格等級別の重み配分設定 |
-| 組織目標 | 部門別の業績目標・実績入力 |
+| 結果評価 | 部門別の業績目標・実績入力 |
 | 評価関係 | カスタム評価者の設定 |
 | プロセス評価項目 | 行動特性の項目管理 |
 | 成長カテゴリ | 成長評価のカテゴリ・係数管理 |
@@ -780,7 +780,7 @@ function calculateFinalScore(
 │ │ 高橋四郎   │ 営業2課 │ 3.3  │ -       │ -    │ -   │ 🔵 ││
 │ └──────────────────────────────────────────────────────────┘│
 │                                                             │
-│ ※ 結果評価は組織目標から自動計算                            │
+│ ※ 結果評価は達成率から自動計算                              │
 │ ※ 行をクリックして評価入力                                  │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -828,8 +828,8 @@ function calculateFinalScore(
 │                                                             │
 │  総合コメント:                                              │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │ 今期は組織目標の達成に大きく貢献し、チームリーダー   │   │
-│  │ として成長が見られた。来期も継続的な成長を期待。     │   │
+│  │ 今期は目標達成に大きく貢献し、チームリーダーとして   │   │
+│  │ 成長が見られた。来期も継続的な成長を期待する。       │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                                                             │
 │                        [下書き保存]  [評価確定]             │
@@ -881,7 +881,7 @@ app/
 │           └── components/
 │               ├── PeriodsSection.tsx        # 評価期間管理
 │               ├── WeightsSection.tsx        # 重み設定
-│               ├── OrganizationGoalsSection.tsx  # 組織目標
+│               ├── Criteria1Section.tsx          # 結果評価
 │               ├── CustomEvaluatorsSection.tsx   # カスタム評価者
 │               ├── ProcessCategoriesSection.tsx  # プロセス評価項目
 │               └── GrowthCategoriesSection.tsx   # 成長カテゴリ
@@ -896,9 +896,9 @@ app/
         ├── weights/
         │   ├── route.ts                      # 重み一覧・作成
         │   └── [id]/route.ts                 # 重み更新・削除
-        ├── organization-goals/
-        │   ├── route.ts                      # 組織目標一覧・作成
-        │   └── sync/route.ts                 # スコア反映
+        ├── criteria1/
+        │   ├── route.ts                      # 結果評価一覧・作成
+        │   └── sync-scores/route.ts          # スコア反映
         ├── custom-evaluators/
         │   ├── route.ts                      # カスタム評価者一覧・作成
         │   └── [id]/route.ts                 # カスタム評価者削除

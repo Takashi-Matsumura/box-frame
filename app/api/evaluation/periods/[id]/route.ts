@@ -25,7 +25,7 @@ export async function GET(request: Request, { params }: RouteParams) {
         weights: {
           orderBy: { gradeCode: "asc" },
         },
-        organizationGoals: true,
+        criteria1Results: true,
         _count: {
           select: { evaluations: true },
         },

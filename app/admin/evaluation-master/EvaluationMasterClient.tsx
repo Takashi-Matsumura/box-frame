@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import PeriodsSection from "./components/PeriodsSection";
 import WeightsSection from "./components/WeightsSection";
+import Criteria1Section from "./components/Criteria1Section";
 import ProcessCategoriesSection from "./components/ProcessCategoriesSection";
 import GrowthCategoriesSection from "./components/GrowthCategoriesSection";
 
@@ -32,6 +33,13 @@ export default function EvaluationMasterClient({
 
           {tab === "weights" && (
             <WeightsSection
+              language={language}
+              selectedPeriodId={selectedPeriodId}
+            />
+          )}
+
+          {tab === "organizationGoals" && (
+            <Criteria1Section
               language={language}
               selectedPeriodId={selectedPeriodId}
             />

@@ -181,39 +181,29 @@ export async function recalculateEvaluationScore(
 
 /**
  * 組織の達成率から社員の結果評価スコアを更新
+ * @deprecated sync-scores APIを使用してください
  */
-export async function syncResultsScoreFromOrganizationGoal(
+export async function syncResultsScoreFromCriteria1(
   periodId: string,
-  organizationType: string,
+  organizationLevel: "DEPARTMENT" | "SECTION" | "COURSE",
   organizationId: string
 ): Promise<number> {
-  // 組織目標を取得
-  const goal = await prisma.organizationGoal.findUnique({
+  // Criteria1Resultを取得
+  const result = await prisma.criteria1Result.findUnique({
     where: {
-      periodId_organizationType_organizationId: {
+      periodId_organizationLevel_organizationId: {
         periodId,
-        organizationType,
+        organizationLevel,
         organizationId,
       },
     },
   });
 
-  if (!goal || goal.achievementRate === null) {
+  if (!result || result.achievementRate === null || !result.isActive) {
     return 0;
   }
 
-  const score = calculateResultsScore(goal.achievementRate);
-
-  // 該当組織に所属する社員の評価を更新
-  const whereCondition: Record<string, string> = { periodId };
-
-  if (organizationType === "DEPARTMENT") {
-    whereCondition["employee"] = JSON.stringify({ departmentId: organizationId });
-  } else if (organizationType === "SECTION") {
-    whereCondition["employee"] = JSON.stringify({ sectionId: organizationId });
-  } else if (organizationType === "COURSE") {
-    whereCondition["employee"] = JSON.stringify({ courseId: organizationId });
-  }
+  const score = calculateResultsScore(result.achievementRate);
 
   // 評価レコードを取得して更新
   const evaluations = await prisma.evaluation.findMany({
@@ -226,11 +216,11 @@ export async function syncResultsScoreFromOrganizationGoal(
   for (const evaluation of evaluations) {
     let shouldUpdate = false;
 
-    if (organizationType === "DEPARTMENT" && evaluation.employee.departmentId === organizationId) {
+    if (organizationLevel === "DEPARTMENT" && evaluation.employee.departmentId === organizationId) {
       shouldUpdate = true;
-    } else if (organizationType === "SECTION" && evaluation.employee.sectionId === organizationId) {
+    } else if (organizationLevel === "SECTION" && evaluation.employee.sectionId === organizationId) {
       shouldUpdate = true;
-    } else if (organizationType === "COURSE" && evaluation.employee.courseId === organizationId) {
+    } else if (organizationLevel === "COURSE" && evaluation.employee.courseId === organizationId) {
       shouldUpdate = true;
     }
 
@@ -239,7 +229,7 @@ export async function syncResultsScoreFromOrganizationGoal(
         where: { id: evaluation.id },
         data: {
           score1: score,
-          score1Comment: `達成率 ${goal.achievementRate}% に基づく自動計算`,
+          score1Comment: `達成率 ${result.achievementRate.toFixed(1)}% に基づく自動計算`,
         },
       });
       updatedCount++;
@@ -248,3 +238,6 @@ export async function syncResultsScoreFromOrganizationGoal(
 
   return updatedCount;
 }
+
+// 後方互換性のためのエイリアス
+export const syncResultsScoreFromOrganizationGoal = syncResultsScoreFromCriteria1;

@@ -116,7 +116,7 @@ export const myEvaluationTranslations = {
 
     // Results evaluation
     resultsEvaluation: "結果評価",
-    organizationGoal: "組織目標",
+    organizationGoal: "目標",
     targetValue: "目標",
     actualValue: "実績",
     achievementRate: "達成率",

@@ -236,8 +236,8 @@ export const evaluationsTranslations = {
 
     // Results evaluation
     resultsEvaluation: "結果評価",
-    resultsDescription: "組織目標の達成度に基づいて評価",
-    organizationGoal: "組織目標",
+    resultsDescription: "組織の達成率に基づいて評価",
+    organizationGoal: "目標",
     targetValue: "目標",
     actualValue: "実績",
     achievementRate: "達成率",
@@ -329,7 +329,7 @@ export const evaluationsTranslations = {
     // Results Panel
     resultsPanel: {
       title: "結果評価の算定根拠",
-      organizationTarget: "組織目標",
+      organizationTarget: "目標",
       actual: "実績",
       achievementRate: "達成率",
       scoreConversion: "スコア変換テーブル",
