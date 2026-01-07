@@ -330,13 +330,13 @@ export function Header({ session, language = "en" }: HeaderProps) {
 
   const renderTabs = (tabs: typeof analyticsTabs, label: string) => (
     <div className="border-t border-border bg-muted">
-      <nav className="flex gap-1 px-6" aria-label={label}>
+      <nav className="flex gap-1 px-6 overflow-x-auto" aria-label={label}>
         {tabs.map((tab) => (
           <Link
             key={tab.path}
             href={tab.path}
             className={`
-              flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors
+              flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
               ${
                 tab.active
                   ? "border-primary text-primary"
