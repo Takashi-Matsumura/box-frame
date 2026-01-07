@@ -575,6 +575,20 @@ model ChangeLog {
 // 人事評価システム
 // ========================================
 
+// 組織レベル（結果評価用）
+enum OrganizationLevel {
+  COMPANY     // 全社
+  DEPARTMENT  // 本部
+  SECTION     // 部
+  COURSE      // 課
+}
+
+// 部署タイプ（結果評価用）
+enum DepartmentType {
+  DIRECT      // 直接部門（営業利益を追跡）
+  INDIRECT    // 間接部門（他組織の達成率を参照）
+}
+
 // 評価期間ステータス
 enum EvaluationPeriodStatus {
   DRAFT       // 準備中
@@ -609,7 +623,7 @@ model EvaluationPeriod {
   evaluations       Evaluation[]
   goals             EvaluationGoal[]
   weights           EvaluationWeight[]
-  organizationGoals OrganizationGoal[]
+  criteria1Results  Criteria1Result[]
   customEvaluators  CustomEvaluator[]
   exclusions        EvaluationExclusion[]
   positionGroups    PositionGroup[]
@@ -640,28 +654,42 @@ model EvaluationWeight {
   @@unique([periodId, positionCode, gradeCode])
 }
 
-// 組織目標・実績（結果評価用）
-model OrganizationGoal {
-  id                String           @id @default(cuid())
+// 結果評価データ（Criteria1）
+model Criteria1Result {
+  id                       String            @id @default(cuid())
 
-  periodId          String
-  period            EvaluationPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  periodId                 String
+  period                   EvaluationPeriod  @relation(fields: [periodId], references: [id], onDelete: Cascade)
 
-  // 対象組織（Department/Section/Course のいずれか）
-  organizationType  String           // "DEPARTMENT" | "SECTION" | "COURSE"
-  organizationId    String
-  organizationName  String
+  // 対象組織（COMPANY/DEPARTMENT/SECTION/COURSE）
+  organizationLevel        OrganizationLevel
+  organizationId           String
+  organizationName         String
 
   // 目標・実績
-  targetProfit      Float?           // 目標利益
-  actualProfit      Float?           // 実績利益
-  achievementRate   Float?           // 達成率（%）
+  targetProfit             Float?            // 目標営業利益
+  actualProfit             Float?            // 実績営業利益
+  achievementRate          Float?            // 達成率（%）
 
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  // 部署タイプ
+  departmentType           DepartmentType    @default(INDIRECT)
 
-  @@unique([periodId, organizationType, organizationId])
+  // 間接部門の紐付け先（INDIRECT の場合のみ使用）
+  linkedOrganizationLevel  OrganizationLevel?
+  linkedOrganizationId     String?
+  linkedOrganizationName   String?
+
+  // メタデータ
+  isActive                 Boolean           @default(true)
+  createdAt                DateTime          @default(now())
+  createdBy                String?
+  updatedAt                DateTime          @updatedAt
+  updatedBy                String?
+
+  @@unique([periodId, organizationLevel, organizationId])
   @@index([periodId])
+  @@index([organizationLevel])
+  @@index([linkedOrganizationId])
 }
 
 // カスタム評価者関係
