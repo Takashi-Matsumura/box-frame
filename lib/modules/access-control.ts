@@ -1,6 +1,21 @@
 import type { Role } from "@prisma/client";
-import type { AppMenu, AppModule, MenuGroup } from "@/types/module";
+import type { AppMenu, AppModule, AppTab, MenuGroup } from "@/types/module";
 import type { MenuGroupId } from "@/types/common";
+
+/**
+ * アクセスキー権限の粒度
+ */
+export type PermissionGranularity = "module" | "menu" | "tab";
+
+/**
+ * アクセスキー権限情報
+ */
+export interface AccessKeyPermissionInfo {
+  granularity: PermissionGranularity;
+  moduleId: string;
+  menuPath?: string;
+  tabId?: string;
+}
 
 /**
  * ロール階層の定義
@@ -239,4 +254,156 @@ export function groupModulesByMenuGroup(
   }
 
   return grouped;
+}
+
+/**
+ * ============================================
+ * タブレベルのアクセス制御（Phase 2）
+ * ============================================
+ */
+
+/**
+ * アクセスキー権限がタブへのアクセスを許可するかチェック
+ * 権限の階層構造を考慮：モジュール > メニュー > タブ
+ */
+export function checkPermissionForTab(
+  permission: AccessKeyPermissionInfo,
+  targetModuleId: string,
+  targetMenuPath: string,
+  targetTabId: string,
+): boolean {
+  // モジュールが一致しない場合は不許可
+  if (permission.moduleId !== targetModuleId) {
+    return false;
+  }
+
+  switch (permission.granularity) {
+    case "module":
+      // モジュールレベルの権限：配下の全メニュー・タブにアクセス可能
+      return true;
+
+    case "menu":
+      // メニューレベルの権限：対象メニューの全タブにアクセス可能
+      return permission.menuPath === targetMenuPath;
+
+    case "tab":
+      // タブレベルの権限：特定のタブのみアクセス可能
+      return (
+        permission.menuPath === targetMenuPath &&
+        permission.tabId === targetTabId
+      );
+
+    default:
+      return false;
+  }
+}
+
+/**
+ * ユーザがタブにアクセスできるかチェック
+ *
+ * @param tab 対象タブ
+ * @param menu タブが属するメニュー
+ * @param moduleId メニューが属するモジュールID
+ * @param userRole ユーザのロール
+ * @param userAccessKeyPermissions ユーザが持つアクセスキー権限
+ * @returns アクセス可能かどうか
+ */
+export function canAccessTab(
+  tab: AppTab,
+  menu: AppMenu,
+  moduleId: string,
+  userRole: Role,
+  userAccessKeyPermissions: AccessKeyPermissionInfo[] = [],
+): boolean {
+  // タブが無効な場合はアクセス不可
+  if (tab.enabled === false) {
+    return false;
+  }
+
+  // ADMINロールは常にアクセス可能
+  if (userRole === "ADMIN") {
+    return true;
+  }
+
+  // ロールベースでメニューにアクセス可能な場合、タブにもアクセス可能
+  // （タブ固有のロール制限がない場合）
+  if (menu.requiredRoles && menu.requiredRoles.includes(userRole)) {
+    return true;
+  }
+
+  // アクセスキーによるアクセス権チェック
+  for (const permission of userAccessKeyPermissions) {
+    if (
+      checkPermissionForTab(permission, moduleId, menu.path, tab.id)
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * メニュー内のアクセス可能なタブを取得
+ *
+ * @param menu 対象メニュー
+ * @param moduleId メニューが属するモジュールID
+ * @param userRole ユーザのロール
+ * @param userAccessKeyPermissions ユーザが持つアクセスキー権限
+ * @returns アクセス可能なタブの配列
+ */
+export function getAccessibleTabs(
+  menu: AppMenu,
+  moduleId: string,
+  userRole: Role,
+  userAccessKeyPermissions: AccessKeyPermissionInfo[] = [],
+): AppTab[] {
+  if (!menu.tabs) {
+    return [];
+  }
+
+  return menu.tabs
+    .filter((tab) =>
+      canAccessTab(tab, menu, moduleId, userRole, userAccessKeyPermissions),
+    )
+    .sort((a, b) => a.order - b.order);
+}
+
+/**
+ * アクセスキー権限がメニューへのアクセスを許可するかチェック
+ * 権限の階層構造を考慮：モジュール > メニュー
+ */
+export function checkPermissionForMenu(
+  permission: AccessKeyPermissionInfo,
+  targetModuleId: string,
+  targetMenuPath: string,
+): boolean {
+  // モジュールが一致しない場合は不許可
+  if (permission.moduleId !== targetModuleId) {
+    return false;
+  }
+
+  switch (permission.granularity) {
+    case "module":
+      // モジュールレベルの権限：配下の全メニューにアクセス可能
+      return true;
+
+    case "menu":
+    case "tab":
+      // メニュー/タブレベルの権限：対象メニューにアクセス可能
+      return permission.menuPath === targetMenuPath;
+
+    default:
+      return false;
+  }
+}
+
+/**
+ * アクセスキー権限がモジュールへのアクセスを許可するかチェック
+ */
+export function checkPermissionForModule(
+  permission: AccessKeyPermissionInfo,
+  targetModuleId: string,
+): boolean {
+  return permission.moduleId === targetModuleId;
 }
