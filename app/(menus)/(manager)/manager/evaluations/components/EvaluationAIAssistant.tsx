@@ -589,7 +589,7 @@ export function EvaluationAIAssistant({
 
       {/* ナレッジベースダイアログ */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-6xl w-[90vw] h-[85vh] flex flex-col p-0 gap-0">
+        <DialogContent className="!w-[60vw] !max-w-none h-[85vh] flex flex-col p-0 gap-0">
           {selectedDoc ? (
             /* プレビュー画面（フルサイズ） */
             <>
