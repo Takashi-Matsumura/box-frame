@@ -226,9 +226,9 @@ export const evaluationsTranslations = {
     // Evaluation form
     evaluateButton: "評価する",
     viewButton: "参照",
-    employeeInfo: "社員情報",
+    employeeInfo: "社員名",
     employeeNumber: "社員番号",
-    department: "本部",
+    department: "所属先",
     section: "部",
     course: "課",
     position: "役職",

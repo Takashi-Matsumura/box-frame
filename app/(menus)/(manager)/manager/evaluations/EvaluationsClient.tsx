@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Users, Search, X } from "lucide-react";
 import { evaluationsTranslations } from "./translations";
 import EvaluationForm from "./components/EvaluationForm";
+import { useIsTabletOrMobile } from "@/hooks/use-mobile";
 
 interface Period {
   id: string;
@@ -67,6 +68,7 @@ export default function EvaluationsClient({
 }: EvaluationsClientProps) {
   const t = evaluationsTranslations[language];
   const isAdmin = userRole === "ADMIN";
+  const isTabletOrMobile = useIsTabletOrMobile();
   const [periods, setPeriods] = useState<Period[]>([]);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
@@ -143,6 +145,26 @@ export default function EvaluationsClient({
 
   const getEmployeeName = (employee: Employee) => {
     return employee.name;
+  };
+
+  // 等級文字列から括弧内のコードを抽出（例: "エンジニア2級(E2)" → "E2"）
+  const getGradeCode = (grade: string | null) => {
+    if (!grade) return "-";
+    const match = grade.match(/\(([^)]+)\)/);
+    return match ? match[1] : grade;
+  };
+
+  // 所属先を取得（レスポンシブ対応: 小画面では最下位の所属のみ）
+  const getDepartmentDisplay = (employee: Employee) => {
+    if (isTabletOrMobile) {
+      // 課 → 部 → 本部 の優先順で1つだけ表示
+      return employee.course?.name || employee.section?.name || employee.department?.name || "-";
+    }
+    // デスクトップ: フル表示
+    let display = employee.department?.name || "-";
+    if (employee.section) display += ` / ${employee.section.name}`;
+    if (employee.course) display += ` / ${employee.course.name}`;
+    return display;
   };
 
   const getStatusBadge = (status: string) => {
@@ -437,9 +459,9 @@ export default function EvaluationsClient({
                 <TableRow>
                   <TableHead>{t.employeeNumber}</TableHead>
                   <TableHead>{t.employeeInfo}</TableHead>
-                  <TableHead>{t.department}</TableHead>
                   <TableHead>{t.position}</TableHead>
                   <TableHead>{t.grade}</TableHead>
+                  <TableHead>{t.department}</TableHead>
                   <TableHead>{t.periodStatus}</TableHead>
                   <TableHead>{t.finalGrade}</TableHead>
                 </TableRow>
@@ -457,13 +479,11 @@ export default function EvaluationsClient({
                     <TableCell className="font-medium">
                       {getEmployeeName(evaluation.employee)}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {evaluation.employee.department?.name || "-"}
-                      {evaluation.employee.section && ` / ${evaluation.employee.section.name}`}
-                      {evaluation.employee.course && ` / ${evaluation.employee.course.name}`}
-                    </TableCell>
                     <TableCell>{evaluation.employee.position || "-"}</TableCell>
-                    <TableCell>{evaluation.employee.qualificationGrade || "-"}</TableCell>
+                    <TableCell>{getGradeCode(evaluation.employee.qualificationGrade)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {getDepartmentDisplay(evaluation.employee)}
+                    </TableCell>
                     <TableCell>{getStatusBadge(evaluation.status)}</TableCell>
                     <TableCell>{getGradeBadge(evaluation.finalGrade)}</TableCell>
                   </TableRow>
