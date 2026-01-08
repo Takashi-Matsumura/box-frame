@@ -30,7 +30,8 @@ export type AuditAction =
   | "ANNOUNCEMENT_DELETE"
   // MODULE
   | "MODULE_TOGGLE"
-  | "MENU_TOGGLE";
+  | "MENU_TOGGLE"
+  | "ACCESS_KEY_PERMISSION_UPDATE";
 
 export interface AuditLogInput {
   action: AuditAction;
