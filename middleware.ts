@@ -69,8 +69,10 @@ export default auth((req) => {
   }
 
   // Admin-only routes
-  const adminRoutes = ["/admin", "/admin/users", "/admin/api-keys"];
-  if (adminRoutes.some((route) => pathname.startsWith(route))) {
+  // 注意: アクセスキーによる権限委譲があるため、ミドルウェアでは厳密なロールチェックを行わない
+  // 各ページで checkAccess を使用して詳細なアクセス制御を行う
+  // ここでは /admin のトップページのみ ADMIN 専用として制限
+  if (pathname === "/admin") {
     if (session.user.role !== "ADMIN") {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }

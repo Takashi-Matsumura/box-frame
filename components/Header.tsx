@@ -43,6 +43,7 @@ interface HeaderProps {
     };
   } | null;
   language?: string;
+  accessKeyTabPermissions?: Record<string, string[]>;
 }
 
 function SidebarToggleButton() {
@@ -61,12 +62,33 @@ function SidebarToggleButton() {
   );
 }
 
-export function Header({ session, language = "en" }: HeaderProps) {
+export function Header({ session, language = "en", accessKeyTabPermissions = {} }: HeaderProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { width, open } = useSidebarStore();
   const isTabletOrMobile = useIsTabletOrMobile();
   const pageTitle = getPageTitle(pathname, language as "en" | "ja");
+
+  // ユーザーがADMINロールか判定
+  const isAdminRole = session?.user?.role === "ADMIN";
+
+  // タブをフィルタリングするヘルパー関数
+  // ADMINロールはすべてのタブにアクセス可能
+  // それ以外はアクセスキーで許可されたタブのみ
+  const filterTabsByPermission = (tabs: TabItem[], menuPath: string): TabItem[] => {
+    if (isAdminRole) {
+      return tabs;
+    }
+    const allowedTabIds = accessKeyTabPermissions[menuPath];
+    if (!allowedTabIds || allowedTabIds.length === 0) {
+      // タブレベルの権限がない場合、メニューレベルの権限で全タブ許可
+      return tabs;
+    }
+    return tabs.filter((tab) => {
+      const tabId = new URL(tab.path, "http://localhost").searchParams.get("tab");
+      return tabId && allowedTabIds.includes(tabId);
+    });
+  };
 
   // ページ判定
   const isAnalytics =
@@ -74,6 +96,9 @@ export function Header({ session, language = "en" }: HeaderProps) {
   const isAdmin = pathname === "/admin";
   const isDataImport = pathname === "/data-import";
   const isSettings = pathname === "/settings";
+  const isDataManagement = pathname === "/admin/data-management";
+  const isEvaluationMaster = pathname === "/admin/evaluation-master";
+  const isEvaluationRag = pathname === "/admin/evaluation-rag";
 
   // 組織分析タブ
   const analyticsTab = searchParams.get("tab") || "overview";
@@ -191,6 +216,39 @@ export function Header({ session, language = "en" }: HeaderProps) {
     },
   ];
 
+  // 組織データ管理タブ（レジストリから取得）
+  const dataManagementTab = searchParams.get("tab") || "import";
+  const registryDataManagementTabs = getTabsByMenuPath("/admin/data-management");
+  const dataManagementTabs =
+    registryDataManagementTabs?.map((tab) => ({
+      name: language === "ja" ? tab.nameJa : tab.name,
+      icon: tab.icon,
+      path: `/admin/data-management?tab=${tab.id}`,
+      active: dataManagementTab === tab.id,
+    })) || [];
+
+  // 評価マスタタブ（レジストリから取得）
+  const evaluationMasterTab = searchParams.get("tab") || "periods";
+  const registryEvaluationMasterTabs = getTabsByMenuPath("/admin/evaluation-master");
+  const evaluationMasterTabs =
+    registryEvaluationMasterTabs?.map((tab) => ({
+      name: language === "ja" ? tab.nameJa : tab.name,
+      icon: tab.icon,
+      path: `/admin/evaluation-master?tab=${tab.id}`,
+      active: evaluationMasterTab === tab.id,
+    })) || [];
+
+  // 評価AIサポートタブ（レジストリから取得）
+  const evaluationRagTab = searchParams.get("tab") || "knowledge-base";
+  const registryEvaluationRagTabs = getTabsByMenuPath("/admin/evaluation-rag");
+  const evaluationRagTabs =
+    registryEvaluationRagTabs?.map((tab) => ({
+      name: language === "ja" ? tab.nameJa : tab.name,
+      icon: tab.icon,
+      path: `/admin/evaluation-rag?tab=${tab.id}`,
+      active: evaluationRagTab === tab.id,
+    })) || [];
+
   const renderTabs = (tabs: TabItem[], label: string) => (
     <div className="border-t border-border bg-muted">
       <nav className="flex gap-1 px-6" aria-label={label}>
@@ -276,6 +334,9 @@ export function Header({ session, language = "en" }: HeaderProps) {
       {isAdmin && renderTabs(adminTabs, "Admin Tabs")}
       {isDataImport && renderTabs(dataImportTabs, "Data Import Tabs")}
       {isSettings && renderTabs(settingsTabs, "Settings Tabs")}
+      {isDataManagement && renderTabs(filterTabsByPermission(dataManagementTabs, "/admin/data-management"), "Data Management Tabs")}
+      {isEvaluationMaster && renderTabs(filterTabsByPermission(evaluationMasterTabs, "/admin/evaluation-master"), "Evaluation Master Tabs")}
+      {isEvaluationRag && renderTabs(filterTabsByPermission(evaluationRagTabs, "/admin/evaluation-rag"), "Evaluation AI Support Tabs")}
     </header>
   );
 }

@@ -3,8 +3,10 @@ import { aiModule } from "@/lib/core-modules/ai";
 import { systemModule } from "@/lib/core-modules/system";
 
 // アドオンモジュール
+import { evaluationModule } from "@/lib/addon-modules/evaluation/module";
+import { ldapMigrationModule } from "@/lib/addon-modules/ldap-migration";
 import { openldapModule } from "@/lib/addon-modules/openldap";
-import { templateModule } from "@/lib/addon-modules/template";
+import { organizationModule } from "@/lib/addon-modules/organization";
 import { prisma } from "@/lib/prisma";
 import type {
   AppMenu,
@@ -108,8 +110,10 @@ export const moduleRegistry: ModuleRegistry = {
   system: systemModule,
 
   // アドオンモジュール
+  evaluation: evaluationModule,
+  "ldap-migration": ldapMigrationModule,
   openldap: openldapModule,
-  template: templateModule, // テンプレートモジュール（参考用）
+  organization: organizationModule,
 };
 
 /**

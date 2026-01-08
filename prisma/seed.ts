@@ -47,12 +47,69 @@ async function main() {
     },
   });
 
+  // Create Growth Categories for evaluation
+  const growthCategories = [
+    {
+      name: "資格取得",
+      nameEn: "Certification",
+      description: "業務に関連する資格の取得",
+      scoreT4: 2.0,
+      scoreT3: 1.5,
+      scoreT2: 1.0,
+      scoreT1: 0.5,
+      sortOrder: 1,
+      isActive: true,
+    },
+    {
+      name: "スキル向上",
+      nameEn: "Skill Development",
+      description: "専門スキルの習得・向上",
+      scoreT4: 2.0,
+      scoreT3: 1.5,
+      scoreT2: 1.0,
+      scoreT1: 0.5,
+      sortOrder: 2,
+      isActive: true,
+    },
+    {
+      name: "リーダーシップ",
+      nameEn: "Leadership",
+      description: "チームリーダーとしての成長",
+      scoreT4: 2.5,
+      scoreT3: 2.0,
+      scoreT2: 1.5,
+      scoreT1: 1.0,
+      sortOrder: 3,
+      isActive: true,
+    },
+    {
+      name: "プロジェクト貢献",
+      nameEn: "Project Contribution",
+      description: "重要プロジェクトへの貢献度",
+      scoreT4: 2.5,
+      scoreT3: 2.0,
+      scoreT2: 1.5,
+      scoreT1: 1.0,
+      sortOrder: 4,
+      isActive: true,
+    },
+  ];
+
+  // Check if any growth categories exist
+  const existingCategories = await prisma.growthCategory.count();
+  if (existingCategories === 0) {
+    await prisma.growthCategory.createMany({
+      data: growthCategories,
+    });
+  }
+
   console.log("✅ Database seeded successfully!");
   console.log("Created admin user:");
   console.log(`  - ${admin.email} (${admin.role})`);
   console.log("\nOpenLDAP credentials:");
   console.log("  - Username: admin");
   console.log("  - Password: admin");
+  console.log(`\nGrowth Categories: ${growthCategories.length} items created`);
 }
 
 main()

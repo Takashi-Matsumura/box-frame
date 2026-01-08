@@ -20,7 +20,7 @@ const MIGRATION_KEYS = {
  */
 export async function GET() {
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -73,8 +73,8 @@ export async function GET() {
       }
     }
 
-    // 旧LDAP設定を取得（全フィールド）
-    const legacyLdapConfig = await prisma.ldapConfig.findFirst();
+    // レガシーLDAP設定を取得（LegacyLdapConfigテーブル）
+    const legacyLdapConfig = await prisma.legacyLdapConfig.findFirst();
 
     return NextResponse.json({
       config,
@@ -90,8 +90,9 @@ export async function GET() {
             id: legacyLdapConfig.id,
             serverUrl: legacyLdapConfig.serverUrl,
             baseDN: legacyLdapConfig.baseDN,
-            bindDN: legacyLdapConfig.bindDN,
-            bindPassword: legacyLdapConfig.bindPassword,
+            bindDN: legacyLdapConfig.bindDN || "",
+            // パスワードはマスクして返す
+            bindPassword: legacyLdapConfig.bindPassword ? "********" : "",
             searchFilter: legacyLdapConfig.searchFilter,
             timeout: legacyLdapConfig.timeout,
             isEnabled: legacyLdapConfig.isEnabled,
@@ -102,7 +103,7 @@ export async function GET() {
     console.error("Failed to get migration config:", error);
     return NextResponse.json(
       { error: "Failed to get migration config" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -112,7 +113,7 @@ export async function GET() {
  */
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -158,12 +159,12 @@ export async function POST(request: Request) {
     console.error("Failed to save migration config:", error);
     return NextResponse.json(
       { error: "Failed to save migration config" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
-export interface LegacyLdapConfig {
+export interface LegacyLdapConfigInput {
   serverUrl: string;
   baseDN: string;
   bindDN: string;
@@ -174,11 +175,11 @@ export interface LegacyLdapConfig {
 }
 
 /**
- * 旧LDAP設定を保存
+ * レガシーLDAP設定を保存
  */
 export async function PUT(request: Request) {
   const session = await auth();
-  if (!session?.user) {
+  if (!session?.user || session.user.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -192,49 +193,55 @@ export async function PUT(request: Request) {
       searchFilter,
       timeout,
       isEnabled,
-    } = body as LegacyLdapConfig;
+    } = body as LegacyLdapConfigInput;
 
     // 既存の設定を取得
-    const existingConfig = await prisma.ldapConfig.findFirst();
+    const existingConfig = await prisma.legacyLdapConfig.findFirst();
+
+    // パスワードが "********" の場合は既存のパスワードを維持
+    const actualPassword =
+      bindPassword === "********"
+        ? existingConfig?.bindPassword || null
+        : bindPassword || null;
 
     if (existingConfig) {
       // 更新
-      await prisma.ldapConfig.update({
+      await prisma.legacyLdapConfig.update({
         where: { id: existingConfig.id },
         data: {
           serverUrl,
           baseDN,
-          bindDN,
-          bindPassword,
-          searchFilter,
-          timeout,
+          bindDN: bindDN || null,
+          bindPassword: actualPassword,
+          searchFilter: searchFilter || "(uid={username})",
+          timeout: timeout || 10000,
           isEnabled,
         },
       });
     } else {
       // 新規作成
-      await prisma.ldapConfig.create({
+      await prisma.legacyLdapConfig.create({
         data: {
           serverUrl,
           baseDN,
-          bindDN,
-          bindPassword,
-          searchFilter,
-          timeout,
+          bindDN: bindDN || null,
+          bindPassword: actualPassword,
+          searchFilter: searchFilter || "(uid={username})",
+          timeout: timeout || 10000,
           isEnabled,
         },
       });
     }
 
-    // 全管理者に旧LDAP設定変更通知を発行
+    // 全管理者にレガシーLDAP設定変更通知を発行
     await NotificationService.broadcast({
       role: "ADMIN",
       type: "SYSTEM",
       priority: "HIGH",
       title: "Legacy LDAP configuration updated",
-      titleJa: "旧LDAP設定が更新されました",
+      titleJa: "レガシーLDAP設定が更新されました",
       message: `Legacy LDAP configuration has been updated. Server: ${serverUrl}`,
-      messageJa: `旧LDAP設定が更新されました。サーバー: ${serverUrl}`,
+      messageJa: `レガシーLDAP設定が更新されました。サーバー: ${serverUrl}`,
       source: "LDAP",
     }).catch((err) => {
       console.error("[Legacy LDAP] Failed to create notification:", err);
@@ -245,7 +252,7 @@ export async function PUT(request: Request) {
     console.error("Failed to save legacy LDAP config:", error);
     return NextResponse.json(
       { error: "Failed to save legacy LDAP config" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
