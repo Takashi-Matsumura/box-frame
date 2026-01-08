@@ -524,15 +524,43 @@ async function getWeights(
 ### 6.2 各スコアの算出
 
 #### 基準1: 結果評価（Score1）
+
+結果評価は、プロセス評価・成長評価と同じスコア範囲を使用します。
+スコア範囲はProcessCategoryとGrowthCategoryのマスタデータから動的に計算されます。
+
 ```typescript
+// スコア範囲を取得（ProcessCategory/GrowthCategoryから）
+async function getEvaluationScoreRange(): Promise<{ min: number; max: number }> {
+  // ProcessCategoryの全スコア値とGrowthCategoryのスコア値を取得
+  // 最小値と最大値を返す
+}
+
 // 所属組織の達成率からスコアを算出
-function calculateResultsScore(achievementRate: number): number {
-  // 達成率 100% = 3.0 を基準
-  // 80% = 2.4, 120% = 3.6, 150% = 4.5 (上限5.0)
-  const score = (achievementRate / 100) * 3.0;
-  return Math.min(Math.max(score, 1.0), 5.0);
+function calculateResultsScore(
+  achievementRate: number,
+  scoreRange: { min: number; max: number }
+): number {
+  const { min, max } = scoreRange;
+  const range = max - min;
+
+  // 達成率をスコア範囲にマッピング:
+  // - 80%未満 → min付近
+  // - 80% → min + 25%
+  // - 100% → min + 50%（中央値）
+  // - 120% → min + 75%
+  // - 160%以上 → max
 }
 ```
+
+**スコア変換テーブル例（スコア範囲 50〜130 の場合）:**
+
+| 達成率 | スコア | 説明 |
+|--------|--------|------|
+| 160%+ | 130.0 | 最大値 |
+| 120%+ | 110.0 | 75%位置 |
+| 100%+ | 90.0 | 中央値 |
+| 80%+ | 70.0 | 25%位置 |
+| <80% | 50.0 | 最小値 |
 
 #### 基準2: プロセス評価（Score2）
 ```typescript

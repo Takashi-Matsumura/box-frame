@@ -134,6 +134,112 @@ function calculateTenure(joinDate: string | null, language: "en" | "ja"): string
   }
 }
 
+// スコア範囲の型
+interface ScoreRange {
+  min: number;
+  max: number;
+}
+
+// ProcessCategoryとGrowthCategoryからスコア範囲を計算
+function calculateScoreRange(
+  processCategories: ProcessCategory[],
+  growthCategories: GrowthCategory[]
+): ScoreRange {
+  let minScore = Number.POSITIVE_INFINITY;
+  let maxScore = Number.NEGATIVE_INFINITY;
+
+  // ProcessCategoryのスコア範囲を計算
+  for (const category of processCategories) {
+    try {
+      const scores = JSON.parse(category.scores) as Record<string, number>;
+      for (const score of Object.values(scores)) {
+        if (typeof score === "number" && !Number.isNaN(score)) {
+          minScore = Math.min(minScore, score);
+          maxScore = Math.max(maxScore, score);
+        }
+      }
+    } catch {
+      // パースエラーは無視
+    }
+  }
+
+  // GrowthCategoryのスコア範囲を計算（係数適用後）
+  for (const category of growthCategories) {
+    const coefficient = category.coefficient ?? 1.0;
+    const scores = [
+      category.scoreT1 * coefficient,
+      category.scoreT2 * coefficient,
+      category.scoreT3 * coefficient,
+      category.scoreT4 * coefficient,
+    ];
+    for (const score of scores) {
+      if (!Number.isNaN(score)) {
+        minScore = Math.min(minScore, score);
+        maxScore = Math.max(maxScore, score);
+      }
+    }
+  }
+
+  // データがない場合はデフォルト値
+  if (!Number.isFinite(minScore) || !Number.isFinite(maxScore)) {
+    return { min: 1.0, max: 5.0 };
+  }
+
+  return { min: minScore, max: maxScore };
+}
+
+// 達成率から結果評価スコアを計算
+function calculateResultsScore(achievementRate: number, scoreRange: ScoreRange): number {
+  const { min, max } = scoreRange;
+  const range = max - min;
+
+  let normalizedScore: number;
+
+  if (achievementRate < 80) {
+    normalizedScore = min + (achievementRate / 80) * (range * 0.25);
+  } else if (achievementRate < 100) {
+    const ratio = (achievementRate - 80) / 20;
+    normalizedScore = min + range * 0.25 + ratio * (range * 0.25);
+  } else if (achievementRate < 120) {
+    const ratio = (achievementRate - 100) / 20;
+    normalizedScore = min + range * 0.5 + ratio * (range * 0.25);
+  } else {
+    const ratio = Math.min((achievementRate - 120) / 40, 1);
+    normalizedScore = min + range * 0.75 + ratio * (range * 0.25);
+  }
+
+  return Math.round(Math.min(Math.max(normalizedScore, min), max) * 10) / 10;
+}
+
+// スコア範囲を考慮したグレード判定
+function determineGradeWithRange(score: number, scoreRange: ScoreRange): string {
+  const { min, max } = scoreRange;
+  const range = max - min;
+
+  if (range === 0) return "B";
+
+  const relativePosition = (score - min) / range;
+
+  if (relativePosition >= 0.9) return "S";
+  if (relativePosition >= 0.7) return "A";
+  if (relativePosition >= 0.5) return "B";
+  if (relativePosition >= 0.3) return "C";
+  return "D";
+}
+
+// スコア変換テーブルを生成
+function generateScoreConversionTable(scoreRange: ScoreRange): Array<{ rate: string; score: number }> {
+  const { min, max } = scoreRange;
+  const range = max - min;
+
+  return [
+    { rate: "120%+", score: Math.round((min + range * 0.75) * 10) / 10 },
+    { rate: "100%+", score: Math.round((min + range * 0.5) * 10) / 10 },
+    { rate: "80%+", score: Math.round((min + range * 0.25) * 10) / 10 },
+    { rate: "<80%", score: Math.round(min * 10) / 10 },
+  ];
+}
+
 interface Project {
   id: string;
   name: string;
@@ -354,10 +460,8 @@ export default function EvaluationForm({
         // Calculate results score if not saved
         if (!data.score1 && data.organizationGoal?.achievementRate) {
           const rate = data.organizationGoal.achievementRate;
-          let calculatedScore = 1.0;
-          if (rate >= 120) calculatedScore = 5.0;
-          else if (rate >= 100) calculatedScore = 3.5;
-          else if (rate >= 80) calculatedScore = 2.5;
+          const range = calculateScoreRange(data.processCategories, data.growthCategories);
+          const calculatedScore = calculateResultsScore(rate, range);
           setScore1(calculatedScore);
         }
       }
@@ -378,6 +482,17 @@ export default function EvaluationForm({
     }
     return `${employee.lastName} ${employee.firstName}`;
   };
+
+  // スコア範囲を計算（ProcessCategory/GrowthCategoryから）
+  const scoreRange = useMemo(() => {
+    if (!evaluation) return { min: 1.0, max: 5.0 };
+    return calculateScoreRange(evaluation.processCategories, evaluation.growthCategories);
+  }, [evaluation]);
+
+  // スコア変換テーブル
+  const scoreConversionTable = useMemo(() => {
+    return generateScoreConversionTable(scoreRange);
+  }, [scoreRange]);
 
   // Calculate weighted scores
   const weightedScore1 = useMemo(() => {
@@ -400,12 +515,8 @@ export default function EvaluationForm({
   }, [weightedScore1, weightedScore2, weightedScore3]);
 
   const finalGrade = useMemo(() => {
-    if (finalScore >= 4.5) return "S";
-    if (finalScore >= 3.5) return "A";
-    if (finalScore >= 2.5) return "B";
-    if (finalScore >= 1.5) return "C";
-    return "D";
-  }, [finalScore]);
+    return determineGradeWithRange(finalScore, scoreRange);
+  }, [finalScore, scoreRange]);
 
   // Completion status
   const isScore1Complete = score1 > 0;
@@ -690,26 +801,29 @@ export default function EvaluationForm({
                     {language === "ja" ? "スコア変換テーブル" : "Score Conversion Table"}
                   </p>
                   <div className="grid grid-cols-4 gap-2">
-                    {[
-                      { rate: "120%+", score: 5.0, active: (evaluation.organizationGoal?.achievementRate ?? 0) >= 120 },
-                      { rate: "100%+", score: 3.5, active: (evaluation.organizationGoal?.achievementRate ?? 0) >= 100 && (evaluation.organizationGoal?.achievementRate ?? 0) < 120 },
-                      { rate: "80%+", score: 2.5, active: (evaluation.organizationGoal?.achievementRate ?? 0) >= 80 && (evaluation.organizationGoal?.achievementRate ?? 0) < 100 },
-                      { rate: "<80%", score: 1.0, active: (evaluation.organizationGoal?.achievementRate ?? 0) < 80 },
-                    ].map((item) => (
-                      <div
-                        key={item.rate}
-                        className={`p-3 rounded-lg text-center text-sm border ${
-                          item.active
-                            ? "border-blue-500 bg-blue-500/10 dark:border-blue-400 dark:bg-blue-400/10"
-                            : "border-border bg-muted/30"
-                        }`}
-                      >
-                        <p className="text-muted-foreground">{item.rate}</p>
-                        <p className={`font-bold ${item.active ? "text-blue-600 dark:text-blue-400" : ""}`}>
-                          → {item.score.toFixed(1)}
-                        </p>
-                      </div>
-                    ))}
+                    {scoreConversionTable.map((item, index) => {
+                      const achievementRate = evaluation.organizationGoal?.achievementRate ?? 0;
+                      const isActive =
+                        index === 0 ? achievementRate >= 120 :
+                        index === 1 ? achievementRate >= 100 && achievementRate < 120 :
+                        index === 2 ? achievementRate >= 80 && achievementRate < 100 :
+                        achievementRate < 80;
+                      return (
+                        <div
+                          key={item.rate}
+                          className={`p-3 rounded-lg text-center text-sm border ${
+                            isActive
+                              ? "border-blue-500 bg-blue-500/10 dark:border-blue-400 dark:bg-blue-400/10"
+                              : "border-border bg-muted/30"
+                          }`}
+                        >
+                          <p className="text-muted-foreground">{item.rate}</p>
+                          <p className={`font-bold ${isActive ? "text-blue-600 dark:text-blue-400" : ""}`}>
+                            → {item.score.toFixed(1)}
+                          </p>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 

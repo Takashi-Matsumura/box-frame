@@ -25,7 +25,86 @@ const LEVEL_TO_SCORE: Record<number, number> = {
 };
 
 /**
- * 最終グレードの判定
+ * スコア範囲の型定義
+ */
+export interface ScoreRange {
+  min: number;
+  max: number;
+}
+
+/**
+ * ProcessCategoryとGrowthCategoryからスコア範囲を取得
+ *
+ * ProcessCategory: クラスA〜Dの T1〜T4 スコア
+ * GrowthCategory: カテゴリごとの scoreT1〜T4 × 係数
+ *
+ * 両方の最大値・最小値を取得して統合
+ */
+export async function getEvaluationScoreRange(): Promise<ScoreRange> {
+  // ProcessCategoryからスコアを取得
+  const processCategories = await prisma.processCategory.findMany({
+    where: { isActive: true },
+    select: { scores: true },
+  });
+
+  // GrowthCategoryからスコアを取得
+  const growthCategories = await prisma.growthCategory.findMany({
+    where: { isActive: true },
+    select: {
+      scoreT1: true,
+      scoreT2: true,
+      scoreT3: true,
+      scoreT4: true,
+      coefficient: true,
+    },
+  });
+
+  let minScore = Number.POSITIVE_INFINITY;
+  let maxScore = Number.NEGATIVE_INFINITY;
+
+  // ProcessCategoryのスコア範囲を計算
+  for (const category of processCategories) {
+    try {
+      const scores = JSON.parse(category.scores) as Record<string, number>;
+      for (const score of Object.values(scores)) {
+        if (typeof score === "number" && !Number.isNaN(score)) {
+          minScore = Math.min(minScore, score);
+          maxScore = Math.max(maxScore, score);
+        }
+      }
+    } catch {
+      // パースエラーは無視
+    }
+  }
+
+  // GrowthCategoryのスコア範囲を計算（係数適用後）
+  for (const category of growthCategories) {
+    const coefficient = category.coefficient ?? 1.0;
+    const scores = [
+      category.scoreT1 * coefficient,
+      category.scoreT2 * coefficient,
+      category.scoreT3 * coefficient,
+      category.scoreT4 * coefficient,
+    ];
+    for (const score of scores) {
+      if (!Number.isNaN(score)) {
+        minScore = Math.min(minScore, score);
+        maxScore = Math.max(maxScore, score);
+      }
+    }
+  }
+
+  // データがない場合はデフォルト値
+  if (!Number.isFinite(minScore) || !Number.isFinite(maxScore)) {
+    return { min: 1.0, max: 5.0 };
+  }
+
+  return { min: minScore, max: maxScore };
+}
+
+/**
+ * 最終グレードの判定（固定閾値版）
+ * @deprecated determineGradeWithRange を使用してください
  */
 function determineGrade(score: number): string {
   if (score >= 4.5) return "S";
@@ -36,15 +115,91 @@ function determineGrade(score: number): string {
 }
 
 /**
- * 基準1: 結果評価スコアを計算
- * 達成率100% = 3.0を基準
- * スコア範囲: 1.0〜5.0
+ * 最終グレードの判定（スコア範囲考慮版）
+ *
+ * スコア範囲内での相対位置に基づいてグレードを判定:
+ * - 90%以上 → S
+ * - 70%以上 → A
+ * - 50%以上 → B
+ * - 30%以上 → C
+ * - 30%未満 → D
  */
-export function calculateResultsScore(achievementRate: number): number {
-  // 達成率(%)からスコアを計算
-  // 100% = 3.0, 80% = 2.4, 120% = 3.6, 166.7% = 5.0
-  const score = (achievementRate / 100) * 3.0;
-  return Math.min(Math.max(score, 1.0), 5.0);
+export function determineGradeWithRange(score: number, scoreRange: ScoreRange): string {
+  const { min, max } = scoreRange;
+  const range = max - min;
+
+  if (range === 0) return "B"; // 範囲がない場合は中央
+
+  // スコアの相対位置（0〜1）
+  const relativePosition = (score - min) / range;
+
+  if (relativePosition >= 0.9) return "S";
+  if (relativePosition >= 0.7) return "A";
+  if (relativePosition >= 0.5) return "B";
+  if (relativePosition >= 0.3) return "C";
+  return "D";
+}
+
+/**
+ * 基準1: 結果評価スコアを計算
+ *
+ * 達成率を指定されたスコア範囲にマッピング:
+ * - 達成率 80% 未満 → 最小スコア
+ * - 達成率 80% → 最小スコア + (範囲の25%)
+ * - 達成率 100% → 中央値（min + max の中間）
+ * - 達成率 120% → 最大スコア - (範囲の25%)
+ * - 達成率 120% 以上 → 最大スコア
+ *
+ * @param achievementRate 達成率（%）
+ * @param scoreRange スコア範囲（min/max）。指定しない場合は1.0〜5.0
+ */
+export function calculateResultsScore(
+  achievementRate: number,
+  scoreRange?: ScoreRange
+): number {
+  const min = scoreRange?.min ?? 1.0;
+  const max = scoreRange?.max ?? 5.0;
+  const range = max - min;
+
+  // 達成率に応じたスコアを計算
+  // 80%未満 → min
+  // 80% → min + range * 0.25
+  // 100% → min + range * 0.5 (中央値)
+  // 120% → min + range * 0.75
+  // 120%以上 → max
+  let normalizedScore: number;
+
+  if (achievementRate < 80) {
+    // 80%未満は最低スコア付近
+    // 0% → min, 80% → min + range * 0.25
+    normalizedScore = min + (achievementRate / 80) * (range * 0.25);
+  } else if (achievementRate < 100) {
+    // 80%〜100%: min + 0.25*range → min + 0.5*range
+    const ratio = (achievementRate - 80) / 20; // 0 to 1
+    normalizedScore = min + range * 0.25 + ratio * (range * 0.25);
+  } else if (achievementRate < 120) {
+    // 100%〜120%: min + 0.5*range → min + 0.75*range
+    const ratio = (achievementRate - 100) / 20; // 0 to 1
+    normalizedScore = min + range * 0.5 + ratio * (range * 0.25);
+  } else {
+    // 120%以上: min + 0.75*range → max
+    // 120% → 0.75, 160%以上 → 1.0
+    const ratio = Math.min((achievementRate - 120) / 40, 1); // 0 to 1
+    normalizedScore = min + range * 0.75 + ratio * (range * 0.25);
+  }
+
+  // 範囲内に収める
+  return Math.round(Math.min(Math.max(normalizedScore, min), max) * 10) / 10;
+}
+
+/**
+ * 基準1: 結果評価スコアを非同期で計算（DB からスコア範囲を取得）
+ */
+export async function calculateResultsScoreAsync(
+  achievementRate: number
+): Promise<number> {
+  const scoreRange = await getEvaluationScoreRange();
+  return calculateResultsScore(achievementRate, scoreRange);
 }
 
 /**
@@ -203,7 +358,9 @@ export async function syncResultsScoreFromCriteria1(
     return 0;
   }
 
-  const score = calculateResultsScore(result.achievementRate);
+  // スコア範囲を取得して結果評価スコアを計算
+  const scoreRange = await getEvaluationScoreRange();
+  const score = calculateResultsScore(result.achievementRate, scoreRange);
 
   // 評価レコードを取得して更新
   const evaluations = await prisma.evaluation.findMany({

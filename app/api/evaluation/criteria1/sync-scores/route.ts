@@ -1,7 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { getWeightsForPositionGrade } from "@/lib/addon-modules/evaluation";
+import {
+  getWeightsForPositionGrade,
+  calculateResultsScore,
+  getEvaluationScoreRange,
+  determineGradeWithRange,
+} from "@/lib/addon-modules/evaluation";
 
 /**
  * Criteria1の達成率を評価スコア（score1）に自動反映
@@ -87,6 +92,9 @@ export async function POST(request: NextRequest) {
     let skippedCount = 0;
     let errorCount = 0;
 
+    // スコア範囲を取得（ProcessCategory/GrowthCategoryから）
+    const scoreRange = await getEvaluationScoreRange();
+
     // 各社員の評価レコードを更新
     for (const employee of employees) {
       // 評価対象外の社員はスキップ
@@ -115,9 +123,8 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // 達成率からscore1を計算（100% = 3.0のスケール）
-        // 達成率100% → 3.0、達成率80% → 2.4、達成率120% → 3.6
-        const score1 = Math.min(Math.max((achievementRate / 100) * 3.0, 1.0), 5.0);
+        // 達成率からscore1を計算（プロセス評価・成長評価と同じスコア範囲を使用）
+        const score1 = calculateResultsScore(achievementRate, scoreRange);
 
         // 評価レコードを探す
         const existingEvaluation = await prisma.evaluation.findUnique({
@@ -143,12 +150,8 @@ export async function POST(request: NextRequest) {
           const weightedScore3 = existingEvaluation.weightedScore3 || 0;
           const finalScore = weightedScore1 + weightedScore2 + weightedScore3;
 
-          // 最終グレードを計算
-          let finalGrade = "D";
-          if (finalScore >= 4.5) finalGrade = "S";
-          else if (finalScore >= 3.5) finalGrade = "A";
-          else if (finalScore >= 2.5) finalGrade = "B";
-          else if (finalScore >= 1.5) finalGrade = "C";
+          // 最終グレードを計算（スコア範囲を考慮）
+          const finalGrade = determineGradeWithRange(finalScore, scoreRange);
 
           // 既存の評価レコードを更新
           await prisma.evaluation.update({
