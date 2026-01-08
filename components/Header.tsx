@@ -43,6 +43,7 @@ interface HeaderProps {
     };
   } | null;
   language?: string;
+  accessKeyTabPermissions?: Record<string, string[]>;
 }
 
 function SidebarToggleButton() {
@@ -61,12 +62,33 @@ function SidebarToggleButton() {
   );
 }
 
-export function Header({ session, language = "en" }: HeaderProps) {
+export function Header({ session, language = "en", accessKeyTabPermissions = {} }: HeaderProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { width, open } = useSidebarStore();
   const isTabletOrMobile = useIsTabletOrMobile();
   const pageTitle = getPageTitle(pathname, language as "en" | "ja");
+
+  // ユーザーがADMINロールか判定
+  const isAdminRole = session?.user?.role === "ADMIN";
+
+  // タブをフィルタリングするヘルパー関数
+  // ADMINロールはすべてのタブにアクセス可能
+  // それ以外はアクセスキーで許可されたタブのみ
+  const filterTabsByPermission = (tabs: TabItem[], menuPath: string): TabItem[] => {
+    if (isAdminRole) {
+      return tabs;
+    }
+    const allowedTabIds = accessKeyTabPermissions[menuPath];
+    if (!allowedTabIds || allowedTabIds.length === 0) {
+      // タブレベルの権限がない場合、メニューレベルの権限で全タブ許可
+      return tabs;
+    }
+    return tabs.filter((tab) => {
+      const tabId = new URL(tab.path, "http://localhost").searchParams.get("tab");
+      return tabId && allowedTabIds.includes(tabId);
+    });
+  };
 
   // ページ判定
   const isAnalytics =
@@ -312,9 +334,9 @@ export function Header({ session, language = "en" }: HeaderProps) {
       {isAdmin && renderTabs(adminTabs, "Admin Tabs")}
       {isDataImport && renderTabs(dataImportTabs, "Data Import Tabs")}
       {isSettings && renderTabs(settingsTabs, "Settings Tabs")}
-      {isDataManagement && renderTabs(dataManagementTabs, "Data Management Tabs")}
-      {isEvaluationMaster && renderTabs(evaluationMasterTabs, "Evaluation Master Tabs")}
-      {isEvaluationRag && renderTabs(evaluationRagTabs, "Evaluation AI Support Tabs")}
+      {isDataManagement && renderTabs(filterTabsByPermission(dataManagementTabs, "/admin/data-management"), "Data Management Tabs")}
+      {isEvaluationMaster && renderTabs(filterTabsByPermission(evaluationMasterTabs, "/admin/evaluation-master"), "Evaluation Master Tabs")}
+      {isEvaluationRag && renderTabs(filterTabsByPermission(evaluationRagTabs, "/admin/evaluation-rag"), "Evaluation AI Support Tabs")}
     </header>
   );
 }

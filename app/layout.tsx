@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { ClientLayout } from "@/components/ClientLayout";
 import { Header } from "@/components/Header";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { getUserAccessibleMenus } from "@/lib/access-keys";
+import { getUserAccessKeyPermissions, type AccessKeyPermissions } from "@/lib/access-keys";
 import { appConfig } from "@/lib/config/app";
 import {
   canAccessMenuGroup,
@@ -47,10 +47,10 @@ export default async function RootLayout({
   let groupedMenus: Record<string, AppMenu[]> = {};
   let sortedMenuGroups: MenuGroup[] = [];
   let mustChangePassword = false;
-  let accessKeyMenuPaths: string[] = [];
+  let accessKeyPermissions: AccessKeyPermissions = { menuPaths: [], tabPermissions: {} };
 
   if (session) {
-    const [permissions, user, fetchedAccessKeyMenuPaths] = await Promise.all([
+    const [permissions, user, fetchedAccessKeyPermissions] = await Promise.all([
       getUserPermissions(session.user.id),
       prisma.user.findUnique({
         where: { email: session.user.email || "" },
@@ -64,12 +64,12 @@ export default async function RootLayout({
           },
         },
       }),
-      getUserAccessibleMenus(session.user.id),
+      getUserAccessKeyPermissions(session.user.id),
     ]);
 
     userPermissions = permissions;
     language = user?.language || "en";
-    accessKeyMenuPaths = fetchedAccessKeyMenuPaths;
+    accessKeyPermissions = fetchedAccessKeyPermissions;
     mustChangePassword = user?.ldapMappings?.[0]?.mustChangePassword ?? false;
 
     // Module Registryから全モジュールを取得
@@ -110,7 +110,7 @@ export default async function RootLayout({
     const roleBasedMenuPaths = new Set(accessibleMenus.map((m) => m.path));
 
     const accessKeyMenuList = allMenus.filter((menu) =>
-      accessKeyMenuPaths.includes(menu.path),
+      accessKeyPermissions.menuPaths.includes(menu.path),
     );
 
     for (const menu of accessKeyMenuList) {
@@ -126,16 +126,10 @@ export default async function RootLayout({
     groupedMenus = groupMenusByMenuGroup(accessibleMenus);
 
     // 表示するメニューグループを抽出してソート
-    // 1. メニューが存在するグループ
-    // 2. ユーザのロールでアクセス可能なグループ（ADMINは全セクション表示）
+    // groupedMenusに含まれるグループはすべて表示（アクセスキー許可分を含む）
     const activeGroupIds = Object.keys(groupedMenus);
-    const isAdmin = session.user.role === "ADMIN";
     sortedMenuGroups = Object.values(menuGroups)
-      .filter(
-        (group) =>
-          activeGroupIds.includes(group.id) &&
-          (isAdmin || canAccessMenuGroup(group.id, session.user.role)),
-      )
+      .filter((group) => activeGroupIds.includes(group.id))
       .sort((a, b) => a.order - b.order);
   }
 
@@ -159,7 +153,11 @@ export default async function RootLayout({
             menuGroups={sortedMenuGroups}
             mustChangePassword={mustChangePassword}
           >
-            <Header session={session} language={language} />
+            <Header
+              session={session}
+              language={language}
+              accessKeyTabPermissions={accessKeyPermissions.tabPermissions}
+            />
             <main
               className={`container mx-auto px-4 py-8 ${session ? "pt-24" : "pt-20"}`}
             >
