@@ -1,18 +1,22 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { appConfig } from "@/lib/config/app";
+import { getTabsByMenuPath } from "@/lib/modules/registry";
+
+/** タブアイテムの型定義 */
+interface TabItem {
+  name: string;
+  icon: ReactNode;
+  path: string;
+  active: boolean;
+}
 import {
-  FaBullhorn,
   FaChartBar,
-  FaClipboardList,
   FaDatabase,
   FaExclamationTriangle,
-  FaHistory,
-  FaInfoCircle,
-  FaSitemap,
-  FaStar,
   FaTrash,
   FaUpload,
   FaUsers,
@@ -105,73 +109,16 @@ export function Header({ session, language = "en" }: HeaderProps) {
     },
   ];
 
-  // 管理画面タブ
+  // 管理画面タブ（レジストリから取得）
   const adminTab = searchParams.get("tab") || "users";
-  const adminTabs = [
-    {
-      name: language === "ja" ? "システム情報" : "System Information",
-      icon: <FaInfoCircle className="w-5 h-5" />,
-      path: "/admin?tab=system",
-      active: adminTab === "system",
-    },
-    {
-      name: language === "ja" ? "ユーザ管理" : "User Management",
-      icon: <FaUsers className="w-5 h-5" />,
-      path: "/admin?tab=users",
-      active: adminTab === "users",
-    },
-    {
-      name: language === "ja" ? "アクセスキー" : "Access Keys",
-      icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
-          />
-        </svg>
-      ),
-      path: "/admin?tab=access-keys",
-      active: adminTab === "access-keys",
-    },
-    {
-      name: language === "ja" ? "モジュール管理" : "Module Management",
-      icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          strokeWidth={2}
-        >
-          <rect x="3" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="3" width="7" height="7" rx="1" />
-          <rect x="3" y="14" width="7" height="7" rx="1" />
-          <rect x="14" y="14" width="7" height="7" rx="1" />
-        </svg>
-      ),
-      path: "/admin?tab=modules",
-      active: adminTab === "modules",
-    },
-    {
-      name: language === "ja" ? "監査ログ" : "Audit Logs",
-      icon: <FaClipboardList className="w-5 h-5" />,
-      path: "/admin?tab=audit-logs",
-      active: adminTab === "audit-logs",
-    },
-    {
-      name: language === "ja" ? "アナウンス" : "Announcements",
-      icon: <FaBullhorn className="w-5 h-5" />,
-      path: "/admin?tab=announcements",
-      active: adminTab === "announcements",
-    },
-  ];
+  const registryAdminTabs = getTabsByMenuPath("/admin");
+  const adminTabs =
+    registryAdminTabs?.map((tab) => ({
+      name: language === "ja" ? tab.nameJa : tab.name,
+      icon: tab.icon,
+      path: `/admin?tab=${tab.id}`,
+      active: adminTab === tab.id,
+    })) || [];
 
   // データインポートタブ
   const dataImportTab = searchParams.get("tab") || "upload";
@@ -247,88 +194,40 @@ export function Header({ session, language = "en" }: HeaderProps) {
     },
   ];
 
-  // 組織データ管理タブ
+  // 組織データ管理タブ（レジストリから取得）
   const dataManagementTab = searchParams.get("tab") || "import";
-  const dataManagementTabs = [
-    {
-      name: language === "ja" ? "インポート" : "Import",
-      icon: <FaUpload className="w-5 h-5" />,
-      path: "/admin/data-management?tab=import",
-      active: dataManagementTab === "import",
-    },
-    {
-      name: language === "ja" ? "社員一覧" : "Employees",
-      icon: <FaUsers className="w-5 h-5" />,
-      path: "/admin/data-management?tab=employees",
-      active: dataManagementTab === "employees",
-    },
-    {
-      name: language === "ja" ? "組織整備" : "Organize",
-      icon: <FaSitemap className="w-5 h-5" />,
-      path: "/admin/data-management?tab=organize",
-      active: dataManagementTab === "organize",
-    },
-    {
-      name: language === "ja" ? "履歴" : "History",
-      icon: <FaHistory className="w-5 h-5" />,
-      path: "/admin/data-management?tab=history",
-      active: dataManagementTab === "history",
-    },
-  ];
+  const registryDataManagementTabs = getTabsByMenuPath("/admin/data-management");
+  const dataManagementTabs =
+    registryDataManagementTabs?.map((tab) => ({
+      name: language === "ja" ? tab.nameJa : tab.name,
+      icon: tab.icon,
+      path: `/admin/data-management?tab=${tab.id}`,
+      active: dataManagementTab === tab.id,
+    })) || [];
 
-  // 人事評価マスタタブ
+  // 評価マスタタブ（レジストリから取得）
   const evaluationMasterTab = searchParams.get("tab") || "periods";
-  const evaluationMasterTabs = [
-    {
-      name: language === "ja" ? "評価期間" : "Periods",
-      icon: <FaStar className="w-5 h-5" />,
-      path: "/admin/evaluation-master?tab=periods",
-      active: evaluationMasterTab === "periods",
-    },
-    {
-      name: language === "ja" ? "評価重み" : "Weights",
-      icon: <FaStar className="w-5 h-5" />,
-      path: "/admin/evaluation-master?tab=weights",
-      active: evaluationMasterTab === "weights",
-    },
-    {
-      name: language === "ja" ? "結果評価" : "Results Evaluation",
-      icon: <FaStar className="w-5 h-5" />,
-      path: "/admin/evaluation-master?tab=organizationGoals",
-      active: evaluationMasterTab === "organizationGoals",
-    },
-    {
-      name: language === "ja" ? "プロセス評価" : "Process Categories",
-      icon: <FaStar className="w-5 h-5" />,
-      path: "/admin/evaluation-master?tab=processCategories",
-      active: evaluationMasterTab === "processCategories",
-    },
-    {
-      name: language === "ja" ? "成長評価" : "Growth Categories",
-      icon: <FaStar className="w-5 h-5" />,
-      path: "/admin/evaluation-master?tab=growthCategories",
-      active: evaluationMasterTab === "growthCategories",
-    },
-  ];
+  const registryEvaluationMasterTabs = getTabsByMenuPath("/admin/evaluation-master");
+  const evaluationMasterTabs =
+    registryEvaluationMasterTabs?.map((tab) => ({
+      name: language === "ja" ? tab.nameJa : tab.name,
+      icon: tab.icon,
+      path: `/admin/evaluation-master?tab=${tab.id}`,
+      active: evaluationMasterTab === tab.id,
+    })) || [];
 
-  // 評価AIサポートタブ
+  // 評価AIサポートタブ（レジストリから取得）
   const evaluationRagTab = searchParams.get("tab") || "knowledge-base";
-  const evaluationRagTabs = [
-    {
-      name: language === "ja" ? "ナレッジベース" : "Knowledge Base",
-      icon: <FaDatabase className="w-5 h-5" />,
-      path: "/admin/evaluation-rag?tab=knowledge-base",
-      active: evaluationRagTab === "knowledge-base",
-    },
-    {
-      name: language === "ja" ? "システムプロンプト" : "System Prompt",
-      icon: <FaStar className="w-5 h-5" />,
-      path: "/admin/evaluation-rag?tab=system-prompt",
-      active: evaluationRagTab === "system-prompt",
-    },
-  ];
+  const registryEvaluationRagTabs = getTabsByMenuPath("/admin/evaluation-rag");
+  const evaluationRagTabs =
+    registryEvaluationRagTabs?.map((tab) => ({
+      name: language === "ja" ? tab.nameJa : tab.name,
+      icon: tab.icon,
+      path: `/admin/evaluation-rag?tab=${tab.id}`,
+      active: evaluationRagTab === tab.id,
+    })) || [];
 
-  const renderTabs = (tabs: typeof analyticsTabs, label: string) => (
+  const renderTabs = (tabs: TabItem[], label: string) => (
     <div className="border-t border-border bg-muted">
       <nav className="flex gap-1 px-6" aria-label={label}>
         {tabs.map((tab) => (

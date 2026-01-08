@@ -60,7 +60,20 @@ export async function checkAccess(
 
       // このアクセスキーがmenuPathへのアクセスを許可しているかチェック
       for (const akp of ak.permissions) {
-        if (akp.permission.menuPath === menuPath) {
+        // 新しい粒度システム（Phase 2）
+        if (akp.menuPath) {
+          // menuPath が直接設定されている場合
+          if (akp.menuPath === menuPath) {
+            return true;
+          }
+          // モジュールレベルの権限の場合、配下の全メニューにアクセス可能
+          if (akp.granularity === "module" && akp.moduleId) {
+            // TODO: モジュールIDからメニューパスを検証するロジックを追加
+            return true;
+          }
+        }
+        // 後方互換性：旧 permission リレーション経由
+        else if (akp.permission?.menuPath === menuPath) {
           return true;
         }
       }

@@ -4,8 +4,59 @@
  * 組織構成（本部・部・課）と社員データを管理するモジュール
  */
 
-import type { AppModule } from "@/types/module";
+import type { AppModule, AppTab } from "@/types/module";
 import { getModuleIcon, getMenuIcon } from "@/lib/modules/icons";
+import { FaHistory, FaSitemap, FaUpload, FaUsers } from "react-icons/fa";
+
+/**
+ * 組織データ管理タブ定義
+ */
+const dataManagementTabs: AppTab[] = [
+  {
+    id: "import",
+    name: "Import",
+    nameJa: "インポート",
+    icon: <FaUpload className="w-5 h-5" />,
+    order: 1,
+    enabled: true,
+    allowAccessKey: true,
+    description: "Import organization data from CSV/Excel",
+    descriptionJa: "CSV/Excelから組織データをインポート",
+  },
+  {
+    id: "employees",
+    name: "Employees",
+    nameJa: "社員一覧",
+    icon: <FaUsers className="w-5 h-5" />,
+    order: 2,
+    enabled: true,
+    allowAccessKey: true,
+    description: "View and manage employee list",
+    descriptionJa: "社員一覧の表示と管理",
+  },
+  {
+    id: "organize",
+    name: "Organize",
+    nameJa: "組織整備",
+    icon: <FaSitemap className="w-5 h-5" />,
+    order: 3,
+    enabled: true,
+    allowAccessKey: true,
+    description: "Configure organization structure and managers",
+    descriptionJa: "組織構造と責任者の設定",
+  },
+  {
+    id: "history",
+    name: "History",
+    nameJa: "履歴",
+    icon: <FaHistory className="w-5 h-5" />,
+    order: 4,
+    enabled: true,
+    allowAccessKey: true,
+    description: "View organization change history",
+    descriptionJa: "組織変更履歴の表示",
+  },
+];
 
 export const organizationModule: AppModule = {
   id: "organization",
@@ -47,6 +98,8 @@ export const organizationModule: AppModule = {
       description: "Import and manage organization data",
       descriptionJa: "組織データのインポートと管理",
       isImplemented: true,
+      tabs: dataManagementTabs,
+      allowAccessKey: true,
     },
   ],
   services: [

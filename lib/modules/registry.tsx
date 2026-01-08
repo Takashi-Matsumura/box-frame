@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import type {
   AppMenu,
   AppModule,
+  AppTab,
   MenuGroup,
   ModuleRegistry,
 } from "@/types/module";
@@ -218,4 +219,36 @@ export async function getModuleStats() {
       {} as Record<string, number>,
     ),
   };
+}
+
+/**
+ * パスからメニューのタブ定義を取得
+ * @param path メニューパス（例: "/admin"）
+ * @returns タブ定義の配列、タブがない場合はundefined
+ */
+export function getTabsByMenuPath(path: string): AppTab[] | undefined {
+  const menu = getMenuByPath(path);
+  if (!menu?.tabs || menu.tabs.length === 0) {
+    return undefined;
+  }
+  // order順でソートして返す
+  return [...menu.tabs]
+    .filter((tab) => tab.enabled !== false)
+    .sort((a, b) => a.order - b.order);
+}
+
+/**
+ * メニューIDからタブ定義を取得
+ * @param menuId メニューID（例: "adminPanel"）
+ * @returns タブ定義の配列、タブがない場合はundefined
+ */
+export function getTabsByMenuId(menuId: string): AppTab[] | undefined {
+  const menu = getMenuById(menuId);
+  if (!menu?.tabs || menu.tabs.length === 0) {
+    return undefined;
+  }
+  // order順でソートして返す
+  return [...menu.tabs]
+    .filter((tab) => tab.enabled !== false)
+    .sort((a, b) => a.order - b.order);
 }
