@@ -174,6 +174,20 @@ model OpenLdapConfig {
   updatedAt     DateTime @updatedAt
 }
 
+// レガシーLDAP設定（Lazy Migration用）
+model LegacyLdapConfig {
+  id            String   @id @default(cuid())
+  isEnabled     Boolean  @default(false)
+  serverUrl     String   @default("")          // ldap://ldap.es.occ.co.jp:389
+  baseDN        String   @default("")          // ou=Users,dc=occ,dc=co,dc=jp
+  bindDN        String?                        // cn=admin,dc=occ,dc=co,dc=jp
+  bindPassword  String?                        // 認証用（空の場合はAnonymous Bind）
+  searchFilter  String   @default("(uid={username})")
+  timeout       Int      @default(10000)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
 // ========================================
 // アクセス制御システム
 // ========================================
@@ -332,4 +346,607 @@ model Announcement {
   creator     User      @relation(fields: [createdBy], references: [id])
 
   @@index([isActive, startAt, endAt])
+}
+
+// ========================================
+// 会社組織管理システム
+// ========================================
+
+enum OrganizationStatus {
+  DRAFT      // 下書き（編集中）
+  SCHEDULED  // 公開予定（公開日待ち）
+  PUBLISHED  // 公開中
+  ARCHIVED   // アーカイブ済み
+}
+
+// 組織（会社）
+model Organization {
+  id                    String                @id @default(cuid())
+  name                  String                @unique
+  description           String?
+  status                OrganizationStatus    @default(DRAFT)
+  publishAt             DateTime?             // 公開予定日時
+  publishedAt           DateTime?             // 実際に公開された日時
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  departments           Department[]
+  employees             Employee[]
+  employeeHistories     EmployeeHistory[]     @relation("OrganizationEmployeeHistories")
+  organizationHistories OrganizationHistory[] @relation("OrganizationHistories")
+
+  @@index([status, publishAt])
+}
+
+// 本部（Department）
+model Department {
+  id             String       @id @default(cuid())
+  name           String
+  code           String?
+  description    String?
+  organizationId String
+  managerId      String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  manager        Employee?    @relation("DepartmentManager", fields: [managerId], references: [id])
+  employees      Employee[]   @relation("DepartmentEmployees")
+  sections       Section[]
+
+  @@unique([organizationId, name])
+}
+
+// 部（Section）
+model Section {
+  id           String     @id @default(cuid())
+  name         String
+  code         String?
+  description  String?
+  departmentId String
+  managerId    String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  manager      Employee?  @relation("SectionManager", fields: [managerId], references: [id])
+  employees    Employee[] @relation("SectionEmployees")
+  courses      Course[]
+
+  @@unique([departmentId, name])
+}
+
+// 課（Course）
+model Course {
+  id          String     @id @default(cuid())
+  name        String
+  code        String?
+  description String?
+  sectionId   String
+  managerId   String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  section     Section    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  manager     Employee?  @relation("CourseManager", fields: [managerId], references: [id])
+  employees   Employee[] @relation("CourseEmployees")
+
+  @@unique([sectionId, name])
+}
+
+// 社員
+model Employee {
+  id                 String            @id @default(cuid())
+  employeeId         String            @unique
+  name               String
+  nameKana           String?
+  email              String?           @unique
+  profileImage       String?
+  phone              String?
+  position           String
+  positionCode       String?
+  qualificationGrade String?
+  qualificationGradeCode String?
+  employmentType     String?
+  employmentTypeCode String?
+  departmentCode     String?
+  joinDate           DateTime?
+  birthDate          DateTime?
+  isActive           Boolean           @default(true)
+  organizationId     String
+  departmentId       String
+  sectionId          String?
+  courseId           String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  organization       Organization      @relation(fields: [organizationId], references: [id])
+  department         Department        @relation("DepartmentEmployees", fields: [departmentId], references: [id])
+  section            Section?          @relation("SectionEmployees", fields: [sectionId], references: [id])
+  course             Course?           @relation("CourseEmployees", fields: [courseId], references: [id])
+  managedDepartments Department[]      @relation("DepartmentManager")
+  managedSections    Section[]         @relation("SectionManager")
+  managedCourses     Course[]          @relation("CourseManager")
+  histories          EmployeeHistory[] @relation("EmployeeHistories")
+
+  // 人事評価モジュール関連
+  evaluations        Evaluation[]      @relation("evaluations")
+  evaluationsGiven   Evaluation[]      @relation("evaluationsGiven")
+  evaluationGoals    EvaluationGoal[]
+  customEvaluatees   CustomEvaluator[] @relation("customEvaluatee")
+  customEvaluators   CustomEvaluator[] @relation("customEvaluator")
+  exclusions         EvaluationExclusion[]
+}
+
+// ========================================
+// 履歴管理システム
+// ========================================
+
+// 変更タイプ
+enum ChangeType {
+  CREATE
+  UPDATE
+  DELETE
+  TRANSFER
+  PROMOTION
+  RETIREMENT
+  REJOINING
+  IMPORT
+  BULK_UPDATE
+  EXPORT
+}
+
+// 社員データ履歴（スナップショット方式）
+model EmployeeHistory {
+  id                 String       @id @default(cuid())
+  employeeId         String
+  validFrom          DateTime
+  validTo            DateTime?
+  name               String
+  nameKana           String?
+  email              String
+  profileImage       String?
+  phone              String?
+  position           String
+  positionCode       String?
+  qualificationGrade String?
+  qualificationGradeCode String?
+  employmentType     String?
+  employmentTypeCode String?
+  departmentCode     String?
+  joinDate           DateTime?
+  birthDate          DateTime?
+  isActive           Boolean      @default(true)
+  organizationId     String
+  departmentId       String
+  departmentName     String
+  sectionId          String?
+  sectionName        String?
+  courseId           String?
+  courseName         String?
+  changeType         ChangeType
+  changeReason       String?
+  changedBy          String
+  changedAt          DateTime     @default(now())
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  employee           Employee     @relation("EmployeeHistories", fields: [employeeId], references: [id], onDelete: Cascade)
+  organization       Organization @relation("OrganizationEmployeeHistories", fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId, validFrom])
+  @@index([validFrom, validTo])
+  @@index([changeType])
+}
+
+// 組織構造履歴（スナップショット方式）
+model OrganizationHistory {
+  id                    String       @id @default(cuid())
+  organizationId        String
+  validFrom             DateTime
+  validTo               DateTime?
+  structureSnapshot     String
+  employeeCountSnapshot Int
+  departmentCount       Int
+  sectionCount          Int
+  courseCount           Int
+  changeType            ChangeType
+  changeDescription     String?
+  changedBy             String
+  changedAt             DateTime     @default(now())
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation("OrganizationHistories", fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, validFrom])
+  @@index([validFrom, validTo])
+  @@index([changeType])
+}
+
+// 変更ログ（詳細な変更追跡）
+model ChangeLog {
+  id                String     @id @default(cuid())
+  entityType        String
+  entityId          String
+  changeType        ChangeType
+  fieldName         String?
+  oldValue          String?
+  newValue          String?
+  changeDescription String?
+  changeReason      String?
+  batchId           String?
+  changedBy         String
+  changedAt         DateTime   @default(now())
+  ipAddress         String?
+  userAgent         String?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  @@index([entityType, entityId])
+  @@index([changeType])
+  @@index([changedBy])
+  @@index([changedAt])
+  @@index([batchId])
+}
+
+// ========================================
+// 人事評価システム
+// ========================================
+
+// 組織レベル（結果評価用）
+enum OrganizationLevel {
+  COMPANY     // 全社
+  DEPARTMENT  // 本部
+  SECTION     // 部
+  COURSE      // 課
+}
+
+// 部署タイプ（結果評価用）
+enum DepartmentType {
+  DIRECT      // 直接部門（営業利益を追跡）
+  INDIRECT    // 間接部門（他組織の達成率を参照）
+}
+
+// 評価期間ステータス
+enum EvaluationPeriodStatus {
+  DRAFT       // 準備中
+  ACTIVE      // 評価実施中
+  REVIEW      // レビュー期間
+  CLOSED      // 完了
+}
+
+// 評価ステータス
+enum EvaluationStatus {
+  PENDING     // 未評価
+  IN_PROGRESS // 評価中
+  COMPLETED   // 評価完了
+  CONFIRMED   // 確定済み
+}
+
+// 評価期間
+model EvaluationPeriod {
+  id                String                 @id @default(cuid())
+  name              String                 // "2024年度 上期評価"
+  year              Int                    // 2024
+  term              String                 // "H1" | "H2" | "ANNUAL"
+  status            EvaluationPeriodStatus @default(DRAFT)
+
+  // 期間
+  startDate         DateTime
+  endDate           DateTime
+
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  evaluations       Evaluation[]
+  goals             EvaluationGoal[]
+  weights           EvaluationWeight[]
+  criteria1Results  Criteria1Result[]
+  customEvaluators  CustomEvaluator[]
+  exclusions        EvaluationExclusion[]
+  positionGroups    PositionGroup[]
+
+  @@index([year, term])
+  @@index([status])
+}
+
+// 重み設定（役職×等級別）
+model EvaluationWeight {
+  id                String           @id @default(cuid())
+
+  periodId          String
+  period            EvaluationPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+  positionCode      String  @default("DEFAULT")  // 役職コード（"000", "200", "300"... or "DEFAULT"）
+  positionName      String?          // 役職名（表示用）
+  gradeCode         String           // 等級コード（"G1", "E3"... or "ALL" = 全等級共通）
+
+  // 重み（%、合計100）
+  resultsWeight     Int              @default(30)   // 結果評価
+  processWeight     Int              @default(40)   // プロセス評価
+  growthWeight      Int              @default(30)   // 成長評価
+
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([periodId, positionCode, gradeCode])
+}
+
+// 結果評価データ（Criteria1）
+model Criteria1Result {
+  id                       String            @id @default(cuid())
+
+  periodId                 String
+  period                   EvaluationPeriod  @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+  // 対象組織（COMPANY/DEPARTMENT/SECTION/COURSE）
+  organizationLevel        OrganizationLevel
+  organizationId           String
+  organizationName         String
+
+  // 目標・実績
+  targetProfit             Float?            // 目標営業利益
+  actualProfit             Float?            // 実績営業利益
+  achievementRate          Float?            // 達成率（%）
+
+  // 部署タイプ
+  departmentType           DepartmentType    @default(INDIRECT)
+
+  // 間接部門の紐付け先（INDIRECT の場合のみ使用）
+  linkedOrganizationLevel  OrganizationLevel?
+  linkedOrganizationId     String?
+  linkedOrganizationName   String?
+
+  // メタデータ
+  isActive                 Boolean           @default(true)
+  createdAt                DateTime          @default(now())
+  createdBy                String?
+  updatedAt                DateTime          @updatedAt
+  updatedBy                String?
+
+  @@unique([periodId, organizationLevel, organizationId])
+  @@index([periodId])
+  @@index([organizationLevel])
+  @@index([linkedOrganizationId])
+}
+
+// カスタム評価者関係
+model CustomEvaluator {
+  id                String            @id @default(cuid())
+
+  employeeId        String
+  employee          Employee          @relation("customEvaluatee", fields: [employeeId], references: [id], onDelete: Cascade)
+
+  evaluatorId       String
+  evaluator         Employee          @relation("customEvaluator", fields: [evaluatorId], references: [id], onDelete: Cascade)
+
+  periodId          String?           // null = 全期間有効
+  period            EvaluationPeriod? @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+  // 有効期間（期間を限定する場合）
+  effectiveFrom     DateTime?
+  effectiveTo       DateTime?
+
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@unique([employeeId, periodId])
+  @@index([evaluatorId])
+}
+
+// 評価対象外理由
+enum ExclusionReason {
+  MATERNITY_LEAVE     // 育児休業
+  SICK_LEAVE          // 病気休職
+  RESIGNATION         // 退職予定
+  SECONDMENT          // 出向中
+  PROBATION           // 試用期間
+  OTHER               // その他
+}
+
+// 評価対象外設定
+model EvaluationExclusion {
+  id                String            @id @default(cuid())
+
+  employeeId        String
+  employee          Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  periodId          String?           // null = 全期間対象外
+  period            EvaluationPeriod? @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+  reason            ExclusionReason   @default(OTHER)
+  note              String?           // 補足説明
+
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@unique([employeeId, periodId])
+  @@index([reason])
+}
+
+// プロセス評価項目マスタ
+model ProcessCategory {
+  id                String   @id @default(cuid())
+  name              String   // カテゴリー名（例：「Aクラスプロジェクト」）
+  nameEn            String?  // 英語名
+  categoryCode      String   @default("A") // カテゴリーコード（"A", "B", "C", "D"）
+  description       String?  // 説明文
+  minItemCount      Int      @default(0)   // 最小選択項目数（0-5）
+  scores            String   @default("{}") // 4段階評価スコアのJSON（例：{ "T4": 110, "T3": 100, "T2": 80, "T1": 60 }）
+  sortOrder         Int      @default(0)
+  isActive          Boolean  @default(true)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([categoryCode])
+  @@index([isActive, sortOrder])
+}
+
+// 成長評価カテゴリマスタ
+model GrowthCategory {
+  id                String   @id @default(cuid())
+  name              String   // "専門スキル向上"
+  nameEn            String?  // "Professional Skill Improvement"
+  description       String?  // 説明文
+  coefficient       Float    @default(1.0)  // スコア係数（後方互換用）
+  // 達成度別スコア（T1=期待以下, T2=期待通り, T3=期待以上, T4=大幅超過）
+  scoreT1           Float    @default(0.5)  // T1達成時のスコア
+  scoreT2           Float    @default(1.0)  // T2達成時のスコア
+  scoreT3           Float    @default(1.5)  // T3達成時のスコア
+  scoreT4           Float    @default(2.0)  // T4達成時のスコア
+  sortOrder         Int      @default(0)
+  isActive          Boolean  @default(true)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+// 役職グループ（表示順序・結合管理用）
+model PositionGroup {
+  id                String           @id @default(cuid())
+
+  periodId          String
+  period            EvaluationPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+  name              String           // グループ名（例：「上級管理職」、空なら単一役職）
+  nameEn            String?          // 英語名
+  displayOrder      Int              @default(0)  // 表示順序
+  positionCodes     Json             // 含まれる役職コードの配列 ["100", "103", "002"]
+
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([periodId, name])
+  @@index([periodId, displayOrder])
+}
+
+// 評価データ
+model Evaluation {
+  id                String           @id @default(cuid())
+
+  // 関連
+  periodId          String
+  period            EvaluationPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  employeeId        String
+  employee          Employee         @relation("evaluations", fields: [employeeId], references: [id])
+  evaluatorId       String?
+  evaluator         Employee?        @relation("evaluationsGiven", fields: [evaluatorId], references: [id])
+
+  // スナップショット（評価時点の情報）
+  departmentName    String?
+  sectionName       String?
+  courseName        String?
+  positionName      String?
+  gradeCode         String?          // 資格等級コード
+
+  // ========== 基準1: 結果評価 ==========
+  score1            Float?           // 結果評価スコア（自動計算）
+  score1Comment     String?
+
+  // ========== 基準2: プロセス評価 ==========
+  // JSON: {"主体性": 3, "協調性": 4, ...}
+  processScores     Json?
+  score2            Float?           // プロセス評価スコア（平均）
+  score2Comment     String?
+
+  // ========== 基準3: 成長評価 ==========
+  growthCategoryId  String?          // 選択した成長カテゴリ
+  growthLevel       Int?             // T1=1, T2=2, T3=3, T4=4
+  score3            Float?           // 成長評価スコア（レベル × 係数）
+  score3Comment     String?
+
+  // ========== 最終評価 ==========
+  // 加重スコア（保存用）
+  weightedScore1    Float?
+  weightedScore2    Float?
+  weightedScore3    Float?
+
+  finalScore        Float?           // 最終スコア
+  finalGrade        String?          // S/A/B/C/D
+  overallComment    String?          // 総合コメント
+
+  // ステータス
+  status            EvaluationStatus @default(PENDING)
+
+  // メタ情報
+  evaluatedAt       DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([periodId, employeeId])
+  @@index([periodId])
+  @@index([employeeId])
+  @@index([evaluatorId])
+  @@index([status])
+}
+
+// 目標設定（オプション機能）
+model EvaluationGoal {
+  id                String           @id @default(cuid())
+
+  periodId          String
+  period            EvaluationPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  employeeId        String
+  employee          Employee         @relation(fields: [employeeId], references: [id])
+
+  // 目標（JSON配列）
+  goals             Json             @default("[]")
+  // 自己振り返り
+  selfReflection    String?
+
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([periodId, employeeId])
+}
+
+// ========================================
+// RAG（生成AIモジュール - 汎用）
+// ========================================
+
+// RAGドキュメント（汎用）
+model RagDocument {
+  id                String   @id @default(cuid())
+
+  // スコープ（どのモジュール用か）
+  scope             String   @default("general")  // "evaluation", "hr", "general" 等
+
+  title             String   // ドキュメントタイトル
+  titleJa           String?  // 日本語タイトル
+  content           String   // ドキュメント内容
+  category          String   @default("general")  // スコープ内のカテゴリ
+  tags              String?  // タグ（カンマ区切り）
+
+  // ベクトル埋め込み（JSON配列として保存）
+  embedding         Json?    // float[]
+  embeddingModel    String?  // 使用したモデル名
+
+  // メタデータ
+  source            String?  // 情報源
+  isActive          Boolean  @default(true)
+  sortOrder         Int      @default(0)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([scope, isActive])
+  @@index([scope, category, isActive])
+  @@index([isActive, sortOrder])
+}
+
+// RAGチャット履歴（汎用）
+model RagChat {
+  id                String   @id @default(cuid())
+
+  // スコープ（どのモジュール用か）
+  scope             String   @default("general")  // "evaluation", "hr", "general" 等
+  contextId         String?  // 関連するコンテキストID（評価ID等）
+
+  userId            String   // ユーザーID
+  question          String   // ユーザーの質問
+  answer            String   // AIの回答
+  ragEnabled        Boolean  @default(true)  // RAGを使用したか
+  relevantDocIds    Json?    // 使用したドキュメントID配列
+
+  createdAt         DateTime @default(now())
+
+  @@index([scope, contextId])
+  @@index([userId, createdAt])
 }

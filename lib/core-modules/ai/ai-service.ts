@@ -26,7 +26,10 @@ export type LocalLLMProvider = "llama.cpp" | "lm-studio" | "ollama";
 /**
  * ローカルLLMのデフォルト設定
  */
-export const LOCAL_LLM_DEFAULTS: Record<LocalLLMProvider, { endpoint: string; model: string }> = {
+export const LOCAL_LLM_DEFAULTS: Record<
+  LocalLLMProvider,
+  { endpoint: string; model: string }
+> = {
   "llama.cpp": {
     endpoint: "http://localhost:8080/v1/chat/completions",
     model: "default",
@@ -35,7 +38,7 @@ export const LOCAL_LLM_DEFAULTS: Record<LocalLLMProvider, { endpoint: string; mo
     endpoint: "http://localhost:1234/v1/chat/completions",
     model: "default",
   },
-  "ollama": {
+  ollama: {
     endpoint: "http://localhost:11434/api/chat",
     model: "llama3.2",
   },
@@ -198,16 +201,23 @@ export class AIService {
 
     const settingsMap = new Map(settings.map((s) => [s.key, s.value]));
 
-    const localProvider = (settingsMap.get(AI_SETTINGS.LOCAL_PROVIDER) as LocalLLMProvider) || "llama.cpp";
+    const localProvider =
+      (settingsMap.get(AI_SETTINGS.LOCAL_PROVIDER) as LocalLLMProvider) ||
+      "llama.cpp";
 
     return {
       enabled: settingsMap.get(AI_SETTINGS.ENABLED) === "true",
-      provider: (settingsMap.get(AI_SETTINGS.PROVIDER) as AIProvider) || "local",
+      provider:
+        (settingsMap.get(AI_SETTINGS.PROVIDER) as AIProvider) || "local",
       apiKey: settingsMap.get(AI_SETTINGS.API_KEY) || null,
       model: settingsMap.get(AI_SETTINGS.MODEL) || "gpt-4o-mini",
       localProvider,
-      localEndpoint: settingsMap.get(AI_SETTINGS.LOCAL_ENDPOINT) || LOCAL_LLM_DEFAULTS[localProvider].endpoint,
-      localModel: settingsMap.get(AI_SETTINGS.LOCAL_MODEL) || LOCAL_LLM_DEFAULTS[localProvider].model,
+      localEndpoint:
+        settingsMap.get(AI_SETTINGS.LOCAL_ENDPOINT) ||
+        LOCAL_LLM_DEFAULTS[localProvider].endpoint,
+      localModel:
+        settingsMap.get(AI_SETTINGS.LOCAL_MODEL) ||
+        LOCAL_LLM_DEFAULTS[localProvider].model,
     };
   }
 
@@ -218,7 +228,10 @@ export class AIService {
     const updates: { key: string; value: string }[] = [];
 
     if (config.enabled !== undefined) {
-      updates.push({ key: AI_SETTINGS.ENABLED, value: config.enabled.toString() });
+      updates.push({
+        key: AI_SETTINGS.ENABLED,
+        value: config.enabled.toString(),
+      });
     }
     if (config.provider !== undefined) {
       updates.push({ key: AI_SETTINGS.PROVIDER, value: config.provider });
@@ -230,10 +243,16 @@ export class AIService {
       updates.push({ key: AI_SETTINGS.MODEL, value: config.model });
     }
     if (config.localProvider !== undefined) {
-      updates.push({ key: AI_SETTINGS.LOCAL_PROVIDER, value: config.localProvider });
+      updates.push({
+        key: AI_SETTINGS.LOCAL_PROVIDER,
+        value: config.localProvider,
+      });
     }
     if (config.localEndpoint !== undefined) {
-      updates.push({ key: AI_SETTINGS.LOCAL_ENDPOINT, value: config.localEndpoint });
+      updates.push({
+        key: AI_SETTINGS.LOCAL_ENDPOINT,
+        value: config.localEndpoint,
+      });
     }
     if (config.localModel !== undefined) {
       updates.push({ key: AI_SETTINGS.LOCAL_MODEL, value: config.localModel });
@@ -252,7 +271,7 @@ export class AIService {
    * AIが利用可能かどうか
    */
   static async isAvailable(): Promise<boolean> {
-    const config = await this.getConfig();
+    const config = await AIService.getConfig();
 
     if (!config.enabled) {
       return false;
@@ -270,32 +289,50 @@ export class AIService {
   /**
    * ローカルLLMの接続テスト
    */
-  static async testLocalConnection(): Promise<{ success: boolean; message: string }> {
-    const config = await this.getConfig();
+  static async testLocalConnection(): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    const config = await AIService.getConfig();
 
     if (config.provider !== "local") {
-      return { success: false, message: "Local LLM is not selected as provider" };
+      return {
+        success: false,
+        message: "Local LLM is not selected as provider",
+      };
     }
 
     try {
       // 簡単なテストリクエスト
       if (config.localProvider === "ollama") {
-        const response = await fetch(config.localEndpoint.replace("/api/chat", "/api/tags"), {
-          method: "GET",
-        });
+        const response = await fetch(
+          config.localEndpoint.replace("/api/chat", "/api/tags"),
+          {
+            method: "GET",
+          },
+        );
         if (response.ok) {
           return { success: true, message: "Ollama is running" };
         }
       } else {
         // OpenAI互換API (llama.cpp, LM Studio)
-        const response = await fetch(config.localEndpoint.replace("/v1/chat/completions", "/v1/models"), {
-          method: "GET",
-        });
+        const response = await fetch(
+          config.localEndpoint.replace("/v1/chat/completions", "/v1/models"),
+          {
+            method: "GET",
+          },
+        );
         if (response.ok) {
-          return { success: true, message: `${config.localProvider} is running` };
+          return {
+            success: true,
+            message: `${config.localProvider} is running`,
+          };
         }
       }
-      return { success: false, message: "Server responded but health check failed" };
+      return {
+        success: false,
+        message: "Server responded but health check failed",
+      };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       return { success: false, message: `Connection failed: ${message}` };
@@ -306,7 +343,7 @@ export class AIService {
    * ローカルLLMの実際のモデル名を取得
    */
   static async getLocalModelName(): Promise<string | null> {
-    const config = await this.getConfig();
+    const config = await AIService.getConfig();
 
     if (config.provider !== "local") {
       return null;
@@ -320,14 +357,14 @@ export class AIService {
         // OpenAI互換API (llama.cpp, LM Studio) - /v1/models から取得
         const response = await fetch(
           config.localEndpoint.replace("/v1/chat/completions", "/v1/models"),
-          { method: "GET" }
+          { method: "GET" },
         );
         if (response.ok) {
           const data = await response.json();
           // llama.cpp: data.data[0].id にモデル名が入っている
           if (data.data && data.data.length > 0) {
             const rawModelName = data.data[0].id;
-            return this.parseModelName(rawModelName);
+            return AIService.parseModelName(rawModelName);
           }
         }
       }
@@ -385,8 +422,10 @@ export class AIService {
   /**
    * テキストを翻訳
    */
-  static async translate(request: TranslateRequest): Promise<TranslateResponse> {
-    const config = await this.getConfig();
+  static async translate(
+    request: TranslateRequest,
+  ): Promise<TranslateResponse> {
+    const config = await AIService.getConfig();
 
     if (!config.enabled) {
       throw new Error("AI is not enabled");
@@ -397,14 +436,14 @@ export class AIService {
         if (!config.apiKey) {
           throw new Error("API key is not configured");
         }
-        return this.translateWithOpenAI(request, config);
+        return AIService.translateWithOpenAI(request, config);
       case "anthropic":
         if (!config.apiKey) {
           throw new Error("API key is not configured");
         }
-        return this.translateWithAnthropic(request, config);
+        return AIService.translateWithAnthropic(request, config);
       case "local":
-        return this.translateWithLocal(request, config);
+        return AIService.translateWithLocal(request, config);
       default:
         throw new Error(`Unknown provider: ${config.provider}`);
     }
@@ -415,7 +454,7 @@ export class AIService {
    */
   private static async translateWithOpenAI(
     request: TranslateRequest,
-    config: AIConfig
+    config: AIConfig,
   ): Promise<TranslateResponse> {
     const targetLang = request.targetLanguage === "ja" ? "Japanese" : "English";
     const sourceLang = request.sourceLanguage === "ja" ? "Japanese" : "English";
@@ -445,7 +484,9 @@ export class AIService {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error?.message || `OpenAI API error: ${response.status}`);
+      throw new Error(
+        error.error?.message || `OpenAI API error: ${response.status}`,
+      );
     }
 
     const data = await response.json();
@@ -467,7 +508,7 @@ export class AIService {
    */
   private static async translateWithAnthropic(
     request: TranslateRequest,
-    config: AIConfig
+    config: AIConfig,
   ): Promise<TranslateResponse> {
     const targetLang = request.targetLanguage === "ja" ? "Japanese" : "English";
     const sourceLang = request.sourceLanguage === "ja" ? "Japanese" : "English";
@@ -493,7 +534,9 @@ export class AIService {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error?.message || `Anthropic API error: ${response.status}`);
+      throw new Error(
+        error.error?.message || `Anthropic API error: ${response.status}`,
+      );
     }
 
     const data = await response.json();
@@ -515,16 +558,26 @@ export class AIService {
    */
   private static async translateWithLocal(
     request: TranslateRequest,
-    config: AIConfig
+    config: AIConfig,
   ): Promise<TranslateResponse> {
     const targetLang = request.targetLanguage === "ja" ? "Japanese" : "English";
     const sourceLang = request.sourceLanguage === "ja" ? "Japanese" : "English";
 
     if (config.localProvider === "ollama") {
-      return this.translateWithOllama(request, config, sourceLang, targetLang);
+      return AIService.translateWithOllama(
+        request,
+        config,
+        sourceLang,
+        targetLang,
+      );
     } else {
       // llama.cpp と LM Studio は OpenAI互換API
-      return this.translateWithOpenAICompatible(request, config, sourceLang, targetLang);
+      return AIService.translateWithOpenAICompatible(
+        request,
+        config,
+        sourceLang,
+        targetLang,
+      );
     }
   }
 
@@ -535,7 +588,7 @@ export class AIService {
     request: TranslateRequest,
     config: AIConfig,
     sourceLang: string,
-    targetLang: string
+    targetLang: string,
   ): Promise<TranslateResponse> {
     const response = await fetch(config.localEndpoint, {
       method: "POST",
@@ -585,7 +638,7 @@ export class AIService {
     request: TranslateRequest,
     config: AIConfig,
     sourceLang: string,
-    targetLang: string
+    targetLang: string,
   ): Promise<TranslateResponse> {
     const response = await fetch(config.localEndpoint, {
       method: "POST",
@@ -631,14 +684,15 @@ export class AIService {
    * チャット
    */
   static async chat(request: ChatRequest): Promise<ChatResponse> {
-    const config = await this.getConfig();
+    const config = await AIService.getConfig();
 
     if (!config.enabled) {
       throw new Error("AI is not enabled");
     }
 
     // デフォルトのシステムプロンプト
-    const defaultSystemPrompt = "You are a helpful AI assistant. Be concise and helpful in your responses. Respond in the same language as the user's message.";
+    const defaultSystemPrompt =
+      "You are a helpful AI assistant. Be concise and helpful in your responses. Respond in the same language as the user's message.";
     const systemPrompt = request.systemPrompt || defaultSystemPrompt;
 
     // システムプロンプトをメッセージの先頭に追加
@@ -652,14 +706,14 @@ export class AIService {
         if (!config.apiKey) {
           throw new Error("API key is not configured");
         }
-        return this.chatWithOpenAI(messagesWithSystem, config);
+        return AIService.chatWithOpenAI(messagesWithSystem, config);
       case "anthropic":
         if (!config.apiKey) {
           throw new Error("API key is not configured");
         }
-        return this.chatWithAnthropic(messagesWithSystem, config);
+        return AIService.chatWithAnthropic(messagesWithSystem, config);
       case "local":
-        return this.chatWithLocal(messagesWithSystem, config);
+        return AIService.chatWithLocal(messagesWithSystem, config);
       default:
         throw new Error(`Unknown provider: ${config.provider}`);
     }
@@ -670,7 +724,7 @@ export class AIService {
    */
   private static async chatWithOpenAI(
     messages: ChatMessage[],
-    config: AIConfig
+    config: AIConfig,
   ): Promise<ChatResponse> {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -688,7 +742,9 @@ export class AIService {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error?.message || `OpenAI API error: ${response.status}`);
+      throw new Error(
+        error.error?.message || `OpenAI API error: ${response.status}`,
+      );
     }
 
     const data = await response.json();
@@ -710,7 +766,7 @@ export class AIService {
    */
   private static async chatWithAnthropic(
     messages: ChatMessage[],
-    config: AIConfig
+    config: AIConfig,
   ): Promise<ChatResponse> {
     // Anthropicはsystemをmessagesから分離する必要がある
     const systemMessage = messages.find((m) => m.role === "system");
@@ -738,7 +794,9 @@ export class AIService {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error?.message || `Anthropic API error: ${response.status}`);
+      throw new Error(
+        error.error?.message || `Anthropic API error: ${response.status}`,
+      );
     }
 
     const data = await response.json();
@@ -760,13 +818,13 @@ export class AIService {
    */
   private static async chatWithLocal(
     messages: ChatMessage[],
-    config: AIConfig
+    config: AIConfig,
   ): Promise<ChatResponse> {
     if (config.localProvider === "ollama") {
-      return this.chatWithOllama(messages, config);
+      return AIService.chatWithOllama(messages, config);
     } else {
       // llama.cpp と LM Studio は OpenAI互換API
-      return this.chatWithOpenAICompatible(messages, config);
+      return AIService.chatWithOpenAICompatible(messages, config);
     }
   }
 
@@ -775,7 +833,7 @@ export class AIService {
    */
   private static async chatWithOpenAICompatible(
     messages: ChatMessage[],
-    config: AIConfig
+    config: AIConfig,
   ): Promise<ChatResponse> {
     const response = await fetch(config.localEndpoint, {
       method: "POST",
@@ -814,7 +872,7 @@ export class AIService {
    */
   private static async chatWithOllama(
     messages: ChatMessage[],
-    config: AIConfig
+    config: AIConfig,
   ): Promise<ChatResponse> {
     const response = await fetch(config.localEndpoint, {
       method: "POST",
@@ -867,7 +925,7 @@ export class AIService {
    * ```
    */
   static async generate(request: GenerateRequest): Promise<GenerateResponse> {
-    const config = await this.getConfig();
+    const config = await AIService.getConfig();
 
     if (!config.enabled) {
       throw new Error("AI is not enabled");
@@ -886,14 +944,29 @@ export class AIService {
         if (!config.apiKey) {
           throw new Error("API key is not configured");
         }
-        return this.generateWithOpenAI(messages, config, temperature, maxTokens);
+        return AIService.generateWithOpenAI(
+          messages,
+          config,
+          temperature,
+          maxTokens,
+        );
       case "anthropic":
         if (!config.apiKey) {
           throw new Error("API key is not configured");
         }
-        return this.generateWithAnthropic(messages, config, temperature, maxTokens);
+        return AIService.generateWithAnthropic(
+          messages,
+          config,
+          temperature,
+          maxTokens,
+        );
       case "local":
-        return this.generateWithLocal(messages, config, temperature, maxTokens);
+        return AIService.generateWithLocal(
+          messages,
+          config,
+          temperature,
+          maxTokens,
+        );
       default:
         throw new Error(`Unknown provider: ${config.provider}`);
     }
@@ -906,7 +979,7 @@ export class AIService {
     messages: ChatMessage[],
     config: AIConfig,
     temperature: number,
-    maxTokens: number
+    maxTokens: number,
   ): Promise<GenerateResponse> {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -924,7 +997,9 @@ export class AIService {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error?.message || `OpenAI API error: ${response.status}`);
+      throw new Error(
+        error.error?.message || `OpenAI API error: ${response.status}`,
+      );
     }
 
     const data = await response.json();
@@ -948,7 +1023,7 @@ export class AIService {
     messages: ChatMessage[],
     config: AIConfig,
     temperature: number,
-    maxTokens: number
+    maxTokens: number,
   ): Promise<GenerateResponse> {
     const systemMessage = messages.find((m) => m.role === "system");
     const chatMessages = messages
@@ -976,7 +1051,9 @@ export class AIService {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error?.message || `Anthropic API error: ${response.status}`);
+      throw new Error(
+        error.error?.message || `Anthropic API error: ${response.status}`,
+      );
     }
 
     const data = await response.json();
@@ -1000,7 +1077,7 @@ export class AIService {
     messages: ChatMessage[],
     config: AIConfig,
     temperature: number,
-    maxTokens: number
+    maxTokens: number,
   ): Promise<GenerateResponse> {
     if (config.localProvider === "ollama") {
       const response = await fetch(config.localEndpoint, {
@@ -1076,7 +1153,9 @@ export class AIService {
    * });
    * ```
    */
-  static async summarize(request: SummarizeRequest): Promise<SummarizeResponse> {
+  static async summarize(
+    request: SummarizeRequest,
+  ): Promise<SummarizeResponse> {
     const lengthInstructions = {
       short: "1-2 sentences",
       medium: "3-5 sentences",
@@ -1084,15 +1163,16 @@ export class AIService {
     };
 
     const lengthInstruction = lengthInstructions[request.length || "medium"];
-    const langInstruction = request.language === "ja"
-      ? "日本語で出力してください。"
-      : request.language === "en"
-        ? "Output in English."
-        : "Output in the same language as the input.";
+    const langInstruction =
+      request.language === "ja"
+        ? "日本語で出力してください。"
+        : request.language === "en"
+          ? "Output in English."
+          : "Output in the same language as the input.";
 
     const systemPrompt = `You are a professional summarizer. Summarize the given text concisely in ${lengthInstruction}. ${langInstruction} Only output the summary, nothing else.`;
 
-    const result = await this.generate({
+    const result = await AIService.generate({
       input: request.text,
       systemPrompt,
       temperature: 0.3,
@@ -1133,11 +1213,12 @@ export class AIService {
       })
       .join("\n");
 
-    const langInstruction = request.language === "ja"
-      ? "フィールド値は日本語で出力してください。"
-      : request.language === "en"
-        ? "Output field values in English."
-        : "";
+    const langInstruction =
+      request.language === "ja"
+        ? "フィールド値は日本語で出力してください。"
+        : request.language === "en"
+          ? "Output field values in English."
+          : "";
 
     const systemPrompt = `You are a data extraction assistant. Extract the following fields from the given text and return them as a JSON object. ${langInstruction}
 
@@ -1151,7 +1232,7 @@ Rules:
 - For number fields, return numbers without units
 - For boolean fields, return true or false`;
 
-    const result = await this.generate({
+    const result = await AIService.generate({
       input: request.text,
       systemPrompt,
       temperature: 0.1,
@@ -1173,7 +1254,9 @@ Rules:
       }
       data = JSON.parse(jsonStr.trim());
     } catch {
-      throw new Error(`Failed to parse extraction result as JSON: ${result.output}`);
+      throw new Error(
+        `Failed to parse extraction result as JSON: ${result.output}`,
+      );
     }
 
     return {

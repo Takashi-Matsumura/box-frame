@@ -140,6 +140,8 @@ lib/
   │   ├── organization/     # 組織管理モジュール
   │   ├── system/           # システムモジュール
   │   └── ai/               # 生成AIモジュール
+  ├── addon-modules/        # アドオンモジュール
+  │   └── ldap-migration/   # LDAPマイグレーション
   ├── services/             # フレーム基盤サービス
   │   └── notification-service.ts  # 通知サービス
   ├── stores/               # Zustandストア
@@ -165,10 +167,22 @@ mcp-servers/
 
 ### organizationモジュール
 - 組織図表示・検索
+  - 役職コード順ソート（一般社員は最後）
+  - 重複しない表示モード（評価関係表示）
+  - 本部→部→課の階層ナビゲーション
 - 社員詳細モーダル
-- PDF出力
-- データインポート（CSV/DB）
+  - 基本情報タブ
+  - キャリア履歴タブ（入社・異動・昇進・退職の時系列表示）
+- 組織整備（責任者設定）
+  - 公開日設定（即時公開/予約公開）
+  - インポート取消（ロールバック機能）
+- データインポート（CSV/Excel）
+  - 役員・顧問の自動分類
+  - 重複検出・除外
+  - 変更タイプ自動判定（新規/異動/昇進/退職/復職）
 - 履歴管理
+  - EmployeeHistory: 社員スナップショット（validFrom/validTo）
+  - ChangeLog: フィールド単位の変更記録（batchId付き）
 
 ### systemモジュール
 - ダッシュボード
@@ -186,8 +200,74 @@ mcp-servers/
   - Ollama
 - トークン統計表示（コンテキスト使用量、トークン/秒）
 - 管理画面の「システム情報」タブでAPI設定
+- RAGバックエンド（Python FastAPI）
+  - ChromaDB: ベクトルデータベース
+  - sentence-transformers: 埋め込みモデル（multilingual-e5-small）
+  - ドキュメント登録・検索・チャット機能
+  - SSEストリーミング対応
 
-## Prismaモデル（25モデル）
+**RAGバックエンド起動:**
+```bash
+# Dockerで起動
+docker compose up -d airag-backend
+
+# ヘルスチェック
+curl http://localhost:8000/health
+```
+
+**人事評価モジュールでの利用:**
+- 評価画面右側にAIアシスタントパネルを表示
+- RAGを使用した評価アドバイス機能
+- クイックアクション（評価ポイント、フィードバック例、成長目標）
+- マークダウンレンダリング対応（react-markdown + remark-gfm）
+- ストリーミング表示（リアルタイムで回答を表示）
+
+**ナレッジベース機能:**
+- RAGバッジ（例: `RAG (3ファイル)`）をクリックでダイアログ表示
+- 登録ドキュメント一覧をテーブル形式で表示
+- ドキュメント選択でマークダウンプレビュー表示（フルサイズダイアログ）
+- マニュアル/ドキュメント閲覧機能として利用可能
+
+**評価AIナレッジ管理画面 (`/admin/evaluation-rag`):**
+- ドキュメントの登録（タイトル、カテゴリ、内容）
+- 登録済みドキュメントの一覧表示（ファイル名でグループ化）
+- マークダウンプレビュー/ソース表示切り替え
+- ドキュメント削除機能
+
+## アドオンモジュール
+
+### ldap-migrationモジュール（LDAPマイグレーション）
+
+レガシーLDAPからOpenLDAPへのLazy Migration機能を提供するアドオンモジュールです。
+
+**認証フロー:**
+```
+1. ユーザーがOpenLDAPでログイン試行
+2. 認証失敗 & このモジュールが有効な場合
+3. レガシーLDAPで認証を試行
+4. 成功した場合:
+   - 会社組織(Employee)からメールで検索し社員情報取得
+   - OpenLDAPに新規ユーザーを自動作成
+   - User/LdapUserMappingを作成（migrated=true）
+5. マイグレーション完了後はモジュールを無効化するだけで運用可能
+```
+
+**設定場所:** モジュール管理画面（`/admin?tab=modules`）でモジュールを選択
+
+**設定項目:**
+- サーバURL: `ldap://ldap.example.com:389`
+- ベースDN: `ou=Users,dc=example,dc=com`
+- 検索フィルタ: `(uid={username})`
+- タイムアウト: ミリ秒
+
+**テスト機能:**
+- 接続テスト: サーバへの接続確認
+- ユーザー検索: ユーザー名でLDAP検索
+- 認証テスト: ユーザー名/パスワードで認証確認
+
+**依存:** openldapモジュール
+
+## Prismaモデル（26モデル）
 
 ### 認証系
 - Account, Session, User, VerificationToken
@@ -196,7 +276,7 @@ mcp-servers/
 - AuditLog, Notification, Announcement
 
 ### LDAP認証系
-- LdapConfig, LdapUserMapping, LdapAuthLog, OpenLdapConfig
+- LdapConfig, LdapUserMapping, LdapAuthLog, OpenLdapConfig, LegacyLdapConfig
 
 ### アクセス制御系
 - Permission, AccessKey, AccessKeyPermission, UserAccessKey

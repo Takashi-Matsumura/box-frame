@@ -127,6 +127,159 @@ await recorder.recordChanges(changes, batchId, changedBy);
 await recorder.createSnapshotIfNeeded(changes, organizationId, changedBy);
 ```
 
+## パーサー拡張アーキテクチャ
+
+### 現在の構造
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  データソース（人事システムExcel）                        │
+│  - 日本語カラム名: 社員番号, 氏名, 所属                   │
+└─────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────┐
+│  CSVEmployeeRow（types.ts）                             │
+│  - 入力データの型定義（データソース固有）                  │
+└─────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────┐
+│  parser.ts                                              │
+│  - processEmployeeData(): CSVEmployeeRow → ProcessedEmployee │
+│  - parseDate(): 日付変換（和暦/Excel対応）                │
+│  - parseAffiliation(): 所属文字列分割                     │
+│  - convertToZenkana(): カタカナ正規化                    │
+└─────────────────────────────────────────────────────────┘
+                          ↓
+┌─────────────────────────────────────────────────────────┐
+│  ProcessedEmployee（共通内部フォーマット）                │
+│  - employeeId, name, department, section, course        │
+│  - DBインポートはこの型を使用                            │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 別システム連携時の拡張方法
+
+#### 方法1: カラムマッピング設定（推奨）
+
+```typescript
+// lib/importers/organization/column-mappings.ts
+
+export interface ColumnMapping {
+  employeeId: string;
+  name: string;
+  nameKana?: string;
+  email?: string;
+  affiliation: string;  // 所属（本部・部・課を含む）
+  position?: string;
+  joinDate?: string;
+}
+
+// 人事システムA用
+export const hrSystemAMapping: ColumnMapping = {
+  employeeId: "社員番号",
+  name: "氏名",
+  nameKana: "氏名(フリガナ)",
+  email: "社用e-Mail１",
+  affiliation: "所属",
+  position: "役職",
+  joinDate: "入社年月日",
+};
+
+// 別システムB用（英語カラム）
+export const systemBMapping: ColumnMapping = {
+  employeeId: "emp_id",
+  name: "full_name",
+  nameKana: "name_kana",
+  email: "email",
+  affiliation: "department",
+  position: "job_title",
+  joinDate: "hire_date",
+};
+```
+
+#### 方法2: パーサー戦略パターン
+
+```typescript
+// lib/importers/organization/parsers/index.ts
+
+export interface EmployeeParser {
+  parse(rows: Record<string, string>[]): ProcessedEmployee[];
+  validate(row: Record<string, string>): boolean;
+}
+
+// lib/importers/organization/parsers/hr-system-parser.ts
+export class HRSystemParser implements EmployeeParser {
+  parse(rows: Record<string, string>[]): ProcessedEmployee[] {
+    return rows.map(row => ({
+      employeeId: row["社員番号"],
+      name: row["氏名"],
+      // ...現在のロジック
+    }));
+  }
+}
+
+// lib/importers/organization/parsers/api-parser.ts
+export class APISystemParser implements EmployeeParser {
+  parse(rows: Record<string, string>[]): ProcessedEmployee[] {
+    return rows.map(row => ({
+      employeeId: row["emp_id"],
+      name: row["full_name"],
+      // ...別システム用ロジック
+    }));
+  }
+}
+```
+
+#### 方法3: API連携用アダプター
+
+```typescript
+// lib/importers/organization/adapters/external-api-adapter.ts
+
+export interface ExternalAPIResponse {
+  employees: {
+    id: string;
+    fullName: string;
+    department: string;
+    // ...
+  }[];
+}
+
+export function adaptAPIResponse(response: ExternalAPIResponse): ProcessedEmployee[] {
+  return response.employees.map(emp => ({
+    employeeId: emp.id,
+    name: emp.fullName,
+    department: emp.department,
+    // ...
+  }));
+}
+```
+
+### 所属文字列の分割ルール
+
+現在の `parseAffiliation()` は以下のルールで分割:
+
+```typescript
+"PFO本部　データビジネスセンター　ファシリティ管理グループ"
+  ↓ スペース（全角/半角）で分割
+[0]: "PFO本部"           → department（本部）
+[1]: "データビジネスセンター" → section（部）
+[2]: "ファシリティ管理グループ" → course（課）
+```
+
+別システムで分割ルールが異なる場合は、`parseAffiliation()` を拡張するか、新しいパーサーを作成。
+
+### 日付パースの対応形式
+
+| 形式 | 例 | 対応状況 |
+|------|-----|---------|
+| Excelシリアル | `35065` | ✅ |
+| 和暦（令和） | `R5.4.1` | ✅ |
+| 和暦（平成） | `H30.10.5` | ✅ |
+| 和暦（昭和） | `S63.12.31` | ✅ |
+| 日本語形式 | `1997年4月1日` | ✅ |
+| スラッシュ区切り | `2023/4/1` | ✅ |
+| ハイフン区切り | `2023-04-01` | ✅ |
+
 ## ベストプラクティス
 
 ### ✅ 推奨
