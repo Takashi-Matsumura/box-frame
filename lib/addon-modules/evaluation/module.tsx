@@ -7,8 +7,98 @@
  * - 成長評価: カテゴリ別の成長度評価
  */
 
-import type { AppModule } from "@/types/module";
+import type { AppModule, AppTab } from "@/types/module";
 import { getModuleIcon, getMenuIcon } from "@/lib/modules/icons";
+import { FaDatabase, FaStar } from "react-icons/fa";
+
+/**
+ * 評価マスタタブ定義
+ */
+const evaluationMasterTabs: AppTab[] = [
+  {
+    id: "periods",
+    name: "Periods",
+    nameJa: "評価期間",
+    icon: <FaStar className="w-5 h-5" />,
+    order: 1,
+    enabled: true,
+    allowAccessKey: true,
+    description: "Manage evaluation periods",
+    descriptionJa: "評価期間の管理",
+  },
+  {
+    id: "weights",
+    name: "Weights",
+    nameJa: "評価重み",
+    icon: <FaStar className="w-5 h-5" />,
+    order: 2,
+    enabled: true,
+    allowAccessKey: false, // 重み設定は機密性が高い
+    description: "Configure evaluation weights by role",
+    descriptionJa: "役職別の評価重みを設定",
+  },
+  {
+    id: "organizationGoals",
+    name: "Results Evaluation",
+    nameJa: "結果評価",
+    icon: <FaStar className="w-5 h-5" />,
+    order: 3,
+    enabled: true,
+    allowAccessKey: true,
+    description: "Manage organization goals and results criteria",
+    descriptionJa: "組織目標と結果評価基準の管理",
+  },
+  {
+    id: "processCategories",
+    name: "Process Categories",
+    nameJa: "プロセス評価",
+    icon: <FaStar className="w-5 h-5" />,
+    order: 4,
+    enabled: true,
+    allowAccessKey: true,
+    description: "Manage process evaluation categories",
+    descriptionJa: "プロセス評価カテゴリの管理",
+  },
+  {
+    id: "growthCategories",
+    name: "Growth Categories",
+    nameJa: "成長評価",
+    icon: <FaStar className="w-5 h-5" />,
+    order: 5,
+    enabled: true,
+    allowAccessKey: true,
+    description: "Manage growth evaluation categories",
+    descriptionJa: "成長評価カテゴリの管理",
+  },
+];
+
+/**
+ * 評価AIサポートタブ定義
+ */
+const evaluationRagTabs: AppTab[] = [
+  {
+    id: "knowledge-base",
+    name: "Knowledge Base",
+    nameJa: "ナレッジベース",
+    icon: <FaDatabase className="w-5 h-5" />,
+    order: 1,
+    enabled: true,
+    allowAccessKey: true,
+    description: "Manage AI knowledge base documents",
+    descriptionJa: "AIナレッジベースのドキュメント管理",
+  },
+  {
+    id: "system-prompt",
+    name: "System Prompt",
+    nameJa: "システムプロンプト",
+    icon: <FaStar className="w-5 h-5" />,
+    order: 2,
+    enabled: true,
+    allowAccessKey: false, // プロンプト設定は機密性が高い
+    description: "Configure AI system prompt",
+    descriptionJa: "AIシステムプロンプトの設定",
+  },
+];
 
 export const evaluationModule: AppModule = {
   id: "evaluation",
@@ -84,6 +174,8 @@ export const evaluationModule: AppModule = {
       description: "Manage evaluation periods, weights, and categories",
       descriptionJa: "評価期間・重み・カテゴリの管理",
       isImplemented: true,
+      tabs: evaluationMasterTabs,
+      allowAccessKey: true,
     },
     // 管理者向けメニュー: 評価AIサポート設定
     {
@@ -100,6 +192,8 @@ export const evaluationModule: AppModule = {
       description: "Configure AI assistant settings and knowledge base",
       descriptionJa: "AIアシスタントの設定とナレッジベース管理",
       isImplemented: true,
+      tabs: evaluationRagTabs,
+      allowAccessKey: true,
     },
   ],
   services: [

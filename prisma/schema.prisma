@@ -222,12 +222,24 @@ model AccessKey {
 model AccessKeyPermission {
   id           String     @id @default(cuid())
   accessKeyId  String
-  permissionId String
+  permissionId String?    // 後方互換性のためオプショナルに変更
   accessKey    AccessKey  @relation(fields: [accessKeyId], references: [id], onDelete: Cascade)
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  permission   Permission? @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  // 権限の粒度（Phase 2で追加）
+  granularity  String     @default("menu") // "module" | "menu" | "tab"
+
+  // 対象の特定
+  moduleId     String?    // モジュールID
+  menuPath     String?    // メニューパス（granularity が menu/tab の場合）
+  tabId        String?    // タブID（granularity が tab の場合）
+
   createdAt    DateTime   @default(now())
 
   @@unique([accessKeyId, permissionId])
+  @@index([accessKeyId, moduleId])
+  @@index([accessKeyId, menuPath])
+  @@index([accessKeyId, tabId])
 }
 
 model UserAccessKey {

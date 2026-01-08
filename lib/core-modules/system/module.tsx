@@ -1,4 +1,109 @@
-import type { AppModule } from "@/types/module";
+import type { AppModule, AppTab } from "@/types/module";
+import {
+  FaBullhorn,
+  FaClipboardList,
+  FaInfoCircle,
+  FaUsers,
+} from "react-icons/fa";
+
+/**
+ * 管理画面のタブ定義
+ */
+const adminTabs: AppTab[] = [
+  {
+    id: "system",
+    name: "System Information",
+    nameJa: "システム情報",
+    icon: <FaInfoCircle className="w-5 h-5" />,
+    order: 1,
+    enabled: true,
+    allowAccessKey: false, // システム情報は機密性が高い
+    description: "View system information and settings",
+    descriptionJa: "システム情報と設定を表示します",
+  },
+  {
+    id: "users",
+    name: "User Management",
+    nameJa: "ユーザ管理",
+    icon: <FaUsers className="w-5 h-5" />,
+    order: 2,
+    enabled: true,
+    allowAccessKey: true,
+    description: "Manage system users",
+    descriptionJa: "システムユーザを管理します",
+  },
+  {
+    id: "access-keys",
+    name: "Access Keys",
+    nameJa: "アクセスキー",
+    icon: (
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+        />
+      </svg>
+    ),
+    order: 3,
+    enabled: true,
+    allowAccessKey: false, // アクセスキー管理自体は委譲不可
+    description: "Manage access keys and permissions",
+    descriptionJa: "アクセスキーと権限を管理します",
+  },
+  {
+    id: "modules",
+    name: "Module Management",
+    nameJa: "モジュール管理",
+    icon: (
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        strokeWidth={2}
+      >
+        <rect x="3" y="3" width="7" height="7" rx="1" />
+        <rect x="14" y="3" width="7" height="7" rx="1" />
+        <rect x="3" y="14" width="7" height="7" rx="1" />
+        <rect x="14" y="14" width="7" height="7" rx="1" />
+      </svg>
+    ),
+    order: 4,
+    enabled: true,
+    allowAccessKey: false, // モジュール管理は機密性が高い
+    description: "Manage system modules",
+    descriptionJa: "システムモジュールを管理します",
+  },
+  {
+    id: "audit-logs",
+    name: "Audit Logs",
+    nameJa: "監査ログ",
+    icon: <FaClipboardList className="w-5 h-5" />,
+    order: 5,
+    enabled: true,
+    allowAccessKey: true,
+    description: "View audit logs",
+    descriptionJa: "監査ログを表示します",
+  },
+  {
+    id: "announcements",
+    name: "Announcements",
+    nameJa: "アナウンス",
+    icon: <FaBullhorn className="w-5 h-5" />,
+    order: 6,
+    enabled: true,
+    allowAccessKey: true,
+    description: "Manage system announcements",
+    descriptionJa: "システムアナウンスを管理します",
+  },
+];
 
 /**
  * システム管理モジュール
@@ -93,6 +198,8 @@ export const systemModule: AppModule = {
           />
         </svg>
       ),
+      tabs: adminTabs,
+      allowAccessKey: false, // メニュー全体ではなくタブ単位で制御
     },
     {
       id: "accessKeyManagement",

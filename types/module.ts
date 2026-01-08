@@ -9,6 +9,43 @@ import type { MenuGroupId } from "./common";
  */
 
 /**
+ * タブ（メニュー内のサブナビゲーション）
+ * 例: 管理画面の「ユーザ管理」「アクセスキー」「監査ログ」など
+ */
+export interface AppTab {
+  /** タブの一意なID（クエリパラメータの値として使用） */
+  id: string;
+
+  /** 表示名（英語） */
+  name: string;
+
+  /** 表示名（日本語） */
+  nameJa: string;
+
+  /** タブアイコン（ReactNodeまたはアイコン名） */
+  icon?: ReactNode;
+
+  /** タブ表示順序 */
+  order: number;
+
+  /** このタブを有効化するか */
+  enabled?: boolean;
+
+  /**
+   * アクセスキーによる権限付与を許可するか
+   * デフォルト: true（許可）
+   * falseの場合、このタブへのアクセスキー発行不可（機密性が高いタブ用）
+   */
+  allowAccessKey?: boolean;
+
+  /** 説明文（英語） */
+  description?: string;
+
+  /** 説明文（日本語） */
+  descriptionJa?: string;
+}
+
+/**
  * モジュール（業務単位の大きな塊）
  * 例: 人事評価、組織管理、勤怠管理、経費精算など
  */
@@ -220,6 +257,15 @@ export interface AppMenu {
 
   /** サブメニュー（ネストされたメニュー） */
   children?: AppMenu[];
+
+  /** タブ定義（ヘッダーに表示されるサブナビゲーション） */
+  tabs?: AppTab[];
+
+  /**
+   * アクセスキーによる権限付与を許可するか（メニューレベル）
+   * デフォルト: true（許可）
+   */
+  allowAccessKey?: boolean;
 }
 
 /**
