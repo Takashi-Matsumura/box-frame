@@ -124,6 +124,16 @@ interface McpServerInfo {
   }>;
 }
 
+interface TabInfo {
+  id: string;
+  name: string;
+  nameJa: string;
+  order: number;
+  enabled: boolean;
+  allowAccessKey: boolean;
+  allowAccessKeyDefault: boolean;
+}
+
 interface ModuleInfo {
   id: string;
   name: string;
@@ -142,6 +152,9 @@ interface ModuleInfo {
     enabled: boolean;
     order: number;
     requiredRoles: string[];
+    allowAccessKey: boolean;
+    allowAccessKeyDefault: boolean;
+    tabs?: TabInfo[];
   }>;
   containers: ContainerStatus[];
   mcpServer: McpServerInfo | null;
@@ -1060,6 +1073,79 @@ export function AdminClient({
         t(
           error instanceof Error ? error.message : "Failed to update menu",
           error instanceof Error ? error.message : "メニューの更新に失敗しました"
+        )
+      );
+    }
+  }, [t]);
+
+  // allowAccessKey設定を更新
+  const handleUpdateAllowAccessKey = useCallback(async (
+    type: "menu" | "tab",
+    menuId: string,
+    allowAccessKey: boolean,
+    tabId?: string
+  ) => {
+    try {
+      const response = await fetch("/api/admin/modules/access-key", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, menuId, tabId, allowAccessKey }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to update allowAccessKey");
+      }
+
+      // ローカルの状態を更新
+      setModulesData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          modules: prev.modules.map((m) => ({
+            ...m,
+            menus: m.menus.map((menu) => {
+              if (menu.id !== menuId) return menu;
+              if (type === "menu") {
+                return { ...menu, allowAccessKey };
+              }
+              // タブの更新
+              return {
+                ...menu,
+                tabs: menu.tabs?.map((tab) =>
+                  tab.id === tabId ? { ...tab, allowAccessKey } : tab
+                ),
+              };
+            }),
+          })),
+        };
+      });
+
+      // 選択中のモジュールも更新
+      setSelectedModule((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          menus: prev.menus.map((menu) => {
+            if (menu.id !== menuId) return menu;
+            if (type === "menu") {
+              return { ...menu, allowAccessKey };
+            }
+            return {
+              ...menu,
+              tabs: menu.tabs?.map((tab) =>
+                tab.id === tabId ? { ...tab, allowAccessKey } : tab
+              ),
+            };
+          }),
+        };
+      });
+    } catch (error) {
+      console.error("Error updating allowAccessKey:", error);
+      alert(
+        t(
+          error instanceof Error ? error.message : "Failed to update setting",
+          error instanceof Error ? error.message : "設定の更新に失敗しました"
         )
       );
     }
@@ -2990,67 +3076,139 @@ export function AdminClient({
                             .map((menu) => (
                               <div
                                 key={menu.id}
-                                className="flex items-center justify-between p-3 bg-muted rounded-lg border border-border"
+                                className="bg-muted rounded-lg border border-border overflow-hidden"
                               >
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium">
-                                    {language === "ja" ? menu.nameJa : menu.name}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {language === "ja" ? menu.name : menu.nameJa}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground/70 mt-1">
-                                    {menu.path}
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  {/* ロールバッジ */}
-                                  <div className="flex gap-1">
-                                    {menu.requiredRoles.map((role) => (
-                                      <span
-                                        key={role}
-                                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                          role === "ADMIN"
-                                            ? "bg-red-100 text-red-700"
-                                            : role === "EXECUTIVE"
-                                              ? "bg-rose-100 text-rose-700"
-                                              : role === "MANAGER"
-                                                ? "bg-orange-100 text-orange-700"
-                                                : "bg-blue-100 text-blue-700"
-                                        }`}
-                                      >
-                                        {role}
-                                      </span>
-                                    ))}
+                                <div className="flex items-center justify-between p-3">
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium">
+                                      {language === "ja" ? menu.nameJa : menu.name}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {language === "ja" ? menu.name : menu.nameJa}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground/70 mt-1">
+                                      {menu.path}
+                                    </p>
                                   </div>
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
-                                    {menu.menuGroup}
-                                  </span>
-                                  {/* 順序入力 */}
-                                  <Input
-                                    type="number"
-                                    value={menu.order}
-                                    onChange={(e) => {
-                                      const newOrder = parseInt(e.target.value, 10);
-                                      if (!isNaN(newOrder)) {
-                                        handleUpdateMenuOrder(menu.id, newOrder);
-                                      }
-                                    }}
-                                    className="w-16 h-7 text-xs text-center"
-                                    min={0}
-                                    max={999}
-                                  />
-                                  <div className="flex items-center gap-1">
-                                    <Switch
-                                      checked={menu.enabled}
-                                      onCheckedChange={(checked) => handleToggleMenu(menu.id, checked)}
-                                      className="scale-75"
-                                    />
-                                    <span className={`text-xs ${menu.enabled ? "text-green-700" : "text-muted-foreground"}`}>
-                                      {menu.enabled ? t("Enabled", "有効") : t("Disabled", "無効")}
+                                  <div className="flex items-center gap-2">
+                                    {/* ロールバッジ */}
+                                    <div className="flex gap-1">
+                                      {menu.requiredRoles.map((role) => (
+                                        <span
+                                          key={role}
+                                          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                            role === "ADMIN"
+                                              ? "bg-red-100 text-red-700"
+                                              : role === "EXECUTIVE"
+                                                ? "bg-rose-100 text-rose-700"
+                                                : role === "MANAGER"
+                                                  ? "bg-orange-100 text-orange-700"
+                                                  : "bg-blue-100 text-blue-700"
+                                          }`}
+                                        >
+                                          {role}
+                                        </span>
+                                      ))}
+                                    </div>
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+                                      {menu.menuGroup}
                                     </span>
+                                    {/* 順序入力 */}
+                                    <Input
+                                      type="number"
+                                      value={menu.order}
+                                      onChange={(e) => {
+                                        const newOrder = parseInt(e.target.value, 10);
+                                        if (!isNaN(newOrder)) {
+                                          handleUpdateMenuOrder(menu.id, newOrder);
+                                        }
+                                      }}
+                                      className="w-16 h-7 text-xs text-center"
+                                      min={0}
+                                      max={999}
+                                    />
+                                    <div className="flex items-center gap-1">
+                                      <Switch
+                                        checked={menu.enabled}
+                                        onCheckedChange={(checked) => handleToggleMenu(menu.id, checked)}
+                                        className="scale-75"
+                                      />
+                                      <span className={`text-xs ${menu.enabled ? "text-green-700" : "text-muted-foreground"}`}>
+                                        {menu.enabled ? t("Enabled", "有効") : t("Disabled", "無効")}
+                                      </span>
+                                    </div>
+                                    {/* アクセスキー許可トグル */}
+                                    <div className="flex items-center gap-1 ml-2 pl-2 border-l border-border">
+                                      <Switch
+                                        checked={menu.allowAccessKey}
+                                        onCheckedChange={(checked) => handleUpdateAllowAccessKey("menu", menu.id, checked)}
+                                        className="scale-75"
+                                      />
+                                      <span className={`text-xs flex items-center gap-1 ${
+                                        menu.allowAccessKey !== menu.allowAccessKeyDefault
+                                          ? "text-amber-600 font-medium"
+                                          : menu.allowAccessKey ? "text-green-700" : "text-muted-foreground"
+                                      }`}>
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                        </svg>
+                                        {menu.allowAccessKey !== menu.allowAccessKeyDefault && "*"}
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
+                                {/* タブ一覧（タブがある場合のみ表示） */}
+                                {menu.tabs && menu.tabs.length > 0 && (
+                                  <div className="border-t border-border bg-background/50 px-3 py-2">
+                                    <details className="group">
+                                      <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
+                                        <svg className="w-3 h-3 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                        {t("Tabs", "タブ")} ({menu.tabs.length})
+                                      </summary>
+                                      <div className="mt-2 space-y-1 pl-4">
+                                        {menu.tabs
+                                          .sort((a, b) => a.order - b.order)
+                                          .map((tab) => (
+                                            <div
+                                              key={tab.id}
+                                              className="flex items-center justify-between py-1.5 px-2 rounded bg-muted/50"
+                                            >
+                                              <div className="flex-1">
+                                                <span className="text-xs font-medium">
+                                                  {language === "ja" ? tab.nameJa : tab.name}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground ml-2">
+                                                  ({tab.id})
+                                                </span>
+                                              </div>
+                                              <div className="flex items-center gap-1">
+                                                <Switch
+                                                  checked={tab.allowAccessKey}
+                                                  onCheckedChange={(checked) => handleUpdateAllowAccessKey("tab", menu.id, checked, tab.id)}
+                                                  className="scale-75"
+                                                />
+                                                <span className={`text-xs flex items-center gap-1 ${
+                                                  tab.allowAccessKey !== tab.allowAccessKeyDefault
+                                                    ? "text-amber-600 font-medium"
+                                                    : tab.allowAccessKey ? "text-green-700" : "text-muted-foreground"
+                                                }`}>
+                                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                                  </svg>
+                                                  {tab.allowAccessKey
+                                                    ? t("Allow", "許可")
+                                                    : t("Deny", "禁止")}
+                                                  {tab.allowAccessKey !== tab.allowAccessKeyDefault && " *"}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          ))}
+                                      </div>
+                                    </details>
+                                  </div>
+                                )}
                               </div>
                             ))}
                         </div>
