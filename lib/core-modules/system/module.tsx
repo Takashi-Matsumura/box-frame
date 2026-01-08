@@ -110,7 +110,7 @@ const adminTabs: AppTab[] = [
  *
  * システムの基本機能と管理機能を提供します。
  * - 全社員: ダッシュボード
- * - 管理者: ユーザ管理、アクセスキー管理
+ * - 管理者: システム環境（ユーザ管理、モジュール管理、アクセスキー管理等）
  */
 export const systemModule: AppModule = {
   id: "system",
@@ -200,36 +200,6 @@ export const systemModule: AppModule = {
       ),
       tabs: adminTabs,
       allowAccessKey: false, // メニュー全体ではなくタブ単位で制御
-    },
-    {
-      id: "accessKeyManagement",
-      moduleId: "system",
-      name: "Access Key Management",
-      nameJa: "アクセスキー管理",
-      path: "/access-keys",
-      menuGroup: "admin",
-      requiredRoles: ["ADMIN"],
-      enabled: false, // サイドバーに表示しない（管理画面のタブに統合）
-      order: 3,
-      description: "Manage access keys and permissions",
-      descriptionJa: "アクセスキーと権限を管理します",
-      icon: (
-        <svg
-          key="accessKeyManagement-icon"
-          className="w-5 h-5 flex-shrink-0"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            key="icon-path"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
-          />
-        </svg>
-      ),
     },
   ],
 };
