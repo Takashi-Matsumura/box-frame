@@ -1109,6 +1109,13 @@ export default function EvaluationForm({
             language={language}
             evaluationId={evaluationId}
             employeeInfo={buildEmployeeInfo()}
+            evaluationScores={{
+              score1,
+              score2,
+              score3,
+              finalScore,
+              finalGrade,
+            }}
             onToggleExpand={setAiAssistantExpanded}
           />
         </div>

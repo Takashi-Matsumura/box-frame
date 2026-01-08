@@ -9,6 +9,7 @@ import {
   Loader2,
   MessageSquare,
   Send,
+  Square,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -48,20 +49,31 @@ interface DocumentContent {
   }[];
 }
 
+interface EvaluationScores {
+  score1: number;
+  score2: number;
+  score3: number;
+  finalScore: number;
+  finalGrade: string;
+}
+
 interface EvaluationAIAssistantProps {
   language: "en" | "ja";
   evaluationId?: string;
   employeeInfo?: string;
+  evaluationScores?: EvaluationScores;
   onToggleExpand?: (expanded: boolean) => void;
 }
 
 const QUICK_ACTIONS = {
   ja: [
+    { id: "evaluator_comment", label: "コメント作成" },
     { id: "evaluation_points", label: "評価のポイント" },
     { id: "feedback_examples", label: "フィードバック例" },
     { id: "growth_goals", label: "成長目標設定" },
   ],
   en: [
+    { id: "evaluator_comment", label: "Write Comment" },
     { id: "evaluation_points", label: "Evaluation Points" },
     { id: "feedback_examples", label: "Feedback Examples" },
     { id: "growth_goals", label: "Growth Goals" },
@@ -69,18 +81,40 @@ const QUICK_ACTIONS = {
 };
 
 const DEFAULT_SYSTEM_PROMPT = {
-  ja: `あなたは人事評価の専門アシスタントです。評価者が適切な評価を行えるようサポートします。
-回答は具体的かつ実践的なアドバイスを心がけてください。
-- 評価のポイントや基準について説明できます
-- フィードバックの書き方をアドバイスできます
-- 成長目標の設定をサポートできます
-回答は日本語で簡潔に行ってください。`,
-  en: `You are a professional HR evaluation assistant. You help evaluators conduct appropriate evaluations.
-Please provide specific and practical advice.
-- You can explain evaluation points and criteria
-- You can advise on how to write feedback
-- You can support setting growth goals
-Please respond in English concisely.`,
+  ja: `あなたは人事評価の専門アシスタントです。評価者をサポートします。
+
+【重要】回答は簡潔に。箇条書きで3〜5項目程度に収めてください。
+
+あなたができること:
+- 評価のポイントや基準の説明
+- フィードバックの書き方アドバイス
+- 成長目標の設定サポート
+- 評価者コメントのサンプル作成
+
+【評価者コメント作成について】
+評価者コメントの作成を求められた場合は、以下を踏まえて作成してください:
+- 提供された評価スコア・グレード情報を参考にする
+- 高評価の場合: 具体的な称賛、今後への期待
+- 標準評価の場合: 良い点を認めつつ、成長への期待
+- 低評価の場合: 課題を指摘しつつ、改善への支援姿勢
+- 50〜150字程度の簡潔なコメント例を提示`,
+  en: `You are an HR evaluation assistant supporting evaluators.
+
+【Important】Keep responses concise. Use bullet points, 3-5 items max.
+
+What you can do:
+- Explain evaluation points and criteria
+- Advise on writing feedback
+- Support goal setting
+- Create sample evaluator comments
+
+【About Evaluator Comments】
+When asked to create evaluator comments:
+- Reference the provided scores and grades
+- High scores: specific praise, future expectations
+- Average scores: acknowledge strengths, encourage growth
+- Low scores: address issues, show support for improvement
+- Provide a concise sample comment (2-4 sentences)`,
 };
 
 const SYSTEM_PROMPT_STORAGE_KEY = "evaluation-ai-system-prompt";
@@ -89,6 +123,7 @@ export function EvaluationAIAssistant({
   language,
   evaluationId: _evaluationId,
   employeeInfo,
+  evaluationScores,
   onToggleExpand,
 }: EvaluationAIAssistantProps) {
   const [ragEnabled, setRagEnabled] = useState(true);
@@ -100,7 +135,12 @@ export function EvaluationAIAssistant({
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
+
+  // 最新のスコア情報を保持するref（クロージャー問題を回避）
+  const evaluationScoresRef = useRef(evaluationScores);
+  evaluationScoresRef.current = evaluationScores;
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -233,12 +273,26 @@ export function EvaluationAIAssistant({
     return filename.replace(/\.md$/, "");
   };
 
+  // 停止ボタンのハンドラー
+  const handleStop = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  }, []);
+
   const sendMessage = async (question: string) => {
     if (!question.trim() || backendStatus === "unhealthy") return;
 
+    // 前回のリクエストをキャンセル
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
     // ユーザーメッセージを追加
     const userMessage: Message = { role: "user", content: question };
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage, { role: "assistant", content: "" }]);
     setInput("");
     setIsLoading(true);
 
@@ -247,6 +301,24 @@ export function EvaluationAIAssistant({
       let systemContent = systemPrompt[language];
       if (employeeInfo) {
         systemContent += `\n\n${language === "ja" ? "【評価対象者情報】" : "【Employee Information】"}\n${employeeInfo}`;
+      }
+      // refから最新のスコア情報を取得
+      const currentScores = evaluationScoresRef.current;
+      if (currentScores) {
+        const scoreInfo = language === "ja"
+          ? `\n\n【現在の評価スコア】
+結果評価: ${currentScores.score1.toFixed(1)}
+プロセス評価: ${currentScores.score2.toFixed(1)}
+成長評価: ${currentScores.score3.toFixed(1)}
+最終スコア: ${currentScores.finalScore.toFixed(2)}
+最終グレード: ${currentScores.finalGrade}`
+          : `\n\n【Current Evaluation Scores】
+Results: ${currentScores.score1.toFixed(1)}
+Process: ${currentScores.score2.toFixed(1)}
+Growth: ${currentScores.score3.toFixed(1)}
+Final Score: ${currentScores.finalScore.toFixed(2)}
+Final Grade: ${currentScores.finalGrade}`;
+        systemContent += scoreInfo;
       }
 
       // メッセージ履歴を構築（最新10件まで）
@@ -266,6 +338,7 @@ export function EvaluationAIAssistant({
           top_k: 5,
           stream: true,
         }),
+        signal: abortControllerRef.current.signal,
       });
 
       if (!res.ok) {
@@ -280,9 +353,6 @@ export function EvaluationAIAssistant({
 
       const decoder = new TextDecoder();
       let assistantContent = "";
-
-      // アシスタントメッセージのプレースホルダーを追加
-      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
       while (true) {
         const { done, value } = await reader.read();
@@ -321,6 +391,11 @@ export function EvaluationAIAssistant({
         }
       }
     } catch (error) {
+      // ユーザーによる停止の場合はエラーメッセージを表示しない
+      if (error instanceof Error && error.name === "AbortError") {
+        return;
+      }
+
       const errorContent =
         language === "ja"
           ? `エラーが発生しました: ${error instanceof Error ? error.message : "不明なエラー"}`
@@ -344,16 +419,23 @@ export function EvaluationAIAssistant({
       });
     } finally {
       setIsLoading(false);
+      abortControllerRef.current = null;
     }
   };
 
   const handleQuickAction = (actionId: string) => {
     const action = quickActions.find((a) => a.id === actionId);
     if (action) {
-      const question =
-        language === "ja"
+      let question: string;
+      if (actionId === "evaluator_comment") {
+        question = language === "ja"
+          ? "この社員への評価者コメントのサンプルを作成してください。"
+          : "Please create a sample evaluator comment for this employee.";
+      } else {
+        question = language === "ja"
           ? `${action.label}について教えてください。`
           : `Please tell me about ${action.label.toLowerCase()}.`;
+      }
       sendMessage(question);
     }
   };
@@ -566,15 +648,24 @@ export function EvaluationAIAssistant({
               disabled={isLoading || backendStatus === "unhealthy"}
               className="text-sm"
             />
-            <Button
-              type="submit"
-              size="icon"
-              disabled={
-                isLoading || !input.trim() || backendStatus === "unhealthy"
-              }
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+            {isLoading ? (
+              <Button
+                type="button"
+                size="icon"
+                variant="destructive"
+                onClick={handleStop}
+              >
+                <Square className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                size="icon"
+                disabled={!input.trim() || backendStatus === "unhealthy"}
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </form>
 
