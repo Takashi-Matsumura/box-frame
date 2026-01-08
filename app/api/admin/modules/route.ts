@@ -14,17 +14,21 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // メニュー順序と有効状態のオーバーライドを取得
+    // メニュー順序、有効状態、allowAccessKey設定のオーバーライドを取得
     const menuSettings = await prisma.systemSetting.findMany({
       where: {
         OR: [
           { key: { startsWith: "menu_order_" } },
           { key: { startsWith: "menu_enabled_" } },
+          { key: { startsWith: "menu_allow_access_key_" } },
+          { key: { startsWith: "tab_allow_access_key_" } },
         ],
       },
     });
     const menuOrderOverrides: Record<string, number> = {};
     const menuEnabledOverrides: Record<string, boolean> = {};
+    const menuAllowAccessKeyOverrides: Record<string, boolean> = {};
+    const tabAllowAccessKeyOverrides: Record<string, boolean> = {};
     for (const setting of menuSettings) {
       if (setting.key.startsWith("menu_order_")) {
         const menuId = setting.key.replace("menu_order_", "");
@@ -32,7 +36,28 @@ export async function GET() {
       } else if (setting.key.startsWith("menu_enabled_")) {
         const menuId = setting.key.replace("menu_enabled_", "");
         menuEnabledOverrides[menuId] = setting.value === "true";
+      } else if (setting.key.startsWith("menu_allow_access_key_")) {
+        const menuId = setting.key.replace("menu_allow_access_key_", "");
+        menuAllowAccessKeyOverrides[menuId] = setting.value === "true";
+      } else if (setting.key.startsWith("tab_allow_access_key_")) {
+        // tab_allow_access_key_{menuId}_{tabId} の形式
+        const key = setting.key.replace("tab_allow_access_key_", "");
+        tabAllowAccessKeyOverrides[key] = setting.value === "true";
       }
+    }
+
+    // モジュール有効状態のオーバーライドを取得
+    const moduleEnabledSettings = await prisma.systemSetting.findMany({
+      where: {
+        key: {
+          startsWith: "module_enabled_",
+        },
+      },
+    });
+    const moduleEnabledOverrides: Record<string, boolean> = {};
+    for (const setting of moduleEnabledSettings) {
+      const moduleId = setting.key.replace("module_enabled_", "");
+      moduleEnabledOverrides[moduleId] = setting.value === "true";
     }
 
     // コンテナステータスをチェックする関数
@@ -81,25 +106,53 @@ export async function GET() {
             )
           : [];
 
+        // モジュール有効状態: SystemSettingの値があればそれを使用、なければデフォルト値
+        const isEnabled = moduleEnabledOverrides[module.id] ?? module.enabled;
+
         return {
           id: module.id,
           name: module.name,
           nameJa: module.nameJa,
           description: module.description,
           descriptionJa: module.descriptionJa,
-          enabled: module.enabled,
+          enabled: isEnabled,
           type: isCore ? ("core" as const) : ("addon" as const),
           menuCount: module.menus.filter((m) => menuEnabledOverrides[m.id] ?? m.enabled).length,
-          menus: module.menus.map((menu) => ({
-            id: menu.id,
-            name: menu.name,
-            nameJa: menu.nameJa,
-            path: menu.path,
-            menuGroup: menu.menuGroup,
-            enabled: menuEnabledOverrides[menu.id] ?? menu.enabled,
-            order: menuOrderOverrides[menu.id] ?? menu.order,
-            requiredRoles: menu.requiredRoles || [],
-          })),
+          menus: module.menus.map((menu) => {
+            // メニューのallowAccessKey: DB値 → モジュール定義 → デフォルトtrue
+            const menuAllowAccessKeyDefault = menu.allowAccessKey ?? true;
+            const menuAllowAccessKey = menuAllowAccessKeyOverrides[menu.id] ?? menuAllowAccessKeyDefault;
+
+            // タブ情報を構築
+            const tabs = menu.tabs?.map((tab) => {
+              const tabKey = `${menu.id}_${tab.id}`;
+              const tabAllowAccessKeyDefault = tab.allowAccessKey ?? true;
+              const tabAllowAccessKey = tabAllowAccessKeyOverrides[tabKey] ?? tabAllowAccessKeyDefault;
+              return {
+                id: tab.id,
+                name: tab.name,
+                nameJa: tab.nameJa,
+                order: tab.order,
+                enabled: tab.enabled ?? true,
+                allowAccessKey: tabAllowAccessKey,
+                allowAccessKeyDefault: tabAllowAccessKeyDefault,
+              };
+            }) || [];
+
+            return {
+              id: menu.id,
+              name: menu.name,
+              nameJa: menu.nameJa,
+              path: menu.path,
+              menuGroup: menu.menuGroup,
+              enabled: menuEnabledOverrides[menu.id] ?? menu.enabled,
+              order: menuOrderOverrides[menu.id] ?? menu.order,
+              requiredRoles: menu.requiredRoles || [],
+              allowAccessKey: menuAllowAccessKey,
+              allowAccessKeyDefault: menuAllowAccessKeyDefault,
+              tabs: tabs.length > 0 ? tabs : undefined,
+            };
+          }),
           containers: containersWithStatus,
           mcpServer: module.mcpServer
             ? {

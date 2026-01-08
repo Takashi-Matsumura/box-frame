@@ -58,7 +58,19 @@ export async function checkAccess(
         continue;
       }
 
-      // このアクセスキーがmenuPathへのアクセスを許可しているかチェック
+      // 方法1: AccessKey.menuPaths (JSON) からチェック
+      if (ak.menuPaths) {
+        try {
+          const menuPaths = JSON.parse(ak.menuPaths) as string[];
+          if (menuPaths.includes(menuPath)) {
+            return true;
+          }
+        } catch {
+          // JSON パースエラーは無視
+        }
+      }
+
+      // 方法2: AccessKeyPermission からチェック
       for (const akp of ak.permissions) {
         // 新しい粒度システム（Phase 2）
         if (akp.menuPath) {

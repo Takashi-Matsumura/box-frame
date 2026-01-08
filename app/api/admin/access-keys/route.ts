@@ -19,6 +19,14 @@ function generateAccessKey(): string {
   return key;
 }
 
+// Permission type from frontend
+interface PermissionInput {
+  granularity: "module" | "menu" | "tab";
+  moduleId?: string;
+  menuPath?: string;
+  tabId?: string;
+}
+
 // Create new Access key
 export async function POST(request: Request) {
   const session = await auth();
@@ -29,7 +37,13 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { name, expiresAt, targetUserId, menuPaths } = body;
+    const { name, expiresAt, targetUserId, menuPaths, permissions } = body as {
+      name: string;
+      expiresAt: string;
+      targetUserId: string;
+      menuPaths: string[];
+      permissions?: PermissionInput[];
+    };
 
     if (
       !name ||
@@ -59,25 +73,48 @@ export async function POST(request: Request) {
     const key = generateAccessKey();
     const expiryDate = new Date(expiresAt);
 
-    const accessKey = await prisma.accessKey.create({
-      data: {
-        key,
-        name,
-        targetUserId,
-        menuPaths: JSON.stringify(menuPaths), // Store as JSON string
-        expiresAt: expiryDate,
-        isActive: true,
-        createdBy: session.user.id,
-      },
-      include: {
-        targetUser: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+    // トランザクションでAccessKeyとAccessKeyPermissionを作成
+    const accessKey = await prisma.$transaction(async (tx) => {
+      // AccessKey を作成
+      const createdKey = await tx.accessKey.create({
+        data: {
+          key,
+          name,
+          targetUserId,
+          menuPaths: JSON.stringify(menuPaths), // Store as JSON string (後方互換性)
+          expiresAt: expiryDate,
+          isActive: true,
+          createdBy: session.user.id,
         },
-      },
+      });
+
+      // permissions 配列がある場合、AccessKeyPermission を作成
+      if (permissions && permissions.length > 0) {
+        await tx.accessKeyPermission.createMany({
+          data: permissions.map((p) => ({
+            accessKeyId: createdKey.id,
+            granularity: p.granularity,
+            moduleId: p.moduleId,
+            menuPath: p.menuPath,
+            tabId: p.tabId,
+          })),
+        });
+      }
+
+      // 作成したキーを返す（関連データを含む）
+      return tx.accessKey.findUnique({
+        where: { id: createdKey.id },
+        include: {
+          targetUser: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          permissions: true,
+        },
+      });
     });
 
     // 対象ユーザーにアクセスキー作成通知を発行
