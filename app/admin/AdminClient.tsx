@@ -333,6 +333,35 @@ export function AdminClient({
   const [useAiTranslation, setUseAiTranslation] = useState(false);
   const [aiTranslating, setAiTranslating] = useState(false);
 
+  // Legacy LDAP Migration設定
+  interface LegacyLdapConfig {
+    id?: string;
+    isEnabled: boolean;
+    serverUrl: string;
+    baseDN: string;
+    bindDN: string;
+    bindPassword: string;
+    searchFilter: string;
+    timeout: number;
+  }
+
+  const [legacyLdapConfig, setLegacyLdapConfig] = useState<LegacyLdapConfig | null>(null);
+  const [legacyLdapConfigLoading, setLegacyLdapConfigLoading] = useState(false);
+  const [legacyLdapConfigSaving, setLegacyLdapConfigSaving] = useState(false);
+  const [legacyLdapTestType, setLegacyLdapTestType] = useState<"connection" | "search" | "auth">("connection");
+  const [legacyLdapTestUsername, setLegacyLdapTestUsername] = useState("");
+  const [legacyLdapTestPassword, setLegacyLdapTestPassword] = useState("");
+  const [legacyLdapTestLoading, setLegacyLdapTestLoading] = useState(false);
+  const [legacyLdapTestResult, setLegacyLdapTestResult] = useState<{
+    success: boolean;
+    message?: string;
+    messageJa?: string;
+    error?: string;
+    userDN?: string;
+    email?: string;
+    displayName?: string;
+  } | null>(null);
+
   const t = (en: string, ja: string) => (language === "ja" ? ja : en);
 
   // datetime-local入力用にローカル時刻をフォーマット (YYYY-MM-DDTHH:MM)
@@ -367,6 +396,92 @@ export function AdminClient({
       fetchOpenLdapStatus();
     }
   }, [selectedModule, fetchOpenLdapStatus]);
+
+  // Legacy LDAP Migration設定を取得
+  const fetchLegacyLdapConfig = useCallback(async () => {
+    try {
+      setLegacyLdapConfigLoading(true);
+      const response = await fetch("/api/admin/ldap-migration");
+      if (response.ok) {
+        const data = await response.json();
+        setLegacyLdapConfig(data);
+      } else {
+        // 設定が存在しない場合はデフォルト値を設定
+        setLegacyLdapConfig({
+          isEnabled: false,
+          serverUrl: "",
+          baseDN: "",
+          bindDN: "",
+          bindPassword: "",
+          searchFilter: "(uid={username})",
+          timeout: 10000,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching Legacy LDAP config:", error);
+    } finally {
+      setLegacyLdapConfigLoading(false);
+    }
+  }, []);
+
+  // Legacy LDAP Migration設定を保存
+  const saveLegacyLdapConfig = useCallback(async () => {
+    if (!legacyLdapConfig) return;
+
+    try {
+      setLegacyLdapConfigSaving(true);
+      const response = await fetch("/api/admin/ldap-migration", {
+        method: legacyLdapConfig.id ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(legacyLdapConfig),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setLegacyLdapConfig(data);
+      }
+    } catch (error) {
+      console.error("Error saving Legacy LDAP config:", error);
+    } finally {
+      setLegacyLdapConfigSaving(false);
+    }
+  }, [legacyLdapConfig]);
+
+  // Legacy LDAPテストを実行
+  const runLegacyLdapTest = useCallback(async () => {
+    try {
+      setLegacyLdapTestLoading(true);
+      setLegacyLdapTestResult(null);
+
+      const response = await fetch("/api/admin/ldap-migration/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: legacyLdapTestType,
+          username: legacyLdapTestUsername,
+          password: legacyLdapTestPassword,
+        }),
+      });
+
+      const data = await response.json();
+      setLegacyLdapTestResult(data);
+    } catch (error) {
+      console.error("Error testing Legacy LDAP:", error);
+      setLegacyLdapTestResult({
+        success: false,
+        error: "Test failed",
+      });
+    } finally {
+      setLegacyLdapTestLoading(false);
+    }
+  }, [legacyLdapTestType, legacyLdapTestUsername, legacyLdapTestPassword]);
+
+  // LDAP Migrationモジュールが選択された時に設定を取得
+  useEffect(() => {
+    if (selectedModule?.id === "ldap-migration") {
+      fetchLegacyLdapConfig();
+    }
+  }, [selectedModule, fetchLegacyLdapConfig]);
 
   // Google OAuth設定を取得
   const fetchGoogleOAuthSetting = useCallback(async () => {
@@ -2403,6 +2518,359 @@ export function AdminClient({
                                     </p>
                                   </div>
                                 )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Legacy LDAP Migration設定（ldap-migrationモジュールのみ） */}
+                    {selectedModule.id === "ldap-migration" && (
+                      <div className="mb-6 p-4 bg-muted border border-border rounded-lg">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-amber-600 rounded-lg flex items-center justify-center text-white">
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                                />
+                              </svg>
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-semibold">
+                                {t("Legacy LDAP Server Settings", "レガシーLDAPサーバ設定")}
+                              </h4>
+                              <p className="text-xs text-muted-foreground">
+                                {t(
+                                  "Configure connection to legacy LDAP for migration",
+                                  "マイグレーション用のレガシーLDAP接続を設定",
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={fetchLegacyLdapConfig}
+                            disabled={legacyLdapConfigLoading}
+                            className="px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground text-sm font-medium rounded-lg transition-colors"
+                          >
+                            {legacyLdapConfigLoading
+                              ? t("Loading...", "読み込み中...")
+                              : t("Refresh", "更新")}
+                          </button>
+                        </div>
+
+                        {legacyLdapConfigLoading && !legacyLdapConfig ? (
+                          <div className="text-center py-4">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+                          </div>
+                        ) : legacyLdapConfig ? (
+                          <div className="space-y-4">
+                            {/* サーバURL */}
+                            <div className="p-3 bg-card rounded-lg border border-border">
+                              <Label className="text-sm font-medium mb-2 block">
+                                {t("Server URL", "サーバURL")}
+                              </Label>
+                              <Input
+                                type="text"
+                                value={legacyLdapConfig.serverUrl || ""}
+                                onChange={(e) =>
+                                  setLegacyLdapConfig((prev) =>
+                                    prev ? { ...prev, serverUrl: e.target.value } : prev
+                                  )
+                                }
+                                placeholder="ldap://ldap.example.com:389"
+                                className="text-sm"
+                              />
+                            </div>
+
+                            {/* Base DN */}
+                            <div className="p-3 bg-card rounded-lg border border-border">
+                              <Label className="text-sm font-medium mb-2 block">
+                                {t("Base DN", "ベースDN")}
+                              </Label>
+                              <Input
+                                type="text"
+                                value={legacyLdapConfig.baseDN || ""}
+                                onChange={(e) =>
+                                  setLegacyLdapConfig((prev) =>
+                                    prev ? { ...prev, baseDN: e.target.value } : prev
+                                  )
+                                }
+                                placeholder="ou=Users,dc=example,dc=com"
+                                className="text-sm"
+                              />
+                            </div>
+
+                            {/* Search Filter */}
+                            <div className="p-3 bg-card rounded-lg border border-border">
+                              <Label className="text-sm font-medium mb-2 block">
+                                {t("Search Filter", "検索フィルタ")}
+                              </Label>
+                              <Input
+                                type="text"
+                                value={legacyLdapConfig.searchFilter || ""}
+                                onChange={(e) =>
+                                  setLegacyLdapConfig((prev) =>
+                                    prev ? { ...prev, searchFilter: e.target.value } : prev
+                                  )
+                                }
+                                placeholder="(uid={username})"
+                                className="text-sm font-mono"
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {t(
+                                  "{username} will be replaced with the login username",
+                                  "{username} はログイン時のユーザー名に置換されます",
+                                )}
+                              </p>
+                            </div>
+
+                            {/* Timeout */}
+                            <div className="p-3 bg-card rounded-lg border border-border">
+                              <Label className="text-sm font-medium mb-2 block">
+                                {t("Timeout (ms)", "タイムアウト (ミリ秒)")}
+                              </Label>
+                              <Input
+                                type="number"
+                                value={legacyLdapConfig.timeout ?? 10000}
+                                onChange={(e) =>
+                                  setLegacyLdapConfig((prev) =>
+                                    prev ? { ...prev, timeout: parseInt(e.target.value) || 10000 } : prev
+                                  )
+                                }
+                                min={1000}
+                                max={60000}
+                                className="text-sm"
+                              />
+                            </div>
+
+                            {/* 保存ボタン */}
+                            <div className="flex justify-end pt-2">
+                              <button
+                                onClick={saveLegacyLdapConfig}
+                                disabled={legacyLdapConfigSaving}
+                                className="px-6 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground text-sm font-medium rounded-lg transition-colors"
+                              >
+                                {legacyLdapConfigSaving
+                                  ? t("Saving...", "保存中...")
+                                  : t("Save Settings", "設定を保存")}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-4 text-muted-foreground text-sm">
+                            {t(
+                              "Click 'Refresh' to load settings",
+                              "「更新」をクリックして設定を読み込んでください",
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Legacy LDAPテスト（ldap-migrationモジュールのみ） */}
+                    {selectedModule.id === "ldap-migration" && legacyLdapConfig && (
+                      <div className="mb-6 p-4 bg-muted border border-border rounded-lg">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 bg-amber-600 rounded-lg flex items-center justify-center text-white">
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                              />
+                            </svg>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-semibold">
+                              {t("Connection Test", "接続テスト")}
+                            </h4>
+                            <p className="text-xs text-muted-foreground">
+                              {t(
+                                "Test connection and authentication to legacy LDAP",
+                                "レガシーLDAPへの接続と認証をテスト",
+                              )}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          {/* テストタイプ選択 */}
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setLegacyLdapTestType("connection")}
+                              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                legacyLdapTestType === "connection"
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-card border border-border hover:bg-muted"
+                              }`}
+                            >
+                              {t("Connection", "接続")}
+                            </button>
+                            <button
+                              onClick={() => setLegacyLdapTestType("search")}
+                              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                legacyLdapTestType === "search"
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-card border border-border hover:bg-muted"
+                              }`}
+                            >
+                              {t("User Search", "ユーザー検索")}
+                            </button>
+                            <button
+                              onClick={() => setLegacyLdapTestType("auth")}
+                              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                legacyLdapTestType === "auth"
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-card border border-border hover:bg-muted"
+                              }`}
+                            >
+                              {t("Authentication", "認証")}
+                            </button>
+                          </div>
+
+                          {/* ユーザー名/パスワード入力（検索/認証テスト用） */}
+                          {(legacyLdapTestType === "search" || legacyLdapTestType === "auth") && (
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <Label className="block text-sm font-medium text-muted-foreground mb-1">
+                                  {t("Username", "ユーザー名")}
+                                </Label>
+                                <Input
+                                  type="text"
+                                  value={legacyLdapTestUsername}
+                                  onChange={(e) => setLegacyLdapTestUsername(e.target.value)}
+                                  placeholder={t("Enter username", "ユーザー名を入力")}
+                                  disabled={legacyLdapTestLoading}
+                                />
+                              </div>
+                              {legacyLdapTestType === "auth" && (
+                                <div>
+                                  <Label className="block text-sm font-medium text-muted-foreground mb-1">
+                                    {t("Password", "パスワード")}
+                                  </Label>
+                                  <Input
+                                    type="password"
+                                    value={legacyLdapTestPassword}
+                                    onChange={(e) => setLegacyLdapTestPassword(e.target.value)}
+                                    placeholder={t("Enter password", "パスワードを入力")}
+                                    disabled={legacyLdapTestLoading}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* テスト実行ボタン */}
+                          <button
+                            onClick={runLegacyLdapTest}
+                            disabled={
+                              legacyLdapTestLoading ||
+                              (legacyLdapTestType === "search" && !legacyLdapTestUsername) ||
+                              (legacyLdapTestType === "auth" && (!legacyLdapTestUsername || !legacyLdapTestPassword))
+                            }
+                            className="w-full py-2 px-4 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+                          >
+                            {legacyLdapTestLoading
+                              ? t("Testing...", "テスト中...")
+                              : legacyLdapTestType === "connection"
+                                ? t("Test Connection", "接続テスト")
+                                : legacyLdapTestType === "search"
+                                  ? t("Search User", "ユーザー検索")
+                                  : t("Test Authentication", "認証テスト")}
+                          </button>
+
+                          {/* テスト結果 */}
+                          {legacyLdapTestResult && (
+                            <div
+                              className={`p-3 rounded-lg border ${
+                                legacyLdapTestResult.success
+                                  ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800"
+                                  : "bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 mb-2">
+                                {legacyLdapTestResult.success ? (
+                                  <svg
+                                    className="w-5 h-5 text-green-600 dark:text-green-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                  </svg>
+                                ) : (
+                                  <svg
+                                    className="w-5 h-5 text-red-600 dark:text-red-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                  </svg>
+                                )}
+                                <span
+                                  className={`text-sm font-medium ${
+                                    legacyLdapTestResult.success
+                                      ? "text-green-800 dark:text-green-200"
+                                      : "text-red-800 dark:text-red-200"
+                                  }`}
+                                >
+                                  {legacyLdapTestResult.success
+                                    ? language === "ja"
+                                      ? legacyLdapTestResult.messageJa || "成功"
+                                      : legacyLdapTestResult.message || "Success"
+                                    : legacyLdapTestResult.error || t("Test failed", "テスト失敗")}
+                                </span>
+                              </div>
+                              {legacyLdapTestResult.success && legacyLdapTestResult.userDN && (
+                                <div className="text-xs text-muted-foreground space-y-1 mt-2 pl-7">
+                                  {legacyLdapTestResult.displayName && (
+                                    <p>
+                                      <span className="font-medium">
+                                        {t("Display Name", "表示名")}:
+                                      </span>{" "}
+                                      {legacyLdapTestResult.displayName}
+                                    </p>
+                                  )}
+                                  {legacyLdapTestResult.email && (
+                                    <p>
+                                      <span className="font-medium">
+                                        {t("Email", "メール")}:
+                                      </span>{" "}
+                                      {legacyLdapTestResult.email}
+                                    </p>
+                                  )}
+                                  <p className="truncate">
+                                    <span className="font-medium">DN:</span>{" "}
+                                    {legacyLdapTestResult.userDN}
+                                  </p>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>

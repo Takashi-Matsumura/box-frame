@@ -74,6 +74,9 @@ export function Header({ session, language = "en" }: HeaderProps) {
   const isAdmin = pathname === "/admin";
   const isDataImport = pathname === "/data-import";
   const isSettings = pathname === "/settings";
+  const isDataManagement = pathname === "/admin/data-management";
+  const isEvaluationMaster = pathname === "/admin/evaluation-master";
+  const isEvaluationRag = pathname === "/admin/evaluation-rag";
 
   // 組織分析タブ
   const analyticsTab = searchParams.get("tab") || "overview";
@@ -191,6 +194,39 @@ export function Header({ session, language = "en" }: HeaderProps) {
     },
   ];
 
+  // 組織データ管理タブ（レジストリから取得）
+  const dataManagementTab = searchParams.get("tab") || "import";
+  const registryDataManagementTabs = getTabsByMenuPath("/admin/data-management");
+  const dataManagementTabs =
+    registryDataManagementTabs?.map((tab) => ({
+      name: language === "ja" ? tab.nameJa : tab.name,
+      icon: tab.icon,
+      path: `/admin/data-management?tab=${tab.id}`,
+      active: dataManagementTab === tab.id,
+    })) || [];
+
+  // 評価マスタタブ（レジストリから取得）
+  const evaluationMasterTab = searchParams.get("tab") || "periods";
+  const registryEvaluationMasterTabs = getTabsByMenuPath("/admin/evaluation-master");
+  const evaluationMasterTabs =
+    registryEvaluationMasterTabs?.map((tab) => ({
+      name: language === "ja" ? tab.nameJa : tab.name,
+      icon: tab.icon,
+      path: `/admin/evaluation-master?tab=${tab.id}`,
+      active: evaluationMasterTab === tab.id,
+    })) || [];
+
+  // 評価AIサポートタブ（レジストリから取得）
+  const evaluationRagTab = searchParams.get("tab") || "knowledge-base";
+  const registryEvaluationRagTabs = getTabsByMenuPath("/admin/evaluation-rag");
+  const evaluationRagTabs =
+    registryEvaluationRagTabs?.map((tab) => ({
+      name: language === "ja" ? tab.nameJa : tab.name,
+      icon: tab.icon,
+      path: `/admin/evaluation-rag?tab=${tab.id}`,
+      active: evaluationRagTab === tab.id,
+    })) || [];
+
   const renderTabs = (tabs: TabItem[], label: string) => (
     <div className="border-t border-border bg-muted">
       <nav className="flex gap-1 px-6" aria-label={label}>
@@ -276,6 +312,9 @@ export function Header({ session, language = "en" }: HeaderProps) {
       {isAdmin && renderTabs(adminTabs, "Admin Tabs")}
       {isDataImport && renderTabs(dataImportTabs, "Data Import Tabs")}
       {isSettings && renderTabs(settingsTabs, "Settings Tabs")}
+      {isDataManagement && renderTabs(dataManagementTabs, "Data Management Tabs")}
+      {isEvaluationMaster && renderTabs(evaluationMasterTabs, "Evaluation Master Tabs")}
+      {isEvaluationRag && renderTabs(evaluationRagTabs, "Evaluation AI Support Tabs")}
     </header>
   );
 }
