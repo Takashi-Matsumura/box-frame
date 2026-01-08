@@ -47,7 +47,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { ChevronLeft, ChevronRight, Edit3, Plus, Search, Trash2, X } from "lucide-react";
 import { getModuleIcon } from "@/lib/modules/icons";
-import type { AppMenu } from "@/types/module";
+import type { AppMenu, AppModule } from "@/types/module";
 
 interface User {
   id: string;
@@ -94,6 +94,7 @@ interface AdminClientProps {
     role: string;
   }>;
   menus: AppMenu[];
+  modules: AppModule[];
 }
 
 type TabType = "system" | "users" | "access-keys" | "modules" | "audit-logs" | "announcements";
@@ -176,6 +177,7 @@ export function AdminClient({
   accessKeys,
   users,
   menus,
+  modules,
 }: AdminClientProps) {
   const searchParams = useSearchParams();
   const { open } = useSidebar();
@@ -1821,6 +1823,7 @@ export function AdminClient({
                   accessKeys={accessKeys}
                   users={users}
                   menus={menus}
+                  modules={modules}
                   adminId={currentUserId}
                   language={language}
                 />

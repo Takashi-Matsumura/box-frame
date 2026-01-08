@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getLanguage } from "@/lib/i18n/get-language";
-import { getAllMenus } from "@/lib/modules/registry";
+import { getAllMenus, getEnabledModules } from "@/lib/modules/registry";
 import { prisma } from "@/lib/prisma";
 import { AdminClient } from "./AdminClient";
 import { adminTranslations } from "./translations";
@@ -75,6 +75,9 @@ export default async function AdminPage() {
     (menu) => menu.menuGroup.toLowerCase() !== "admin",
   );
 
+  // モジュール一覧を取得
+  const modules = getEnabledModules();
+
   return (
     <AdminClient
       language={language}
@@ -87,6 +90,7 @@ export default async function AdminPage() {
       accessKeys={accessKeys}
       users={users}
       menus={menus}
+      modules={modules}
     />
   );
 }

@@ -2,10 +2,14 @@
 
 import type { AccessKey } from "@prisma/client";
 import { useState } from "react";
-import type { AppMenu } from "@/types/module";
+import type { AppMenu, AppModule } from "@/types/module";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  PermissionTreeSelector,
+  type SelectedPermission,
+} from "@/components/PermissionTreeSelector";
 import {
   Table,
   TableBody,
@@ -59,6 +63,7 @@ interface AccessKeyManagerProps {
     role: string;
   }>;
   menus: AppMenu[];
+  modules: AppModule[];
   adminId: string;
   language?: string;
 }
@@ -67,6 +72,7 @@ export function AccessKeyManager({
   accessKeys: initialAccessKeys,
   users,
   menus,
+  modules,
   adminId,
   language = "en",
 }: AccessKeyManagerProps) {
@@ -85,30 +91,47 @@ export function AccessKeyManager({
     expiresAt: getDefaultExpiryDate(),
     targetUserId: "",
     menuPaths: [] as string[],
+    permissions: [] as SelectedPermission[],
   });
 
   const t = (en: string, ja: string) => (language === "ja" ? ja : en);
 
   const handleCreate = async () => {
-    if (
-      !formData.name ||
-      !formData.targetUserId ||
-      formData.menuPaths.length === 0
-    ) {
+    // 新しいpermissions形式または従来のmenuPaths形式をチェック
+    const hasPermissions = formData.permissions.length > 0;
+    const hasMenuPaths = formData.menuPaths.length > 0;
+
+    if (!formData.name || !formData.targetUserId || (!hasPermissions && !hasMenuPaths)) {
       alert(
         t(
-          "Please enter a name, select a target user, and select at least one menu",
-          "名前、対象ユーザ、および少なくとも1つのメニューを選択してください",
+          "Please enter a name, select a target user, and select at least one permission",
+          "名前、対象ユーザ、および少なくとも1つの権限を選択してください",
         ),
       );
       return;
     }
 
     try {
+      // 新しいpermissions形式を使用する場合、menuPathsも生成（後方互換性）
+      const menuPathsFromPermissions = formData.permissions
+        .filter((p) => p.menuPath)
+        .map((p) => p.menuPath as string);
+
+      const requestBody = {
+        ...formData,
+        menuPaths: hasPermissions ? menuPathsFromPermissions : formData.menuPaths,
+        permissions: formData.permissions.map((p) => ({
+          granularity: p.granularity,
+          moduleId: p.moduleId,
+          menuPath: p.menuPath,
+          tabId: p.tabId,
+        })),
+      };
+
       const response = await fetch("/api/admin/access-keys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -123,6 +146,7 @@ export function AccessKeyManager({
         expiresAt: getDefaultExpiryDate(),
         targetUserId: "",
         menuPaths: [],
+        permissions: [],
       });
       setIsCreating(false);
       alert(
@@ -225,6 +249,7 @@ export function AccessKeyManager({
       expiresAt: getDefaultExpiryDate(),
       targetUserId: "",
       menuPaths: [],
+      permissions: [],
     });
   };
 
@@ -460,31 +485,18 @@ export function AccessKeyManager({
             <div className="space-y-2">
               <Label>
                 {t(
-                  "Select Menus to Grant Access",
-                  "アクセスを許可するメニューを選択",
+                  "Select Permissions to Grant",
+                  "付与する権限を選択",
                 )}
               </Label>
-              <div className="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-4">
-                {menus.map((menu) => (
-                  <label
-                    key={menu.id}
-                    className="flex items-center gap-2 p-2 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.menuPaths.includes(menu.path)}
-                      onChange={() => toggleMenu(menu.path)}
-                      className="w-4 h-4"
-                    />
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">
-                        {language === "ja" ? menu.nameJa : menu.name}
-                      </div>
-                      <div className="text-xs text-muted-foreground">{menu.path}</div>
-                    </div>
-                  </label>
-                ))}
-              </div>
+              <PermissionTreeSelector
+                modules={modules}
+                selectedPermissions={formData.permissions}
+                onSelectionChange={(permissions) =>
+                  setFormData({ ...formData, permissions })
+                }
+                language={language}
+              />
             </div>
           </div>
 
