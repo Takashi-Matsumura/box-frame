@@ -94,7 +94,7 @@ export function ClientLayout({
         mustChangePassword={mustChangePassword}
       />
       <ResizeHandle />
-      <SidebarInset>{children}</SidebarInset>
+      <SidebarInset className="min-w-0 overflow-hidden">{children}</SidebarInset>
     </SidebarProvider>
   );
 }

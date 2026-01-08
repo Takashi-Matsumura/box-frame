@@ -80,6 +80,7 @@ export default function EvaluationsClient({
   const [selectedCourse, setSelectedCourse] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
 
+
   // 本部変更時に部・課をリセット
   const handleDepartmentChange = useCallback((value: string) => {
     setSelectedDepartment(value);
@@ -284,9 +285,9 @@ export default function EvaluationsClient({
   }
 
   return (
-    <div className="max-w-7xl mx-auto mt-4">
-      <Card>
-        <CardContent className="p-4">
+    <div className="max-w-7xl mx-auto mt-4 h-[calc(100vh-160px)] overflow-hidden">
+      <Card className="h-full flex flex-col overflow-hidden">
+        <CardContent className="p-4 flex-1 flex flex-col overflow-hidden">
           {/* Period Info - Compact */}
           <div className="flex items-center justify-between mb-3 pb-3 border-b">
             <div className="flex items-center gap-4 text-sm">
@@ -430,8 +431,9 @@ export default function EvaluationsClient({
           ) : evaluations.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">{t.noEvaluatees}</div>
           ) : (
+            <div className="overflow-auto flex-1">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 bg-background z-10">
                 <TableRow>
                   <TableHead>{t.employeeNumber}</TableHead>
                   <TableHead>{t.employeeInfo}</TableHead>
@@ -468,6 +470,7 @@ export default function EvaluationsClient({
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
