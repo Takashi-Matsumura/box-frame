@@ -18,6 +18,15 @@ import {
 } from "@/components/ui/sidebar";
 import type { AppMenu } from "@/types/module";
 
+// TailwindクラスからHEX値へのマッピング
+const colorMap: Record<string, string> = {
+  "text-gray-600": "#4b5563",
+  "text-cyan-700": "#0e7490",
+  "text-green-700": "#15803d",
+  "text-rose-700": "#be123c",
+  "text-purple-700": "#7e22ce",
+};
+
 interface SidebarMenuItemComponentProps {
   menu: AppMenu;
   language: string;
@@ -44,30 +53,21 @@ export function SidebarMenuItemComponent({
   const renderIcon = () => {
     if (!menu.icon) return null;
 
-    const iconElement = (
-      <div
-        className="flex items-center justify-center size-5 [&>svg]:size-4"
-        style={color ? { color } : undefined}
-      >
-        {menu.icon}
+    // TailwindクラスをHEX値に変換
+    const hexColor = color ? colorMap[color] || color : undefined;
+    const isAddonModule = menu.moduleId !== "system";
+
+    return (
+      <div className="relative flex items-center justify-center size-5 [&>svg]:size-4">
+        <div style={hexColor ? { color: hexColor } : undefined}>{menu.icon}</div>
+        {isAddonModule && hexColor && (
+          <div
+            className="absolute -bottom-1 left-0.5 right-0.5 h-0.5 rounded-full"
+            style={{ backgroundColor: hexColor }}
+          />
+        )}
       </div>
     );
-
-    // システムモジュール以外はボーダー付き
-    if (menu.moduleId !== "system" && color) {
-      return (
-        <div
-          className="flex items-center justify-center size-5 rounded border-2"
-          style={{ borderColor: color }}
-        >
-          <div className="[&>svg]:size-3" style={{ color }}>
-            {menu.icon}
-          </div>
-        </div>
-      );
-    }
-
-    return iconElement;
   };
 
   // 子メニューがある場合
