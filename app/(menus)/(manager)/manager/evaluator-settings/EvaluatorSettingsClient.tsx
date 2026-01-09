@@ -822,19 +822,38 @@ export default function EvaluatorSettingsClient({
               </div>
 
               {/* Actions */}
-              <div className="flex justify-end gap-3 mt-6">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                >
-                  {t.cancel}
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={saving || !formData.evaluatorId}
-                >
-                  {saving ? t.loading : t.save}
-                </Button>
+              <div className="flex justify-between mt-6">
+                <div>
+                  {getCustomEvaluator(selectedEmployee.id) && (
+                    <Button
+                      variant="destructive"
+                      onClick={() => {
+                        const customEval = getCustomEvaluator(selectedEmployee.id);
+                        if (customEval) {
+                          handleRemoveCustomEvaluator(customEval.id);
+                          setIsDialogOpen(false);
+                        }
+                      }}
+                      disabled={saving}
+                    >
+                      {t.removeCustomEvaluator}
+                    </Button>
+                  )}
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsDialogOpen(false)}
+                  >
+                    {t.cancel}
+                  </Button>
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving || !formData.evaluatorId}
+                  >
+                    {saving ? t.loading : t.save}
+                  </Button>
+                </div>
               </div>
             </div>
           )}
