@@ -36,6 +36,7 @@ export const evaluatorSettingsTranslations = {
     departmentsWithIssues: "departments need attention",
     sameDepartmentManagers: "Same Department Managers",
     otherEvaluators: "Other Evaluators",
+    executives: "Executives",
     // 評価対象外
     excludeFromEvaluation: "Exclude from Evaluation",
     excluded: "Excluded",
@@ -101,6 +102,7 @@ export const evaluatorSettingsTranslations = {
     departmentsWithIssues: "部門で要対応",
     sameDepartmentManagers: "自部門の責任者",
     otherEvaluators: "その他の評価者候補",
+    executives: "役員",
     // 評価対象外
     excludeFromEvaluation: "評価対象外にする",
     excluded: "対象外",

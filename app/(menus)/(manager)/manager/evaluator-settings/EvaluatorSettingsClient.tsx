@@ -81,6 +81,7 @@ interface Evaluator {
   isDepartmentManager: boolean;
   isSectionManager: boolean;
   isCourseManager: boolean;
+  isExecutive: boolean;
 }
 
 interface CustomEvaluator {
@@ -739,24 +740,37 @@ export default function EvaluatorSettingsClient({
                     );
                   };
 
-                  // 自部門の責任者をフィルタリング（役職順にソート）
+                  // 役員をフィルタリング（社員番号昇順にソート）
+                  const executives = managers
+                    .filter(
+                      (m) =>
+                        m.id !== selectedEmployee.id &&
+                        m.isExecutive &&
+                        matchesSearch(m)
+                    )
+                    .sort((a, b) => a.employeeId.localeCompare(b.employeeId));
+
+                  // 自部門の責任者をフィルタリング（役職順にソート、役員は除く）
                   const sameDeptManagers = managers
                     .filter(
                       (m) =>
                         m.id !== selectedEmployee.id &&
+                        !m.isExecutive &&
                         m.departmentId === selectedEmployee.departmentId &&
                         (m.isDepartmentManager || m.isSectionManager || m.isCourseManager) &&
                         matchesSearch(m)
                     )
                     .sort(sortByPosition);
 
-                  // その他の評価者候補（部門ごとにグループ化）
+                  // その他の評価者候補（部門ごとにグループ化、役員は除く）
                   const otherManagers = managers.filter(
                     (m) =>
                       m.id !== selectedEmployee.id &&
+                      !m.isExecutive &&
                       !managers.some(
                         (s) =>
                           s.id !== selectedEmployee.id &&
+                          !s.isExecutive &&
                           s.departmentId === selectedEmployee.departmentId &&
                           (s.isDepartmentManager || s.isSectionManager || s.isCourseManager) &&
                           s.id === m.id
@@ -776,7 +790,7 @@ export default function EvaluatorSettingsClient({
                   otherByDept.forEach((list) => list.sort(sortByPosition));
 
                   const selectedEvaluator = managers.find((m) => m.id === formData.evaluatorId);
-                  const hasResults = sameDeptManagers.length > 0 || otherByDept.size > 0;
+                  const hasResults = executives.length > 0 || sameDeptManagers.length > 0 || otherByDept.size > 0;
 
                   return (
                     <div className="border rounded-md">
@@ -822,6 +836,7 @@ export default function EvaluatorSettingsClient({
                           </div>
                         ) : (
                           <div className="p-1">
+                            {/* 自部門の責任者グループ */}
                             {sameDeptManagers.length > 0 && (
                               <div className="mb-2">
                                 <div className="px-2 py-1 text-xs font-semibold text-primary">
@@ -847,6 +862,7 @@ export default function EvaluatorSettingsClient({
                                 ))}
                               </div>
                             )}
+                            {/* その他の部門グループ */}
                             {Array.from(otherByDept.entries()).map(([deptName, deptManagers]) => (
                               <div key={deptName} className="mb-2">
                                 <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
@@ -872,6 +888,32 @@ export default function EvaluatorSettingsClient({
                                 ))}
                               </div>
                             ))}
+                            {/* 役員グループ（最下部に表示） */}
+                            {executives.length > 0 && (
+                              <div className="mb-2">
+                                <div className="px-2 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                                  {t.executives}
+                                </div>
+                                {executives.map((manager) => (
+                                  <button
+                                    key={manager.id}
+                                    type="button"
+                                    className={`w-full text-left px-2 py-1.5 text-sm rounded hover:bg-muted flex items-center justify-between ${
+                                      formData.evaluatorId === manager.id ? "bg-muted" : ""
+                                    }`}
+                                    onClick={() => setFormData({ ...formData, evaluatorId: manager.id })}
+                                  >
+                                    <span>
+                                      {manager.employeeId} - {manager.name}
+                                      {manager.position && ` (${manager.position})`}
+                                    </span>
+                                    {formData.evaluatorId === manager.id && (
+                                      <Check className="w-4 h-4 text-primary" />
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )}
                       </ScrollArea>

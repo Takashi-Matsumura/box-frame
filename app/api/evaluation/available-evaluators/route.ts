@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
-// 評価対象外の部門名
+// 評価対象外の部門名（被評価者として除外）
 const EXCLUDED_DEPARTMENT_NAMES = ["役員・顧問"];
 
 /**
@@ -10,6 +10,7 @@ const EXCLUDED_DEPARTMENT_NAMES = ["役員・顧問"];
  * カスタム評価者として選択可能な社員一覧を取得
  * 役職に「長」「マネージャー」「リーダー」などが含まれる社員を抽出
  * 各組織の責任者（本部長・部長・課長）情報も含める
+ * 役員も評価者候補として含める
  */
 export async function GET() {
   try {
@@ -55,6 +56,7 @@ export async function GET() {
     // 評価者候補として以下を取得:
     // 1. 役職に管理職を示すキーワードを含む社員
     // 2. 組織の責任者として登録されている社員（役員でも本部長等を兼務している場合）
+    // 3. 役員・顧問部門の社員（評価者として選択可能）
     const evaluators = await prisma.employee.findMany({
       where: {
         isActive: true,
@@ -78,6 +80,11 @@ export async function GET() {
           // 組織の責任者として登録されている社員（役員でも含める）
           {
             id: { in: Array.from(allManagerIds) },
+          },
+          // 役員（役職が「役員」かつ社員番号が001で始まる）
+          {
+            position: "役員",
+            employeeId: { startsWith: "001" },
           },
         ],
       },
@@ -134,6 +141,8 @@ export async function GET() {
       isDepartmentManager: departmentManagerIds.has(emp.id),
       isSectionManager: sectionManagerIds.has(emp.id),
       isCourseManager: courseManagerIds.has(emp.id),
+      // 役員フラグ（役職が「役員」かつ社員番号が001で始まる）
+      isExecutive: emp.position === "役員" && emp.employeeId.startsWith("001"),
     }));
 
     return NextResponse.json(result);
