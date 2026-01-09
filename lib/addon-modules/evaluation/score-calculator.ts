@@ -94,9 +94,9 @@ export async function getEvaluationScoreRange(): Promise<ScoreRange> {
     }
   }
 
-  // データがない場合はデフォルト値
+  // データがない場合はデフォルト値（ドキュメント記載のスケール）
   if (!Number.isFinite(minScore) || !Number.isFinite(maxScore)) {
-    return { min: 1.0, max: 5.0 };
+    return { min: 50, max: 130 };
   }
 
   return { min: minScore, max: maxScore };
@@ -151,14 +151,14 @@ export function determineGradeWithRange(score: number, scoreRange: ScoreRange): 
  * - 達成率 120% 以上 → 最大スコア
  *
  * @param achievementRate 達成率（%）
- * @param scoreRange スコア範囲（min/max）。指定しない場合は1.0〜5.0
+ * @param scoreRange スコア範囲（min/max）。指定しない場合は50〜130
  */
 export function calculateResultsScore(
   achievementRate: number,
   scoreRange?: ScoreRange
 ): number {
-  const min = scoreRange?.min ?? 1.0;
-  const max = scoreRange?.max ?? 5.0;
+  const min = scoreRange?.min ?? 50;
+  const max = scoreRange?.max ?? 130;
   const range = max - min;
 
   // 達成率に応じたスコアを計算

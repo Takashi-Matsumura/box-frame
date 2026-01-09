@@ -58,10 +58,10 @@ export default function GrowthCategoriesSection({
     nameEn: "",
     description: "",
     coefficient: 1.0,
-    scoreT1: 0.5,
-    scoreT2: 1.0,
-    scoreT3: 1.5,
-    scoreT4: 2.0,
+    scoreT1: 50,
+    scoreT2: 80,
+    scoreT3: 100,
+    scoreT4: 115,
     sortOrder: 0,
     isActive: true,
   });
@@ -90,10 +90,10 @@ export default function GrowthCategoriesSection({
       nameEn: "",
       description: "",
       coefficient: 1.0,
-      scoreT1: 0.5,
-      scoreT2: 1.0,
-      scoreT3: 1.5,
-      scoreT4: 2.0,
+      scoreT1: 50,
+      scoreT2: 80,
+      scoreT3: 100,
+      scoreT4: 115,
       sortOrder: categories.length + 1,
       isActive: true,
     });
@@ -108,10 +108,10 @@ export default function GrowthCategoriesSection({
         nameEn: category.nameEn || "",
         description: category.description || "",
         coefficient: category.coefficient ?? 1.0,
-        scoreT1: category.scoreT1 ?? 0.5,
-        scoreT2: category.scoreT2 ?? 1.0,
-        scoreT3: category.scoreT3 ?? 1.5,
-        scoreT4: category.scoreT4 ?? 2.0,
+        scoreT1: category.scoreT1 ?? 50,
+        scoreT2: category.scoreT2 ?? 80,
+        scoreT3: category.scoreT3 ?? 100,
+        scoreT4: category.scoreT4 ?? 115,
         sortOrder: category.sortOrder,
         isActive: category.isActive,
       });
@@ -479,18 +479,18 @@ export default function GrowthCategoriesSection({
                     </span>
                   </TableCell>
                   <TableCell className="text-center">
-                    <span className="font-mono text-sm">{(category.scoreT4 ?? 2.0).toFixed(1)}</span>
+                    <span className="font-mono text-sm">{(category.scoreT4 ?? 115).toFixed(0)}</span>
                   </TableCell>
                   <TableCell className="text-center">
-                    <span className="font-mono text-sm">{(category.scoreT3 ?? 1.5).toFixed(1)}</span>
+                    <span className="font-mono text-sm">{(category.scoreT3 ?? 100).toFixed(0)}</span>
                   </TableCell>
                   <TableCell className="text-center bg-blue-50 dark:bg-blue-900/20">
                     <span className="font-mono text-sm font-semibold text-blue-700 dark:text-blue-300">
-                      {(category.scoreT2 ?? 1.0).toFixed(1)}
+                      {(category.scoreT2 ?? 80).toFixed(0)}
                     </span>
                   </TableCell>
                   <TableCell className="text-center">
-                    <span className="font-mono text-sm">{(category.scoreT1 ?? 0.5).toFixed(1)}</span>
+                    <span className="font-mono text-sm">{(category.scoreT1 ?? 50).toFixed(0)}</span>
                   </TableCell>
                   <TableCell className="max-w-xs truncate text-muted-foreground">
                     {category.description || "-"}

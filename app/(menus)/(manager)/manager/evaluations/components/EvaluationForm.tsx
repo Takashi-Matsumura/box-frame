@@ -85,6 +85,7 @@ interface EvaluationData {
     targetValue: number;
     actualValue: number | null;
     achievementRate: number | null;
+    linkedOrganizationName?: string;
   } | null;
   processCategories: ProcessCategory[];
   growthCategories: GrowthCategory[];
@@ -180,9 +181,9 @@ function calculateScoreRange(
     }
   }
 
-  // データがない場合はデフォルト値
+  // データがない場合はデフォルト値（ドキュメント記載のスケール）
   if (!Number.isFinite(minScore) || !Number.isFinite(maxScore)) {
-    return { min: 1.0, max: 5.0 };
+    return { min: 50, max: 130 };
   }
 
   return { min: minScore, max: maxScore };
@@ -492,7 +493,7 @@ export default function EvaluationForm({
 
   // スコア範囲を計算（ProcessCategory/GrowthCategoryから）
   const scoreRange = useMemo(() => {
-    if (!evaluation) return { min: 1.0, max: 5.0 };
+    if (!evaluation) return { min: 50, max: 130 };
     return calculateScoreRange(evaluation.processCategories, evaluation.growthCategories);
   }, [evaluation]);
 

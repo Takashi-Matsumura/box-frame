@@ -783,12 +783,13 @@ model GrowthCategory {
   name              String   // "専門スキル向上"
   nameEn            String?  // "Professional Skill Improvement"
   description       String?  // 説明文
-  coefficient       Float    @default(1.0)  // スコア係数（後方互換用）
+  coefficient       Float    @default(1.0)  // スコア係数（難易度調整）
   // 達成度別スコア（T1=期待以下, T2=期待通り, T3=期待以上, T4=大幅超過）
-  scoreT1           Float    @default(0.5)  // T1達成時のスコア
-  scoreT2           Float    @default(1.0)  // T2達成時のスコア
-  scoreT3           Float    @default(1.5)  // T3達成時のスコア
-  scoreT4           Float    @default(2.0)  // T4達成時のスコア
+  // ProcessCategoryと同じスケール（50-130程度）を使用
+  scoreT1           Float    @default(50)   // T1達成時のスコア
+  scoreT2           Float    @default(80)   // T2達成時のスコア（標準）
+  scoreT3           Float    @default(100)  // T3達成時のスコア
+  scoreT4           Float    @default(115)  // T4達成時のスコア
   sortOrder         Int      @default(0)
   isActive          Boolean  @default(true)
 

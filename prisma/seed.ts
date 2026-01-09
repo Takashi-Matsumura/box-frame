@@ -48,15 +48,17 @@ async function main() {
   });
 
   // Create Growth Categories for evaluation
+  // ProcessCategoryと同じスケール（50-130程度）を使用
   const growthCategories = [
     {
       name: "資格取得",
       nameEn: "Certification",
       description: "業務に関連する資格の取得",
-      scoreT4: 2.0,
-      scoreT3: 1.5,
-      scoreT2: 1.0,
-      scoreT1: 0.5,
+      coefficient: 1.0,
+      scoreT4: 115,
+      scoreT3: 100,
+      scoreT2: 80,
+      scoreT1: 50,
       sortOrder: 1,
       isActive: true,
     },
@@ -64,32 +66,35 @@ async function main() {
       name: "スキル向上",
       nameEn: "Skill Development",
       description: "専門スキルの習得・向上",
-      scoreT4: 2.0,
-      scoreT3: 1.5,
-      scoreT2: 1.0,
-      scoreT1: 0.5,
+      coefficient: 1.0,
+      scoreT4: 115,
+      scoreT3: 100,
+      scoreT2: 80,
+      scoreT1: 50,
       sortOrder: 2,
       isActive: true,
     },
     {
       name: "リーダーシップ",
       nameEn: "Leadership",
-      description: "チームリーダーとしての成長",
-      scoreT4: 2.5,
-      scoreT3: 2.0,
-      scoreT2: 1.5,
-      scoreT1: 1.0,
+      description: "チームリーダーとしての成長（難易度高）",
+      coefficient: 1.3,
+      scoreT4: 100,  // ×1.3 = 130
+      scoreT3: 85,   // ×1.3 ≈ 110
+      scoreT2: 70,   // ×1.3 ≈ 91
+      scoreT1: 46,   // ×1.3 ≈ 60
       sortOrder: 3,
       isActive: true,
     },
     {
       name: "プロジェクト貢献",
       nameEn: "Project Contribution",
-      description: "重要プロジェクトへの貢献度",
-      scoreT4: 2.5,
-      scoreT3: 2.0,
-      scoreT2: 1.5,
-      scoreT1: 1.0,
+      description: "重要プロジェクトへの貢献度（難易度高）",
+      coefficient: 1.3,
+      scoreT4: 100,  // ×1.3 = 130
+      scoreT3: 85,   // ×1.3 ≈ 110
+      scoreT2: 70,   // ×1.3 ≈ 91
+      scoreT1: 46,   // ×1.3 ≈ 60
       sortOrder: 4,
       isActive: true,
     },
