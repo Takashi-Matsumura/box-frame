@@ -227,16 +227,23 @@ function determineGradeWithRange(score: number, scoreRange: ScoreRange): string 
   return "D";
 }
 
-// スコア変換テーブルを生成
-function generateScoreConversionTable(scoreRange: ScoreRange): Array<{ rate: string; score: number }> {
+// スコア変換テーブルを生成（範囲表示）
+function generateScoreConversionTable(scoreRange: ScoreRange): Array<{ rate: string; score: string }> {
   const { min, max } = scoreRange;
   const range = max - min;
 
+  const score160 = Math.round(max * 10) / 10;
+  const score120 = Math.round((min + range * 0.75) * 10) / 10;
+  const score100 = Math.round((min + range * 0.5) * 10) / 10;
+  const score80 = Math.round((min + range * 0.25) * 10) / 10;
+  const scoreMin = Math.round(min * 10) / 10;
+
   return [
-    { rate: "120%+", score: Math.round((min + range * 0.75) * 10) / 10 },
-    { rate: "100%+", score: Math.round((min + range * 0.5) * 10) / 10 },
-    { rate: "80%+", score: Math.round((min + range * 0.25) * 10) / 10 },
-    { rate: "<80%", score: Math.round(min * 10) / 10 },
+    { rate: "160%〜", score: `${score160}` },
+    { rate: "120%〜159%", score: `${score120}〜${score160 - 0.1}` },
+    { rate: "100%〜119%", score: `${score100}〜${score120 - 0.1}` },
+    { rate: "80%〜99%", score: `${score80}〜${score100 - 0.1}` },
+    { rate: "〜79%", score: `${scoreMin}〜${score80 - 0.1}` },
   ];
 }
 
@@ -427,8 +434,8 @@ export default function EvaluationForm({
   const [growthLevel, setGrowthLevel] = useState<string>("T2");
   const [evaluatorComment, setEvaluatorComment] = useState("");
 
-  // AIアシスタント用state
-  const [aiAssistantExpanded, setAiAssistantExpanded] = useState(true);
+  // AIアシスタント用state（デフォルトは折りたたみ）
+  const [aiAssistantExpanded, setAiAssistantExpanded] = useState(false);
 
   const fetchEvaluation = useCallback(async () => {
     try {
@@ -649,9 +656,9 @@ export default function EvaluationForm({
   const isReadOnly = evaluation.status === "COMPLETED" || evaluation.status === "CONFIRMED";
 
   return (
-    <div className="flex gap-4 h-[calc(100vh-8rem)]">
-      {/* 左側: 評価フォーム（独立スクロール） */}
-      <div className={`flex-1 overflow-y-auto pr-2 ${aiAssistantExpanded ? "max-w-4xl" : "max-w-5xl mx-auto"}`}>
+    <div className="relative h-[calc(100vh-8rem)]">
+      {/* 評価フォーム（常にフル幅） */}
+      <div className="h-full overflow-y-auto pr-2 max-w-5xl mx-auto">
         <div className="space-y-4 py-4 px-0.5">
         {/* Back Button */}
         <Button variant="ghost" onClick={onBack} className="mb-2">
@@ -765,6 +772,15 @@ export default function EvaluationForm({
             </p>
             {evaluation.organizationGoal ? (
               <>
+                {/* 紐付け先表示（間接部門の場合） */}
+                {evaluation.organizationGoal.linkedOrganizationName && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                    <span>{language === "ja" ? "紐付け先:" : "Linked to:"}</span>
+                    <span className="font-medium text-foreground">
+                      {evaluation.organizationGoal.linkedOrganizationName}
+                    </span>
+                  </div>
+                )}
                 {/* 目標と実績 */}
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center p-4 rounded-lg bg-muted/50">
@@ -800,18 +816,19 @@ export default function EvaluationForm({
                   <p className="text-sm font-medium mb-3">
                     {language === "ja" ? "スコア変換テーブル" : "Score Conversion Table"}
                   </p>
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-5 gap-2">
                     {scoreConversionTable.map((item, index) => {
                       const achievementRate = evaluation.organizationGoal?.achievementRate ?? 0;
                       const isActive =
-                        index === 0 ? achievementRate >= 120 :
-                        index === 1 ? achievementRate >= 100 && achievementRate < 120 :
-                        index === 2 ? achievementRate >= 80 && achievementRate < 100 :
+                        index === 0 ? achievementRate >= 160 :
+                        index === 1 ? achievementRate >= 120 && achievementRate < 160 :
+                        index === 2 ? achievementRate >= 100 && achievementRate < 120 :
+                        index === 3 ? achievementRate >= 80 && achievementRate < 100 :
                         achievementRate < 80;
                       return (
                         <div
                           key={item.rate}
-                          className={`p-3 rounded-lg text-center text-sm border ${
+                          className={`p-2 rounded-lg text-center text-xs border ${
                             isActive
                               ? "border-blue-500 bg-blue-500/10 dark:border-blue-400 dark:bg-blue-400/10"
                               : "border-border bg-muted/30"
@@ -819,7 +836,7 @@ export default function EvaluationForm({
                         >
                           <p className="text-muted-foreground">{item.rate}</p>
                           <p className={`font-bold ${isActive ? "text-blue-600 dark:text-blue-400" : ""}`}>
-                            → {item.score.toFixed(1)}
+                            → {item.score}
                           </p>
                         </div>
                       );
@@ -1102,25 +1119,33 @@ export default function EvaluationForm({
         </div>
       </div>
 
-      {/* 右側: AIアシスタント（固定） */}
+      {/* AIアシスタント（オーバーレイ） */}
       {aiAssistantExpanded ? (
-        <div className="w-80 shrink-0 h-full">
-          <EvaluationAIAssistant
-            language={language}
-            evaluationId={evaluationId}
-            employeeInfo={buildEmployeeInfo()}
-            evaluationScores={{
-              score1,
-              score2,
-              score3,
-              finalScore,
-              finalGrade,
-            }}
-            onToggleExpand={setAiAssistantExpanded}
+        <>
+          {/* オーバーレイ背景 */}
+          <div
+            className="fixed inset-0 bg-black/20 z-40"
+            onClick={() => setAiAssistantExpanded(false)}
           />
-        </div>
+          {/* AIアシスタントパネル */}
+          <div className="fixed right-0 top-0 h-full w-1/2 z-50 shadow-xl animate-in slide-in-from-right duration-300">
+            <EvaluationAIAssistant
+              language={language}
+              evaluationId={evaluationId}
+              employeeInfo={buildEmployeeInfo()}
+              evaluationScores={{
+                score1,
+                score2,
+                score3,
+                finalScore,
+                finalGrade,
+              }}
+              onToggleExpand={setAiAssistantExpanded}
+            />
+          </div>
+        </>
       ) : (
-        <div className="fixed right-4 top-1/2 -translate-y-1/2 z-50">
+        <div className="fixed right-4 top-1/2 -translate-y-1/2 z-40">
           <Button
             variant="outline"
             size="icon"

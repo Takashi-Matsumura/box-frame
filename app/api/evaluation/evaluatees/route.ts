@@ -28,11 +28,27 @@ export async function GET(request: Request) {
     // デバッグログ
     console.log("[evaluatees] Session user:", session.user?.email, "Role:", session.user?.role);
 
+    // 対象外社員のIDを取得（periodIdが一致するか、全期間対象外の場合）
+    const exclusions = await prisma.evaluationExclusion.findMany({
+      where: {
+        OR: [
+          { periodId },
+          { periodId: null }, // 全期間対象外
+        ],
+      },
+      select: { employeeId: true },
+    });
+    const excludedEmployeeIds = exclusions.map((e) => e.employeeId);
+
     // ADMINの場合は全評価を取得（Employeeの紐付け不要）
     if (session.user?.role === "ADMIN") {
       console.log("[evaluatees] ADMIN user detected, fetching all evaluations");
       const evaluations = await prisma.evaluation.findMany({
-        where: { periodId },
+        where: {
+          periodId,
+          // 対象外社員を除外
+          employeeId: { notIn: excludedEmployeeIds },
+        },
         include: {
           employee: {
             include: {
@@ -104,11 +120,16 @@ export async function GET(request: Request) {
     // 被評価者IDリストを取得
     const evaluateeIds = await getEvaluatees(evaluatorEmployee.id, periodId);
 
+    // 対象外社員を除外したIDリスト
+    const filteredEvaluateeIds = evaluateeIds.filter(
+      (id) => !excludedEmployeeIds.includes(id)
+    );
+
     // 評価データを取得
     const evaluations = await prisma.evaluation.findMany({
       where: {
         periodId,
-        employeeId: { in: evaluateeIds },
+        employeeId: { in: filteredEvaluateeIds },
       },
       include: {
         employee: {

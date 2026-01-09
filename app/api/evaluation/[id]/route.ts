@@ -99,6 +99,23 @@ export async function GET(request: Request, { params }: RouteParams) {
       });
     }
 
+    // 間接部門の場合、紐付け先の組織データを取得
+    let linkedCriteria1Result = null;
+    if (
+      criteria1Result &&
+      criteria1Result.departmentType === "INDIRECT" &&
+      criteria1Result.linkedOrganizationId
+    ) {
+      linkedCriteria1Result = await prisma.criteria1Result.findFirst({
+        where: {
+          periodId: evaluation.periodId,
+          organizationLevel: criteria1Result.linkedOrganizationLevel!,
+          organizationId: criteria1Result.linkedOrganizationId,
+          isActive: true,
+        },
+      });
+    }
+
     // フロントエンド用にフラット化したレスポンス
     return NextResponse.json({
       id: evaluation.id,
@@ -133,13 +150,31 @@ export async function GET(request: Request, { params }: RouteParams) {
         growthWeight: weights.growthWeight,
       },
       // フロントエンド互換性のためキー名はorganizationGoalを維持
-      organizationGoal: criteria1Result
-        ? {
-            targetValue: criteria1Result.targetProfit || 0,
+      // 間接部門の場合は紐付け先の目標・実績を使用
+      organizationGoal: (() => {
+        // 間接部門で紐付け先データがある場合
+        if (
+          criteria1Result &&
+          criteria1Result.departmentType === "INDIRECT" &&
+          linkedCriteria1Result
+        ) {
+          return {
+            targetValue: linkedCriteria1Result.targetProfit,
+            actualValue: linkedCriteria1Result.actualProfit,
+            achievementRate: criteria1Result.achievementRate, // 達成率は自身のもの（紐付け先から計算済み）
+            linkedOrganizationName: criteria1Result.linkedOrganizationName,
+          };
+        }
+        // 直接部門の場合
+        if (criteria1Result && criteria1Result.targetProfit && criteria1Result.targetProfit > 0) {
+          return {
+            targetValue: criteria1Result.targetProfit,
             actualValue: criteria1Result.actualProfit,
             achievementRate: criteria1Result.achievementRate,
-          }
-        : null,
+          };
+        }
+        return null;
+      })(),
       processCategories,
       growthCategories,
     });
