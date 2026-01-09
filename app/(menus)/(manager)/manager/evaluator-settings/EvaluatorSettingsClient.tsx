@@ -30,7 +30,8 @@ import {
 } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Users, Search, UserCheck, X, AlertTriangle, UserX } from "lucide-react";
+import { Users, Search, UserCheck, X, AlertTriangle, UserX, Check } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { evaluatorSettingsTranslations } from "./translations";
 import { useIsTabletOrMobile } from "@/hooks/use-mobile";
@@ -164,6 +165,9 @@ export default function EvaluatorSettingsClient({
     effectiveFrom: "",
     effectiveTo: "",
   });
+
+  // 評価者検索用
+  const [evaluatorSearchTerm, setEvaluatorSearchTerm] = useState("");
 
   const fetchData = useCallback(async (showLoading = true) => {
     if (showLoading) {
@@ -300,6 +304,7 @@ export default function EvaluatorSettingsClient({
 
   const handleOpenDialog = (employee: Employee) => {
     setSelectedEmployee(employee);
+    setEvaluatorSearchTerm(""); // 検索をリセット
     const existing = getCustomEvaluator(employee.id);
     if (existing) {
       setFormData({
@@ -711,89 +716,168 @@ export default function EvaluatorSettingsClient({
               {/* Evaluator selection */}
               <div className="space-y-2">
                 <Label>{t.selectEvaluator}</Label>
-                <Select
-                  value={formData.evaluatorId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, evaluatorId: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t.selectEvaluator} />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-80">
-                    {(() => {
-                      // 役職コードでソート（低い値が上位職、ただし"000"は最後）
-                      const sortByPosition = (a: Evaluator, b: Evaluator) => {
-                        const codeA = a.positionCode || "999";
-                        const codeB = b.positionCode || "999";
-                        // "000"（一般社員）は最後に
-                        if (codeA === "000" && codeB !== "000") return 1;
-                        if (codeA !== "000" && codeB === "000") return -1;
-                        return codeA.localeCompare(codeB);
-                      };
+                {(() => {
+                  // 役職コードでソート（低い値が上位職、ただし"000"は最後）
+                  const sortByPosition = (a: Evaluator, b: Evaluator) => {
+                    const codeA = a.positionCode || "999";
+                    const codeB = b.positionCode || "999";
+                    if (codeA === "000" && codeB !== "000") return 1;
+                    if (codeA !== "000" && codeB === "000") return -1;
+                    return codeA.localeCompare(codeB);
+                  };
 
-                      // 自部門の責任者をフィルタリング（役職順にソート）
-                      const sameDeptManagers = managers
-                        .filter(
-                          (m) =>
-                            m.id !== selectedEmployee.id &&
-                            m.departmentId === selectedEmployee.departmentId &&
-                            (m.isDepartmentManager || m.isSectionManager || m.isCourseManager)
-                        )
-                        .sort(sortByPosition);
+                  // 検索フィルタ関数
+                  const matchesSearch = (m: Evaluator) => {
+                    if (!evaluatorSearchTerm) return true;
+                    const search = evaluatorSearchTerm.toLowerCase();
+                    return (
+                      m.employeeId.toLowerCase().includes(search) ||
+                      m.name.toLowerCase().includes(search) ||
+                      (m.position?.toLowerCase().includes(search) ?? false) ||
+                      (m.departmentName?.toLowerCase().includes(search) ?? false) ||
+                      (m.sectionName?.toLowerCase().includes(search) ?? false)
+                    );
+                  };
 
-                      // その他の評価者候補（部門ごとにグループ化）
-                      const otherManagers = managers.filter(
-                        (m) =>
-                          m.id !== selectedEmployee.id &&
-                          !sameDeptManagers.some((s) => s.id === m.id)
-                      );
+                  // 自部門の責任者をフィルタリング（役職順にソート）
+                  const sameDeptManagers = managers
+                    .filter(
+                      (m) =>
+                        m.id !== selectedEmployee.id &&
+                        m.departmentId === selectedEmployee.departmentId &&
+                        (m.isDepartmentManager || m.isSectionManager || m.isCourseManager) &&
+                        matchesSearch(m)
+                    )
+                    .sort(sortByPosition);
 
-                      // 部門ごとにグループ化して、各グループ内で役職順にソート
-                      const otherByDept = new Map<string, Evaluator[]>();
-                      otherManagers.forEach((m) => {
-                        const deptName = m.departmentName || "その他";
-                        if (!otherByDept.has(deptName)) {
-                          otherByDept.set(deptName, []);
-                        }
-                        otherByDept.get(deptName)!.push(m);
-                      });
-                      // 各部門内で役職順にソート
-                      otherByDept.forEach((list) => list.sort(sortByPosition));
+                  // その他の評価者候補（部門ごとにグループ化）
+                  const otherManagers = managers.filter(
+                    (m) =>
+                      m.id !== selectedEmployee.id &&
+                      !managers.some(
+                        (s) =>
+                          s.id !== selectedEmployee.id &&
+                          s.departmentId === selectedEmployee.departmentId &&
+                          (s.isDepartmentManager || s.isSectionManager || s.isCourseManager) &&
+                          s.id === m.id
+                      ) &&
+                      matchesSearch(m)
+                  );
 
-                      return (
-                        <>
-                          {sameDeptManagers.length > 0 && (
-                            <SelectGroup>
-                              <SelectLabel className="text-primary font-semibold">
-                                {t.sameDepartmentManagers}
-                              </SelectLabel>
-                              {sameDeptManagers.map((manager) => (
-                                <SelectItem key={manager.id} value={manager.id}>
-                                  {manager.employeeId} - {manager.name}
-                                  {manager.position && ` (${manager.position})`}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          )}
-                          {Array.from(otherByDept.entries()).map(([deptName, deptManagers]) => (
-                            <SelectGroup key={deptName}>
-                              <SelectLabel className="text-muted-foreground">
-                                {deptName}
-                              </SelectLabel>
-                              {deptManagers.map((manager) => (
-                                <SelectItem key={manager.id} value={manager.id}>
-                                  {manager.employeeId} - {manager.name}
-                                  {manager.position && ` (${manager.position})`}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          ))}
-                        </>
-                      );
-                    })()}
-                  </SelectContent>
-                </Select>
+                  // 部門ごとにグループ化して、各グループ内で役職順にソート
+                  const otherByDept = new Map<string, Evaluator[]>();
+                  otherManagers.forEach((m) => {
+                    const deptName = m.departmentName || "その他";
+                    if (!otherByDept.has(deptName)) {
+                      otherByDept.set(deptName, []);
+                    }
+                    otherByDept.get(deptName)!.push(m);
+                  });
+                  otherByDept.forEach((list) => list.sort(sortByPosition));
+
+                  const selectedEvaluator = managers.find((m) => m.id === formData.evaluatorId);
+                  const hasResults = sameDeptManagers.length > 0 || otherByDept.size > 0;
+
+                  return (
+                    <div className="border rounded-md">
+                      {/* 検索入力 */}
+                      <div className="p-2 border-b">
+                        <div className="relative">
+                          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            placeholder={t.searchEmployee}
+                            value={evaluatorSearchTerm}
+                            onChange={(e) => setEvaluatorSearchTerm(e.target.value)}
+                            className="pl-8 h-8"
+                          />
+                        </div>
+                      </div>
+
+                      {/* 選択済み表示 */}
+                      {selectedEvaluator && (
+                        <div className="px-3 py-2 bg-primary/10 border-b flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Check className="w-4 h-4 text-primary" />
+                            <span className="text-sm font-medium">
+                              {selectedEvaluator.employeeId} - {selectedEvaluator.name}
+                              {selectedEvaluator.position && ` (${selectedEvaluator.position})`}
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => setFormData({ ...formData, evaluatorId: "" })}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* 候補リスト */}
+                      <ScrollArea className="h-48">
+                        {!hasResults ? (
+                          <div className="p-4 text-center text-sm text-muted-foreground">
+                            {t.noEmployees}
+                          </div>
+                        ) : (
+                          <div className="p-1">
+                            {sameDeptManagers.length > 0 && (
+                              <div className="mb-2">
+                                <div className="px-2 py-1 text-xs font-semibold text-primary">
+                                  {t.sameDepartmentManagers}
+                                </div>
+                                {sameDeptManagers.map((manager) => (
+                                  <button
+                                    key={manager.id}
+                                    type="button"
+                                    className={`w-full text-left px-2 py-1.5 text-sm rounded hover:bg-muted flex items-center justify-between ${
+                                      formData.evaluatorId === manager.id ? "bg-muted" : ""
+                                    }`}
+                                    onClick={() => setFormData({ ...formData, evaluatorId: manager.id })}
+                                  >
+                                    <span>
+                                      {manager.employeeId} - {manager.name}
+                                      {manager.position && ` (${manager.position})`}
+                                    </span>
+                                    {formData.evaluatorId === manager.id && (
+                                      <Check className="w-4 h-4 text-primary" />
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            {Array.from(otherByDept.entries()).map(([deptName, deptManagers]) => (
+                              <div key={deptName} className="mb-2">
+                                <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
+                                  {deptName}
+                                </div>
+                                {deptManagers.map((manager) => (
+                                  <button
+                                    key={manager.id}
+                                    type="button"
+                                    className={`w-full text-left px-2 py-1.5 text-sm rounded hover:bg-muted flex items-center justify-between ${
+                                      formData.evaluatorId === manager.id ? "bg-muted" : ""
+                                    }`}
+                                    onClick={() => setFormData({ ...formData, evaluatorId: manager.id })}
+                                  >
+                                    <span>
+                                      {manager.employeeId} - {manager.name}
+                                      {manager.position && ` (${manager.position})`}
+                                    </span>
+                                    {formData.evaluatorId === manager.id && (
+                                      <Check className="w-4 h-4 text-primary" />
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </ScrollArea>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Period selection */}
