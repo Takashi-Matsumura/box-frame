@@ -77,14 +77,14 @@ export async function getEvaluationScoreRange(): Promise<ScoreRange> {
     }
   }
 
-  // GrowthCategoryのスコア範囲を計算（係数適用後）
+  // GrowthCategoryのスコア範囲を計算（係数は適用しない）
+  // 係数は成長評価の個別スコア計算時のみ使用し、スコア範囲には影響させない
   for (const category of growthCategories) {
-    const coefficient = category.coefficient ?? 1.0;
     const scores = [
-      category.scoreT1 * coefficient,
-      category.scoreT2 * coefficient,
-      category.scoreT3 * coefficient,
-      category.scoreT4 * coefficient,
+      category.scoreT1,
+      category.scoreT2,
+      category.scoreT3,
+      category.scoreT4,
     ];
     for (const score of scores) {
       if (!Number.isNaN(score)) {
