@@ -21,9 +21,9 @@ export default function EvaluationMasterClient({
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | null>(null);
 
   return (
-    <div className="max-w-7xl mx-auto mt-8">
-      <Card>
-        <CardContent className="p-6">
+    <div className="max-w-7xl mx-auto mt-4 h-[calc(100vh-160px)] overflow-hidden">
+      <Card className="h-full flex flex-col">
+        <CardContent className="p-6 flex-1 flex flex-col overflow-hidden">
           {tab === "periods" && (
             <PeriodsSection
               language={language}

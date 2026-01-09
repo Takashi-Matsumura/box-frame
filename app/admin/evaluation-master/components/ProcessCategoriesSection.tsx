@@ -4,6 +4,14 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -21,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Languages, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Languages, Loader2, GripVertical } from "lucide-react";
 import { evaluationMasterTranslations } from "../translations";
 
 interface ProcessCategory {
@@ -207,13 +215,29 @@ export default function ProcessCategoriesSection({
     }
   };
 
+  const handleToggleActive = async (category: ProcessCategory) => {
+    try {
+      const res = await fetch(`/api/evaluation/process-categories/${category.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !category.isActive }),
+      });
+
+      if (res.ok) {
+        fetchCategories();
+      }
+    } catch (error) {
+      console.error("Failed to toggle category:", error);
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-8 text-muted-foreground">{t.loading}</div>;
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between mb-6 flex-shrink-0">
         <div>
           <h2 className="text-xl font-semibold text-foreground">
             {t.processCategoriesTitle}
@@ -388,91 +412,96 @@ export default function ProcessCategoriesSection({
         </Dialog>
       </div>
 
-      {/* カード形式の一覧 */}
-      {categories.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">{t.noData}</div>
-      ) : (
-        <div className="space-y-4">
-          {categories.map((category) => {
-            const scores = parseScores(category.scores);
-            return (
-              <div
-                key={category.id}
-                className={`bg-card border rounded-lg p-6 ${
-                  !category.isActive ? "opacity-50" : ""
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <h3 className="text-lg font-medium">{category.name}</h3>
-                      <Badge variant="secondary">
-                        {t.categoryClass}: {category.categoryCode}
-                      </Badge>
-                      {!category.isActive && (
-                        <Badge variant="outline">
-                          {t.inactive}
-                        </Badge>
-                      )}
-                    </div>
-                    {category.nameEn && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {category.nameEn}
-                      </p>
-                    )}
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {category.description || "-"}
-                    </p>
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="text-xs font-medium text-muted-foreground">
-                        {t.minItemCount}:
+      <div className="flex-1 overflow-y-auto">
+        {categories.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">{t.noData}</div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10"></TableHead>
+                <TableHead className="w-16">{t.sortOrder}</TableHead>
+                <TableHead>{t.categoryName}</TableHead>
+                <TableHead className="w-20 text-center">{t.categoryClass}</TableHead>
+                <TableHead className="w-20 text-center">{t.minItemCount}</TableHead>
+                <TableHead className="w-16 text-center">{t.scoreT4}</TableHead>
+                <TableHead className="w-16 text-center">{t.scoreT3}</TableHead>
+                <TableHead className="w-20 text-center bg-blue-50 dark:bg-blue-900/20">
+                  {t.scoreT2}
+                  <span className="block text-[10px] font-normal text-blue-600 dark:text-blue-400">
+                    ({language === "ja" ? "標準" : "Std"})
+                  </span>
+                </TableHead>
+                <TableHead className="w-16 text-center">{t.scoreT1}</TableHead>
+                <TableHead>{t.description}</TableHead>
+                <TableHead className="w-20">{t.isActive}</TableHead>
+                <TableHead className="w-24">{t.actions}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {categories.map((category) => {
+                const scores = parseScores(category.scores);
+                return (
+                  <TableRow key={category.id}>
+                    <TableCell>
+                      <GripVertical className="w-4 h-4 text-muted-foreground cursor-move" />
+                    </TableCell>
+                    <TableCell className="text-center">{category.sortOrder}</TableCell>
+                    <TableCell className="font-medium">{category.name}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="secondary">{category.categoryCode}</Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className="font-mono text-sm">{category.minItemCount}</span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className="font-mono text-sm">{scores.T4 || "-"}</span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className="font-mono text-sm">{scores.T3 || "-"}</span>
+                    </TableCell>
+                    <TableCell className="text-center bg-blue-50 dark:bg-blue-900/20">
+                      <span className="font-mono text-sm font-semibold text-blue-700 dark:text-blue-300">
+                        {scores.T2 || "-"}
                       </span>
-                      <Badge variant="outline">
-                        {category.minItemCount}
-                        {t.itemsOrMore}
-                      </Badge>
-                    </div>
-
-                    {/* ティアスコア - T4が最高、T1が最低 */}
-                    <div className="mt-4 grid grid-cols-4 gap-4">
-                      {(["T4", "T3", "T2", "T1"] as const).map((tier) => (
-                        <div
-                          key={tier}
-                          className="bg-muted rounded-lg p-3 text-center"
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className="font-mono text-sm">{scores.T1 || "-"}</span>
+                    </TableCell>
+                    <TableCell className="max-w-xs truncate text-muted-foreground text-sm">
+                      {category.description || "-"}
+                    </TableCell>
+                    <TableCell>
+                      <Switch
+                        checked={category.isActive}
+                        onCheckedChange={() => handleToggleActive(category)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenDialog(category)}
                         >
-                          <div className="text-xs font-medium text-muted-foreground">
-                            {tier}
-                          </div>
-                          <div className="mt-1 text-lg font-semibold">
-                            {scores[tier] || "-"}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="ml-4 flex flex-col gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleOpenDialog(category)}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(category.id)}
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(category.id)}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        )}
+      </div>
     </div>
   );
 }

@@ -85,8 +85,8 @@ export default function Criteria1Section({
 
   // フィルター関連
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
-  // 全カラム表示モード（OFF: 部門タイプ・社員数・紐付け先を非表示）
-  const [showAllColumns, setShowAllColumns] = useState(true);
+  // 予実表示モード（ON: 予算・実績・達成率を表示、OFF: 部門タイプ・社員数・紐付け先を表示）
+  const [showBudgetColumns, setShowBudgetColumns] = useState(false);
 
   // Fetch periods
   useEffect(() => {
@@ -528,9 +528,9 @@ export default function Criteria1Section({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* ヘッダー */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6 flex-shrink-0">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">{t.goalsTitle}</h2>
           <p className="text-sm text-gray-500">{t.goalsDescription}</p>
@@ -555,7 +555,7 @@ export default function Criteria1Section({
       </div>
 
       {/* フィルターとアクションボタン */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between mb-4 flex-shrink-0">
         <div className="flex gap-3 flex-wrap items-center">
           {/* 部門フィルター */}
           <div className="flex items-center gap-2">
@@ -577,15 +577,15 @@ export default function Criteria1Section({
             </Select>
           </div>
 
-          {/* 全カラム表示トグル */}
+          {/* 予実表示トグル */}
           <div className="flex items-center gap-2">
             <Switch
-              id="show-all-columns"
-              checked={showAllColumns}
-              onCheckedChange={setShowAllColumns}
+              id="show-budget-columns"
+              checked={showBudgetColumns}
+              onCheckedChange={setShowBudgetColumns}
             />
-            <Label htmlFor="show-all-columns" className="text-sm text-gray-600 cursor-pointer">
-              {language === "ja" ? "全カラム表示" : "Show all columns"}
+            <Label htmlFor="show-budget-columns" className="text-sm text-gray-600 cursor-pointer">
+              {language === "ja" ? "予実表示" : "Show Budget"}
             </Label>
           </div>
 
@@ -626,8 +626,10 @@ export default function Criteria1Section({
         </div>
       </div>
 
-      {/* 初期化が必要な場合 */}
-      {results.length === 0 ? (
+      {/* メインコンテンツ（スクロール領域） */}
+      <div className="flex-1 overflow-y-auto">
+        {/* 初期化が必要な場合 */}
+        {results.length === 0 ? (
         <div className="flex flex-col justify-center items-center py-12 px-4 border rounded-lg bg-gray-50">
           <div className="text-center max-w-md">
             <div className="mb-4 text-gray-400">
@@ -655,18 +657,24 @@ export default function Criteria1Section({
                   <TableHead>{t.typeDepartment}</TableHead>
                   <TableHead>{t.typeSection}</TableHead>
                   <TableHead>{t.typeCourse}</TableHead>
-                  {showAllColumns && (
+                  {!showBudgetColumns && (
                     <TableHead className="text-center">{t.departmentType}</TableHead>
                   )}
-                  {showAllColumns && (
+                  {!showBudgetColumns && (
                     <TableHead className="text-center">{t.employeeCount}</TableHead>
                   )}
-                  <TableHead className="text-right">{t.targetProfit}</TableHead>
-                  <TableHead className="text-right">{t.actualProfit}</TableHead>
-                  {showAllColumns && (
+                  {!showBudgetColumns && (
                     <TableHead>{t.linkedTo}</TableHead>
                   )}
-                  <TableHead className="text-right">{t.achievementRate}</TableHead>
+                  {showBudgetColumns && (
+                    <TableHead className="text-right">{language === "ja" ? "予算" : "Budget"}</TableHead>
+                  )}
+                  {showBudgetColumns && (
+                    <TableHead className="text-right">{t.actualProfit}</TableHead>
+                  )}
+                  {showBudgetColumns && (
+                    <TableHead className="text-right">{t.achievementRate}</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -751,7 +759,7 @@ export default function Criteria1Section({
                         </div>
                       )}
                     </TableCell>
-                    {showAllColumns && (
+                    {!showBudgetColumns && (
                       <TableCell className="text-center">
                         <Select
                           value={result.departmentType}
@@ -776,7 +784,7 @@ export default function Criteria1Section({
                         </Select>
                       </TableCell>
                     )}
-                    {showAllColumns && (
+                    {!showBudgetColumns && (
                     <TableCell className="text-center">
                       {result.employeeCount !== undefined &&
                       result.employeeCount > 0 ? (
@@ -827,6 +835,37 @@ export default function Criteria1Section({
                       )}
                     </TableCell>
                     )}
+                    {!showBudgetColumns && (
+                      <TableCell>
+                        {result.departmentType === "INDIRECT" ? (
+                          <Select
+                            value={
+                              result.linkedOrganizationId
+                                ? `${result.linkedOrganizationLevel}:${result.linkedOrganizationId}:${result.linkedOrganizationName}`
+                                : "none"
+                            }
+                            onValueChange={(value) =>
+                              handleLinkedOrganizationChange(result, value)
+                            }
+                          >
+                            <SelectTrigger className="w-[200px]">
+                              <SelectValue placeholder={t.selectLinkedOrg} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">{t.notLinked}</SelectItem>
+                              {directOrganizations.map((org) => (
+                                <SelectItem key={org.key} value={org.key}>
+                                  {org.displayName}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span className="text-gray-400 text-xs">-</span>
+                        )}
+                      </TableCell>
+                    )}
+                    {showBudgetColumns && (
                     <TableCell className="text-right">
                       {result.departmentType === "DIRECT" ? (
                         editingField?.id === result.id &&
@@ -875,6 +914,8 @@ export default function Criteria1Section({
                         <span className="text-gray-400">-</span>
                       )}
                     </TableCell>
+                    )}
+                    {showBudgetColumns && (
                     <TableCell className="text-right">
                       {result.departmentType === "DIRECT" ? (
                         editingField?.id === result.id &&
@@ -923,36 +964,8 @@ export default function Criteria1Section({
                         <span className="text-gray-400">-</span>
                       )}
                     </TableCell>
-                    {showAllColumns && (
-                      <TableCell>
-                        {result.departmentType === "INDIRECT" ? (
-                          <Select
-                            value={
-                              result.linkedOrganizationId
-                                ? `${result.linkedOrganizationLevel}:${result.linkedOrganizationId}:${result.linkedOrganizationName}`
-                                : "none"
-                            }
-                            onValueChange={(value) =>
-                              handleLinkedOrganizationChange(result, value)
-                            }
-                          >
-                            <SelectTrigger className="w-[200px]">
-                              <SelectValue placeholder={t.selectLinkedOrg} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">{t.notLinked}</SelectItem>
-                              {directOrganizations.map((org) => (
-                                <SelectItem key={org.key} value={org.key}>
-                                  {org.displayName}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <span className="text-gray-400 text-xs">-</span>
-                        )}
-                      </TableCell>
                     )}
+                    {showBudgetColumns && (
                     <TableCell className="text-right">
                       {(() => {
                         if (result.departmentType !== "DIRECT") {
@@ -1006,11 +1019,12 @@ export default function Criteria1Section({
                         );
                       })()}
                     </TableCell>
+                    )}
                   </TableRow>
                 ))}
                 {filteredResults.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={showAllColumns ? 9 : 6} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                       {selectedDepartment === "all"
                         ? t.noDataFound
                         : language === "ja"
@@ -1025,6 +1039,7 @@ export default function Criteria1Section({
 
         </>
       )}
+      </div>
     </div>
   );
 }

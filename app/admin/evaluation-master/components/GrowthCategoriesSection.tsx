@@ -217,8 +217,8 @@ export default function GrowthCategoriesSection({
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between mb-6 flex-shrink-0">
         <div>
           <h2 className="text-xl font-semibold text-foreground">
             {t.growthCategoriesTitle}
@@ -440,82 +440,91 @@ export default function GrowthCategoriesSection({
         </Dialog>
       </div>
 
-      {categories.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">{t.noData}</div>
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12"></TableHead>
-              <TableHead>{t.sortOrder}</TableHead>
-              <TableHead>{t.categoryName}</TableHead>
-              <TableHead className="text-center">{language === "ja" ? "係数" : "Coef."}</TableHead>
-              <TableHead className="text-center">{t.scoreT4}</TableHead>
-              <TableHead className="text-center">{t.scoreT3}</TableHead>
-              <TableHead className="text-center">{t.scoreT2}</TableHead>
-              <TableHead className="text-center">{t.scoreT1}</TableHead>
-              <TableHead>{t.description}</TableHead>
-              <TableHead>{t.isActive}</TableHead>
-              <TableHead>{t.actions}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {categories.map((category) => (
-              <TableRow key={category.id}>
-                <TableCell>
-                  <GripVertical className="w-4 h-4 text-muted-foreground cursor-move" />
-                </TableCell>
-                <TableCell>{category.sortOrder}</TableCell>
-                <TableCell className="font-medium">{category.name}</TableCell>
-                <TableCell className="text-center">
-                  <span className="font-mono text-sm font-medium text-purple-600 dark:text-purple-400">
-                    ×{(category.coefficient ?? 1.0).toFixed(1)}
+      <div className="flex-1 overflow-y-auto">
+        {categories.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">{t.noData}</div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-12"></TableHead>
+                <TableHead>{t.sortOrder}</TableHead>
+                <TableHead>{t.categoryName}</TableHead>
+                <TableHead className="text-center">{language === "ja" ? "係数" : "Coef."}</TableHead>
+                <TableHead className="text-center">{t.scoreT4}</TableHead>
+                <TableHead className="text-center">{t.scoreT3}</TableHead>
+                <TableHead className="text-center bg-blue-50 dark:bg-blue-900/20">
+                  {t.scoreT2}
+                  <span className="block text-[10px] font-normal text-blue-600 dark:text-blue-400">
+                    ({language === "ja" ? "標準" : "Std"})
                   </span>
-                </TableCell>
-                <TableCell className="text-center">
-                  <span className="font-mono text-sm">{(category.scoreT4 ?? 2.0).toFixed(1)}</span>
-                </TableCell>
-                <TableCell className="text-center">
-                  <span className="font-mono text-sm">{(category.scoreT3 ?? 1.5).toFixed(1)}</span>
-                </TableCell>
-                <TableCell className="text-center">
-                  <span className="font-mono text-sm">{(category.scoreT2 ?? 1.0).toFixed(1)}</span>
-                </TableCell>
-                <TableCell className="text-center">
-                  <span className="font-mono text-sm">{(category.scoreT1 ?? 0.5).toFixed(1)}</span>
-                </TableCell>
-                <TableCell className="max-w-xs truncate text-muted-foreground">
-                  {category.description || "-"}
-                </TableCell>
-                <TableCell>
-                  <Switch
-                    checked={category.isActive}
-                    onCheckedChange={() => handleToggleActive(category)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleOpenDialog(category)}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(category.id)}
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </div>
-                </TableCell>
+                </TableHead>
+                <TableHead className="text-center">{t.scoreT1}</TableHead>
+                <TableHead>{t.description}</TableHead>
+                <TableHead>{t.isActive}</TableHead>
+                <TableHead>{t.actions}</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+            </TableHeader>
+            <TableBody>
+              {categories.map((category) => (
+                <TableRow key={category.id}>
+                  <TableCell>
+                    <GripVertical className="w-4 h-4 text-muted-foreground cursor-move" />
+                  </TableCell>
+                  <TableCell>{category.sortOrder}</TableCell>
+                  <TableCell className="font-medium">{category.name}</TableCell>
+                  <TableCell className="text-center">
+                    <span className="font-mono text-sm font-medium text-purple-600 dark:text-purple-400">
+                      ×{(category.coefficient ?? 1.0).toFixed(1)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="font-mono text-sm">{(category.scoreT4 ?? 2.0).toFixed(1)}</span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="font-mono text-sm">{(category.scoreT3 ?? 1.5).toFixed(1)}</span>
+                  </TableCell>
+                  <TableCell className="text-center bg-blue-50 dark:bg-blue-900/20">
+                    <span className="font-mono text-sm font-semibold text-blue-700 dark:text-blue-300">
+                      {(category.scoreT2 ?? 1.0).toFixed(1)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="font-mono text-sm">{(category.scoreT1 ?? 0.5).toFixed(1)}</span>
+                  </TableCell>
+                  <TableCell className="max-w-xs truncate text-muted-foreground">
+                    {category.description || "-"}
+                  </TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={category.isActive}
+                      onCheckedChange={() => handleToggleActive(category)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleOpenDialog(category)}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(category.id)}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
     </div>
   );
 }
