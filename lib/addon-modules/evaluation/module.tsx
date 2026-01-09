@@ -9,7 +9,8 @@
 
 import type { AppModule, AppTab } from "@/types/module";
 import { getModuleIcon, getMenuIcon } from "@/lib/modules/icons";
-import { FaDatabase, FaStar } from "react-icons/fa";
+import { FaDatabase, FaStar, FaCalendarAlt, FaBalanceScale } from "react-icons/fa";
+import { TbCircleNumber1Filled, TbCircleNumber2Filled, TbCircleNumber3Filled } from "react-icons/tb";
 
 /**
  * 評価マスタタブ定義
@@ -19,7 +20,7 @@ const evaluationMasterTabs: AppTab[] = [
     id: "periods",
     name: "Periods",
     nameJa: "評価期間",
-    icon: <FaStar className="w-5 h-5" />,
+    icon: <FaCalendarAlt className="w-4 h-4" />,
     order: 1,
     enabled: true,
     allowAccessKey: true,
@@ -30,7 +31,7 @@ const evaluationMasterTabs: AppTab[] = [
     id: "weights",
     name: "Weights",
     nameJa: "評価重み",
-    icon: <FaStar className="w-5 h-5" />,
+    icon: <FaBalanceScale className="w-5 h-5" />,
     order: 2,
     enabled: true,
     allowAccessKey: false, // 重み設定は機密性が高い
@@ -41,7 +42,7 @@ const evaluationMasterTabs: AppTab[] = [
     id: "organizationGoals",
     name: "Results Evaluation",
     nameJa: "結果評価",
-    icon: <FaStar className="w-5 h-5" />,
+    icon: <TbCircleNumber1Filled className="w-5 h-5" />,
     order: 3,
     enabled: true,
     allowAccessKey: true,
@@ -52,7 +53,7 @@ const evaluationMasterTabs: AppTab[] = [
     id: "processCategories",
     name: "Process Categories",
     nameJa: "プロセス評価",
-    icon: <FaStar className="w-5 h-5" />,
+    icon: <TbCircleNumber2Filled className="w-5 h-5" />,
     order: 4,
     enabled: true,
     allowAccessKey: true,
@@ -63,7 +64,7 @@ const evaluationMasterTabs: AppTab[] = [
     id: "growthCategories",
     name: "Growth Categories",
     nameJa: "成長評価",
-    icon: <FaStar className="w-5 h-5" />,
+    icon: <TbCircleNumber3Filled className="w-5 h-5" />,
     order: 5,
     enabled: true,
     allowAccessKey: true,
