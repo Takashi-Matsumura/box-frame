@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -129,6 +129,8 @@ export default function EvaluatorSettingsClient({
 }: EvaluatorSettingsClientProps) {
   const t = evaluatorSettingsTranslations[language];
   const isTabletOrMobile = useIsTabletOrMobile();
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const savedScrollPosition = useRef<number>(0);
   const [loading, setLoading] = useState(true);
   const [subordinates, setSubordinates] = useState<Employee[]>([]);
   const [managers, setManagers] = useState<Evaluator[]>([]);
@@ -163,8 +165,10 @@ export default function EvaluatorSettingsClient({
     effectiveTo: "",
   });
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (showLoading = true) => {
+    if (showLoading) {
+      setLoading(true);
+    }
     try {
       const [subordinatesRes, managersRes, customRes, periodsRes, exclusionsRes] =
         await Promise.all([
@@ -240,13 +244,28 @@ export default function EvaluatorSettingsClient({
     } catch (error) {
       console.error("Failed to fetch data:", error);
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
+      // スクロール位置を復元
+      if (savedScrollPosition.current > 0 && tableContainerRef.current) {
+        requestAnimationFrame(() => {
+          tableContainerRef.current?.scrollTo(0, savedScrollPosition.current);
+        });
+      }
     }
   }, []);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // スクロール位置を保存
+  const saveScrollPosition = () => {
+    if (tableContainerRef.current) {
+      savedScrollPosition.current = tableContainerRef.current.scrollTop;
+    }
+  };
 
   const getCustomEvaluator = (employeeId: string): CustomEvaluator | null => {
     return (
@@ -303,6 +322,7 @@ export default function EvaluatorSettingsClient({
   const handleSave = async () => {
     if (!selectedEmployee || !formData.evaluatorId) return;
 
+    saveScrollPosition();
     setSaving(true);
     try {
       const res = await fetch("/api/evaluation/custom-evaluators", {
@@ -320,7 +340,7 @@ export default function EvaluatorSettingsClient({
 
       if (res.ok) {
         setIsDialogOpen(false);
-        fetchData();
+        fetchData(false);
       } else {
         const error = await res.json();
         alert(error.error || t.saveError);
@@ -336,6 +356,7 @@ export default function EvaluatorSettingsClient({
   const handleRemoveCustomEvaluator = async (customEvaluatorId: string) => {
     if (!confirm(t.confirmRemove)) return;
 
+    saveScrollPosition();
     try {
       const res = await fetch(
         `/api/evaluation/custom-evaluators/${customEvaluatorId}`,
@@ -345,7 +366,7 @@ export default function EvaluatorSettingsClient({
       );
 
       if (res.ok) {
-        fetchData();
+        fetchData(false);
       } else {
         const error = await res.json();
         alert(error.error || t.saveError);
@@ -394,7 +415,7 @@ export default function EvaluatorSettingsClient({
 
       if (res.ok) {
         setIsExclusionDialogOpen(false);
-        fetchData();
+        fetchData(false);
       } else {
         const error = await res.json();
         alert(error.error || t.exclusionError);
@@ -417,7 +438,7 @@ export default function EvaluatorSettingsClient({
       });
 
       if (res.ok) {
-        fetchData();
+        fetchData(false);
       } else {
         const error = await res.json();
         alert(error.error || t.removeExclusionError);
@@ -429,6 +450,7 @@ export default function EvaluatorSettingsClient({
 
   // 評価対象外トグル
   const handleToggleExclusion = async (employee: Employee, currentlyExcluded: boolean) => {
+    saveScrollPosition();
     if (currentlyExcluded) {
       // 解除
       const exclusion = getExclusion(employee.id);
@@ -438,7 +460,7 @@ export default function EvaluatorSettingsClient({
             method: "DELETE",
           });
           if (res.ok) {
-            fetchData();
+            fetchData(false);
           }
         } catch (error) {
           console.error("Failed to remove exclusion:", error);
@@ -458,7 +480,7 @@ export default function EvaluatorSettingsClient({
           }),
         });
         if (res.ok) {
-          fetchData();
+          fetchData(false);
         }
       } catch (error) {
         console.error("Failed to save exclusion:", error);
@@ -591,7 +613,7 @@ export default function EvaluatorSettingsClient({
               <p>{t.noEmployees}</p>
             </div>
           ) : (
-            <div className="overflow-auto max-h-[calc(100vh-320px)]">
+            <div ref={tableContainerRef} className="overflow-auto max-h-[calc(100vh-320px)]">
               <Table>
                 <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
