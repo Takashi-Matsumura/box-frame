@@ -518,10 +518,10 @@ export default function EvaluatorSettingsClient({
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto mt-8">
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center py-12 text-muted-foreground">
+      <div className="max-w-7xl mx-auto h-[calc(100vh-128px)] overflow-hidden">
+        <Card className="h-full">
+          <CardContent className="p-6 h-full flex items-center justify-center">
+            <div className="text-center text-muted-foreground">
               {t.loading}
             </div>
           </CardContent>
@@ -531,9 +531,9 @@ export default function EvaluatorSettingsClient({
   }
 
   return (
-    <div className="max-w-7xl mx-auto mt-8">
-      <Card>
-        <CardContent className="p-6">
+    <div className="max-w-7xl mx-auto h-[calc(100vh-128px)] overflow-hidden">
+      <Card className="h-full flex flex-col">
+        <CardContent className="p-6 flex flex-col h-full overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -608,12 +608,12 @@ export default function EvaluatorSettingsClient({
 
           {/* Subordinates list */}
           {filteredSubordinates.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
+            <div className="text-center py-12 text-muted-foreground flex-1 flex flex-col items-center justify-center">
               <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p>{t.noEmployees}</p>
             </div>
           ) : (
-            <div ref={tableContainerRef} className="overflow-auto max-h-[calc(100vh-320px)]">
+            <div ref={tableContainerRef} className="overflow-auto flex-1 min-h-0">
               <Table>
                 <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
