@@ -56,6 +56,13 @@ export const evaluatorSettingsTranslations = {
     exclusionError: "Failed to save exclusion setting",
     removeExclusionSuccess: "Exclusion removed",
     removeExclusionError: "Failed to remove exclusion",
+    // Table columns
+    employeeNumber: "Employee ID",
+    employeeName: "Name",
+    position: "Position",
+    department: "Department",
+    actions: "Actions",
+    exclusionColumn: "Exclude",
   },
   ja: {
     title: "評価者設定",
@@ -114,5 +121,12 @@ export const evaluatorSettingsTranslations = {
     exclusionError: "評価対象外の設定に失敗しました",
     removeExclusionSuccess: "評価対象外を解除しました",
     removeExclusionError: "評価対象外の解除に失敗しました",
+    // Table columns
+    employeeNumber: "社員番号",
+    employeeName: "社員名",
+    position: "役職",
+    department: "所属先",
+    actions: "操作",
+    exclusionColumn: "対象外",
   },
 };

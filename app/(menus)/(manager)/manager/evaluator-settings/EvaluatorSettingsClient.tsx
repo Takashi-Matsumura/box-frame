@@ -20,11 +20,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Switch } from "@/components/ui/switch";
 import { Users, Search, UserCheck, X, AlertTriangle, UserX } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { evaluatorSettingsTranslations } from "./translations";
+import { useIsTabletOrMobile } from "@/hooks/use-mobile";
 
 interface DefaultManager {
   id: string;
@@ -119,6 +128,7 @@ export default function EvaluatorSettingsClient({
   userSectionId,
 }: EvaluatorSettingsClientProps) {
   const t = evaluatorSettingsTranslations[language];
+  const isTabletOrMobile = useIsTabletOrMobile();
   const [loading, setLoading] = useState(true);
   const [subordinates, setSubordinates] = useState<Employee[]>([]);
   const [managers, setManagers] = useState<Evaluator[]>([]);
@@ -417,6 +427,45 @@ export default function EvaluatorSettingsClient({
     }
   };
 
+  // 評価対象外トグル
+  const handleToggleExclusion = async (employee: Employee, currentlyExcluded: boolean) => {
+    if (currentlyExcluded) {
+      // 解除
+      const exclusion = getExclusion(employee.id);
+      if (exclusion) {
+        try {
+          const res = await fetch(`/api/evaluation/exclusions/${exclusion.id}`, {
+            method: "DELETE",
+          });
+          if (res.ok) {
+            fetchData();
+          }
+        } catch (error) {
+          console.error("Failed to remove exclusion:", error);
+        }
+      }
+    } else {
+      // 設定（デフォルト理由: OTHER）
+      try {
+        const res = await fetch("/api/evaluation/exclusions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            employeeId: employee.id,
+            reason: "OTHER",
+            note: null,
+            periodId: null,
+          }),
+        });
+        if (res.ok) {
+          fetchData();
+        }
+      } catch (error) {
+        console.error("Failed to save exclusion:", error);
+      }
+    }
+  };
+
   const filteredSubordinates = subordinates.filter((emp) => {
     // 部門フィルタ
     if (selectedDepartmentId !== "__all__" && emp.departmentId !== selectedDepartmentId) {
@@ -430,17 +479,19 @@ export default function EvaluatorSettingsClient({
     );
   });
 
-  const getInitials = (name: string) => {
-    return name.slice(0, 2);
-  };
-
-  const getOrgPath = (employee: Employee) => {
+  // 所属先を取得（レスポンシブ対応: 小画面では最下位の所属のみ）
+  const getDepartmentDisplay = (employee: Employee) => {
+    if (isTabletOrMobile) {
+      // 課 → 部 → 本部 の優先順で1つだけ表示
+      return employee.courseName || employee.sectionName || employee.departmentName || "-";
+    }
+    // デスクトップ: フル表示
     const parts = [
       employee.departmentName,
       employee.sectionName,
       employee.courseName,
     ].filter(Boolean);
-    return parts.join(" > ") || "-";
+    return parts.join(" / ") || "-";
   };
 
   if (loading) {
@@ -540,125 +591,76 @@ export default function EvaluatorSettingsClient({
               <p>{t.noEmployees}</p>
             </div>
           ) : (
-            <div className="grid gap-4">
-              {filteredSubordinates.map((employee) => {
-                const customEval = getCustomEvaluator(employee.id);
-                const exclusion = getExclusion(employee.id);
-                const excluded = !!exclusion;
-                return (
-                  <div
-                    key={employee.id}
-                    className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${
-                      excluded
-                        ? "bg-muted/30 border-dashed opacity-70"
-                        : "bg-card hover:bg-muted/50"
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className={excluded ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"}>
-                          {getInitials(employee.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className={`font-medium ${excluded ? "text-muted-foreground" : "text-foreground"}`}>
-                            {employee.name}
-                          </span>
-                          {excluded && (
-                            <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
-                              <UserX className="w-3 h-3 mr-1" />
-                              {t.excluded}
+            <div className="overflow-auto max-h-[calc(100vh-320px)]">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableRow>
+                    <TableHead>{t.currentEvaluator}</TableHead>
+                    <TableHead>{t.employeeNumber}</TableHead>
+                    <TableHead>{t.employeeName}</TableHead>
+                    <TableHead>{t.position}</TableHead>
+                    <TableHead>{t.department}</TableHead>
+                    <TableHead className="text-center">{t.exclusionColumn}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredSubordinates.map((employee) => {
+                    const customEval = getCustomEvaluator(employee.id);
+                    const exclusion = getExclusion(employee.id);
+                    const excluded = !!exclusion;
+                    return (
+                      <TableRow
+                        key={employee.id}
+                        className={excluded ? "opacity-60" : ""}
+                      >
+                        <TableCell>
+                          {excluded ? (
+                            <span className="text-muted-foreground">-</span>
+                          ) : customEval ? (
+                            <Badge
+                              className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-800"
+                              onClick={() => canEditEmployee(employee) && handleOpenDialog(employee)}
+                            >
+                              <UserCheck className="w-3 h-3 mr-1" />
+                              {customEval.evaluator.name}
                             </Badge>
-                          )}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {employee.employeeId} | {employee.position || "-"}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {getOrgPath(employee)}
-                        </div>
-                        {excluded && exclusion.reason && (
-                          <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                            {t.exclusionReasons[exclusion.reason]}
-                            {exclusion.note && `: ${exclusion.note}`}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      {/* Current evaluator status - hide if excluded */}
-                      {!excluded && (
-                        <div className="text-right">
-                          <div className="text-xs text-muted-foreground mb-1">
-                            {t.currentEvaluator}
-                          </div>
-                          {customEval ? (
-                            <div className="flex items-center gap-2">
-                              <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                <UserCheck className="w-3 h-3 mr-1" />
-                                {customEval.evaluator.name}
-                              </Badge>
-                              {canEditEmployee(employee) && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleRemoveCustomEvaluator(customEval.id)
-                                  }
-                                  className="h-6 w-6 p-0"
-                                >
-                                  <X className="w-3 h-3 text-muted-foreground" />
-                                </Button>
-                              )}
-                            </div>
                           ) : (
-                            <Badge variant="secondary">
+                            <Badge
+                              variant="secondary"
+                              className={canEditEmployee(employee) ? "cursor-pointer hover:bg-muted" : ""}
+                              onClick={() => canEditEmployee(employee) && handleOpenDialog(employee)}
+                            >
                               {employee.defaultManager
                                 ? employee.defaultManager.name
                                 : t.defaultEvaluator}
                             </Badge>
                           )}
-                        </div>
-                      )}
-
-                      {/* Action buttons - only shown when user has edit permission */}
-                      {canEditEmployee(employee) && (
-                        <div className="flex items-center gap-2">
-                          {excluded ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleRemoveExclusion(exclusion.id)}
-                            >
-                              {t.removeExclusion}
-                            </Button>
-                          ) : (
-                            <>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleOpenDialog(employee)}
-                              >
-                                {t.changeEvaluator}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleOpenExclusionDialog(employee)}
-                                className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-950"
-                              >
-                                <UserX className="w-4 h-4" />
-                              </Button>
-                            </>
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {employee.employeeId}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`font-medium ${excluded ? "text-muted-foreground" : ""}`}>
+                            {employee.name}
+                          </span>
+                        </TableCell>
+                        <TableCell>{employee.position || "-"}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {getDepartmentDisplay(employee)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {canEditEmployee(employee) && (
+                            <Switch
+                              checked={excluded}
+                              onCheckedChange={() => handleToggleExclusion(employee, excluded)}
+                            />
                           )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
