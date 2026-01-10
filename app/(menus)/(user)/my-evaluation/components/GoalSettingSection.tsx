@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar, Target, TrendingUp, Plus, Trash2, Check, Loader2, Bot, ChevronLeft } from "lucide-react";
+import { Calendar, Target, TrendingUp, Plus, Trash2, Check, Loader2, Bot, ChevronLeft, Users } from "lucide-react";
 import { toast } from "sonner";
 import { GoalAIAssistant } from "./GoalAIAssistant";
 
@@ -34,6 +34,12 @@ interface GrowthGoal {
 interface GoalsData {
   processGoals: ProcessGoal[];
   growthGoal: GrowthGoal | null;
+}
+
+interface InterviewDate {
+  id: string;
+  date: string;
+  note?: string;
 }
 
 interface GrowthCategory {
@@ -76,6 +82,13 @@ const translations = {
     selfReflection: "Self Reflection",
     selfReflectionDescription: "Optional: Write your thoughts or notes about your goals",
     selfReflectionPlaceholder: "Write any reflections or notes about your goals...",
+    interviewDates: "Interview Dates",
+    interviewDatesDescription: "Record your meetings with your evaluator (progress check, results discussion, goal setting)",
+    addInterviewDate: "Add Interview Date",
+    interviewNote: "Note (optional)",
+    interviewNotePlaceholder: "e.g., Progress check, Goal setting...",
+    evaluator: "Evaluator",
+    evaluatorNotSet: "Not set",
     saving: "Saving...",
     saved: "Saved",
     saveError: "Failed to save goals",
@@ -104,6 +117,13 @@ const translations = {
     selfReflection: "自己ふり返り",
     selfReflectionDescription: "任意: 目標に対する考えやメモを記録",
     selfReflectionPlaceholder: "目標に対するふり返りやメモを記入してください...",
+    interviewDates: "面談実施日",
+    interviewDatesDescription: "評価者との面談日を記録（進捗確認、結果面談、目標設定など）",
+    addInterviewDate: "面談日を追加",
+    interviewNote: "メモ（任意）",
+    interviewNotePlaceholder: "例：進捗確認、目標設定...",
+    evaluator: "評価者",
+    evaluatorNotSet: "未設定",
     saving: "保存中...",
     saved: "保存済み",
     saveError: "目標の保存に失敗しました",
@@ -138,6 +158,8 @@ export default function GoalSettingSection({
     growthGoal: null,
   });
   const [selfReflection, setSelfReflection] = useState("");
+  const [interviewDates, setInterviewDates] = useState<InterviewDate[]>([]);
+  const [evaluator, setEvaluator] = useState<{ name: string } | null>(null);
   const [growthCategories, setGrowthCategories] = useState<GrowthCategory[]>([]);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
 
@@ -165,6 +187,16 @@ export default function GoalSettingSection({
         }
         if (data.selfReflection) {
           setSelfReflection(data.selfReflection);
+        }
+        if (data.interviewDates) {
+          setInterviewDates(data.interviewDates);
+        } else {
+          setInterviewDates([]);
+        }
+        if (data.evaluator) {
+          setEvaluator(data.evaluator);
+        } else {
+          setEvaluator(null);
         }
         if (data.growthCategories) {
           setGrowthCategories(data.growthCategories);
@@ -203,6 +235,7 @@ export default function GoalSettingSection({
           processGoals: goals.processGoals,
           growthGoal: goals.growthGoal,
           selfReflection: selfReflection || null,
+          interviewDates: interviewDates,
         }),
       });
 
@@ -218,7 +251,7 @@ export default function GoalSettingSection({
       toast.error(t.saveError);
       setSaveStatus("idle");
     }
-  }, [periodId, goals, selfReflection, t.saveError]);
+  }, [periodId, goals, selfReflection, interviewDates, t.saveError]);
 
   // Debounced auto-save effect
   useEffect(() => {
@@ -239,7 +272,7 @@ export default function GoalSettingSection({
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [goals, selfReflection, saveGoals, loading]);
+  }, [goals, selfReflection, interviewDates, saveGoals, loading]);
 
   const addProcessGoal = () => {
     const newOrder = goals.processGoals.length + 1;
@@ -308,6 +341,25 @@ export default function GoalSettingSection({
         },
       });
     }
+  };
+
+  const addInterviewDate = () => {
+    const newDate: InterviewDate = {
+      id: `interview-${Date.now()}`,
+      date: new Date().toISOString().split("T")[0],
+      note: "",
+    };
+    setInterviewDates([...interviewDates, newDate]);
+  };
+
+  const removeInterviewDate = (id: string) => {
+    setInterviewDates(interviewDates.filter((d) => d.id !== id));
+  };
+
+  const updateInterviewDate = (id: string, field: "date" | "note", value: string) => {
+    setInterviewDates(
+      interviewDates.map((d) => (d.id === id ? { ...d, [field]: value } : d))
+    );
   };
 
   // 目標情報をAIアシスタントに渡すための文字列を生成
@@ -511,6 +563,57 @@ export default function GoalSettingSection({
                 placeholder={t.selfReflectionPlaceholder}
                 rows={4}
               />
+            </CardContent>
+          </Card>
+
+          {/* Interview Dates */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-blue-500" />
+                {t.interviewDates}
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">{t.interviewDatesDescription}</p>
+              <div className="flex items-center gap-2 mt-2 text-sm">
+                <span className="text-muted-foreground">{t.evaluator}:</span>
+                <span className="font-medium">
+                  {evaluator?.name || t.evaluatorNotSet}
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {interviewDates.map((interview) => (
+                <div key={interview.id} className="flex items-start gap-3 p-3 border rounded-lg">
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      type="date"
+                      value={interview.date}
+                      onChange={(e) => updateInterviewDate(interview.id, "date", e.target.value)}
+                      className="max-w-xs"
+                    />
+                    <Input
+                      type="text"
+                      value={interview.note || ""}
+                      onChange={(e) => updateInterviewDate(interview.id, "note", e.target.value)}
+                      placeholder={t.interviewNotePlaceholder}
+                      className="text-sm"
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeInterviewDate(interview.id)}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+
+              <Button variant="outline" onClick={addInterviewDate} className="w-full">
+                <Plus className="w-4 h-4 mr-2" />
+                {t.addInterviewDate}
+              </Button>
             </CardContent>
           </Card>
         </div>

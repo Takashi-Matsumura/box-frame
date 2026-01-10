@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { AIService, type ExtractField } from "@/lib/core-modules/ai/ai-service";
+import { AIService, type ExtractField } from "@/lib/core-modules/ai";
 
 /**
  * POST /api/ai/services/extract

@@ -24,6 +24,15 @@ interface GrowthGoal {
 }
 
 /**
+ * 面談日の型定義
+ */
+interface InterviewDate {
+  id: string;
+  date: string;
+  note?: string;
+}
+
+/**
  * GET /api/evaluation/my-evaluation/goals
  * 自分の目標設定を取得（ユーザーベース）
  */
@@ -36,6 +45,7 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = session.user.id;
+    const userEmail = session.user.email;
     const { searchParams } = new URL(request.url);
     const periodId = searchParams.get("periodId");
 
@@ -107,6 +117,33 @@ export async function GET(request: NextRequest) {
       orderBy: { sortOrder: "asc" },
     });
 
+    // 評価者情報を取得（ユーザーに紐づく評価がある場合）
+    let evaluator: { name: string } | null = null;
+    if (userEmail) {
+      const employee = await prisma.employee.findUnique({
+        where: { email: userEmail },
+        select: { id: true },
+      });
+
+      if (employee) {
+        const evaluation = await prisma.evaluation.findFirst({
+          where: {
+            employeeId: employee.id,
+            periodId: targetPeriodId,
+          },
+          include: {
+            evaluator: {
+              select: { name: true },
+            },
+          },
+        });
+
+        if (evaluation?.evaluator) {
+          evaluator = { name: evaluation.evaluator.name };
+        }
+      }
+    }
+
     // 目標データがない場合はデフォルト値を返す
     if (!personalGoal) {
       const defaultProcessGoals: ProcessGoal[] = [
@@ -125,6 +162,8 @@ export async function GET(request: NextRequest) {
         processGoals: defaultProcessGoals,
         growthGoal: null,
         selfReflection: null,
+        interviewDates: [],
+        evaluator,
         period,
         processCategories,
         growthCategories,
@@ -138,6 +177,8 @@ export async function GET(request: NextRequest) {
       processGoals: personalGoal.processGoals as unknown as ProcessGoal[],
       growthGoal: personalGoal.growthGoal as unknown as GrowthGoal | null,
       selfReflection: personalGoal.selfReflection,
+      interviewDates: personalGoal.interviewDates as unknown as InterviewDate[],
+      evaluator,
       period,
       processCategories,
       growthCategories,
@@ -166,11 +207,12 @@ export async function POST(request: NextRequest) {
     const userId = session.user.id;
     const userEmail = session.user.email;
     const body = await request.json();
-    const { periodId, processGoals, growthGoal, selfReflection } = body as {
+    const { periodId, processGoals, growthGoal, selfReflection, interviewDates } = body as {
       periodId: string;
       processGoals: ProcessGoal[];
       growthGoal: GrowthGoal | null;
       selfReflection?: string;
+      interviewDates?: InterviewDate[];
     };
 
     if (!periodId || !processGoals) {
@@ -206,6 +248,7 @@ export async function POST(request: NextRequest) {
 
     // 個人目標データを保存（upsert）
     const processGoalsJson = processGoals as unknown as Prisma.InputJsonValue;
+    const interviewDatesJson = (interviewDates || []) as unknown as Prisma.InputJsonValue;
 
     const personalGoal = await prisma.personalGoal.upsert({
       where: {
@@ -220,6 +263,7 @@ export async function POST(request: NextRequest) {
           ? (growthGoal as unknown as Prisma.InputJsonValue)
           : Prisma.JsonNull,
         selfReflection: selfReflection || null,
+        interviewDates: interviewDatesJson,
         employeeId, // Employeeが見つかれば紐付け
       },
       create: {
@@ -231,6 +275,7 @@ export async function POST(request: NextRequest) {
           ? (growthGoal as unknown as Prisma.InputJsonValue)
           : Prisma.JsonNull,
         selfReflection: selfReflection || null,
+        interviewDates: interviewDatesJson,
       },
     });
 
@@ -242,6 +287,7 @@ export async function POST(request: NextRequest) {
       processGoals: personalGoal.processGoals,
       growthGoal: personalGoal.growthGoal,
       selfReflection: personalGoal.selfReflection,
+      interviewDates: personalGoal.interviewDates,
       period,
     });
   } catch (error) {

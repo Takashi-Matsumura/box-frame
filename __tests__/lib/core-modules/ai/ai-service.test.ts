@@ -5,7 +5,7 @@
  * 外部モジュールが依存するAIサービスの契約テスト
  */
 
-import { AIService } from "@/lib/core-modules/ai/ai-service";
+import { AIService } from "@/lib/core-modules/ai";
 import { prisma } from "@/lib/prisma";
 
 // Prismaモック

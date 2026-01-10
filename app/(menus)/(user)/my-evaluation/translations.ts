@@ -73,6 +73,15 @@ export const myEvaluationTranslations = {
     evaluatorComment: "Evaluator Comments",
     noComment: "No comments",
 
+    // Interview
+    interviewDate: "Interview Date",
+    interviewDateLabel: "Interview with Evaluator",
+    setInterviewDate: "Set Date",
+    interviewDatePlaceholder: "Select interview date",
+    interviewDateSaved: "Interview date saved",
+    interviewDateCleared: "Interview date cleared",
+    clearDate: "Clear",
+
     // Level labels
     levelT1: "T1: Needs Improvement",
     levelT2: "T2: Meets Expectations",
@@ -167,6 +176,15 @@ export const myEvaluationTranslations = {
     // Comments
     evaluatorComment: "評価者コメント",
     noComment: "コメントなし",
+
+    // Interview
+    interviewDate: "面談実施日",
+    interviewDateLabel: "評価者との面談",
+    setInterviewDate: "日付を設定",
+    interviewDatePlaceholder: "面談日を選択",
+    interviewDateSaved: "面談実施日を保存しました",
+    interviewDateCleared: "面談実施日をクリアしました",
+    clearDate: "クリア",
 
     // Level labels
     levelT1: "T1: 改善が必要",

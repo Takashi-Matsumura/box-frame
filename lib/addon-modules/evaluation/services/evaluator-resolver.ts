@@ -1,5 +1,5 @@
 /**
- * 評価者決定ロジック
+ * 評価者決定サービス
  *
  * 優先順位:
  * 1. カスタム評価者（CustomEvaluator）- 最優先
@@ -9,13 +9,8 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import type { Employee, Course, Section, Department } from "@prisma/client";
-
-export interface EmployeeWithOrg extends Employee {
-  course?: (Course & { manager?: Employee | null }) | null;
-  section?: (Section & { manager?: Employee | null }) | null;
-  department: Department & { manager?: Employee | null };
-}
+import type { Employee } from "@prisma/client";
+import type { EmployeeWithOrg, EvaluatorInfo } from "../types";
 
 /**
  * 評価者を決定する
@@ -140,10 +135,7 @@ export async function getEvaluatees(
 export async function getEvaluatorInfo(
   employeeId: string,
   periodId: string
-): Promise<{
-  evaluator: Employee | null;
-  source: "custom" | "course" | "section" | "department" | null;
-}> {
+): Promise<EvaluatorInfo> {
   const employee = await prisma.employee.findUnique({
     where: { id: employeeId },
     include: {

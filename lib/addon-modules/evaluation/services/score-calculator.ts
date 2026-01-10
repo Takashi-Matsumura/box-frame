@@ -1,5 +1,5 @@
 /**
- * スコア計算ロジック
+ * スコア計算サービス
  *
  * 3軸評価のスコア計算:
  * - 基準1: 結果評価（組織目標達成率）
@@ -8,29 +8,15 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import type { WeightConfig } from "./weight-helper";
-
-/**
- * T1〜T4のレベルからスコアへの変換マップ
- * T1 = 1.0（不十分）
- * T2 = 2.5（要改善）
- * T3 = 3.5（標準）
- * T4 = 5.0（優秀）
- */
-const LEVEL_TO_SCORE: Record<number, number> = {
-  1: 1.0,
-  2: 2.5,
-  3: 3.5,
-  4: 5.0,
-};
-
-/**
- * スコア範囲の型定義
- */
-export interface ScoreRange {
-  min: number;
-  max: number;
-}
+import type { ScoreRange, ScoreResult, WeightConfig } from "../types";
+import {
+  LEVEL_TO_SCORE,
+  DEFAULT_SCORE_RANGE,
+  GRADE_THRESHOLDS,
+  FIXED_GRADE_THRESHOLDS,
+  MAX_GROWTH_SCORE,
+} from "../constants";
+import { getWeightsForPositionGrade } from "./weight-service";
 
 /**
  * ProcessCategoryとGrowthCategoryからスコア範囲を取得
@@ -94,9 +80,9 @@ export async function getEvaluationScoreRange(): Promise<ScoreRange> {
     }
   }
 
-  // データがない場合はデフォルト値（ドキュメント記載のスケール）
+  // データがない場合はデフォルト値
   if (!Number.isFinite(minScore) || !Number.isFinite(maxScore)) {
-    return { min: 50, max: 130 };
+    return DEFAULT_SCORE_RANGE;
   }
 
   return { min: minScore, max: maxScore };
@@ -107,22 +93,17 @@ export async function getEvaluationScoreRange(): Promise<ScoreRange> {
  * @deprecated determineGradeWithRange を使用してください
  */
 function determineGrade(score: number): string {
-  if (score >= 4.5) return "S";
-  if (score >= 3.5) return "A";
-  if (score >= 2.5) return "B";
-  if (score >= 1.5) return "C";
+  if (score >= FIXED_GRADE_THRESHOLDS.S) return "S";
+  if (score >= FIXED_GRADE_THRESHOLDS.A) return "A";
+  if (score >= FIXED_GRADE_THRESHOLDS.B) return "B";
+  if (score >= FIXED_GRADE_THRESHOLDS.C) return "C";
   return "D";
 }
 
 /**
  * 最終グレードの判定（スコア範囲考慮版）
  *
- * スコア範囲内での相対位置に基づいてグレードを判定:
- * - 90%以上 → S
- * - 70%以上 → A
- * - 50%以上 → B
- * - 30%以上 → C
- * - 30%未満 → D
+ * スコア範囲内での相対位置に基づいてグレードを判定
  */
 export function determineGradeWithRange(score: number, scoreRange: ScoreRange): string {
   const { min, max } = scoreRange;
@@ -133,10 +114,10 @@ export function determineGradeWithRange(score: number, scoreRange: ScoreRange): 
   // スコアの相対位置（0〜1）
   const relativePosition = (score - min) / range;
 
-  if (relativePosition >= 0.9) return "S";
-  if (relativePosition >= 0.7) return "A";
-  if (relativePosition >= 0.5) return "B";
-  if (relativePosition >= 0.3) return "C";
+  if (relativePosition >= GRADE_THRESHOLDS.S) return "S";
+  if (relativePosition >= GRADE_THRESHOLDS.A) return "A";
+  if (relativePosition >= GRADE_THRESHOLDS.B) return "B";
+  if (relativePosition >= GRADE_THRESHOLDS.C) return "C";
   return "D";
 }
 
@@ -149,42 +130,31 @@ export function determineGradeWithRange(score: number, scoreRange: ScoreRange): 
  * - 達成率 100% → 中央値（min + max の中間）
  * - 達成率 120% → 最大スコア - (範囲の25%)
  * - 達成率 120% 以上 → 最大スコア
- *
- * @param achievementRate 達成率（%）
- * @param scoreRange スコア範囲（min/max）。指定しない場合は50〜130
  */
 export function calculateResultsScore(
   achievementRate: number,
   scoreRange?: ScoreRange
 ): number {
-  const min = scoreRange?.min ?? 50;
-  const max = scoreRange?.max ?? 130;
+  const min = scoreRange?.min ?? DEFAULT_SCORE_RANGE.min;
+  const max = scoreRange?.max ?? DEFAULT_SCORE_RANGE.max;
   const range = max - min;
 
-  // 達成率に応じたスコアを計算
-  // 80%未満 → min
-  // 80% → min + range * 0.25
-  // 100% → min + range * 0.5 (中央値)
-  // 120% → min + range * 0.75
-  // 120%以上 → max
   let normalizedScore: number;
 
   if (achievementRate < 80) {
     // 80%未満は最低スコア付近
-    // 0% → min, 80% → min + range * 0.25
     normalizedScore = min + (achievementRate / 80) * (range * 0.25);
   } else if (achievementRate < 100) {
     // 80%〜100%: min + 0.25*range → min + 0.5*range
-    const ratio = (achievementRate - 80) / 20; // 0 to 1
+    const ratio = (achievementRate - 80) / 20;
     normalizedScore = min + range * 0.25 + ratio * (range * 0.25);
   } else if (achievementRate < 120) {
     // 100%〜120%: min + 0.5*range → min + 0.75*range
-    const ratio = (achievementRate - 100) / 20; // 0 to 1
+    const ratio = (achievementRate - 100) / 20;
     normalizedScore = min + range * 0.5 + ratio * (range * 0.25);
   } else {
     // 120%以上: min + 0.75*range → max
-    // 120% → 0.75, 160%以上 → 1.0
-    const ratio = Math.min((achievementRate - 120) / 40, 1); // 0 to 1
+    const ratio = Math.min((achievementRate - 120) / 40, 1);
     normalizedScore = min + range * 0.75 + ratio * (range * 0.25);
   }
 
@@ -232,8 +202,8 @@ export async function calculateGrowthScore(
   const levelScore = LEVEL_TO_SCORE[growthLevel] || 2.5;
   const coefficient = category?.coefficient || 1.0;
 
-  // 係数を適用し、上限5.0
-  return Math.min(Math.round(levelScore * coefficient * 100) / 100, 5.0);
+  // 係数を適用し、上限を超えない
+  return Math.min(Math.round(levelScore * coefficient * 100) / 100, MAX_GROWTH_SCORE);
 }
 
 /**
@@ -244,18 +214,7 @@ export function calculateGrowthScoreSync(
   coefficient: number
 ): number {
   const levelScore = LEVEL_TO_SCORE[growthLevel] || 2.5;
-  return Math.min(Math.round(levelScore * coefficient * 100) / 100, 5.0);
-}
-
-export interface ScoreResult {
-  score1: number;           // 結果評価スコア
-  score2: number;           // プロセス評価スコア
-  score3: number;           // 成長評価スコア
-  weightedScore1: number;   // 加重後スコア1
-  weightedScore2: number;   // 加重後スコア2
-  weightedScore3: number;   // 加重後スコア3
-  finalScore: number;       // 最終スコア
-  finalGrade: string;       // 最終グレード
+  return Math.min(Math.round(levelScore * coefficient * 100) / 100, MAX_GROWTH_SCORE);
 }
 
 /**
@@ -304,7 +263,6 @@ export async function recalculateEvaluationScore(
   if (!evaluation) return null;
 
   // 重みを取得（役職×等級で検索）
-  const { getWeightsForPositionGrade } = await import("./weight-helper");
   const weights = await getWeightsForPositionGrade(
     evaluation.periodId,
     evaluation.employee.positionCode,

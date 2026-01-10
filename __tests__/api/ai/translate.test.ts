@@ -18,7 +18,7 @@
  */
 
 import { GET, POST } from "@/app/api/ai/translate/route";
-import { AIService } from "@/lib/core-modules/ai/ai-service";
+import { AIService } from "@/lib/core-modules/ai";
 import { auth } from "@/auth";
 
 // モック

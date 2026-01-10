@@ -921,6 +921,9 @@ model PersonalGoal {
   // 自己ふり返り
   selfReflection    String?
 
+  // 面談情報（JSON配列: [{date: "2024-01-10", note: "進捗確認"}, ...]）
+  interviewDates    Json             @default("[]")
+
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 

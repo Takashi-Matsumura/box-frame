@@ -1,25 +1,12 @@
 /**
- * 重み取得ユーティリティ
+ * 重み設定サービス
  *
- * 役職×等級別の重み設定を取得する
+ * 役職×等級別の重み設定を取得・管理する
  */
 
 import { prisma } from "@/lib/prisma";
-
-export interface WeightConfig {
-  resultsWeight: number;  // 結果評価の重み (%)
-  processWeight: number;  // プロセス評価の重み (%)
-  growthWeight: number;   // 成長評価の重み (%)
-}
-
-/**
- * デフォルトの重み設定
- */
-const DEFAULT_WEIGHTS: WeightConfig = {
-  resultsWeight: 30,
-  processWeight: 40,
-  growthWeight: 30,
-};
+import type { WeightConfig } from "../types";
+import { DEFAULT_WEIGHTS } from "../constants";
 
 /**
  * 役職×等級に応じた重みを取得

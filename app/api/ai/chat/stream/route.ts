@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { AIService, type ChatMessage } from "@/lib/core-modules/ai/ai-service";
+import { AIService, type ChatMessage } from "@/lib/core-modules/ai";
 
 /**
  * POST /api/ai/chat/stream

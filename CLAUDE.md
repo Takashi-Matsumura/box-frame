@@ -140,7 +140,15 @@ lib/
   │   ├── organization/     # 組織管理モジュール
   │   ├── system/           # システムモジュール
   │   └── ai/               # 生成AIモジュール
+  │       ├── types.ts      # 型定義
+  │       ├── constants.ts  # 定数
+  │       ├── services/     # AIサービス
+  │       └── providers/    # プロバイダ実装（OpenAI/Anthropic/Local）
   ├── addon-modules/        # アドオンモジュール
+  │   ├── evaluation/       # 人事評価モジュール
+  │   │   ├── types.ts      # 型定義
+  │   │   ├── constants.ts  # 定数
+  │   │   └── services/     # 評価サービス
   │   └── ldap-migration/   # LDAPマイグレーション
   ├── services/             # フレーム基盤サービス
   │   └── notification-service.ts  # 通知サービス
@@ -200,6 +208,22 @@ mcp-servers/
   - Ollama
 - トークン統計表示（コンテキスト使用量、トークン/秒）
 - 管理画面の「システム情報」タブでAPI設定
+
+**モジュール構造:**
+```
+lib/core-modules/ai/
+├── module.tsx        # モジュール定義
+├── index.ts          # エクスポート
+├── types.ts          # 型定義（AIConfig, ChatMessage等）
+├── constants.ts      # 定数（LOCAL_LLM_DEFAULTS等）
+├── services/         # サービス層
+│   ├── ai-service.ts # メインサービス
+│   └── token-utils.ts # トークン計算
+└── providers/        # プロバイダ実装
+    ├── openai-provider.ts
+    ├── anthropic-provider.ts
+    └── local-provider.ts
+```
 - RAGバックエンド（Python FastAPI）
   - ChromaDB: ベクトルデータベース
   - sentence-transformers: 埋め込みモデル（multilingual-e5-small）
@@ -238,6 +262,30 @@ curl http://localhost:8000/health
 - ドキュメント削除機能
 
 ## アドオンモジュール
+
+### evaluationモジュール（人事評価）
+
+3軸評価（結果・プロセス・成長）に基づく人事評価機能を提供するアドオンモジュールです。
+
+**モジュール構造:**
+```
+lib/addon-modules/evaluation/
+├── module.tsx        # モジュール定義
+├── index.ts          # エクスポート
+├── types.ts          # 型定義（ScoreResult, WeightConfig等）
+├── constants.ts      # 定数（LEVEL_TO_SCORE, DEFAULT_WEIGHTS等）
+└── services/         # サービス層
+    ├── score-calculator.ts   # スコア計算
+    ├── evaluator-resolver.ts # 評価者決定
+    ├── weight-service.ts     # 重み設定
+    └── batch-generator.ts    # 一括生成
+```
+
+**主要な機能:**
+- スコア計算（結果評価・プロセス評価・成長評価）
+- 評価者決定ロジック（カスタム評価者 → 課長 → 部長 → 本部長）
+- 役職×等級別の重み設定
+- 評価データの一括生成
 
 ### ldap-migrationモジュール（LDAPマイグレーション）
 
