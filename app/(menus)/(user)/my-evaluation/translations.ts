@@ -3,6 +3,10 @@ export const myEvaluationTranslations = {
     title: "My Evaluation",
     description: "View your evaluation results",
 
+    // Tabs
+    tabCurrentPeriod: "Current Period",
+    tabHistory: "Evaluation History",
+
     // Period
     selectPeriod: "Select Period",
     noPeriods: "No evaluation periods available",
@@ -75,6 +79,14 @@ export const myEvaluationTranslations = {
     levelT3: "T3: Exceeds Expectations",
     levelT4: "T4: Outstanding",
 
+    // History
+    historyTitle: "Your Evaluation History",
+    historyDescription: "View your past evaluation results",
+    noHistory: "No past evaluations found",
+    viewDetails: "View Details",
+    period: "Period",
+    hideDetails: "Hide Details",
+
     // Common
     loading: "Loading...",
     noData: "No data",
@@ -85,6 +97,10 @@ export const myEvaluationTranslations = {
   ja: {
     title: "マイ評価",
     description: "あなたの評価結果を確認",
+
+    // Tabs
+    tabCurrentPeriod: "今期の評価",
+    tabHistory: "評価履歴",
 
     // Period
     selectPeriod: "評価期間を選択",
@@ -157,6 +173,14 @@ export const myEvaluationTranslations = {
     levelT2: "T2: 期待通り",
     levelT3: "T3: 期待以上",
     levelT4: "T4: 卓越",
+
+    // History
+    historyTitle: "評価履歴",
+    historyDescription: "過去の評価結果を確認",
+    noHistory: "過去の評価がありません",
+    viewDetails: "詳細を表示",
+    period: "期間",
+    hideDetails: "詳細を隠す",
 
     // Common
     loading: "読み込み中...",

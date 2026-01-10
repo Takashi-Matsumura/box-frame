@@ -164,13 +164,18 @@ async def upload_text(request: TextUploadRequest):
 
 
 @router.get("/list", response_model=DocumentListResponse)
-async def list_documents():
-    """Get list of all uploaded documents."""
+async def list_documents(category: str = None):
+    """Get list of all uploaded documents, optionally filtered by category."""
     try:
-        logger.info("Listing documents...")
+        logger.info(f"Listing documents (category: {category})...")
+
+        # Build where filter for category if specified
+        where_filter = None
+        if category:
+            where_filter = {"category": category}
 
         # Get all documents from vector database
-        results = vector_db.get_all_documents()
+        results = vector_db.get_all_documents(where=where_filter)
 
         # Group chunks by filename
         documents_map = {}
@@ -218,6 +223,7 @@ async def get_document_content(filename: str):
 
         # Filter chunks that match the filename
         chunks = []
+        original_content = None
         for i, doc_id in enumerate(results["ids"]):
             metadata = results["metadatas"][i]
             if metadata.get("filename") == filename:
@@ -226,6 +232,9 @@ async def get_document_content(filename: str):
                     "content": results["documents"][i],
                     "char_count": metadata.get("char_count", 0),
                 })
+                # Get original content from first chunk's metadata
+                if metadata.get("chunk_index", 0) == 0 and metadata.get("original_content"):
+                    original_content = metadata.get("original_content")
 
         if not chunks:
             raise HTTPException(
@@ -238,11 +247,17 @@ async def get_document_content(filename: str):
 
         logger.info(f"Retrieved {len(chunks)} chunks for {filename}")
 
-        return {
+        response = {
             "filename": filename,
             "total_chunks": len(chunks),
             "chunks": chunks,
         }
+
+        # Include original content if available (for editing)
+        if original_content:
+            response["original_content"] = original_content
+
+        return response
 
     except HTTPException:
         raise

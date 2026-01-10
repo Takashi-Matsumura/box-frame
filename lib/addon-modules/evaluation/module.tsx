@@ -9,8 +9,47 @@
 
 import type { AppModule, AppTab } from "@/types/module";
 import { getModuleIcon, getMenuIcon } from "@/lib/modules/icons";
-import { FaDatabase, FaStar, FaCalendarAlt, FaBalanceScale } from "react-icons/fa";
+import { FaDatabase, FaStar, FaCalendarAlt, FaBalanceScale, FaClipboardList, FaHistory, FaBullseye } from "react-icons/fa";
 import { TbCircleNumber1Filled, TbCircleNumber2Filled, TbCircleNumber3Filled } from "react-icons/tb";
+
+/**
+ * 自分の評価タブ定義
+ */
+const myEvaluationTabs: AppTab[] = [
+  {
+    id: "current",
+    name: "Current Period",
+    nameJa: "今期の評価",
+    icon: <FaClipboardList className="w-4 h-4" />,
+    order: 1,
+    enabled: true,
+    allowAccessKey: true,
+    description: "View current period evaluation",
+    descriptionJa: "今期の評価を確認",
+  },
+  {
+    id: "goals",
+    name: "Goal Setting",
+    nameJa: "目標設定",
+    icon: <FaBullseye className="w-4 h-4" />,
+    order: 2,
+    enabled: true,
+    allowAccessKey: true,
+    description: "Set process and growth goals",
+    descriptionJa: "プロセス目標と成長目標を設定",
+  },
+  {
+    id: "history",
+    name: "Evaluation History",
+    nameJa: "評価履歴",
+    icon: <FaHistory className="w-4 h-4" />,
+    order: 3,
+    enabled: true,
+    allowAccessKey: true,
+    description: "View past evaluation history",
+    descriptionJa: "過去の評価履歴を確認",
+  },
+];
 
 /**
  * 評価マスタタブ定義
@@ -126,7 +165,8 @@ export const evaluationModule: AppModule = {
       icon: getMenuIcon("myEvaluation", "evaluation"),
       description: "View your evaluation results and set goals",
       descriptionJa: "自分の評価結果の確認と目標設定",
-      isImplemented: false,
+      isImplemented: true,
+      tabs: myEvaluationTabs,
     },
     // マネージャー向けメニュー: 人事評価
     {

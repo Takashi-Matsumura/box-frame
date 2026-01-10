@@ -35,6 +35,7 @@ export const pageTitles = {
     "/admin/access-keys": "Access Key Management",
     "/data-import": "Data Import",
     "/evaluation-master": "Evaluation Settings",
+    "/my-evaluation": "My Evaluation",
     "/user/my-evaluation": "My Evaluation",
     "/user/my-evaluation/[periodId]/detail": "Evaluation Details",
     "/organization-chart": "Organization Chart",
@@ -82,6 +83,7 @@ export const pageTitles = {
     "/admin/access-keys": "アクセスキー管理",
     "/data-import": "データインポート",
     "/evaluation-master": "評価環境管理",
+    "/my-evaluation": "自分の評価",
     "/user/my-evaluation": "わたしの評価",
     "/user/my-evaluation/[periodId]/detail": "評価詳細",
     "/organization-chart": "組織図",
@@ -140,6 +142,7 @@ export const pageDescriptions = {
     "/data-import": "Import employee and organization data from CSV/XLSX files",
     "/evaluation-master":
       "Manage evaluation periods, weights, growth categories, and evaluation relationships",
+    "/my-evaluation": "View your evaluation results and past history",
     "/user/my-evaluation": "View and manage your performance evaluations",
     "/organization-chart":
       "View company organization structure and employee information",
@@ -197,6 +200,7 @@ export const pageDescriptions = {
     "/data-import": "CSV/XLSXファイルから社員データと組織データをインポート",
     "/evaluation-master":
       "評価期間、重み設定、成長カテゴリー、評価関係を管理します",
+    "/my-evaluation": "あなたの評価結果と過去の履歴を確認します",
     "/user/my-evaluation": "あなたの人事評価を確認・管理します",
     "/organization-chart": "会社の組織構造と社員情報を閲覧",
     "/user/calendar": "個人カレンダーと会社イベントの確認・管理を行います",

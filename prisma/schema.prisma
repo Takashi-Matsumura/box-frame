@@ -67,6 +67,7 @@ model User {
   notifications Notification[]
   auditLogs     AuditLog[]
   announcements Announcement[]
+  personalGoals PersonalGoal[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }
@@ -471,6 +472,7 @@ model Employee {
   customEvaluatees   CustomEvaluator[] @relation("customEvaluatee")
   customEvaluators   CustomEvaluator[] @relation("customEvaluator")
   exclusions         EvaluationExclusion[]
+  personalGoals      PersonalGoal[]    @relation("personalGoals")
 }
 
 // ========================================
@@ -634,6 +636,7 @@ model EvaluationPeriod {
 
   evaluations       Evaluation[]
   goals             EvaluationGoal[]
+  personalGoals     PersonalGoal[]
   weights           EvaluationWeight[]
   criteria1Results  Criteria1Result[]
   customEvaluators  CustomEvaluator[]
@@ -896,6 +899,32 @@ model EvaluationGoal {
   updatedAt         DateTime         @updatedAt
 
   @@unique([periodId, employeeId])
+}
+
+// 個人目標（ユーザーベース - 評価システムとは独立）
+// 評価者との面談準備や自己振り返りのための個人記録
+model PersonalGoal {
+  id                String           @id @default(cuid())
+
+  periodId          String
+  period            EvaluationPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Employee紐付け（オプション - ADMINなど社員レコードがないユーザーはnull）
+  employeeId        String?
+  employee          Employee?        @relation("personalGoals", fields: [employeeId], references: [id], onDelete: SetNull)
+
+  // プロセス目標（JSON配列）
+  processGoals      Json             @default("[]")
+  // 成長目標（JSON）
+  growthGoal        Json?
+  // 自己ふり返り
+  selfReflection    String?
+
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([periodId, userId])
 }
 
 // ========================================

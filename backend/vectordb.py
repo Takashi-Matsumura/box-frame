@@ -109,15 +109,18 @@ class VectorDB:
             logger.error(f"Failed to query collection: {e}")
             raise
 
-    def get_all_documents(self) -> Dict[str, Any]:
+    def get_all_documents(self, where: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Get all documents from the collection.
+
+        Args:
+            where: Optional metadata filter (e.g., {"category": "evaluation"})
 
         Returns:
             All documents with their metadata
         """
         try:
-            results = self.collection.get()
+            results = self.collection.get(where=where)
             logger.info(f"Retrieved {len(results['ids'])} documents")
             return results
 

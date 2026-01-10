@@ -170,6 +170,11 @@ def create_chunks_with_metadata(
             "upload_timestamp": timestamp,
             "char_count": len(chunk),
         }
+
+        # Store original content in first chunk's metadata for editing
+        if i == 0:
+            metadata["original_content"] = text
+
         metadatas.append(metadata)
 
     logger.info(

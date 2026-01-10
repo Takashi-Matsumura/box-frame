@@ -58,10 +58,17 @@ async def chat_with_rag(request: ChatRequest):
                 # Generate query embedding
                 query_embedding = embedding_model.encode_query(latest_message)
 
+                # Build where filter for category if specified
+                where_filter = None
+                if request.category:
+                    where_filter = {"category": request.category}
+                    logger.info(f"  Filtering by category: {request.category}")
+
                 # Query vector database
                 results = vector_db.query(
                     query_embeddings=[query_embedding],
                     n_results=top_k,
+                    where=where_filter,
                 )
 
                 # Build context items

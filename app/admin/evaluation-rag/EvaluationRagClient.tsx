@@ -22,6 +22,8 @@ import {
   Bot,
   Save,
   RotateCcw,
+  Pencil,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,6 +48,7 @@ interface DocumentContent {
     content: string;
     char_count: number;
   }[];
+  original_content?: string;
 }
 
 interface EvaluationRagClientProps {
@@ -106,6 +109,13 @@ const translations = {
     loading: "読み込み中...",
     preview: "プレビュー",
     source: "ソース",
+    edit: "編集",
+    editing: "編集中",
+    saveChanges: "変更を保存",
+    savingChanges: "保存中...",
+    cancelEdit: "キャンセル",
+    updateSuccess: "ドキュメントを更新しました",
+    updateError: "ドキュメントの更新に失敗しました",
     // System Prompt
     systemPromptTitle: "AIアシスタントのシステムプロンプト",
     systemPromptDescription: "AIアシスタントの動作や回答スタイルを定義するプロンプトです",
@@ -153,6 +163,13 @@ const translations = {
     loading: "Loading...",
     preview: "Preview",
     source: "Source",
+    edit: "Edit",
+    editing: "Editing",
+    saveChanges: "Save Changes",
+    savingChanges: "Saving...",
+    cancelEdit: "Cancel",
+    updateSuccess: "Document updated successfully",
+    updateError: "Failed to update document",
     // System Prompt
     systemPromptTitle: "AI Assistant System Prompt",
     systemPromptDescription: "Define the behavior and response style of the AI assistant",
@@ -184,6 +201,9 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
   const [docContent, setDocContent] = useState<DocumentContent | null>(null);
   const [loadingContent, setLoadingContent] = useState(false);
   const [viewMode, setViewMode] = useState<"preview" | "source">("preview");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("evaluation");
   const [content, setContent] = useState("");
@@ -247,6 +267,10 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
 
   // Fetch document content
   const fetchDocumentContent = async (filename: string) => {
+    // Reset editing state when switching documents
+    setIsEditing(false);
+    setEditedContent("");
+
     if (expandedDoc === filename) {
       setExpandedDoc(null);
       setDocContent(null);
@@ -256,6 +280,7 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
     setExpandedDoc(filename);
     setLoadingContent(true);
     setDocContent(null);
+    setViewMode("preview");
 
     try {
       const res = await fetch(`/api/rag-backend/documents/content/${encodeURIComponent(filename)}`);
@@ -344,6 +369,86 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
   const handleRefresh = async () => {
     await fetchStatus();
     await fetchDocuments();
+  };
+
+  // Start editing document
+  const handleStartEdit = () => {
+    if (!docContent) return;
+    // Use original_content if available (preserves formatting)
+    const fullContent = docContent.original_content ||
+      docContent.chunks
+        .sort((a, b) => a.chunk_index - b.chunk_index)
+        .map((chunk) => chunk.content)
+        .join("\n");
+    setEditedContent(fullContent);
+    setIsEditing(true);
+    setViewMode("source");
+  };
+
+  // Cancel editing
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditedContent("");
+  };
+
+  // Save edited document (delete old, create new)
+  const handleSaveEdit = async () => {
+    if (!expandedDoc || !editedContent.trim()) return;
+
+    setIsSavingEdit(true);
+    setMessage(null);
+
+    try {
+      // Get the document info to preserve metadata
+      const docInfo = documents.find((d) => d.filename === expandedDoc);
+      const docTitle = getDisplayName(expandedDoc);
+
+      // First, delete the old document
+      const deleteRes = await fetch(`/api/rag-backend/documents/${encodeURIComponent(expandedDoc)}`, {
+        method: "DELETE",
+      });
+
+      if (!deleteRes.ok) {
+        throw new Error("Failed to delete old document");
+      }
+
+      // Determine category based on document title
+      // 目標設定関連のドキュメントは "goalsetting"、それ以外は "evaluation"
+      const docCategory = docTitle.includes("目標設定") ? "goalsetting" : "evaluation";
+
+      // Then, create new document with edited content
+      const createRes = await fetch("/api/rag-backend/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: editedContent.trim(),
+          metadata: {
+            title: docTitle,
+            category: docCategory,
+          },
+        }),
+      });
+
+      if (createRes.ok) {
+        setMessage({ type: "success", text: t.updateSuccess });
+        setIsEditing(false);
+        setEditedContent("");
+        // Refresh and re-fetch content
+        await fetchStatus();
+        await fetchDocuments();
+        // Re-fetch the document content
+        setExpandedDoc(null);
+        setTimeout(() => fetchDocumentContent(`${docTitle}.md`), 500);
+      } else {
+        const error = await createRes.json();
+        setMessage({ type: "error", text: error.detail || t.updateError });
+      }
+    } catch (error) {
+      console.error("Failed to update document:", error);
+      setMessage({ type: "error", text: t.updateError });
+    } finally {
+      setIsSavingEdit(false);
+    }
   };
 
   // Save system prompt
@@ -602,33 +707,106 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
                             </div>
                           ) : docContent ? (
                             <div>
-                              <div className="flex items-center gap-2 p-3 border-b bg-muted/50">
-                                <Button
-                                  variant={viewMode === "preview" ? "default" : "ghost"}
-                                  size="sm"
-                                  onClick={() => setViewMode("preview")}
-                                  className="h-7 text-xs"
-                                >
-                                  <Eye className="h-3 w-3 mr-1" />
-                                  {t.preview}
-                                </Button>
-                                <Button
-                                  variant={viewMode === "source" ? "default" : "ghost"}
-                                  size="sm"
-                                  onClick={() => setViewMode("source")}
-                                  className="h-7 text-xs"
-                                >
-                                  <Code className="h-3 w-3 mr-1" />
-                                  {t.source}
-                                </Button>
+                              <div className="flex items-center justify-between p-3 border-b bg-muted/50">
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant={viewMode === "preview" && !isEditing ? "default" : "ghost"}
+                                    size="sm"
+                                    onClick={() => { setViewMode("preview"); setIsEditing(false); }}
+                                    className="h-7 text-xs"
+                                    disabled={isEditing && isSavingEdit}
+                                  >
+                                    <Eye className="h-3 w-3 mr-1" />
+                                    {t.preview}
+                                  </Button>
+                                  <Button
+                                    variant={viewMode === "source" && !isEditing ? "default" : "ghost"}
+                                    size="sm"
+                                    onClick={() => { setViewMode("source"); setIsEditing(false); }}
+                                    className="h-7 text-xs"
+                                    disabled={isEditing && isSavingEdit}
+                                  >
+                                    <Code className="h-3 w-3 mr-1" />
+                                    {t.source}
+                                  </Button>
+                                  {!isEditing && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={handleStartEdit}
+                                      className="h-7 text-xs"
+                                    >
+                                      <Pencil className="h-3 w-3 mr-1" />
+                                      {t.edit}
+                                    </Button>
+                                  )}
+                                  {isEditing && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      <Pencil className="h-3 w-3 mr-1" />
+                                      {t.editing}
+                                    </Badge>
+                                  )}
+                                </div>
+                                {isEditing && (
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={handleCancelEdit}
+                                      disabled={isSavingEdit}
+                                      className="h-7 text-xs"
+                                    >
+                                      <X className="h-3 w-3 mr-1" />
+                                      {t.cancelEdit}
+                                    </Button>
+                                    <Button
+                                      variant="default"
+                                      size="sm"
+                                      onClick={handleSaveEdit}
+                                      disabled={isSavingEdit || !editedContent.trim()}
+                                      className="h-7 text-xs"
+                                    >
+                                      {isSavingEdit ? (
+                                        <>
+                                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                          {t.savingChanges}
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Save className="h-3 w-3 mr-1" />
+                                          {t.saveChanges}
+                                        </>
+                                      )}
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
 
                               <div className="p-4 max-h-[500px] overflow-y-auto">
                                 {(() => {
-                                  const fullContent = docContent.chunks
-                                    .sort((a, b) => a.chunk_index - b.chunk_index)
-                                    .map((chunk) => chunk.content)
-                                    .join("\n\n");
+                                  // Use original_content if available (preserves formatting)
+                                  const fullContent = docContent.original_content ||
+                                    docContent.chunks
+                                      .sort((a, b) => a.chunk_index - b.chunk_index)
+                                      .map((chunk) => chunk.content)
+                                      .join("\n");
+
+                                  // 編集モードの場合はテキストエリアを表示
+                                  if (isEditing) {
+                                    return (
+                                      <div className="space-y-2">
+                                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                          <span>{editedContent.length} {t.characters}</span>
+                                        </div>
+                                        <Textarea
+                                          value={editedContent}
+                                          onChange={(e) => setEditedContent(e.target.value)}
+                                          className="font-mono text-xs leading-relaxed min-h-[400px] resize-y"
+                                          disabled={isSavingEdit}
+                                        />
+                                      </div>
+                                    );
+                                  }
 
                                   if (viewMode === "source") {
                                     return (
@@ -660,6 +838,9 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
                                             hr: () => <hr className="my-4 border-border" />,
                                             a: ({ href, children }) => <a href={href} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">{children}</a>,
                                             table: ({ children }) => <div className="my-3 overflow-x-auto"><table className="min-w-full border-collapse border border-border text-sm">{children}</table></div>,
+                                            thead: ({ children }) => <thead className="bg-muted/50">{children}</thead>,
+                                            tbody: ({ children }) => <tbody>{children}</tbody>,
+                                            tr: ({ children }) => <tr className="border-b border-border">{children}</tr>,
                                             th: ({ children }) => <th className="border border-border bg-muted px-3 py-2 text-left font-semibold">{children}</th>,
                                             td: ({ children }) => <td className="border border-border px-3 py-2">{children}</td>,
                                           }}

@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -17,11 +19,14 @@ import {
   Target,
   TrendingUp,
   Award,
-  ClipboardList,
   AlertCircle,
   CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  History,
 } from "lucide-react";
 import { myEvaluationTranslations } from "./translations";
+import GoalSettingSection from "./components/GoalSettingSection";
 
 interface Period {
   id: string;
@@ -104,11 +109,16 @@ export default function MyEvaluationClient({
   userId,
 }: MyEvaluationClientProps) {
   const t = myEvaluationTranslations[language];
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get("tab") || "current";
   const [periods, setPeriods] = useState<Period[]>([]);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
   const [evaluation, setEvaluation] = useState<MyEvaluation | null>(null);
   const [loading, setLoading] = useState(true);
   const [evaluationLoading, setEvaluationLoading] = useState(false);
+  const [historyEvaluations, setHistoryEvaluations] = useState<(MyEvaluation & { periodName: string })[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
 
   // Fetch periods
   useEffect(() => {
@@ -160,6 +170,29 @@ export default function MyEvaluationClient({
   useEffect(() => {
     fetchMyEvaluation();
   }, [fetchMyEvaluation]);
+
+  // Fetch evaluation history (all past periods)
+  const fetchEvaluationHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch("/api/evaluation/my-evaluation/history");
+      if (res.ok) {
+        const data = await res.json();
+        setHistoryEvaluations(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch evaluation history:", error);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  // Fetch history when tab changes to history
+  useEffect(() => {
+    if (activeTab === "history" && historyEvaluations.length === 0) {
+      fetchEvaluationHistory();
+    }
+  }, [activeTab, historyEvaluations.length, fetchEvaluationHistory]);
 
   const getEmployeeName = (emp: { lastName: string; firstName: string; lastNameEn?: string | null; firstNameEn?: string | null }) => {
     if (language === "en" && emp.lastNameEn && emp.firstNameEn) {
@@ -218,83 +251,71 @@ export default function MyEvaluationClient({
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto mt-8">
+      <div className="max-w-4xl mx-auto pt-12">
         <div className="text-center py-8 text-muted-foreground">{t.loading}</div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto mt-8 space-y-6">
-      {/* Header */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <ClipboardList className="w-6 h-6 text-primary" />
-              <div>
-                <h2 className="text-xl font-semibold text-foreground">{t.title}</h2>
-                <p className="text-sm text-muted-foreground">{t.description}</p>
-              </div>
-            </div>
-            <Select value={selectedPeriodId} onValueChange={setSelectedPeriodId}>
-              <SelectTrigger className="w-[250px]">
-                <SelectValue placeholder={t.selectPeriod} />
-              </SelectTrigger>
-              <SelectContent>
-                {periods.map((period) => (
-                  <SelectItem key={period.id} value={period.id}>
-                    {period.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Period Info */}
-      {selectedPeriod && (
-        <Card className="bg-muted/30">
-          <CardHeader className="py-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              {t.periodInfo}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="py-2">
-            <div className="flex items-center gap-6 text-sm">
-              <div>
-                <span className="text-muted-foreground">{t.periodName}: </span>
-                <strong>{selectedPeriod.name}</strong>
-              </div>
-              <div>
-                <span className="text-muted-foreground">{t.startDate}: </span>
-                {new Date(selectedPeriod.startDate).toLocaleDateString(language)}
-              </div>
-              <div>
-                <span className="text-muted-foreground">{t.endDate}: </span>
-                {new Date(selectedPeriod.endDate).toLocaleDateString(language)}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Loading / No Data states */}
-      {evaluationLoading ? (
-        <div className="text-center py-8 text-muted-foreground">{t.loading}</div>
-      ) : !selectedPeriodId ? (
-        <div className="text-center py-12 text-muted-foreground">{t.noPeriods}</div>
-      ) : !evaluation ? (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-            <p className="text-muted-foreground">{t.noEvaluation}</p>
-          </CardContent>
-        </Card>
-      ) : (
+    <div className="max-w-4xl mx-auto pt-12 space-y-6">
+      {/* Current Period Tab Content */}
+      {activeTab === "current" && (
         <>
+          {/* Period Selector */}
+          <Card className="bg-muted/30">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">{t.periodInfo}</span>
+                </div>
+                <Select value={selectedPeriodId} onValueChange={setSelectedPeriodId}>
+                  <SelectTrigger className="w-[250px]">
+                    <SelectValue placeholder={t.selectPeriod} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {periods.map((period) => (
+                      <SelectItem key={period.id} value={period.id}>
+                        {period.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {selectedPeriod && (
+                <div className="flex items-center gap-6 text-sm mt-3 pt-3 border-t">
+                  <div>
+                    <span className="text-muted-foreground">{t.periodName}: </span>
+                    <strong>{selectedPeriod.name}</strong>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">{t.startDate}: </span>
+                    {new Date(selectedPeriod.startDate).toLocaleDateString(language)}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">{t.endDate}: </span>
+                    {new Date(selectedPeriod.endDate).toLocaleDateString(language)}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Loading / No Data states */}
+          {evaluationLoading ? (
+            <div className="text-center py-8 text-muted-foreground">{t.loading}</div>
+          ) : !selectedPeriodId ? (
+            <div className="text-center py-12 text-muted-foreground">{t.noPeriods}</div>
+          ) : !evaluation ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                <p className="text-muted-foreground">{t.noEvaluation}</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
           {/* Evaluation Status Banner */}
           <Card className={isEvaluated ? "border-green-200 dark:border-green-800" : "border-yellow-200 dark:border-yellow-800"}>
             <CardContent className="p-4">
@@ -549,6 +570,130 @@ export default function MyEvaluationClient({
             </>
           )}
         </>
+      )}
+    </>
+  )}
+
+      {/* Goals Tab Content */}
+      {activeTab === "goals" && (
+        <GoalSettingSection
+          language={language}
+          periodId={selectedPeriodId}
+        />
+      )}
+
+      {/* History Tab Content */}
+      {activeTab === "history" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <History className="w-5 h-5" />
+              {t.historyTitle}
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">{t.historyDescription}</p>
+          </CardHeader>
+          <CardContent>
+            {historyLoading ? (
+              <div className="text-center py-8 text-muted-foreground">{t.loading}</div>
+            ) : historyEvaluations.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">{t.noHistory}</div>
+            ) : (
+              <div className="space-y-4">
+                {historyEvaluations.map((historyEval) => (
+                  <Card key={historyEval.id} className="border">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div>
+                            <p className="font-medium">{historyEval.periodName}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              {getStatusBadge(historyEval.status)}
+                              {historyEval.finalGrade && (
+                                <span className="text-sm">
+                                  {t.finalGrade}: {getGradeBadge(historyEval.finalGrade)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          {historyEval.finalScore && (
+                            <div className="text-right">
+                              <p className="text-sm text-muted-foreground">{t.finalScore}</p>
+                              <p className="text-xl font-bold">{historyEval.finalScore.toFixed(2)}</p>
+                            </div>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setExpandedHistoryId(
+                              expandedHistoryId === historyEval.id ? null : historyEval.id
+                            )}
+                          >
+                            {expandedHistoryId === historyEval.id ? (
+                              <>
+                                <ChevronUp className="w-4 h-4 mr-1" />
+                                {t.hideDetails}
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDown className="w-4 h-4 mr-1" />
+                                {t.viewDetails}
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Expanded Details */}
+                      {expandedHistoryId === historyEval.id && (
+                        <div className="mt-4 pt-4 border-t space-y-4">
+                          {/* Score Summary */}
+                          <div className="grid grid-cols-4 gap-4 text-center">
+                            <div>
+                              <p className="text-xs text-muted-foreground">{t.score1}</p>
+                              <p className="text-lg font-bold text-blue-600">
+                                {historyEval.score1?.toFixed(1) || "-"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">{t.score2}</p>
+                              <p className="text-lg font-bold text-green-600">
+                                {historyEval.score2?.toFixed(2) || "-"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">{t.score3}</p>
+                              <p className="text-lg font-bold text-purple-600">
+                                {historyEval.score3?.toFixed(2) || "-"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">{t.finalScore}</p>
+                              <p className="text-lg font-bold">
+                                {historyEval.finalScore?.toFixed(2) || "-"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Evaluator Comment */}
+                          {historyEval.evaluatorComment && (
+                            <div>
+                              <p className="text-sm text-muted-foreground mb-1">{t.evaluatorComment}</p>
+                              <p className="text-sm whitespace-pre-wrap bg-muted/50 p-3 rounded">
+                                {historyEval.evaluatorComment}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   );

@@ -50,83 +50,65 @@ interface DocumentContent {
   original_content?: string;
 }
 
-interface EvaluationScores {
-  score1: number;
-  score2: number;
-  score3: number;
-  finalScore: number;
-  finalGrade: string;
-}
-
-interface EvaluationAIAssistantProps {
+interface GoalAIAssistantProps {
   language: "en" | "ja";
-  evaluationId?: string;
-  employeeInfo?: string;
-  evaluationScores?: EvaluationScores;
+  goalsInfo?: string;
   onToggleExpand?: (expanded: boolean) => void;
 }
 
 const QUICK_ACTIONS = {
   ja: [
-    { id: "evaluator_comment", label: "コメント作成" },
-    { id: "evaluation_points", label: "評価のポイント" },
-    { id: "feedback_examples", label: "フィードバック例" },
-    { id: "growth_goals", label: "成長目標設定" },
+    { id: "goal_advice", label: "目標のアドバイス" },
+    { id: "goal_examples", label: "目標の例文" },
+    { id: "growth_suggestion", label: "成長提案" },
+    { id: "meeting_prep", label: "面談準備" },
   ],
   en: [
-    { id: "evaluator_comment", label: "Write Comment" },
-    { id: "evaluation_points", label: "Evaluation Points" },
-    { id: "feedback_examples", label: "Feedback Examples" },
-    { id: "growth_goals", label: "Growth Goals" },
+    { id: "goal_advice", label: "Goal Advice" },
+    { id: "goal_examples", label: "Goal Examples" },
+    { id: "growth_suggestion", label: "Growth Ideas" },
+    { id: "meeting_prep", label: "Meeting Prep" },
   ],
 };
 
 const DEFAULT_SYSTEM_PROMPT = {
-  ja: `あなたは人事評価の専門アシスタントです。評価者をサポートします。
+  ja: `あなたは目標設定のサポートアシスタントです。被評価者が目標を設定する際にサポートします。
 
 【重要】回答は簡潔に。箇条書きで3〜5項目程度に収めてください。
 
 あなたができること:
-- 評価のポイントや基準の説明
-- フィードバックの書き方アドバイス
-- 成長目標の設定サポート
-- 評価者コメントのサンプル作成
+- 効果的な目標の立て方のアドバイス
+- プロセス目標・成長目標の具体例を提案
+- 評価者との面談準備のサポート
+- 自己振り返りの書き方のアドバイス
 
-【評価者コメント作成について】
-評価者コメントの作成を求められた場合は、以下を踏まえて作成してください:
-- 提供された評価スコア・グレード情報を参考にする
-- 高評価の場合: 具体的な称賛、今後への期待
-- 標準評価の場合: 良い点を認めつつ、成長への期待
-- 低評価の場合: 課題を指摘しつつ、改善への支援姿勢
-- 50〜150字程度の簡潔なコメント例を提示`,
-  en: `You are an HR evaluation assistant supporting evaluators.
+【目標設定のポイント】
+- SMART原則（具体的・測定可能・達成可能・関連性・期限）を意識
+- プロセス目標: 日常業務やプロジェクトでの具体的な成果
+- 成長目標: スキル向上や新しい挑戦への取り組み
+- 評価者との面談で共有できる内容を意識`,
+  en: `You are a goal-setting support assistant helping employees set their goals.
 
 【Important】Keep responses concise. Use bullet points, 3-5 items max.
 
 What you can do:
-- Explain evaluation points and criteria
-- Advise on writing feedback
-- Support goal setting
-- Create sample evaluator comments
+- Advise on effective goal setting
+- Suggest examples for process and growth goals
+- Support meeting preparation with evaluators
+- Advise on self-reflection writing
 
-【About Evaluator Comments】
-When asked to create evaluator comments:
-- Reference the provided scores and grades
-- High scores: specific praise, future expectations
-- Average scores: acknowledge strengths, encourage growth
-- Low scores: address issues, show support for improvement
-- Provide a concise sample comment (2-4 sentences)`,
+【Goal Setting Tips】
+- Follow SMART principles (Specific, Measurable, Achievable, Relevant, Time-bound)
+- Process goals: Specific outcomes in daily work or projects
+- Growth goals: Skill improvement or new challenges
+- Consider what to share in meetings with evaluators`,
 };
 
-const SYSTEM_PROMPT_STORAGE_KEY = "evaluation-ai-system-prompt";
-
-export function EvaluationAIAssistant({
+export function GoalAIAssistant({
   language,
-  evaluationId: _evaluationId,
-  employeeInfo,
-  evaluationScores,
+  goalsInfo,
   onToggleExpand,
-}: EvaluationAIAssistantProps) {
+}: GoalAIAssistantProps) {
   const [ragEnabled, setRagEnabled] = useState(true);
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
   const [backendStatus, setBackendStatus] = useState<
@@ -137,11 +119,10 @@ export function EvaluationAIAssistant({
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
 
-  // 最新のスコア情報を保持するref（クロージャー問題を回避）
-  const evaluationScoresRef = useRef(evaluationScores);
-  evaluationScoresRef.current = evaluationScores;
+  // 最新の目標情報を保持するref
+  const goalsInfoRef = useRef(goalsInfo);
+  goalsInfoRef.current = goalsInfo;
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -156,7 +137,7 @@ export function EvaluationAIAssistant({
       rag: "RAG",
       ragFiles: "ファイル",
       quickActions: "クイックアクション",
-      placeholder: "評価について質問...",
+      placeholder: "目標について質問...",
       poweredBy: "Powered by",
       noMessages: "質問を入力するか、クイックアクションを選択してください",
       backendOffline: "RAGバックエンドに接続できません",
@@ -177,7 +158,7 @@ export function EvaluationAIAssistant({
       rag: "RAG",
       ragFiles: "files",
       quickActions: "Quick Actions",
-      placeholder: "Ask about evaluation...",
+      placeholder: "Ask about goals...",
       poweredBy: "Powered by",
       noMessages: "Enter a question or select a quick action",
       backendOffline: "Cannot connect to RAG backend",
@@ -198,7 +179,7 @@ export function EvaluationAIAssistant({
   // バックエンドステータスとドキュメント一覧を取得
   const fetchBackendStatus = useCallback(async () => {
     try {
-      const res = await fetch("/api/rag-backend/documents/list?category=evaluation");
+      const res = await fetch("/api/rag-backend/documents/list?category=goalsetting");
       if (res.ok) {
         const data = await res.json();
         setDocuments(data.documents || []);
@@ -215,22 +196,6 @@ export function EvaluationAIAssistant({
   useEffect(() => {
     fetchBackendStatus();
   }, [fetchBackendStatus]);
-
-  // localStorageからシステムプロンプトを読み込む
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(SYSTEM_PROMPT_STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setSystemPrompt({
-          ja: parsed.ja || DEFAULT_SYSTEM_PROMPT.ja,
-          en: parsed.en || DEFAULT_SYSTEM_PROMPT.en,
-        });
-      }
-    } catch {
-      // エラー時はデフォルトを使用
-    }
-  }, []);
 
   // メッセージが追加されたらスクロール
   useEffect(() => {
@@ -299,27 +264,12 @@ export function EvaluationAIAssistant({
 
     try {
       // システムプロンプトを構築
-      let systemContent = systemPrompt[language];
-      if (employeeInfo) {
-        systemContent += `\n\n${language === "ja" ? "【評価対象者情報】" : "【Employee Information】"}\n${employeeInfo}`;
-      }
-      // refから最新のスコア情報を取得
-      const currentScores = evaluationScoresRef.current;
-      if (currentScores) {
-        const scoreInfo = language === "ja"
-          ? `\n\n【現在の評価スコア】
-結果評価: ${currentScores.score1.toFixed(1)}
-プロセス評価: ${currentScores.score2.toFixed(1)}
-成長評価: ${currentScores.score3.toFixed(1)}
-最終スコア: ${currentScores.finalScore.toFixed(2)}
-最終グレード: ${currentScores.finalGrade}`
-          : `\n\n【Current Evaluation Scores】
-Results: ${currentScores.score1.toFixed(1)}
-Process: ${currentScores.score2.toFixed(1)}
-Growth: ${currentScores.score3.toFixed(1)}
-Final Score: ${currentScores.finalScore.toFixed(2)}
-Final Grade: ${currentScores.finalGrade}`;
-        systemContent += scoreInfo;
+      let systemContent = DEFAULT_SYSTEM_PROMPT[language];
+
+      // refから最新の目標情報を取得
+      const currentGoalsInfo = goalsInfoRef.current;
+      if (currentGoalsInfo) {
+        systemContent += `\n\n${language === "ja" ? "【現在の目標設定】" : "【Current Goals】"}\n${currentGoalsInfo}`;
       }
 
       // メッセージ履歴を構築（最新10件まで）
@@ -338,7 +288,7 @@ Final Grade: ${currentScores.finalGrade}`;
           use_rag: ragEnabled,
           top_k: 5,
           stream: true,
-          category: "evaluation",
+          category: "goalsetting",
         }),
         signal: abortControllerRef.current.signal,
       });
@@ -426,19 +376,28 @@ Final Grade: ${currentScores.finalGrade}`;
   };
 
   const handleQuickAction = (actionId: string) => {
-    const action = quickActions.find((a) => a.id === actionId);
-    if (action) {
-      let question: string;
-      if (actionId === "evaluator_comment") {
-        question = language === "ja"
-          ? "この社員への評価者コメントのサンプルを作成してください。"
-          : "Please create a sample evaluator comment for this employee.";
-      } else {
-        question = language === "ja"
-          ? `${action.label}について教えてください。`
-          : `Please tell me about ${action.label.toLowerCase()}.`;
-      }
-      sendMessage(question);
+    const prompts: Record<string, { ja: string; en: string }> = {
+      goal_advice: {
+        ja: "効果的な目標の立て方について教えてください。",
+        en: "Please tell me about effective goal setting.",
+      },
+      goal_examples: {
+        ja: "プロセス目標と成長目標の具体的な例文を教えてください。",
+        en: "Please give me specific examples of process and growth goals.",
+      },
+      growth_suggestion: {
+        ja: "私の成長目標に対する提案やアドバイスをください。",
+        en: "Please give me suggestions and advice for my growth goals.",
+      },
+      meeting_prep: {
+        ja: "評価者との面談に向けて、どのような準備をすればよいですか？",
+        en: "How should I prepare for the meeting with my evaluator?",
+      },
+    };
+
+    const prompt = prompts[actionId];
+    if (prompt) {
+      sendMessage(prompt[language]);
     }
   };
 
@@ -494,13 +453,13 @@ Final Grade: ${currentScores.finalGrade}`;
           </div>
           <div className="flex items-center gap-2">
             <Label
-              htmlFor="rag-toggle"
+              htmlFor="rag-toggle-goal"
               className="text-xs text-muted-foreground"
             >
               {t.rag}
             </Label>
             <Switch
-              id="rag-toggle"
+              id="rag-toggle-goal"
               checked={ragEnabled}
               onCheckedChange={setRagEnabled}
               disabled={backendStatus === "unhealthy"}
@@ -720,112 +679,112 @@ Final Grade: ${currentScores.finalGrade}`;
                   </div>
                 ) : docContent ? (
                   <div className="markdown-preview max-w-4xl mx-auto">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          p: ({ children }) => (
-                            <p className="my-3 leading-relaxed">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        p: ({ children }) => (
+                          <p className="my-3 leading-relaxed">
+                            {children}
+                          </p>
+                        ),
+                        ul: ({ children }) => (
+                          <ul className="my-3 ml-6 list-disc space-y-2">
+                            {children}
+                          </ul>
+                        ),
+                        ol: ({ children }) => (
+                          <ol className="my-3 ml-6 list-decimal space-y-2">
+                            {children}
+                          </ol>
+                        ),
+                        li: ({ children }) => (
+                          <li className="leading-relaxed">{children}</li>
+                        ),
+                        h1: ({ children }) => (
+                          <h1 className="text-2xl font-bold my-6 pb-2 border-b">
+                            {children}
+                          </h1>
+                        ),
+                        h2: ({ children }) => (
+                          <h2 className="text-xl font-bold my-5 pb-1 border-b">
+                            {children}
+                          </h2>
+                        ),
+                        h3: ({ children }) => (
+                          <h3 className="text-lg font-bold my-4">
+                            {children}
+                          </h3>
+                        ),
+                        h4: ({ children }) => (
+                          <h4 className="text-base font-bold my-3">
+                            {children}
+                          </h4>
+                        ),
+                        strong: ({ children }) => (
+                          <strong className="font-semibold">
+                            {children}
+                          </strong>
+                        ),
+                        em: ({ children }) => (
+                          <em className="italic">{children}</em>
+                        ),
+                        code: ({ children }) => (
+                          <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">
+                            {children}
+                          </code>
+                        ),
+                        pre: ({ children }) => (
+                          <pre className="bg-muted p-4 rounded-lg my-4 overflow-x-auto text-sm">
+                            {children}
+                          </pre>
+                        ),
+                        blockquote: ({ children }) => (
+                          <blockquote className="border-l-4 border-primary/50 pl-4 my-4 italic text-muted-foreground">
+                            {children}
+                          </blockquote>
+                        ),
+                        hr: () => <hr className="my-6 border-border" />,
+                        a: ({ href, children }) => (
+                          <a
+                            href={href}
+                            className="text-primary hover:underline"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {children}
+                          </a>
+                        ),
+                        table: ({ children }) => (
+                          <div className="my-4 overflow-x-auto">
+                            <table className="min-w-full border-collapse border border-border">
                               {children}
-                            </p>
-                          ),
-                          ul: ({ children }) => (
-                            <ul className="my-3 ml-6 list-disc space-y-2">
-                              {children}
-                            </ul>
-                          ),
-                          ol: ({ children }) => (
-                            <ol className="my-3 ml-6 list-decimal space-y-2">
-                              {children}
-                            </ol>
-                          ),
-                          li: ({ children }) => (
-                            <li className="leading-relaxed">{children}</li>
-                          ),
-                          h1: ({ children }) => (
-                            <h1 className="text-2xl font-bold my-6 pb-2 border-b">
-                              {children}
-                            </h1>
-                          ),
-                          h2: ({ children }) => (
-                            <h2 className="text-xl font-bold my-5 pb-1 border-b">
-                              {children}
-                            </h2>
-                          ),
-                          h3: ({ children }) => (
-                            <h3 className="text-lg font-bold my-4">
-                              {children}
-                            </h3>
-                          ),
-                          h4: ({ children }) => (
-                            <h4 className="text-base font-bold my-3">
-                              {children}
-                            </h4>
-                          ),
-                          strong: ({ children }) => (
-                            <strong className="font-semibold">
-                              {children}
-                            </strong>
-                          ),
-                          em: ({ children }) => (
-                            <em className="italic">{children}</em>
-                          ),
-                          code: ({ children }) => (
-                            <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">
-                              {children}
-                            </code>
-                          ),
-                          pre: ({ children }) => (
-                            <pre className="bg-muted p-4 rounded-lg my-4 overflow-x-auto text-sm">
-                              {children}
-                            </pre>
-                          ),
-                          blockquote: ({ children }) => (
-                            <blockquote className="border-l-4 border-primary/50 pl-4 my-4 italic text-muted-foreground">
-                              {children}
-                            </blockquote>
-                          ),
-                          hr: () => <hr className="my-6 border-border" />,
-                          a: ({ href, children }) => (
-                            <a
-                              href={href}
-                              className="text-primary hover:underline"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              {children}
-                            </a>
-                          ),
-                          table: ({ children }) => (
-                            <div className="my-4 overflow-x-auto">
-                              <table className="min-w-full border-collapse border border-border">
-                                {children}
-                              </table>
-                            </div>
-                          ),
-                          thead: ({ children }) => (
-                            <thead className="bg-muted/50">{children}</thead>
-                          ),
-                          tbody: ({ children }) => (
-                            <tbody>{children}</tbody>
-                          ),
-                          tr: ({ children }) => (
-                            <tr className="border-b border-border">{children}</tr>
-                          ),
-                          th: ({ children }) => (
-                            <th className="border border-border bg-muted px-4 py-2 text-left font-semibold">
-                              {children}
-                            </th>
-                          ),
-                          td: ({ children }) => (
-                            <td className="border border-border px-4 py-2">
-                              {children}
-                            </td>
-                          ),
-                        }}
-                      >
-                        {getFullContent()}
-                      </ReactMarkdown>
-                    </div>
+                            </table>
+                          </div>
+                        ),
+                        thead: ({ children }) => (
+                          <thead className="bg-muted/50">{children}</thead>
+                        ),
+                        tbody: ({ children }) => (
+                          <tbody>{children}</tbody>
+                        ),
+                        tr: ({ children }) => (
+                          <tr className="border-b border-border">{children}</tr>
+                        ),
+                        th: ({ children }) => (
+                          <th className="border border-border bg-muted px-4 py-2 text-left font-semibold">
+                            {children}
+                          </th>
+                        ),
+                        td: ({ children }) => (
+                          <td className="border border-border px-4 py-2">
+                            {children}
+                          </td>
+                        ),
+                      }}
+                    >
+                      {getFullContent()}
+                    </ReactMarkdown>
+                  </div>
                 ) : null}
               </div>
             </>

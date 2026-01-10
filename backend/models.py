@@ -17,6 +17,7 @@ class ChatRequest(BaseModel):
     use_rag: bool = Field(default=True, description="Enable RAG context retrieval")
     top_k: Optional[int] = Field(default=None, description="Number of context chunks to retrieve")
     stream: bool = Field(default=True, description="Enable streaming response")
+    category: Optional[str] = Field(default=None, description="RAG category filter (e.g., 'evaluation', 'goalsetting')")
 
 
 # Document Models

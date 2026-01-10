@@ -99,6 +99,7 @@ export function Header({ session, language = "en", accessKeyTabPermissions = {} 
   const isDataManagement = pathname === "/admin/data-management";
   const isEvaluationMaster = pathname === "/admin/evaluation-master";
   const isEvaluationRag = pathname === "/admin/evaluation-rag";
+  const isMyEvaluation = pathname === "/my-evaluation";
 
   // 組織分析タブ
   const analyticsTab = searchParams.get("tab") || "overview";
@@ -249,6 +250,17 @@ export function Header({ session, language = "en", accessKeyTabPermissions = {} 
       active: evaluationRagTab === tab.id,
     })) || [];
 
+  // 自分の評価タブ（レジストリから取得）
+  const myEvaluationTab = searchParams.get("tab") || "current";
+  const registryMyEvaluationTabs = getTabsByMenuPath("/my-evaluation");
+  const myEvaluationTabs =
+    registryMyEvaluationTabs?.map((tab) => ({
+      name: language === "ja" ? tab.nameJa : tab.name,
+      icon: tab.icon,
+      path: `/my-evaluation?tab=${tab.id}`,
+      active: myEvaluationTab === tab.id,
+    })) || [];
+
   const renderTabs = (tabs: TabItem[], label: string) => (
     <div className="border-t border-border bg-muted">
       <nav className="flex gap-1 px-6" aria-label={label}>
@@ -337,6 +349,7 @@ export function Header({ session, language = "en", accessKeyTabPermissions = {} 
       {isDataManagement && renderTabs(filterTabsByPermission(dataManagementTabs, "/admin/data-management"), "Data Management Tabs")}
       {isEvaluationMaster && renderTabs(filterTabsByPermission(evaluationMasterTabs, "/admin/evaluation-master"), "Evaluation Master Tabs")}
       {isEvaluationRag && renderTabs(filterTabsByPermission(evaluationRagTabs, "/admin/evaluation-rag"), "Evaluation AI Support Tabs")}
+      {isMyEvaluation && renderTabs(myEvaluationTabs, "My Evaluation Tabs")}
     </header>
   );
 }
