@@ -49,7 +49,8 @@ export const openldapModule: AppModule = {
     id: "openldap-mcp",
     name: "OpenLDAP MCP Server",
     nameJa: "OpenLDAP MCPサーバ",
-    description: "Provides read-only access to LDAP user information for external AI",
+    description:
+      "Provides read-only access to LDAP user information for external AI",
     descriptionJa: "外部AIからLDAPユーザ情報への読み取り専用アクセスを提供",
     path: "mcp-servers/openldap",
     toolCount: 5,

@@ -7,10 +7,22 @@
  * - 成長評価: カテゴリ別の成長度評価
  */
 
+import {
+  FaBalanceScale,
+  FaBullseye,
+  FaCalendarAlt,
+  FaClipboardList,
+  FaDatabase,
+  FaHistory,
+  FaStar,
+} from "react-icons/fa";
+import {
+  TbCircleNumber1Filled,
+  TbCircleNumber2Filled,
+  TbCircleNumber3Filled,
+} from "react-icons/tb";
+import { getMenuIcon, getModuleIcon } from "@/lib/modules/icons";
 import type { AppModule, AppTab } from "@/types/module";
-import { getModuleIcon, getMenuIcon } from "@/lib/modules/icons";
-import { FaDatabase, FaStar, FaCalendarAlt, FaBalanceScale, FaClipboardList, FaHistory, FaBullseye } from "react-icons/fa";
-import { TbCircleNumber1Filled, TbCircleNumber2Filled, TbCircleNumber3Filled } from "react-icons/tb";
 
 /**
  * 自分の評価タブ定義
@@ -245,10 +257,7 @@ export const evaluationModule: AppModule = {
       nameJa: "評価スコア計算",
       description: "Calculate weighted scores and final grades",
       descriptionJa: "加重スコアと最終グレードの計算",
-      apiEndpoints: [
-        "/api/evaluation/[id]",
-        "/api/evaluation/[id]/complete",
-      ],
+      apiEndpoints: ["/api/evaluation/[id]", "/api/evaluation/[id]/complete"],
       enabled: true,
     },
     {

@@ -1,32 +1,20 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  AlertTriangle,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Merge,
+  Plus,
+  RefreshCw,
+  Save,
+  Split,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,32 +25,44 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Plus,
-  Save,
-  Trash2,
-  RefreshCw,
-  AlertTriangle,
-  Users,
-  Check,
-  ChevronRight,
-  ChevronDown,
-  ChevronUp,
-  Merge,
-  Split,
-} from "lucide-react";
 import { evaluationMasterTranslations } from "../translations";
 
 interface Weight {
@@ -154,27 +154,40 @@ export default function WeightsSection({
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Weight | null>(null);
-  const [detectionResult, setDetectionResult] = useState<DetectionResult | null>(null);
+  const [detectionResult, setDetectionResult] =
+    useState<DetectionResult | null>(null);
   const [isDetectDialogOpen, setIsDetectDialogOpen] = useState(false);
   const [detecting, setDetecting] = useState(false);
-  const [expandedPositions, setExpandedPositions] = useState<Set<string>>(new Set());
+  const [expandedPositions, setExpandedPositions] = useState<Set<string>>(
+    new Set(),
+  );
 
   // 結合ダイアログの状態
   const [isMergeDialogOpen, setIsMergeDialogOpen] = useState(false);
-  const [mergeSelectedPositions, setMergeSelectedPositions] = useState<string[]>([]);
+  const [mergeSelectedPositions, setMergeSelectedPositions] = useState<
+    string[]
+  >([]);
   const [mergeGroupName, setMergeGroupName] = useState("");
 
   // 分離ダイアログの状態
   const [isSplitDialogOpen, setIsSplitDialogOpen] = useState(false);
-  const [splitTargetGroup, setSplitTargetGroup] = useState<DisplayGroup | null>(null);
-  const [splitSelectedPositions, setSplitSelectedPositions] = useState<string[]>([]);
+  const [splitTargetGroup, setSplitTargetGroup] = useState<DisplayGroup | null>(
+    null,
+  );
+  const [splitSelectedPositions, setSplitSelectedPositions] = useState<
+    string[]
+  >([]);
 
   // グループ削除の状態
-  const [deleteGroupTarget, setDeleteGroupTarget] = useState<DisplayGroup | null>(null);
+  const [deleteGroupTarget, setDeleteGroupTarget] =
+    useState<DisplayGroup | null>(null);
 
   // グループのデフォルト重み値（結合グループ用）
   const [groupDefaultWeights, setGroupDefaultWeights] = useState<
-    Record<string, { resultsWeight: number; processWeight: number; growthWeight: number }>
+    Record<
+      string,
+      { resultsWeight: number; processWeight: number; growthWeight: number }
+    >
   >({});
 
   const [formData, setFormData] = useState({
@@ -209,7 +222,9 @@ export default function WeightsSection({
   const fetchPositionGroups = useCallback(async () => {
     if (!periodId) return;
     try {
-      const res = await fetch(`/api/evaluation/position-groups?periodId=${periodId}`);
+      const res = await fetch(
+        `/api/evaluation/position-groups?periodId=${periodId}`,
+      );
       if (res.ok) {
         const data: PositionGroup[] = await res.json();
         setPositionGroups(data);
@@ -223,7 +238,9 @@ export default function WeightsSection({
     if (!periodId) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/evaluation/weights?periodId=${periodId}&includeNames=true`);
+      const res = await fetch(
+        `/api/evaluation/weights?periodId=${periodId}&includeNames=true`,
+      );
       if (res.ok) {
         const data: Weight[] = await res.json();
         setWeights(data);
@@ -266,7 +283,7 @@ export default function WeightsSection({
     if (positionGroups.length === 0) {
       // グループが未設定の場合は役職コード順で単一役職グループとして表示
       const sorted = [...groupedWeights].sort((a, b) =>
-        a.positionCode.localeCompare(b.positionCode)
+        a.positionCode.localeCompare(b.positionCode),
       );
       const groups: DisplayGroup[] = sorted.map((g, index) => ({
         id: `temp-${g.positionCode}`,
@@ -284,7 +301,7 @@ export default function WeightsSection({
     // グループ設定がある場合
     const groups: DisplayGroup[] = positionGroups.map((pg) => {
       const positions = groupedWeights.filter((gw) =>
-        pg.positionCodes.includes(gw.positionCode)
+        pg.positionCodes.includes(gw.positionCode),
       );
       return {
         id: pg.id,
@@ -298,8 +315,12 @@ export default function WeightsSection({
     });
 
     // グループに含まれていない役職があれば追加
-    const groupedCodes = new Set(positionGroups.flatMap((pg) => pg.positionCodes));
-    const ungrouped = groupedWeights.filter((gw) => !groupedCodes.has(gw.positionCode));
+    const groupedCodes = new Set(
+      positionGroups.flatMap((pg) => pg.positionCodes),
+    );
+    const ungrouped = groupedWeights.filter(
+      (gw) => !groupedCodes.has(gw.positionCode),
+    );
     const maxOrder = Math.max(...groups.map((g) => g.displayOrder), -1);
 
     ungrouped.forEach((g, index) => {
@@ -331,7 +352,8 @@ export default function WeightsSection({
   }, [selectedPeriodId]);
 
   const handleSave = async () => {
-    const total = formData.resultsWeight + formData.processWeight + formData.growthWeight;
+    const total =
+      formData.resultsWeight + formData.processWeight + formData.growthWeight;
     if (total !== 100) {
       alert(t.weightError);
       return;
@@ -368,7 +390,8 @@ export default function WeightsSection({
   };
 
   const handleUpdate = async (weight: Weight) => {
-    const total = weight.resultsWeight + weight.processWeight + weight.growthWeight;
+    const total =
+      weight.resultsWeight + weight.processWeight + weight.growthWeight;
     if (total !== 100) {
       alert(t.weightError);
       return;
@@ -419,7 +442,7 @@ export default function WeightsSection({
     setDetecting(true);
     try {
       const res = await fetch(
-        `/api/evaluation/weights?action=detect-combinations&periodId=${periodId}`
+        `/api/evaluation/weights?action=detect-combinations&periodId=${periodId}`,
       );
       if (res.ok) {
         const data = await res.json();
@@ -450,7 +473,10 @@ export default function WeightsSection({
 
       if (res.ok) {
         // 役職グループの初期化（存在しない場合）
-        if (positionGroups.length === 0 && detectionResult.positionStats.length > 0) {
+        if (
+          positionGroups.length === 0 &&
+          detectionResult.positionStats.length > 0
+        ) {
           await initializePositionGroups(detectionResult.positionStats);
         }
         setIsDetectDialogOpen(false);
@@ -491,14 +517,14 @@ export default function WeightsSection({
     positionCode: string,
     gradeCode: string,
     field: "resultsWeight" | "processWeight" | "growthWeight",
-    value: number
+    value: number,
   ) => {
     setWeights((prev) =>
       prev.map((w) =>
         w.positionCode === positionCode && w.gradeCode === gradeCode
           ? { ...w, [field]: value }
-          : w
-      )
+          : w,
+      ),
     );
     // 同時にグループ化データも更新
     setGroupedWeights((prev) =>
@@ -507,9 +533,9 @@ export default function WeightsSection({
         grades: g.grades.map((w) =>
           w.positionCode === positionCode && w.gradeCode === gradeCode
             ? { ...w, [field]: value }
-            : w
+            : w,
         ),
-      }))
+      })),
     );
   };
 
@@ -531,7 +557,10 @@ export default function WeightsSection({
     newGroups[index].displayOrder = newGroups[index - 1].displayOrder;
     newGroups[index - 1].displayOrder = temp;
     // 配列内の位置も入れ替え
-    [newGroups[index], newGroups[index - 1]] = [newGroups[index - 1], newGroups[index]];
+    [newGroups[index], newGroups[index - 1]] = [
+      newGroups[index - 1],
+      newGroups[index],
+    ];
 
     setDisplayGroups(newGroups);
     await saveAllGroupOrders(newGroups);
@@ -546,7 +575,10 @@ export default function WeightsSection({
     newGroups[index].displayOrder = newGroups[index + 1].displayOrder;
     newGroups[index + 1].displayOrder = temp;
     // 配列内の位置も入れ替え
-    [newGroups[index], newGroups[index + 1]] = [newGroups[index + 1], newGroups[index]];
+    [newGroups[index], newGroups[index + 1]] = [
+      newGroups[index + 1],
+      newGroups[index],
+    ];
 
     setDisplayGroups(newGroups);
     await saveAllGroupOrders(newGroups);
@@ -556,7 +588,10 @@ export default function WeightsSection({
     try {
       // 全グループを保存（ungroupedも含めて新規作成・更新）
       const groupsToSave = groups.map((g, index) => ({
-        id: g.id.startsWith("temp-") || g.id.startsWith("ungrouped-") ? null : g.id,
+        id:
+          g.id.startsWith("temp-") || g.id.startsWith("ungrouped-")
+            ? null
+            : g.id,
         name: g.name,
         positionCodes: g.positionCodes,
         displayOrder: index,
@@ -653,16 +688,22 @@ export default function WeightsSection({
     if (!deleteGroupTarget) return;
 
     // temp- または ungrouped- で始まるIDは未保存なので削除不要
-    if (deleteGroupTarget.id.startsWith("temp-") || deleteGroupTarget.id.startsWith("ungrouped-")) {
+    if (
+      deleteGroupTarget.id.startsWith("temp-") ||
+      deleteGroupTarget.id.startsWith("ungrouped-")
+    ) {
       setDeleteGroupTarget(null);
       return;
     }
 
     setSaving(true);
     try {
-      await fetch(`/api/evaluation/position-groups?id=${deleteGroupTarget.id}`, {
-        method: "DELETE",
-      });
+      await fetch(
+        `/api/evaluation/position-groups?id=${deleteGroupTarget.id}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       setDeleteGroupTarget(null);
       fetchPositionGroups();
@@ -696,7 +737,7 @@ export default function WeightsSection({
   const handleGroupDefaultWeightChange = (
     groupId: string,
     field: "resultsWeight" | "processWeight" | "growthWeight",
-    value: number
+    value: number,
   ) => {
     setGroupDefaultWeights((prev) => ({
       ...prev,
@@ -712,7 +753,10 @@ export default function WeightsSection({
     const defaultWeight = groupDefaultWeights[group.id];
     if (!defaultWeight) return;
 
-    const total = defaultWeight.resultsWeight + defaultWeight.processWeight + defaultWeight.growthWeight;
+    const total =
+      defaultWeight.resultsWeight +
+      defaultWeight.processWeight +
+      defaultWeight.growthWeight;
     if (total !== 100) {
       alert(t.weightError);
       return;
@@ -729,7 +773,7 @@ export default function WeightsSection({
           resultsWeight: defaultWeight.resultsWeight,
           processWeight: defaultWeight.processWeight,
           growthWeight: defaultWeight.growthWeight,
-        }))
+        })),
       );
 
       await fetch("/api/evaluation/weights", {
@@ -755,7 +799,7 @@ export default function WeightsSection({
             };
           }
           return w;
-        })
+        }),
       );
 
       setGroupedWeights((prev) =>
@@ -773,7 +817,7 @@ export default function WeightsSection({
             };
           }
           return g;
-        })
+        }),
       );
 
       // デフォルト値をクリア（適用済みのため）
@@ -793,8 +837,12 @@ export default function WeightsSection({
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex items-center justify-between mb-6 flex-shrink-0">
         <div>
-          <h2 className="text-xl font-semibold text-foreground">{t.weightsTitle}</h2>
-          <p className="text-sm text-muted-foreground">{t.weightsDescription}</p>
+          <h2 className="text-xl font-semibold text-foreground">
+            {t.weightsTitle}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {t.weightsDescription}
+          </p>
         </div>
         <div className="flex items-center gap-4">
           <Select value={periodId} onValueChange={setPeriodId}>
@@ -815,7 +863,9 @@ export default function WeightsSection({
             onClick={handleDetectCombinations}
             disabled={!periodId || detecting}
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${detecting ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${detecting ? "animate-spin" : ""}`}
+            />
             {t.detectCombinations || "組み合わせ検出"}
           </Button>
 
@@ -837,7 +887,10 @@ export default function WeightsSection({
                     <Input
                       value={formData.positionCode}
                       onChange={(e) =>
-                        setFormData({ ...formData, positionCode: e.target.value })
+                        setFormData({
+                          ...formData,
+                          positionCode: e.target.value,
+                        })
                       }
                       placeholder="000, 200, 300..."
                     />
@@ -847,7 +900,10 @@ export default function WeightsSection({
                     <Input
                       value={formData.positionName}
                       onChange={(e) =>
-                        setFormData({ ...formData, positionName: e.target.value })
+                        setFormData({
+                          ...formData,
+                          positionName: e.target.value,
+                        })
                       }
                       placeholder="一般, 部長..."
                     />
@@ -858,12 +914,16 @@ export default function WeightsSection({
                   <Input
                     value={formData.gradeCode}
                     onChange={(e) =>
-                      setFormData({ ...formData, gradeCode: e.target.value.toUpperCase() })
+                      setFormData({
+                        ...formData,
+                        gradeCode: e.target.value.toUpperCase(),
+                      })
                     }
                     placeholder="E3, C1, ALL..."
                   />
                   <p className="text-xs text-muted-foreground">
-                    {t.gradeCodeHint || "ALLを指定すると、この役職の全等級に適用されます"}
+                    {t.gradeCodeHint ||
+                      "ALLを指定すると、この役職の全等級に適用されます"}
                   </p>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
@@ -917,13 +977,18 @@ export default function WeightsSection({
                   {t.total}:{" "}
                   <span
                     className={
-                      formData.resultsWeight + formData.processWeight + formData.growthWeight !==
+                      formData.resultsWeight +
+                        formData.processWeight +
+                        formData.growthWeight !==
                       100
                         ? "text-red-500 font-bold"
                         : ""
                     }
                   >
-                    {formData.resultsWeight + formData.processWeight + formData.growthWeight}%
+                    {formData.resultsWeight +
+                      formData.processWeight +
+                      formData.growthWeight}
+                    %
                   </span>
                 </div>
                 <div className="flex justify-end gap-3 mt-6">
@@ -942,11 +1007,17 @@ export default function WeightsSection({
 
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="text-center py-8 text-muted-foreground">{t.loading}</div>
+          <div className="text-center py-8 text-muted-foreground">
+            {t.loading}
+          </div>
         ) : !periodId ? (
-          <div className="text-center py-12 text-muted-foreground">{t.selectPeriod}</div>
+          <div className="text-center py-12 text-muted-foreground">
+            {t.selectPeriod}
+          </div>
         ) : weights.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">{t.noData}</div>
+          <div className="text-center py-12 text-muted-foreground">
+            {t.noData}
+          </div>
         ) : (
           <>
             <div className="flex items-center justify-between mb-4 sticky top-0 bg-card z-10 py-2">
@@ -968,409 +1039,473 @@ export default function WeightsSection({
 
             {/* 役職グループ表示 */}
             <div className="space-y-2">
-            {displayGroups.map((group, index) => (
-              <Collapsible
-                key={group.id}
-                open={group.positionCodes.some((code) => expandedPositions.has(code))}
-                onOpenChange={() => {
-                  // グループ内の全役職を展開/折りたたみ
-                  const isExpanded = group.positionCodes.some((code) => expandedPositions.has(code));
-                  setExpandedPositions((prev) => {
-                    const next = new Set(prev);
-                    if (isExpanded) {
-                      group.positionCodes.forEach((code) => next.delete(code));
-                    } else {
-                      group.positionCodes.forEach((code) => next.add(code));
-                    }
-                    return next;
-                  });
-                }}
-              >
-                <div className="border rounded-lg">
-                  {/* 1段目: グループ名、バッジ、操作ボタン */}
-                  <div className="flex items-center justify-between p-4 hover:bg-muted/50">
-                    <CollapsibleTrigger asChild>
-                      <div className="flex items-center gap-3 cursor-pointer flex-1">
-                        {group.positionCodes.some((code) => expandedPositions.has(code)) ? (
-                          <ChevronDown className="w-4 h-4" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4" />
-                        )}
-                        <div>
-                          <span className="font-medium">
-                            {group.positions.length > 1
-                              ? group.name
-                              : group.positions[0]?.positionName || group.name}
-                          </span>
-                          <span className="text-muted-foreground ml-2">
-                            ({group.positionCodes.join(", ")})
-                          </span>
-                          {group.positions.length > 1 && (
-                            <Badge variant="secondary" className="ml-2">
-                              {group.positions.length}役職結合
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </CollapsibleTrigger>
-                    <div className="flex items-center gap-2">
-                      {/* 設定数バッジ - 固定幅 */}
-                      <div className="w-20 text-right">
-                        <Badge variant="outline">
-                          {group.totalSettings} {t.settings || "設定"}
-                        </Badge>
-                      </div>
-                      {/* 人数バッジ - 固定幅 */}
-                      <div className="w-16 text-right">
-                        <Badge>
-                          {group.totalEmployees}
-                          {t.people}
-                        </Badge>
-                      </div>
-                      {/* 順序変更ボタン */}
-                      <div className="flex items-center gap-1 ml-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleMoveUp(index)}
-                          disabled={index === 0}
-                          title={t.moveUp}
-                        >
-                          <ChevronUp className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleMoveDown(index)}
-                          disabled={index === displayGroups.length - 1}
-                          title={t.moveDown}
-                        >
-                          <ChevronDown className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      {/* 分離ボタン - 固定幅で常にスペース確保 */}
-                      <div className="w-9">
-                        {group.positions.length > 1 && !group.id.startsWith("temp-") && !group.id.startsWith("ungrouped-") && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openSplitDialog(group)}
-                            title={t.splitPosition}
-                          >
-                            <Split className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                      {/* 空グループ削除ボタン - 0設定の場合のみ表示 */}
-                      <div className="w-9">
-                        {group.totalSettings === 0 && !group.id.startsWith("temp-") && !group.id.startsWith("ungrouped-") && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteGroupTarget(group);
-                            }}
-                            className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-                            title={t.deleteGroup || "グループを削除"}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  {/* 2段目: 結合グループの場合は一括設定UI */}
-                  {group.positions.length > 1 && (
-                    <div className="px-4 pb-3 pt-0">
-                      <div className="flex items-center gap-3 bg-muted/30 rounded-lg px-4 py-2 border border-dashed">
-                        <span className="text-sm font-medium text-muted-foreground">
-                          {language === "ja" ? "一括設定" : "Bulk Update"}
-                        </span>
-                        <div className="flex items-center gap-4 flex-1">
-                          <div className="flex items-center gap-2">
-                            <Label className="text-xs text-muted-foreground w-16">{t.resultsWeight}</Label>
-                            <Input
-                              type="number"
-                              min={0}
-                              max={100}
-                              className="w-16 h-8 text-center"
-                              value={getGroupDefaultWeight(group).resultsWeight}
-                              onChange={(e) =>
-                                handleGroupDefaultWeightChange(
-                                  group.id,
-                                  "resultsWeight",
-                                  parseInt(e.target.value) || 0
-                                )
-                              }
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <span className="text-xs text-muted-foreground">%</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Label className="text-xs text-muted-foreground w-20">{t.processWeight}</Label>
-                            <Input
-                              type="number"
-                              min={0}
-                              max={100}
-                              className="w-16 h-8 text-center"
-                              value={getGroupDefaultWeight(group).processWeight}
-                              onChange={(e) =>
-                                handleGroupDefaultWeightChange(
-                                  group.id,
-                                  "processWeight",
-                                  parseInt(e.target.value) || 0
-                                )
-                              }
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <span className="text-xs text-muted-foreground">%</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Label className="text-xs text-muted-foreground w-16">{t.growthWeight}</Label>
-                            <Input
-                              type="number"
-                              min={0}
-                              max={100}
-                              className="w-16 h-8 text-center"
-                              value={getGroupDefaultWeight(group).growthWeight}
-                              onChange={(e) =>
-                                handleGroupDefaultWeightChange(
-                                  group.id,
-                                  "growthWeight",
-                                  parseInt(e.target.value) || 0
-                                )
-                              }
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <span className="text-xs text-muted-foreground">%</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`text-sm font-medium px-2 py-1 rounded ${
-                              getGroupDefaultWeight(group).resultsWeight +
-                                getGroupDefaultWeight(group).processWeight +
-                                getGroupDefaultWeight(group).growthWeight !==
-                              100
-                                ? "text-red-500 bg-red-50 dark:bg-red-950/30"
-                                : "text-green-600 bg-green-50 dark:bg-green-950/30"
-                            }`}
-                          >
-                            {t.total}:{" "}
-                            {getGroupDefaultWeight(group).resultsWeight +
-                              getGroupDefaultWeight(group).processWeight +
-                              getGroupDefaultWeight(group).growthWeight}
-                            %
-                          </span>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleApplyGroupDefaultWeights(group);
-                            }}
-                            disabled={
-                              saving ||
-                              !groupDefaultWeights[group.id] ||
-                              getGroupDefaultWeight(group).resultsWeight +
-                                getGroupDefaultWeight(group).processWeight +
-                                getGroupDefaultWeight(group).growthWeight !==
-                                100
-                            }
-                          >
-                            <Save className="w-4 h-4 mr-1" />
-                            {language === "ja" ? "全て適用" : "Apply All"}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
+              {displayGroups.map((group, index) => (
+                <Collapsible
+                  key={group.id}
+                  open={group.positionCodes.some((code) =>
+                    expandedPositions.has(code),
                   )}
-                  <CollapsibleContent>
-                    <div className="border-t">
-                      {group.positions.map((position) => (
-                        <div key={position.positionCode}>
-                          {group.positions.length > 1 && (
-                            <div className="px-4 py-2 bg-muted/30 border-b">
-                              <span className="font-medium text-sm">
-                                {position.positionName || position.positionCode}
-                              </span>
-                              <span className="text-muted-foreground text-sm ml-2">
-                                ({position.positionCode})
+                  onOpenChange={() => {
+                    // グループ内の全役職を展開/折りたたみ
+                    const isExpanded = group.positionCodes.some((code) =>
+                      expandedPositions.has(code),
+                    );
+                    setExpandedPositions((prev) => {
+                      const next = new Set(prev);
+                      if (isExpanded) {
+                        group.positionCodes.forEach((code) =>
+                          next.delete(code),
+                        );
+                      } else {
+                        group.positionCodes.forEach((code) => next.add(code));
+                      }
+                      return next;
+                    });
+                  }}
+                >
+                  <div className="border rounded-lg">
+                    {/* 1段目: グループ名、バッジ、操作ボタン */}
+                    <div className="flex items-center justify-between p-4 hover:bg-muted/50">
+                      <CollapsibleTrigger asChild>
+                        <div className="flex items-center gap-3 cursor-pointer flex-1">
+                          {group.positionCodes.some((code) =>
+                            expandedPositions.has(code),
+                          ) ? (
+                            <ChevronDown className="w-4 h-4" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4" />
+                          )}
+                          <div>
+                            <span className="font-medium">
+                              {group.positions.length > 1
+                                ? group.name
+                                : group.positions[0]?.positionName ||
+                                  group.name}
+                            </span>
+                            <span className="text-muted-foreground ml-2">
+                              ({group.positionCodes.join(", ")})
+                            </span>
+                            {group.positions.length > 1 && (
+                              <Badge variant="secondary" className="ml-2">
+                                {group.positions.length}役職結合
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </CollapsibleTrigger>
+                      <div className="flex items-center gap-2">
+                        {/* 設定数バッジ - 固定幅 */}
+                        <div className="w-20 text-right">
+                          <Badge variant="outline">
+                            {group.totalSettings} {t.settings || "設定"}
+                          </Badge>
+                        </div>
+                        {/* 人数バッジ - 固定幅 */}
+                        <div className="w-16 text-right">
+                          <Badge>
+                            {group.totalEmployees}
+                            {t.people}
+                          </Badge>
+                        </div>
+                        {/* 順序変更ボタン */}
+                        <div className="flex items-center gap-1 ml-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleMoveUp(index)}
+                            disabled={index === 0}
+                            title={t.moveUp}
+                          >
+                            <ChevronUp className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleMoveDown(index)}
+                            disabled={index === displayGroups.length - 1}
+                            title={t.moveDown}
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        {/* 分離ボタン - 固定幅で常にスペース確保 */}
+                        <div className="w-9">
+                          {group.positions.length > 1 &&
+                            !group.id.startsWith("temp-") &&
+                            !group.id.startsWith("ungrouped-") && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openSplitDialog(group)}
+                                title={t.splitPosition}
+                              >
+                                <Split className="w-4 h-4" />
+                              </Button>
+                            )}
+                        </div>
+                        {/* 空グループ削除ボタン - 0設定の場合のみ表示 */}
+                        <div className="w-9">
+                          {group.totalSettings === 0 &&
+                            !group.id.startsWith("temp-") &&
+                            !group.id.startsWith("ungrouped-") && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteGroupTarget(group);
+                                }}
+                                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                title={t.deleteGroup || "グループを削除"}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                        </div>
+                      </div>
+                    </div>
+                    {/* 2段目: 結合グループの場合は一括設定UI */}
+                    {group.positions.length > 1 && (
+                      <div className="px-4 pb-3 pt-0">
+                        <div className="flex items-center gap-3 bg-muted/30 rounded-lg px-4 py-2 border border-dashed">
+                          <span className="text-sm font-medium text-muted-foreground">
+                            {language === "ja" ? "一括設定" : "Bulk Update"}
+                          </span>
+                          <div className="flex items-center gap-4 flex-1">
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs text-muted-foreground w-16">
+                                {t.resultsWeight}
+                              </Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={100}
+                                className="w-16 h-8 text-center"
+                                value={
+                                  getGroupDefaultWeight(group).resultsWeight
+                                }
+                                onChange={(e) =>
+                                  handleGroupDefaultWeightChange(
+                                    group.id,
+                                    "resultsWeight",
+                                    parseInt(e.target.value) || 0,
+                                  )
+                                }
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <span className="text-xs text-muted-foreground">
+                                %
                               </span>
                             </div>
-                          )}
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="w-[150px]">{t.gradeCode}</TableHead>
-                                <TableHead className="w-[100px] text-center">
-                                  {t.employeeCount}
-                                </TableHead>
-                                <TableHead className="w-[120px]">{t.resultsWeight} (%)</TableHead>
-                                <TableHead className="w-[120px]">{t.processWeight} (%)</TableHead>
-                                <TableHead className="w-[120px]">{t.growthWeight} (%)</TableHead>
-                                <TableHead className="w-[80px] text-center">{t.total}</TableHead>
-                                <TableHead className="w-[100px]">{t.actions}</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {position.grades.map((weight) => {
-                                const total = getTotal(weight);
-                                const isValid = total === 100;
-                                return (
-                                  <TableRow
-                                    key={`${weight.positionCode}-${weight.gradeCode}`}
-                                    className={!isValid ? "bg-red-50 dark:bg-red-950/20" : ""}
-                                  >
-                                    <TableCell className="font-medium">
-                                      {weight.gradeCode === "ALL" ? (
-                                        <Badge variant="secondary">
-                                          {t.allGrades || "全等級"}
-                                        </Badge>
-                                      ) : (
-                                        weight.gradeCode
-                                      )}
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                      {weight.employeeCount > 0 && weight.employeeNames && weight.employeeNames.length > 0 ? (
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Badge
-                                              variant="default"
-                                              className="cursor-pointer"
-                                            >
-                                              {weight.employeeCount}
-                                              {t.people}
-                                            </Badge>
-                                          </TooltipTrigger>
-                                          <TooltipContent
-                                            side="right"
-                                            className="max-w-xs max-h-64 overflow-y-auto"
-                                          >
-                                            <div className="text-sm">
-                                              {weight.employeeNames.slice(0, 20).map((name, idx) => (
-                                                <div key={idx}>{name}</div>
-                                              ))}
-                                              {weight.employeeNames.length > 20 && (
-                                                <div className="text-muted-foreground mt-1">
-                                                  ...{language === "ja" ? "他" : "and"} {weight.employeeNames.length - 20} {t.people}
-                                                </div>
-                                              )}
-                                            </div>
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      ) : (
-                                        <Badge
-                                          variant="outline"
-                                          className="text-muted-foreground"
-                                        >
-                                          {weight.employeeCount}
-                                          {t.people}
-                                        </Badge>
-                                      )}
-                                    </TableCell>
-                                    <TableCell>
-                                      <Input
-                                        type="number"
-                                        min={0}
-                                        max={100}
-                                        className="w-20"
-                                        value={weight.resultsWeight}
-                                        onChange={(e) =>
-                                          handleWeightChange(
-                                            weight.positionCode,
-                                            weight.gradeCode,
-                                            "resultsWeight",
-                                            parseInt(e.target.value) || 0
-                                          )
-                                        }
-                                      />
-                                    </TableCell>
-                                    <TableCell>
-                                      <Input
-                                        type="number"
-                                        min={0}
-                                        max={100}
-                                        className="w-20"
-                                        value={weight.processWeight}
-                                        onChange={(e) =>
-                                          handleWeightChange(
-                                            weight.positionCode,
-                                            weight.gradeCode,
-                                            "processWeight",
-                                            parseInt(e.target.value) || 0
-                                          )
-                                        }
-                                      />
-                                    </TableCell>
-                                    <TableCell>
-                                      <Input
-                                        type="number"
-                                        min={0}
-                                        max={100}
-                                        className="w-20"
-                                        value={weight.growthWeight}
-                                        onChange={(e) =>
-                                          handleWeightChange(
-                                            weight.positionCode,
-                                            weight.gradeCode,
-                                            "growthWeight",
-                                            parseInt(e.target.value) || 0
-                                          )
-                                        }
-                                      />
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                      <span
-                                        className={`font-medium ${
-                                          !isValid
-                                            ? "text-red-500"
-                                            : "text-green-600 dark:text-green-400"
-                                        }`}
-                                      >
-                                        {total}%
-                                      </span>
-                                    </TableCell>
-                                    <TableCell>
-                                      <div className="flex items-center gap-1">
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={() => handleUpdate(weight)}
-                                          disabled={!isValid}
-                                        >
-                                          <Save className="w-4 h-4" />
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => setDeleteTarget(weight)}
-                                          className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-                                        >
-                                          <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                );
-                              })}
-                            </TableBody>
-                          </Table>
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs text-muted-foreground w-20">
+                                {t.processWeight}
+                              </Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={100}
+                                className="w-16 h-8 text-center"
+                                value={
+                                  getGroupDefaultWeight(group).processWeight
+                                }
+                                onChange={(e) =>
+                                  handleGroupDefaultWeightChange(
+                                    group.id,
+                                    "processWeight",
+                                    parseInt(e.target.value) || 0,
+                                  )
+                                }
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <span className="text-xs text-muted-foreground">
+                                %
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs text-muted-foreground w-16">
+                                {t.growthWeight}
+                              </Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={100}
+                                className="w-16 h-8 text-center"
+                                value={
+                                  getGroupDefaultWeight(group).growthWeight
+                                }
+                                onChange={(e) =>
+                                  handleGroupDefaultWeightChange(
+                                    group.id,
+                                    "growthWeight",
+                                    parseInt(e.target.value) || 0,
+                                  )
+                                }
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <span className="text-xs text-muted-foreground">
+                                %
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-sm font-medium px-2 py-1 rounded ${
+                                getGroupDefaultWeight(group).resultsWeight +
+                                  getGroupDefaultWeight(group).processWeight +
+                                  getGroupDefaultWeight(group).growthWeight !==
+                                100
+                                  ? "text-red-500 bg-red-50 dark:bg-red-950/30"
+                                  : "text-green-600 bg-green-50 dark:bg-green-950/30"
+                              }`}
+                            >
+                              {t.total}:{" "}
+                              {getGroupDefaultWeight(group).resultsWeight +
+                                getGroupDefaultWeight(group).processWeight +
+                                getGroupDefaultWeight(group).growthWeight}
+                              %
+                            </span>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleApplyGroupDefaultWeights(group);
+                              }}
+                              disabled={
+                                saving ||
+                                !groupDefaultWeights[group.id] ||
+                                getGroupDefaultWeight(group).resultsWeight +
+                                  getGroupDefaultWeight(group).processWeight +
+                                  getGroupDefaultWeight(group).growthWeight !==
+                                  100
+                              }
+                            >
+                              <Save className="w-4 h-4 mr-1" />
+                              {language === "ja" ? "全て適用" : "Apply All"}
+                            </Button>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </CollapsibleContent>
-                </div>
-              </Collapsible>
-            ))}
-          </div>
-        </>
-      )}
+                      </div>
+                    )}
+                    <CollapsibleContent>
+                      <div className="border-t">
+                        {group.positions.map((position) => (
+                          <div key={position.positionCode}>
+                            {group.positions.length > 1 && (
+                              <div className="px-4 py-2 bg-muted/30 border-b">
+                                <span className="font-medium text-sm">
+                                  {position.positionName ||
+                                    position.positionCode}
+                                </span>
+                                <span className="text-muted-foreground text-sm ml-2">
+                                  ({position.positionCode})
+                                </span>
+                              </div>
+                            )}
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="w-[150px]">
+                                    {t.gradeCode}
+                                  </TableHead>
+                                  <TableHead className="w-[100px] text-center">
+                                    {t.employeeCount}
+                                  </TableHead>
+                                  <TableHead className="w-[120px]">
+                                    {t.resultsWeight} (%)
+                                  </TableHead>
+                                  <TableHead className="w-[120px]">
+                                    {t.processWeight} (%)
+                                  </TableHead>
+                                  <TableHead className="w-[120px]">
+                                    {t.growthWeight} (%)
+                                  </TableHead>
+                                  <TableHead className="w-[80px] text-center">
+                                    {t.total}
+                                  </TableHead>
+                                  <TableHead className="w-[100px]">
+                                    {t.actions}
+                                  </TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {position.grades.map((weight) => {
+                                  const total = getTotal(weight);
+                                  const isValid = total === 100;
+                                  return (
+                                    <TableRow
+                                      key={`${weight.positionCode}-${weight.gradeCode}`}
+                                      className={
+                                        !isValid
+                                          ? "bg-red-50 dark:bg-red-950/20"
+                                          : ""
+                                      }
+                                    >
+                                      <TableCell className="font-medium">
+                                        {weight.gradeCode === "ALL" ? (
+                                          <Badge variant="secondary">
+                                            {t.allGrades || "全等級"}
+                                          </Badge>
+                                        ) : (
+                                          weight.gradeCode
+                                        )}
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        {weight.employeeCount > 0 &&
+                                        weight.employeeNames &&
+                                        weight.employeeNames.length > 0 ? (
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <Badge
+                                                variant="default"
+                                                className="cursor-pointer"
+                                              >
+                                                {weight.employeeCount}
+                                                {t.people}
+                                              </Badge>
+                                            </TooltipTrigger>
+                                            <TooltipContent
+                                              side="right"
+                                              className="max-w-xs max-h-64 overflow-y-auto"
+                                            >
+                                              <div className="text-sm">
+                                                {weight.employeeNames
+                                                  .slice(0, 20)
+                                                  .map((name, idx) => (
+                                                    <div key={idx}>{name}</div>
+                                                  ))}
+                                                {weight.employeeNames.length >
+                                                  20 && (
+                                                  <div className="text-muted-foreground mt-1">
+                                                    ...
+                                                    {language === "ja"
+                                                      ? "他"
+                                                      : "and"}{" "}
+                                                    {weight.employeeNames
+                                                      .length - 20}{" "}
+                                                    {t.people}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        ) : (
+                                          <Badge
+                                            variant="outline"
+                                            className="text-muted-foreground"
+                                          >
+                                            {weight.employeeCount}
+                                            {t.people}
+                                          </Badge>
+                                        )}
+                                      </TableCell>
+                                      <TableCell>
+                                        <Input
+                                          type="number"
+                                          min={0}
+                                          max={100}
+                                          className="w-20"
+                                          value={weight.resultsWeight}
+                                          onChange={(e) =>
+                                            handleWeightChange(
+                                              weight.positionCode,
+                                              weight.gradeCode,
+                                              "resultsWeight",
+                                              parseInt(e.target.value) || 0,
+                                            )
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <Input
+                                          type="number"
+                                          min={0}
+                                          max={100}
+                                          className="w-20"
+                                          value={weight.processWeight}
+                                          onChange={(e) =>
+                                            handleWeightChange(
+                                              weight.positionCode,
+                                              weight.gradeCode,
+                                              "processWeight",
+                                              parseInt(e.target.value) || 0,
+                                            )
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <Input
+                                          type="number"
+                                          min={0}
+                                          max={100}
+                                          className="w-20"
+                                          value={weight.growthWeight}
+                                          onChange={(e) =>
+                                            handleWeightChange(
+                                              weight.positionCode,
+                                              weight.gradeCode,
+                                              "growthWeight",
+                                              parseInt(e.target.value) || 0,
+                                            )
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        <span
+                                          className={`font-medium ${
+                                            !isValid
+                                              ? "text-red-500"
+                                              : "text-green-600 dark:text-green-400"
+                                          }`}
+                                        >
+                                          {total}%
+                                        </span>
+                                      </TableCell>
+                                      <TableCell>
+                                        <div className="flex items-center gap-1">
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleUpdate(weight)}
+                                            disabled={!isValid}
+                                          >
+                                            <Save className="w-4 h-4" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() =>
+                                              setDeleteTarget(weight)
+                                            }
+                                            className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                          </Button>
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Delete confirmation dialog */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={() => setDeleteTarget(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t.confirmDelete}</AlertDialogTitle>
@@ -1379,7 +1514,7 @@ export default function WeightsSection({
                 "{code}",
                 deleteTarget
                   ? `${deleteTarget.positionName || deleteTarget.positionCode} - ${deleteTarget.gradeCode}`
-                  : ""
+                  : "",
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -1396,7 +1531,10 @@ export default function WeightsSection({
       </AlertDialog>
 
       {/* Delete position group confirmation dialog */}
-      <AlertDialog open={!!deleteGroupTarget} onOpenChange={() => setDeleteGroupTarget(null)}>
+      <AlertDialog
+        open={!!deleteGroupTarget}
+        onOpenChange={() => setDeleteGroupTarget(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t.confirmDelete}</AlertDialogTitle>
@@ -1422,7 +1560,9 @@ export default function WeightsSection({
       <Dialog open={isDetectDialogOpen} onOpenChange={setIsDetectDialogOpen}>
         <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t.detectCombinationsResult || "役職×等級 検出結果"}</DialogTitle>
+            <DialogTitle>
+              {t.detectCombinationsResult || "役職×等級 検出結果"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-4">
             {detectionResult && (
@@ -1444,7 +1584,8 @@ export default function WeightsSection({
                             variant="outline"
                             className="bg-orange-100 dark:bg-orange-900"
                           >
-                            {combo.positionName} ({combo.gradeCode}) - {combo.employeeCount}
+                            {combo.positionName} ({combo.gradeCode}) -{" "}
+                            {combo.employeeCount}
                             {t.people}
                           </Badge>
                         ))}
@@ -1456,7 +1597,8 @@ export default function WeightsSection({
                     <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
                       <Check className="w-4 h-4" />
                       <span className="font-medium">
-                        {t.allCombinationsConfigured || "全ての組み合わせが設定済みです"}
+                        {t.allCombinationsConfigured ||
+                          "全ての組み合わせが設定済みです"}
                       </span>
                     </div>
                   </div>
@@ -1470,18 +1612,24 @@ export default function WeightsSection({
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>{t.positionCode || "役職コード"}</TableHead>
+                          <TableHead>
+                            {t.positionCode || "役職コード"}
+                          </TableHead>
                           <TableHead>{t.positionName || "役職名"}</TableHead>
                           <TableHead className="text-center">
                             {t.gradeCount || "等級数"}
                           </TableHead>
-                          <TableHead className="text-center">{t.employeeCount}</TableHead>
+                          <TableHead className="text-center">
+                            {t.employeeCount}
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {detectionResult.positionStats.map((stat) => (
                           <TableRow key={stat.positionCode}>
-                            <TableCell className="font-mono">{stat.positionCode}</TableCell>
+                            <TableCell className="font-mono">
+                              {stat.positionCode}
+                            </TableCell>
                             <TableCell>{stat.positionName}</TableCell>
                             <TableCell className="text-center">
                               {stat.grades.length}
@@ -1498,11 +1646,17 @@ export default function WeightsSection({
                 </div>
 
                 <div className="flex justify-end gap-3">
-                  <Button variant="outline" onClick={() => setIsDetectDialogOpen(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsDetectDialogOpen(false)}
+                  >
                     {t.close}
                   </Button>
                   {detectionResult.missingCombinations.length > 0 && (
-                    <Button onClick={handleAddMissingCombinations} disabled={saving}>
+                    <Button
+                      onClick={handleAddMissingCombinations}
+                      disabled={saving}
+                    >
                       <Plus className="w-4 h-4 mr-2" />
                       {saving
                         ? t.loading
@@ -1540,7 +1694,7 @@ export default function WeightsSection({
                     <Checkbox
                       id={`merge-${group.id}`}
                       checked={group.positionCodes.some((code) =>
-                        mergeSelectedPositions.includes(code)
+                        mergeSelectedPositions.includes(code),
                       )}
                       onCheckedChange={(checked) => {
                         if (checked) {
@@ -1551,8 +1705,8 @@ export default function WeightsSection({
                         } else {
                           setMergeSelectedPositions(
                             mergeSelectedPositions.filter(
-                              (code) => !group.positionCodes.includes(code)
-                            )
+                              (code) => !group.positionCodes.includes(code),
+                            ),
                           );
                         }
                       }}
@@ -1561,7 +1715,9 @@ export default function WeightsSection({
                       htmlFor={`merge-${group.id}`}
                       className="text-sm cursor-pointer flex-1"
                     >
-                      {group.positions.length > 1 ? group.name : group.positions[0]?.positionName || group.name}
+                      {group.positions.length > 1
+                        ? group.name
+                        : group.positions[0]?.positionName || group.name}
                       <span className="text-muted-foreground ml-1">
                         ({group.positionCodes.join(", ")})
                       </span>
@@ -1575,12 +1731,19 @@ export default function WeightsSection({
               </div>
             </div>
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setIsMergeDialogOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsMergeDialogOpen(false)}
+              >
                 {t.cancel}
               </Button>
               <Button
                 onClick={handleMerge}
-                disabled={mergeSelectedPositions.length < 2 || !mergeGroupName.trim() || saving}
+                disabled={
+                  mergeSelectedPositions.length < 2 ||
+                  !mergeGroupName.trim() ||
+                  saving
+                }
               >
                 <Merge className="w-4 h-4 mr-2" />
                 {saving ? t.loading : t.merge}
@@ -1610,10 +1773,15 @@ export default function WeightsSection({
                   <Label>{t.selectPositions}</Label>
                   <div className="border rounded-lg p-2 space-y-2">
                     {splitTargetGroup.positions.map((position) => (
-                      <div key={position.positionCode} className="flex items-center gap-2">
+                      <div
+                        key={position.positionCode}
+                        className="flex items-center gap-2"
+                      >
                         <Checkbox
                           id={`split-${position.positionCode}`}
-                          checked={splitSelectedPositions.includes(position.positionCode)}
+                          checked={splitSelectedPositions.includes(
+                            position.positionCode,
+                          )}
                           onCheckedChange={(checked) => {
                             if (checked) {
                               setSplitSelectedPositions([
@@ -1622,7 +1790,9 @@ export default function WeightsSection({
                               ]);
                             } else {
                               setSplitSelectedPositions(
-                                splitSelectedPositions.filter((code) => code !== position.positionCode)
+                                splitSelectedPositions.filter(
+                                  (code) => code !== position.positionCode,
+                                ),
                               );
                             }
                           }}
@@ -1647,7 +1817,10 @@ export default function WeightsSection({
               </>
             )}
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setIsSplitDialogOpen(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setIsSplitDialogOpen(false)}
+              >
                 {t.cancel}
               </Button>
               <Button

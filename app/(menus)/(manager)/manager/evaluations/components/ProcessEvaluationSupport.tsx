@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
+import { CheckCircle2, ChevronDown, ChevronRight, Plus, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Plus, X, CheckCircle2, ChevronDown, ChevronRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 // プロセスカテゴリ（マスターデータ）
 interface ProcessCategoryMaster {
@@ -33,7 +33,8 @@ const difficultyChecks = [
     descJa: "部門を横断した調整・連携が必要",
     descEn: "Requires coordination across departments",
     exampleJa: "3部門以上が関わり、各部門の承認や協力なしには進められない",
-    exampleEn: "Involves 3+ departments and cannot proceed without their approval",
+    exampleEn:
+      "Involves 3+ departments and cannot proceed without their approval",
   },
   {
     id: "innovation",
@@ -69,7 +70,8 @@ const difficultyChecks = [
     descJa: "戦略的・組織的な重要度が高い",
     descEn: "High strategic or organizational importance",
     exampleJa: "未達成の場合、事業計画や顧客関係に重大な影響を及ぼす",
-    exampleEn: "Failure would significantly impact business plans or customer relations",
+    exampleEn:
+      "Failure would significantly impact business plans or customer relations",
   },
 ];
 
@@ -90,7 +92,7 @@ interface ProcessEvaluationSupportProps {
 // カテゴリコードからスコア情報を取得
 function getCategoryByCheckedCount(
   categories: ProcessCategoryMaster[],
-  checkedCount: number
+  checkedCount: number,
 ): ProcessCategoryMaster | null {
   // minItemCount以上の最も高いクラスを返す（A > B > C > D）
   const sortedCategories = [...categories].sort((a, b) => {
@@ -142,18 +144,25 @@ export function ProcessEvaluationSupport({
         checks: {},
         achievement: "T2",
       },
-    ]
+    ],
   );
-  const [expandedChecks, setExpandedChecks] = useState<Record<string, boolean>>({});
+  const [expandedChecks, setExpandedChecks] = useState<Record<string, boolean>>(
+    {},
+  );
 
   // 平均スコアを計算
   const averageScore = useMemo(() => {
-    const validProcesses = processes.filter((p) => p.name.trim() && p.achievement);
+    const validProcesses = processes.filter(
+      (p) => p.name.trim() && p.achievement,
+    );
     if (validProcesses.length === 0) return 0;
 
     const totalScore = validProcesses.reduce((sum, p) => {
       const checkedCount = Object.values(p.checks).filter(Boolean).length;
-      const category = getCategoryByCheckedCount(processCategories, checkedCount);
+      const category = getCategoryByCheckedCount(
+        processCategories,
+        checkedCount,
+      );
       if (!category) return sum + 2.5;
 
       const scores = parseScores(category.scores);
@@ -188,7 +197,7 @@ export function ProcessEvaluationSupport({
 
   const updateProcess = (id: string, updates: Partial<Process>) => {
     setProcesses(
-      processes.map((p) => (p.id === id ? { ...p, ...updates } : p))
+      processes.map((p) => (p.id === id ? { ...p, ...updates } : p)),
     );
   };
 
@@ -215,9 +224,16 @@ export function ProcessEvaluationSupport({
     <div className="space-y-4">
       {/* プロセス一覧 */}
       {processes.map((process, index) => {
-        const checkedCount = Object.values(process.checks).filter(Boolean).length;
-        const category = getCategoryByCheckedCount(processCategories, checkedCount);
-        const scores = category ? parseScores(category.scores) : { T4: 5.0, T3: 3.5, T2: 2.5, T1: 1.0 };
+        const checkedCount = Object.values(process.checks).filter(
+          Boolean,
+        ).length;
+        const category = getCategoryByCheckedCount(
+          processCategories,
+          checkedCount,
+        );
+        const scores = category
+          ? parseScores(category.scores)
+          : { T4: 5.0, T3: 3.5, T2: 2.5, T1: 1.0 };
         const processScore = scores[process.achievement] || 2.5;
         const isExpanded = expandedChecks[process.id] ?? false;
 
@@ -227,7 +243,9 @@ export function ProcessEvaluationSupport({
               {/* プロセスヘッダー（1行にまとめる） */}
               <div className="flex items-center gap-3">
                 <span className="font-medium text-green-600 dark:text-green-400 whitespace-nowrap">
-                  {language === "ja" ? `プロセス ${index + 1}:` : `Process ${index + 1}:`}
+                  {language === "ja"
+                    ? `プロセス ${index + 1}:`
+                    : `Process ${index + 1}:`}
                 </span>
                 {index === 0 ? (
                   // プロセス1は「通常業務」として固定（編集不可）
@@ -238,8 +256,14 @@ export function ProcessEvaluationSupport({
                   // プロセス2以降は編集可能
                   <Input
                     value={process.name}
-                    onChange={(e) => updateProcess(process.id, { name: e.target.value })}
-                    placeholder={language === "ja" ? "プロセス名を入力" : "Enter process name"}
+                    onChange={(e) =>
+                      updateProcess(process.id, { name: e.target.value })
+                    }
+                    placeholder={
+                      language === "ja"
+                        ? "プロセス名を入力"
+                        : "Enter process name"
+                    }
                     className="flex-1"
                   />
                 )}
@@ -257,7 +281,10 @@ export function ProcessEvaluationSupport({
               </div>
 
               {/* 難易度チェックリスト（折り畳み可能） */}
-              <Collapsible open={isExpanded} onOpenChange={() => toggleExpanded(process.id)}>
+              <Collapsible
+                open={isExpanded}
+                onOpenChange={() => toggleExpanded(process.id)}
+              >
                 <CollapsibleTrigger asChild>
                   <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full">
                     {isExpanded ? (
@@ -265,16 +292,28 @@ export function ProcessEvaluationSupport({
                     ) : (
                       <ChevronRight className="w-4 h-4" />
                     )}
-                    <span>{language === "ja" ? "難易度チェックリスト" : "Difficulty Checklist"}</span>
+                    <span>
+                      {language === "ja"
+                        ? "難易度チェックリスト"
+                        : "Difficulty Checklist"}
+                    </span>
                     <Badge variant="secondary" className="text-xs">
                       {checkedCount}/5
                     </Badge>
                     {category && (
                       <Badge
-                        variant={category.categoryCode === "A" ? "default" : category.categoryCode === "B" ? "secondary" : "outline"}
+                        variant={
+                          category.categoryCode === "A"
+                            ? "default"
+                            : category.categoryCode === "B"
+                              ? "secondary"
+                              : "outline"
+                        }
                         className="text-xs"
                       >
-                        {language === "ja" ? `クラス${category.categoryCode}` : `Class ${category.categoryCode}`}
+                        {language === "ja"
+                          ? `クラス${category.categoryCode}`
+                          : `Class ${category.categoryCode}`}
                       </Badge>
                     )}
                   </button>
@@ -293,13 +332,21 @@ export function ProcessEvaluationSupport({
                       >
                         <Checkbox
                           checked={process.checks[check.id] || false}
-                          onCheckedChange={() => toggleCheck(process.id, check.id)}
+                          onCheckedChange={() =>
+                            toggleCheck(process.id, check.id)
+                          }
                         />
                         <span className="text-sm">
-                          <span className="font-medium">{language === "ja" ? check.labelJa : check.labelEn}</span>
+                          <span className="font-medium">
+                            {language === "ja" ? check.labelJa : check.labelEn}
+                          </span>
                           <span className="text-muted-foreground">
                             ：{language === "ja" ? check.descJa : check.descEn}
-                            （{language === "ja" ? "例：" : "e.g. "}{language === "ja" ? check.exampleJa : check.exampleEn}）
+                            （{language === "ja" ? "例：" : "e.g. "}
+                            {language === "ja"
+                              ? check.exampleJa
+                              : check.exampleEn}
+                            ）
                           </span>
                         </span>
                       </label>
@@ -320,20 +367,28 @@ export function ProcessEvaluationSupport({
                     return (
                       <button
                         key={level.level}
-                        onClick={() => updateProcess(process.id, { achievement: level.level })}
+                        onClick={() =>
+                          updateProcess(process.id, {
+                            achievement: level.level,
+                          })
+                        }
                         className={`p-3 rounded-lg border text-center transition-all ${
                           isSelected
                             ? "border-green-500 bg-green-500/10 dark:border-green-400 dark:bg-green-400/10"
                             : "border-border hover:border-green-500/50 hover:bg-muted/50"
                         }`}
                       >
-                        <p className={`font-bold text-sm ${isSelected ? "text-green-600 dark:text-green-400" : ""}`}>
+                        <p
+                          className={`font-bold text-sm ${isSelected ? "text-green-600 dark:text-green-400" : ""}`}
+                        >
                           {level.level}
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {language === "ja" ? level.labelJa : level.labelEn}
                         </p>
-                        <p className={`text-sm font-medium mt-1 ${isSelected ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}>
+                        <p
+                          className={`text-sm font-medium mt-1 ${isSelected ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}
+                        >
                           {score.toFixed(1)}
                         </p>
                       </button>
@@ -358,11 +413,7 @@ export function ProcessEvaluationSupport({
 
       {/* プロセス追加ボタン */}
       {processes.length < 3 && (
-        <Button
-          variant="outline"
-          onClick={addProcess}
-          className="w-full"
-        >
+        <Button variant="outline" onClick={addProcess} className="w-full">
           <Plus className="w-4 h-4 mr-2" />
           {language === "ja" ? "プロセスを追加" : "Add Process"}
         </Button>
@@ -373,7 +424,9 @@ export function ProcessEvaluationSupport({
         <div className="flex items-center gap-2">
           <CheckCircle2 className="w-5 h-5 text-green-500 dark:text-green-400" />
           <span className="font-medium">
-            {language === "ja" ? "プロセス評価最終スコア" : "Final Process Evaluation Score"}
+            {language === "ja"
+              ? "プロセス評価最終スコア"
+              : "Final Process Evaluation Score"}
           </span>
           <span className="text-sm text-muted-foreground">
             ({processes.filter((p) => p.name.trim()).length}{" "}

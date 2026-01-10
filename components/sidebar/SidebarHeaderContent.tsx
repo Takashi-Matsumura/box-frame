@@ -2,7 +2,6 @@
 
 import { PanelLeft } from "lucide-react";
 import { useCallback, useEffect } from "react";
-import { appConfig } from "@/lib/config/app";
 import {
   SidebarHeader,
   SidebarMenu,
@@ -10,6 +9,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { appConfig } from "@/lib/config/app";
 import { useSidebarStore } from "@/lib/stores/sidebar-store";
 
 interface SidebarHeaderContentProps {
@@ -39,7 +39,9 @@ export function SidebarHeaderContent({ language }: SidebarHeaderContentProps) {
             onClick={handleToggle}
             tooltip={language === "ja" ? "サイドバー切替" : "Toggle Sidebar"}
           >
-            <span className="text-xl font-bold truncate group-data-[collapsible=icon]:hidden flex-1 text-left">{appConfig.name}</span>
+            <span className="text-xl font-bold truncate group-data-[collapsible=icon]:hidden flex-1 text-left">
+              {appConfig.name}
+            </span>
             <PanelLeft className="size-5 shrink-0" />
           </SidebarMenuButton>
         </SidebarMenuItem>

@@ -59,7 +59,7 @@ export async function GET(request: Request) {
     console.error("Error fetching custom evaluators:", error);
     return NextResponse.json(
       { error: "Failed to fetch custom evaluators" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -83,12 +83,13 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { employeeId, evaluatorId, periodId, effectiveFrom, effectiveTo } = body;
+    const { employeeId, evaluatorId, periodId, effectiveFrom, effectiveTo } =
+      body;
 
     if (!employeeId || !evaluatorId) {
       return NextResponse.json(
         { error: "employeeId and evaluatorId are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -96,7 +97,7 @@ export async function POST(request: Request) {
     if (employeeId === evaluatorId) {
       return NextResponse.json(
         { error: "Cannot set self as evaluator" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -145,7 +146,7 @@ export async function POST(request: Request) {
     console.error("Error creating custom evaluator:", error);
     return NextResponse.json(
       { error: "Failed to create custom evaluator" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

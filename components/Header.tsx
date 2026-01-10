@@ -1,8 +1,8 @@
 "use client";
 
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import type { ReactNode } from "react";
 import { appConfig } from "@/lib/config/app";
 import { getTabsByMenuPath } from "@/lib/modules/registry";
 
@@ -13,6 +13,8 @@ interface TabItem {
   path: string;
   active: boolean;
 }
+
+import { Info, Menu } from "lucide-react";
 import {
   FaChartBar,
   FaDatabase,
@@ -21,20 +23,19 @@ import {
   FaUpload,
   FaUsers,
 } from "react-icons/fa";
-import { Info, Menu } from "lucide-react";
-import { getPageTitle } from "@/lib/i18n/page-titles";
-import { useSidebarStore } from "@/lib/stores/sidebar-store";
-import { useIsTabletOrMobile } from "@/hooks/use-mobile";
+import { AnnouncementBanner } from "@/components/AnnouncementBanner";
+import { NotificationBell } from "@/components/notifications";
 import { Button } from "@/components/ui/button";
+import { useSidebar } from "@/components/ui/sidebar";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useSidebar } from "@/components/ui/sidebar";
-import { NotificationBell } from "@/components/notifications";
-import { AnnouncementBanner } from "@/components/AnnouncementBanner";
+import { useIsTabletOrMobile } from "@/hooks/use-mobile";
+import { getPageTitle } from "@/lib/i18n/page-titles";
+import { useSidebarStore } from "@/lib/stores/sidebar-store";
 
 interface HeaderProps {
   session?: {
@@ -62,7 +63,11 @@ function SidebarToggleButton() {
   );
 }
 
-export function Header({ session, language = "en", accessKeyTabPermissions = {} }: HeaderProps) {
+export function Header({
+  session,
+  language = "en",
+  accessKeyTabPermissions = {},
+}: HeaderProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { width, open } = useSidebarStore();
@@ -75,7 +80,10 @@ export function Header({ session, language = "en", accessKeyTabPermissions = {} 
   // タブをフィルタリングするヘルパー関数
   // ADMINロールはすべてのタブにアクセス可能
   // それ以外はアクセスキーで許可されたタブのみ
-  const filterTabsByPermission = (tabs: TabItem[], menuPath: string): TabItem[] => {
+  const filterTabsByPermission = (
+    tabs: TabItem[],
+    menuPath: string,
+  ): TabItem[] => {
     if (isAdminRole) {
       return tabs;
     }
@@ -85,7 +93,9 @@ export function Header({ session, language = "en", accessKeyTabPermissions = {} 
       return tabs;
     }
     return tabs.filter((tab) => {
-      const tabId = new URL(tab.path, "http://localhost").searchParams.get("tab");
+      const tabId = new URL(tab.path, "http://localhost").searchParams.get(
+        "tab",
+      );
       return tabId && allowedTabIds.includes(tabId);
     });
   };
@@ -219,7 +229,9 @@ export function Header({ session, language = "en", accessKeyTabPermissions = {} 
 
   // 組織データ管理タブ（レジストリから取得）
   const dataManagementTab = searchParams.get("tab") || "import";
-  const registryDataManagementTabs = getTabsByMenuPath("/admin/data-management");
+  const registryDataManagementTabs = getTabsByMenuPath(
+    "/admin/data-management",
+  );
   const dataManagementTabs =
     registryDataManagementTabs?.map((tab) => ({
       name: language === "ja" ? tab.nameJa : tab.name,
@@ -230,7 +242,9 @@ export function Header({ session, language = "en", accessKeyTabPermissions = {} 
 
   // 評価マスタタブ（レジストリから取得）
   const evaluationMasterTab = searchParams.get("tab") || "periods";
-  const registryEvaluationMasterTabs = getTabsByMenuPath("/admin/evaluation-master");
+  const registryEvaluationMasterTabs = getTabsByMenuPath(
+    "/admin/evaluation-master",
+  );
   const evaluationMasterTabs =
     registryEvaluationMasterTabs?.map((tab) => ({
       name: language === "ja" ? tab.nameJa : tab.name,
@@ -298,7 +312,13 @@ export function Header({ session, language = "en", accessKeyTabPermissions = {} 
     <header
       className="bg-card shadow-lg border-b border-border fixed top-0 right-0 z-[8] transition-all duration-300"
       style={{
-        left: session ? (isTabletOrMobile ? "0" : open ? `${width}px` : "4rem") : "0",
+        left: session
+          ? isTabletOrMobile
+            ? "0"
+            : open
+              ? `${width}px`
+              : "4rem"
+          : "0",
       }}
     >
       {/* システムアナウンスバナー */}
@@ -307,9 +327,7 @@ export function Header({ session, language = "en", accessKeyTabPermissions = {} 
       <div className="px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {session && isTabletOrMobile && (
-              <SidebarToggleButton />
-            )}
+            {session && isTabletOrMobile && <SidebarToggleButton />}
             {session ? (
               <h1 className="text-xl font-bold">{pageTitle}</h1>
             ) : (
@@ -346,9 +364,24 @@ export function Header({ session, language = "en", accessKeyTabPermissions = {} 
       {isAdmin && renderTabs(adminTabs, "Admin Tabs")}
       {isDataImport && renderTabs(dataImportTabs, "Data Import Tabs")}
       {isSettings && renderTabs(settingsTabs, "Settings Tabs")}
-      {isDataManagement && renderTabs(filterTabsByPermission(dataManagementTabs, "/admin/data-management"), "Data Management Tabs")}
-      {isEvaluationMaster && renderTabs(filterTabsByPermission(evaluationMasterTabs, "/admin/evaluation-master"), "Evaluation Master Tabs")}
-      {isEvaluationRag && renderTabs(filterTabsByPermission(evaluationRagTabs, "/admin/evaluation-rag"), "Evaluation AI Support Tabs")}
+      {isDataManagement &&
+        renderTabs(
+          filterTabsByPermission(dataManagementTabs, "/admin/data-management"),
+          "Data Management Tabs",
+        )}
+      {isEvaluationMaster &&
+        renderTabs(
+          filterTabsByPermission(
+            evaluationMasterTabs,
+            "/admin/evaluation-master",
+          ),
+          "Evaluation Master Tabs",
+        )}
+      {isEvaluationRag &&
+        renderTabs(
+          filterTabsByPermission(evaluationRagTabs, "/admin/evaluation-rag"),
+          "Evaluation AI Support Tabs",
+        )}
       {isMyEvaluation && renderTabs(myEvaluationTabs, "My Evaluation Tabs")}
     </header>
   );

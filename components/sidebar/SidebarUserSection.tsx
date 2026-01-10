@@ -1,11 +1,19 @@
 "use client";
 
+import {
+  ChevronsUpDown,
+  LogOut,
+  Moon,
+  Settings,
+  Sun,
+  User,
+} from "lucide-react";
 import Link from "next/link";
 import type { Session } from "next-auth";
 import { signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
-import { ChevronsUpDown, LogOut, Moon, Settings, Sun, User } from "lucide-react";
 import { useCallback } from "react";
+import { RoleBadge } from "@/components/RoleBadge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -23,7 +31,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { RoleBadge } from "@/components/RoleBadge";
 
 interface SidebarUserSectionProps {
   session: Session;
@@ -106,7 +113,10 @@ export function SidebarUserSection({
                     {t("Profile", "プロフィール")}
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={toggleTheme} className="cursor-pointer">
+                <DropdownMenuItem
+                  onClick={toggleTheme}
+                  className="cursor-pointer"
+                >
                   {theme === "dark" ? (
                     <Sun className="mr-2 size-4" />
                   ) : (

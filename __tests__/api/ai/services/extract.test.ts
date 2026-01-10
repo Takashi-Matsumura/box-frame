@@ -15,15 +15,17 @@
  */
 
 import { POST } from "@/app/api/ai/services/extract/route";
-import { AIService } from "@/lib/core-modules/ai";
 import { auth } from "@/auth";
+import { AIService } from "@/lib/core-modules/ai";
 
 // モック
 jest.mock("@/auth");
 jest.mock("@/lib/core-modules/ai/ai-service");
 
 const mockAuth = auth as jest.MockedFunction<typeof auth>;
-const mockExtract = AIService.extract as jest.MockedFunction<typeof AIService.extract>;
+const mockExtract = AIService.extract as jest.MockedFunction<
+  typeof AIService.extract
+>;
 
 // モックセッション
 const mockSession = {
@@ -56,7 +58,7 @@ describe("POST /api/ai/services/extract", () => {
       mockAuth.mockResolvedValue(null as never);
 
       const response = await POST(
-        createRequest({ text: "test", schema: validSchema })
+        createRequest({ text: "test", schema: validSchema }),
       );
 
       expect(response.status).toBe(401);
@@ -95,7 +97,7 @@ describe("POST /api/ai/services/extract", () => {
         createRequest({
           text: "test",
           schema: [{ description: "desc", type: "string" }],
-        })
+        }),
       );
 
       expect(response.status).toBe(400);
@@ -108,7 +110,7 @@ describe("POST /api/ai/services/extract", () => {
         createRequest({
           text: "test",
           schema: [{ name: "field", type: "string" }],
-        })
+        }),
       );
 
       expect(response.status).toBe(400);
@@ -121,7 +123,7 @@ describe("POST /api/ai/services/extract", () => {
         createRequest({
           text: "test",
           schema: [{ name: "field", description: "desc", type: "invalid" }],
-        })
+        }),
       );
 
       expect(response.status).toBe(400);
@@ -135,7 +137,7 @@ describe("POST /api/ai/services/extract", () => {
           text: "test",
           schema: validSchema,
           language: "fr",
-        })
+        }),
       );
 
       expect(response.status).toBe(400);
@@ -153,7 +155,7 @@ describe("POST /api/ai/services/extract", () => {
       });
 
       const response = await POST(
-        createRequest({ text: "田中太郎さんは35歳", schema: validSchema })
+        createRequest({ text: "田中太郎さんは35歳", schema: validSchema }),
       );
 
       expect(response.status).toBe(200);
@@ -176,7 +178,7 @@ describe("POST /api/ai/services/extract", () => {
           text: "test",
           schema: validSchema,
           language: "ja",
-        })
+        }),
       );
 
       expect(mockExtract).toHaveBeenCalledWith({
@@ -201,7 +203,7 @@ describe("POST /api/ai/services/extract", () => {
       ];
 
       const response = await POST(
-        createRequest({ text: "test", schema: allTypes })
+        createRequest({ text: "test", schema: allTypes }),
       );
 
       expect(response.status).toBe(200);
@@ -213,7 +215,7 @@ describe("POST /api/ai/services/extract", () => {
       mockExtract.mockRejectedValue(new Error("Extraction failed"));
 
       const response = await POST(
-        createRequest({ text: "test", schema: validSchema })
+        createRequest({ text: "test", schema: validSchema }),
       );
 
       expect(response.status).toBe(500);

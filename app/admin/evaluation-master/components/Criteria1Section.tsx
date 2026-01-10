@@ -1,8 +1,11 @@
 "use client";
 
+import { ChevronDown, ChevronUp, Database, RefreshCw, Zap } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -10,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -18,10 +22,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { RefreshCw, ChevronDown, ChevronUp, Database, Zap } from "lucide-react";
 import { evaluationMasterTranslations } from "../translations";
 
 interface Criteria1SectionProps {
@@ -116,7 +116,7 @@ export default function Criteria1Section({
     setLoading(true);
     try {
       const response = await fetch(
-        `/api/evaluation/criteria1?periodId=${periodId}`
+        `/api/evaluation/criteria1?periodId=${periodId}`,
       );
       if (response.ok) {
         const data = await response.json();
@@ -137,7 +137,7 @@ export default function Criteria1Section({
 
   const handleDepartmentTypeChange = async (
     result: Criteria1Result,
-    newType: "DIRECT" | "INDIRECT"
+    newType: "DIRECT" | "INDIRECT",
   ) => {
     try {
       const response = await fetch("/api/evaluation/criteria1", {
@@ -171,14 +171,14 @@ export default function Criteria1Section({
       alert(
         language === "ja"
           ? "部門タイプの更新に失敗しました"
-          : "Failed to update department type"
+          : "Failed to update department type",
       );
     }
   };
 
   const handleLinkedOrganizationChange = async (
     result: Criteria1Result,
-    linkedOrgKey: string
+    linkedOrgKey: string,
   ) => {
     if (!linkedOrgKey || linkedOrgKey === "none") {
       // 紐付けを解除
@@ -211,7 +211,7 @@ export default function Criteria1Section({
         alert(
           language === "ja"
             ? "紐付け解除に失敗しました"
-            : "Failed to unlink organization"
+            : "Failed to unlink organization",
         );
       }
       return;
@@ -249,7 +249,7 @@ export default function Criteria1Section({
       alert(
         language === "ja"
           ? "紐付けの更新に失敗しました"
-          : "Failed to update linked organization"
+          : "Failed to update linked organization",
       );
     }
   };
@@ -261,7 +261,7 @@ export default function Criteria1Section({
       !confirm(
         language === "ja"
           ? "組織図データから結果評価テーブルを初期化しますか？\n既存のデータには影響しません（新規データのみ追加されます）"
-          : "Initialize Results Evaluation table from organization data?\nExisting data will not be affected (only new records will be added)"
+          : "Initialize Results Evaluation table from organization data?\nExisting data will not be affected (only new records will be added)",
       )
     ) {
       return;
@@ -285,7 +285,7 @@ export default function Criteria1Section({
     } catch (error) {
       console.error("Failed to initialize:", error);
       alert(
-        language === "ja" ? "初期化に失敗しました" : "Failed to initialize"
+        language === "ja" ? "初期化に失敗しました" : "Failed to initialize",
       );
     } finally {
       setInitializing(false);
@@ -299,7 +299,7 @@ export default function Criteria1Section({
       !confirm(
         language === "ja"
           ? "結果評価の達成率を全社員の評価スコア（score1）に反映しますか？\n既存のscore1は上書きされます。"
-          : "Sync achievement rates to all employees' evaluation scores (score1)?\nExisting score1 values will be overwritten."
+          : "Sync achievement rates to all employees' evaluation scores (score1)?\nExisting score1 values will be overwritten.",
       )
     ) {
       return;
@@ -331,7 +331,7 @@ export default function Criteria1Section({
       alert(
         language === "ja"
           ? "評価スコアの反映に失敗しました"
-          : "Failed to sync scores"
+          : "Failed to sync scores",
       );
     } finally {
       setSyncing(false);
@@ -358,7 +358,7 @@ export default function Criteria1Section({
   const handleStartEdit = (
     resultId: string,
     field: "targetProfit" | "actualProfit",
-    currentValue: number | null
+    currentValue: number | null,
   ) => {
     setEditingField({ id: resultId, field });
     setEditingValue(currentValue ? currentValue.toString() : "");
@@ -409,7 +409,7 @@ export default function Criteria1Section({
 
   const calculateAchievementRate = (
     targetProfit: number | null,
-    actualProfit: number | null
+    actualProfit: number | null,
   ): number | null => {
     if (!targetProfit || !actualProfit || targetProfit <= 0) {
       return null;
@@ -468,8 +468,8 @@ export default function Criteria1Section({
             code: r.organizationCode,
             sortNumber: r.sortNumber,
           },
-        ])
-    ).values()
+        ]),
+    ).values(),
   )
     .filter((d) => d.name)
     .sort((a, b) => (a.sortNumber || 0) - (b.sortNumber || 0))
@@ -532,7 +532,9 @@ export default function Criteria1Section({
       {/* ヘッダー */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6 flex-shrink-0">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">{t.goalsTitle}</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            {t.goalsTitle}
+          </h2>
           <p className="text-sm text-gray-500">{t.goalsDescription}</p>
         </div>
 
@@ -562,7 +564,10 @@ export default function Criteria1Section({
             <span className="text-sm font-medium text-gray-700">
               {t.filterByDepartment}:
             </span>
-            <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+            <Select
+              value={selectedDepartment}
+              onValueChange={setSelectedDepartment}
+            >
               <SelectTrigger className="w-[280px]">
                 <SelectValue placeholder={t.allDepartments} />
               </SelectTrigger>
@@ -584,7 +589,10 @@ export default function Criteria1Section({
               checked={showBudgetColumns}
               onCheckedChange={setShowBudgetColumns}
             />
-            <Label htmlFor="show-budget-columns" className="text-sm text-gray-600 cursor-pointer">
+            <Label
+              htmlFor="show-budget-columns"
+              className="text-sm text-gray-600 cursor-pointer"
+            >
               {language === "ja" ? "予実表示" : "Show Budget"}
             </Label>
           </div>
@@ -616,7 +624,9 @@ export default function Criteria1Section({
             variant="outline"
             size="sm"
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${initializing ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${initializing ? "animate-spin" : ""}`}
+            />
             {initializing
               ? language === "ja"
                 ? "初期化中..."
@@ -630,415 +640,429 @@ export default function Criteria1Section({
       <div className="flex-1 overflow-y-auto">
         {/* 初期化が必要な場合 */}
         {results.length === 0 ? (
-        <div className="flex flex-col justify-center items-center py-12 px-4 border rounded-lg bg-gray-50">
-          <div className="text-center max-w-md">
-            <div className="mb-4 text-gray-400">
-              <Database className="w-16 h-16 mx-auto" />
+          <div className="flex flex-col justify-center items-center py-12 px-4 border rounded-lg bg-gray-50">
+            <div className="text-center max-w-md">
+              <div className="mb-4 text-gray-400">
+                <Database className="w-16 h-16 mx-auto" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {language === "ja"
+                  ? "評価データが初期化されていません"
+                  : "Evaluation Data Not Initialized"}
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                {language === "ja"
+                  ? "「組織図から初期化」ボタンをクリックして、評価データを作成してください。"
+                  : "Click the 'Initialize from Org Chart' button to create evaluation data."}
+              </p>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {language === "ja"
-                ? "評価データが初期化されていません"
-                : "Evaluation Data Not Initialized"}
-            </h3>
-            <p className="text-sm text-gray-600 mb-4">
-              {language === "ja"
-                ? "「組織図から初期化」ボタンをクリックして、評価データを作成してください。"
-                : "Click the 'Initialize from Org Chart' button to create evaluation data."}
-            </p>
           </div>
-        </div>
-      ) : (
-        <>
-          {/* データテーブル */}
-          <div className="rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t.typeDepartment}</TableHead>
-                  <TableHead>{t.typeSection}</TableHead>
-                  <TableHead>{t.typeCourse}</TableHead>
-                  {!showBudgetColumns && (
-                    <TableHead className="text-center">{t.departmentType}</TableHead>
-                  )}
-                  {!showBudgetColumns && (
-                    <TableHead className="text-center">{t.employeeCount}</TableHead>
-                  )}
-                  {!showBudgetColumns && (
-                    <TableHead>{t.linkedTo}</TableHead>
-                  )}
-                  {showBudgetColumns && (
-                    <TableHead className="text-right">{language === "ja" ? "予算" : "Budget"}</TableHead>
-                  )}
-                  {showBudgetColumns && (
-                    <TableHead className="text-right">{t.actualProfit}</TableHead>
-                  )}
-                  {showBudgetColumns && (
-                    <TableHead className="text-right">{t.achievementRate}</TableHead>
-                  )}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredResults.map((result) => (
-                  <TableRow
-                    key={result.id}
-                    className={
-                      result.departmentType === "DIRECT"
-                        ? "bg-emerald-50 hover:bg-emerald-100"
-                        : ""
-                    }
-                  >
-                    <TableCell>
-                      {result.organizationLevel === "COMPANY" ? (
-                        <div className="flex flex-col gap-1">
-                          <span className="font-bold text-blue-900">
-                            {t.levelCompany}
-                          </span>
-                        </div>
-                      ) : result.departmentName ? (
-                        <div className="flex flex-col gap-1">
-                          <span className="font-medium text-gray-900">
-                            {result.departmentName}
-                          </span>
-                          {result.organizationLevel === "DEPARTMENT" &&
-                            result.managerName && (
-                              <span
-                                className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium w-fit ${getManagerBadgeStyle(result.organizationLevel)}`}
-                              >
-                                <span className="mr-1">
-                                  {getManagerTitle(result.organizationLevel)}:
-                                </span>
-                                <span className="font-semibold">
-                                  {result.managerName}
-                                </span>
-                              </span>
-                            )}
-                        </div>
-                      ) : null}
-                    </TableCell>
-                    <TableCell>
-                      {result.sectionName && (
-                        <div className="flex flex-col gap-1">
-                          <span className="font-medium text-gray-900">
-                            {result.sectionName}
-                          </span>
-                          {result.organizationLevel === "SECTION" &&
-                            result.managerName && (
-                              <span
-                                className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium w-fit ${getManagerBadgeStyle(result.organizationLevel)}`}
-                              >
-                                <span className="mr-1">
-                                  {getManagerTitle(result.organizationLevel)}:
-                                </span>
-                                <span className="font-semibold">
-                                  {result.managerName}
-                                </span>
-                              </span>
-                            )}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {result.courseName && (
-                        <div className="flex flex-col gap-1">
-                          <span className="font-medium text-gray-900">
-                            {result.courseName}
-                          </span>
-                          {result.organizationLevel === "COURSE" &&
-                            result.managerName && (
-                              <span
-                                className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium w-fit ${getManagerBadgeStyle(result.organizationLevel)}`}
-                              >
-                                <span className="mr-1">
-                                  {getManagerTitle(result.organizationLevel)}:
-                                </span>
-                                <span className="font-semibold">
-                                  {result.managerName}
-                                </span>
-                              </span>
-                            )}
-                        </div>
-                      )}
-                    </TableCell>
+        ) : (
+          <>
+            {/* データテーブル */}
+            <div className="rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t.typeDepartment}</TableHead>
+                    <TableHead>{t.typeSection}</TableHead>
+                    <TableHead>{t.typeCourse}</TableHead>
                     {!showBudgetColumns && (
-                      <TableCell className="text-center">
-                        <Select
-                          value={result.departmentType}
-                          onValueChange={(value) =>
-                            handleDepartmentTypeChange(
-                              result,
-                              value as "DIRECT" | "INDIRECT"
-                            )
-                          }
-                        >
-                          <SelectTrigger className="w-[100px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="INDIRECT">
-                              {t.departmentTypeIndirect}
-                            </SelectItem>
-                            <SelectItem value="DIRECT">
-                              {t.departmentTypeDirect}
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
+                      <TableHead className="text-center">
+                        {t.departmentType}
+                      </TableHead>
                     )}
                     {!showBudgetColumns && (
-                    <TableCell className="text-center">
-                      {result.employeeCount !== undefined &&
-                      result.employeeCount > 0 ? (
-                        <div className="flex flex-col items-center">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleExpandRow(result.id)}
-                            className="gap-1"
-                          >
-                            <Badge variant="secondary">{result.employeeCount}</Badge>
-                            {expandedRows.has(result.id) ? (
-                              <ChevronUp className="w-3 h-3" />
-                            ) : (
-                              <ChevronDown className="w-3 h-3" />
-                            )}
-                          </Button>
-                          {/* 展開された社員リスト */}
-                          {expandedRows.has(result.id) && (
-                            <div className="mt-2 w-full max-w-md bg-gray-50 rounded-md p-2 border text-left">
-                              <div className="text-xs font-semibold text-gray-700 mb-1 pb-1 border-b">
-                                {language === "ja"
-                                  ? "所属社員一覧"
-                                  : "Employee List"}
-                              </div>
-                              <div className="max-h-32 overflow-y-auto text-xs">
-                                {result.employees?.map((emp, idx) => (
-                                  <div
-                                    key={emp.id}
-                                    className="py-1 hover:bg-gray-100 px-1 rounded flex items-center justify-between gap-2"
-                                  >
-                                    <span className="text-gray-900">
-                                      {idx + 1}. {emp.name}
-                                    </span>
-                                    <span className="text-gray-500 text-xs flex-shrink-0">
-                                      {emp.position ||
-                                        emp.qualificationGradeCode ||
-                                        "-"}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">0</span>
-                      )}
-                    </TableCell>
+                      <TableHead className="text-center">
+                        {t.employeeCount}
+                      </TableHead>
                     )}
-                    {!showBudgetColumns && (
+                    {!showBudgetColumns && <TableHead>{t.linkedTo}</TableHead>}
+                    {showBudgetColumns && (
+                      <TableHead className="text-right">
+                        {language === "ja" ? "予算" : "Budget"}
+                      </TableHead>
+                    )}
+                    {showBudgetColumns && (
+                      <TableHead className="text-right">
+                        {t.actualProfit}
+                      </TableHead>
+                    )}
+                    {showBudgetColumns && (
+                      <TableHead className="text-right">
+                        {t.achievementRate}
+                      </TableHead>
+                    )}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredResults.map((result) => (
+                    <TableRow
+                      key={result.id}
+                      className={
+                        result.departmentType === "DIRECT"
+                          ? "bg-emerald-50 hover:bg-emerald-100"
+                          : ""
+                      }
+                    >
                       <TableCell>
-                        {result.departmentType === "INDIRECT" ? (
-                          <Select
-                            value={
-                              result.linkedOrganizationId
-                                ? `${result.linkedOrganizationLevel}:${result.linkedOrganizationId}:${result.linkedOrganizationName}`
-                                : "none"
-                            }
-                            onValueChange={(value) =>
-                              handleLinkedOrganizationChange(result, value)
-                            }
-                          >
-                            <SelectTrigger className="w-[200px]">
-                              <SelectValue placeholder={t.selectLinkedOrg} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">{t.notLinked}</SelectItem>
-                              {directOrganizations.map((org) => (
-                                <SelectItem key={org.key} value={org.key}>
-                                  {org.displayName}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <span className="text-gray-400 text-xs">-</span>
+                        {result.organizationLevel === "COMPANY" ? (
+                          <div className="flex flex-col gap-1">
+                            <span className="font-bold text-blue-900">
+                              {t.levelCompany}
+                            </span>
+                          </div>
+                        ) : result.departmentName ? (
+                          <div className="flex flex-col gap-1">
+                            <span className="font-medium text-gray-900">
+                              {result.departmentName}
+                            </span>
+                            {result.organizationLevel === "DEPARTMENT" &&
+                              result.managerName && (
+                                <span
+                                  className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium w-fit ${getManagerBadgeStyle(result.organizationLevel)}`}
+                                >
+                                  <span className="mr-1">
+                                    {getManagerTitle(result.organizationLevel)}:
+                                  </span>
+                                  <span className="font-semibold">
+                                    {result.managerName}
+                                  </span>
+                                </span>
+                              )}
+                          </div>
+                        ) : null}
+                      </TableCell>
+                      <TableCell>
+                        {result.sectionName && (
+                          <div className="flex flex-col gap-1">
+                            <span className="font-medium text-gray-900">
+                              {result.sectionName}
+                            </span>
+                            {result.organizationLevel === "SECTION" &&
+                              result.managerName && (
+                                <span
+                                  className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium w-fit ${getManagerBadgeStyle(result.organizationLevel)}`}
+                                >
+                                  <span className="mr-1">
+                                    {getManagerTitle(result.organizationLevel)}:
+                                  </span>
+                                  <span className="font-semibold">
+                                    {result.managerName}
+                                  </span>
+                                </span>
+                              )}
+                          </div>
                         )}
                       </TableCell>
-                    )}
-                    {showBudgetColumns && (
-                    <TableCell className="text-right">
-                      {result.departmentType === "DIRECT" ? (
-                        editingField?.id === result.id &&
-                        editingField?.field === "targetProfit" ? (
-                          <div className="flex items-center gap-1 justify-end">
-                            <Input
-                              type="text"
-                              value={editingValue}
-                              onChange={(e) => {
-                                const value = e.target.value.replace(
-                                  /[^0-9]/g,
-                                  ""
-                                );
-                                setEditingValue(value);
-                              }}
-                              onBlur={() => handleSaveInlineEdit(result)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  handleSaveInlineEdit(result);
-                                } else if (e.key === "Escape") {
-                                  handleCancelEdit();
-                                }
-                              }}
-                              className="w-28 text-right"
-                              placeholder="0"
-                              autoFocus
-                            />
+                      <TableCell>
+                        {result.courseName && (
+                          <div className="flex flex-col gap-1">
+                            <span className="font-medium text-gray-900">
+                              {result.courseName}
+                            </span>
+                            {result.organizationLevel === "COURSE" &&
+                              result.managerName && (
+                                <span
+                                  className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium w-fit ${getManagerBadgeStyle(result.organizationLevel)}`}
+                                >
+                                  <span className="mr-1">
+                                    {getManagerTitle(result.organizationLevel)}:
+                                  </span>
+                                  <span className="font-semibold">
+                                    {result.managerName}
+                                  </span>
+                                </span>
+                              )}
                           </div>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              handleStartEdit(
-                                result.id,
-                                "targetProfit",
-                                result.targetProfit
+                        )}
+                      </TableCell>
+                      {!showBudgetColumns && (
+                        <TableCell className="text-center">
+                          <Select
+                            value={result.departmentType}
+                            onValueChange={(value) =>
+                              handleDepartmentTypeChange(
+                                result,
+                                value as "DIRECT" | "INDIRECT",
                               )
                             }
-                            className="font-mono"
                           >
-                            {formatCurrencyWithUnit(result.targetProfit)}
-                          </Button>
-                        )
-                      ) : (
-                        <span className="text-gray-400">-</span>
+                            <SelectTrigger className="w-[100px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="INDIRECT">
+                                {t.departmentTypeIndirect}
+                              </SelectItem>
+                              <SelectItem value="DIRECT">
+                                {t.departmentTypeDirect}
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
                       )}
-                    </TableCell>
-                    )}
-                    {showBudgetColumns && (
-                    <TableCell className="text-right">
-                      {result.departmentType === "DIRECT" ? (
-                        editingField?.id === result.id &&
-                        editingField?.field === "actualProfit" ? (
-                          <div className="flex items-center gap-1 justify-end">
-                            <Input
-                              type="text"
-                              value={editingValue}
-                              onChange={(e) => {
-                                const value = e.target.value.replace(
-                                  /[^0-9]/g,
-                                  ""
-                                );
-                                setEditingValue(value);
-                              }}
-                              onBlur={() => handleSaveInlineEdit(result)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  handleSaveInlineEdit(result);
-                                } else if (e.key === "Escape") {
-                                  handleCancelEdit();
-                                }
-                              }}
-                              className="w-28 text-right"
-                              placeholder="0"
-                              autoFocus
-                            />
-                          </div>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              handleStartEdit(
-                                result.id,
-                                "actualProfit",
-                                result.actualProfit
-                              )
-                            }
-                            className="font-mono"
-                          >
-                            {formatCurrencyWithUnit(result.actualProfit)}
-                          </Button>
-                        )
-                      ) : (
-                        <span className="text-gray-400">-</span>
+                      {!showBudgetColumns && (
+                        <TableCell className="text-center">
+                          {result.employeeCount !== undefined &&
+                          result.employeeCount > 0 ? (
+                            <div className="flex flex-col items-center">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleExpandRow(result.id)}
+                                className="gap-1"
+                              >
+                                <Badge variant="secondary">
+                                  {result.employeeCount}
+                                </Badge>
+                                {expandedRows.has(result.id) ? (
+                                  <ChevronUp className="w-3 h-3" />
+                                ) : (
+                                  <ChevronDown className="w-3 h-3" />
+                                )}
+                              </Button>
+                              {/* 展開された社員リスト */}
+                              {expandedRows.has(result.id) && (
+                                <div className="mt-2 w-full max-w-md bg-gray-50 rounded-md p-2 border text-left">
+                                  <div className="text-xs font-semibold text-gray-700 mb-1 pb-1 border-b">
+                                    {language === "ja"
+                                      ? "所属社員一覧"
+                                      : "Employee List"}
+                                  </div>
+                                  <div className="max-h-32 overflow-y-auto text-xs">
+                                    {result.employees?.map((emp, idx) => (
+                                      <div
+                                        key={emp.id}
+                                        className="py-1 hover:bg-gray-100 px-1 rounded flex items-center justify-between gap-2"
+                                      >
+                                        <span className="text-gray-900">
+                                          {idx + 1}. {emp.name}
+                                        </span>
+                                        <span className="text-gray-500 text-xs flex-shrink-0">
+                                          {emp.position ||
+                                            emp.qualificationGradeCode ||
+                                            "-"}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">0</span>
+                          )}
+                        </TableCell>
                       )}
-                    </TableCell>
-                    )}
-                    {showBudgetColumns && (
-                    <TableCell className="text-right">
-                      {(() => {
-                        if (result.departmentType !== "DIRECT") {
-                          // 間接部門: 紐付け先の達成率を表示
-                          if (!result.linkedOrganizationId) {
-                            return <span className="text-gray-400">-</span>;
-                          }
-
-                          const rate = result.achievementRate;
-                          if (rate === null) {
-                            return <span className="text-gray-400">-</span>;
-                          }
-
-                          return (
-                            <Badge
-                              variant={
-                                rate >= 100
-                                  ? "default"
-                                  : rate >= 80
-                                    ? "secondary"
-                                    : "destructive"
+                      {!showBudgetColumns && (
+                        <TableCell>
+                          {result.departmentType === "INDIRECT" ? (
+                            <Select
+                              value={
+                                result.linkedOrganizationId
+                                  ? `${result.linkedOrganizationLevel}:${result.linkedOrganizationId}:${result.linkedOrganizationName}`
+                                  : "none"
+                              }
+                              onValueChange={(value) =>
+                                handleLinkedOrganizationChange(result, value)
                               }
                             >
-                              {formatPercentage(rate)}
-                            </Badge>
-                          );
-                        }
+                              <SelectTrigger className="w-[200px]">
+                                <SelectValue placeholder={t.selectLinkedOrg} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">
+                                  {t.notLinked}
+                                </SelectItem>
+                                {directOrganizations.map((org) => (
+                                  <SelectItem key={org.key} value={org.key}>
+                                    {org.displayName}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span className="text-gray-400 text-xs">-</span>
+                          )}
+                        </TableCell>
+                      )}
+                      {showBudgetColumns && (
+                        <TableCell className="text-right">
+                          {result.departmentType === "DIRECT" ? (
+                            editingField?.id === result.id &&
+                            editingField?.field === "targetProfit" ? (
+                              <div className="flex items-center gap-1 justify-end">
+                                <Input
+                                  type="text"
+                                  value={editingValue}
+                                  onChange={(e) => {
+                                    const value = e.target.value.replace(
+                                      /[^0-9]/g,
+                                      "",
+                                    );
+                                    setEditingValue(value);
+                                  }}
+                                  onBlur={() => handleSaveInlineEdit(result)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      handleSaveInlineEdit(result);
+                                    } else if (e.key === "Escape") {
+                                      handleCancelEdit();
+                                    }
+                                  }}
+                                  className="w-28 text-right"
+                                  placeholder="0"
+                                  autoFocus
+                                />
+                              </div>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleStartEdit(
+                                    result.id,
+                                    "targetProfit",
+                                    result.targetProfit,
+                                  )
+                                }
+                                className="font-mono"
+                              >
+                                {formatCurrencyWithUnit(result.targetProfit)}
+                              </Button>
+                            )
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </TableCell>
+                      )}
+                      {showBudgetColumns && (
+                        <TableCell className="text-right">
+                          {result.departmentType === "DIRECT" ? (
+                            editingField?.id === result.id &&
+                            editingField?.field === "actualProfit" ? (
+                              <div className="flex items-center gap-1 justify-end">
+                                <Input
+                                  type="text"
+                                  value={editingValue}
+                                  onChange={(e) => {
+                                    const value = e.target.value.replace(
+                                      /[^0-9]/g,
+                                      "",
+                                    );
+                                    setEditingValue(value);
+                                  }}
+                                  onBlur={() => handleSaveInlineEdit(result)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      handleSaveInlineEdit(result);
+                                    } else if (e.key === "Escape") {
+                                      handleCancelEdit();
+                                    }
+                                  }}
+                                  className="w-28 text-right"
+                                  placeholder="0"
+                                  autoFocus
+                                />
+                              </div>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleStartEdit(
+                                    result.id,
+                                    "actualProfit",
+                                    result.actualProfit,
+                                  )
+                                }
+                                className="font-mono"
+                              >
+                                {formatCurrencyWithUnit(result.actualProfit)}
+                              </Button>
+                            )
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </TableCell>
+                      )}
+                      {showBudgetColumns && (
+                        <TableCell className="text-right">
+                          {(() => {
+                            if (result.departmentType !== "DIRECT") {
+                              // 間接部門: 紐付け先の達成率を表示
+                              if (!result.linkedOrganizationId) {
+                                return <span className="text-gray-400">-</span>;
+                              }
 
-                        // 直接部門: 計算した達成率を表示
-                        const rate = calculateAchievementRate(
-                          result.targetProfit,
-                          result.actualProfit
-                        );
+                              const rate = result.achievementRate;
+                              if (rate === null) {
+                                return <span className="text-gray-400">-</span>;
+                              }
 
-                        if (rate === null) {
-                          return <span className="text-gray-400">-</span>;
-                        }
-
-                        return (
-                          <Badge
-                            variant={
-                              rate >= 100
-                                ? "default"
-                                : rate >= 80
-                                  ? "secondary"
-                                  : "destructive"
+                              return (
+                                <Badge
+                                  variant={
+                                    rate >= 100
+                                      ? "default"
+                                      : rate >= 80
+                                        ? "secondary"
+                                        : "destructive"
+                                  }
+                                >
+                                  {formatPercentage(rate)}
+                                </Badge>
+                              );
                             }
-                          >
-                            {formatPercentage(rate)}
-                          </Badge>
-                        );
-                      })()}
-                    </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-                {filteredResults.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                      {selectedDepartment === "all"
-                        ? t.noDataFound
-                        : language === "ja"
-                          ? "選択した部門にデータがありません"
-                          : "No data found for selected department"}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
 
-        </>
-      )}
+                            // 直接部門: 計算した達成率を表示
+                            const rate = calculateAchievementRate(
+                              result.targetProfit,
+                              result.actualProfit,
+                            );
+
+                            if (rate === null) {
+                              return <span className="text-gray-400">-</span>;
+                            }
+
+                            return (
+                              <Badge
+                                variant={
+                                  rate >= 100
+                                    ? "default"
+                                    : rate >= 80
+                                      ? "secondary"
+                                      : "destructive"
+                                }
+                              >
+                                {formatPercentage(rate)}
+                              </Badge>
+                            );
+                          })()}
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                  {filteredResults.length === 0 && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={6}
+                        className="text-center py-8 text-gray-500"
+                      >
+                        {selectedDepartment === "all"
+                          ? t.noDataFound
+                          : language === "ja"
+                            ? "選択した部門にデータがありません"
+                            : "No data found for selected department"}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

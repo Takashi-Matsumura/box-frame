@@ -11,7 +11,7 @@ export async function GET() {
   if (!session?.user?.email) {
     return NextResponse.json(
       { error: "Unauthorized", errorJa: "認証が必要です" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -23,7 +23,7 @@ export async function GET() {
   if (!user) {
     return NextResponse.json(
       { error: "User not found", errorJa: "ユーザーが見つかりません" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -44,7 +44,7 @@ export async function GET() {
         acc[item.type] = item._count.id;
         return acc;
       },
-      {} as Record<string, number>
+      {} as Record<string, number>,
     );
 
     return NextResponse.json({
@@ -65,7 +65,7 @@ export async function GET() {
         error: "Failed to get unread count",
         errorJa: "未読数の取得に失敗しました",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

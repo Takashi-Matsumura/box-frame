@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  GripVertical,
+  Languages,
+  Loader2,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -20,8 +20,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -29,7 +27,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Languages, Loader2, GripVertical } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import { evaluationMasterTranslations } from "../translations";
 
 interface ProcessCategory {
@@ -72,7 +79,8 @@ export default function ProcessCategoriesSection({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [translating, setTranslating] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<ProcessCategory | null>(null);
+  const [editingCategory, setEditingCategory] =
+    useState<ProcessCategory | null>(null);
 
   const [formData, setFormData] = useState<CategoryFormData>({
     name: "",
@@ -217,11 +225,14 @@ export default function ProcessCategoriesSection({
 
   const handleToggleActive = async (category: ProcessCategory) => {
     try {
-      const res = await fetch(`/api/evaluation/process-categories/${category.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive: !category.isActive }),
-      });
+      const res = await fetch(
+        `/api/evaluation/process-categories/${category.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isActive: !category.isActive }),
+        },
+      );
 
       if (res.ok) {
         fetchCategories();
@@ -232,7 +243,9 @@ export default function ProcessCategoriesSection({
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-muted-foreground">{t.loading}</div>;
+    return (
+      <div className="text-center py-8 text-muted-foreground">{t.loading}</div>
+    );
   }
 
   return (
@@ -268,7 +281,11 @@ export default function ProcessCategoriesSection({
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  placeholder={language === "ja" ? "例：Aクラスプロセス" : "e.g., A Class Process"}
+                  placeholder={
+                    language === "ja"
+                      ? "例：Aクラスプロセス"
+                      : "e.g., A Class Process"
+                  }
                 />
               </div>
 
@@ -309,7 +326,11 @@ export default function ProcessCategoriesSection({
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  placeholder={language === "ja" ? "カテゴリーの説明を入力" : "Enter category description"}
+                  placeholder={
+                    language === "ja"
+                      ? "カテゴリーの説明を入力"
+                      : "Enter category description"
+                  }
                   rows={2}
                 />
               </div>
@@ -361,7 +382,9 @@ export default function ProcessCategoriesSection({
                 <div className="grid grid-cols-4 gap-3">
                   {(["T4", "T3", "T2", "T1"] as const).map((tier) => (
                     <div key={tier} className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">{tier}</Label>
+                      <Label className="text-xs text-muted-foreground">
+                        {tier}
+                      </Label>
                       <Input
                         type="number"
                         min={0}
@@ -414,7 +437,9 @@ export default function ProcessCategoriesSection({
 
       <div className="flex-1 overflow-y-auto">
         {categories.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">{t.noData}</div>
+          <div className="text-center py-12 text-muted-foreground">
+            {t.noData}
+          </div>
         ) : (
           <Table>
             <TableHeader>
@@ -422,8 +447,12 @@ export default function ProcessCategoriesSection({
                 <TableHead className="w-10"></TableHead>
                 <TableHead className="w-16">{t.sortOrder}</TableHead>
                 <TableHead>{t.categoryName}</TableHead>
-                <TableHead className="w-20 text-center">{t.categoryClass}</TableHead>
-                <TableHead className="w-20 text-center">{t.minItemCount}</TableHead>
+                <TableHead className="w-20 text-center">
+                  {t.categoryClass}
+                </TableHead>
+                <TableHead className="w-20 text-center">
+                  {t.minItemCount}
+                </TableHead>
                 <TableHead className="w-16 text-center">{t.scoreT4}</TableHead>
                 <TableHead className="w-16 text-center">{t.scoreT3}</TableHead>
                 <TableHead className="w-20 text-center bg-blue-50 dark:bg-blue-900/20">
@@ -446,19 +475,29 @@ export default function ProcessCategoriesSection({
                     <TableCell>
                       <GripVertical className="w-4 h-4 text-muted-foreground cursor-move" />
                     </TableCell>
-                    <TableCell className="text-center">{category.sortOrder}</TableCell>
-                    <TableCell className="font-medium">{category.name}</TableCell>
+                    <TableCell className="text-center">
+                      {category.sortOrder}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {category.name}
+                    </TableCell>
                     <TableCell className="text-center">
                       <Badge variant="secondary">{category.categoryCode}</Badge>
                     </TableCell>
                     <TableCell className="text-center">
-                      <span className="font-mono text-sm">{category.minItemCount}</span>
+                      <span className="font-mono text-sm">
+                        {category.minItemCount}
+                      </span>
                     </TableCell>
                     <TableCell className="text-center">
-                      <span className="font-mono text-sm">{scores.T4 || "-"}</span>
+                      <span className="font-mono text-sm">
+                        {scores.T4 || "-"}
+                      </span>
                     </TableCell>
                     <TableCell className="text-center">
-                      <span className="font-mono text-sm">{scores.T3 || "-"}</span>
+                      <span className="font-mono text-sm">
+                        {scores.T3 || "-"}
+                      </span>
                     </TableCell>
                     <TableCell className="text-center bg-blue-50 dark:bg-blue-900/20">
                       <span className="font-mono text-sm font-semibold text-blue-700 dark:text-blue-300">
@@ -466,7 +505,9 @@ export default function ProcessCategoriesSection({
                       </span>
                     </TableCell>
                     <TableCell className="text-center">
-                      <span className="font-mono text-sm">{scores.T1 || "-"}</span>
+                      <span className="font-mono text-sm">
+                        {scores.T1 || "-"}
+                      </span>
                     </TableCell>
                     <TableCell className="max-w-xs truncate text-muted-foreground text-sm">
                       {category.description || "-"}

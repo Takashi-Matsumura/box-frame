@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { deleteWeight, upsertWeight } from "@/lib/addon-modules/evaluation";
 import { prisma } from "@/lib/prisma";
-import { upsertWeight, deleteWeight } from "@/lib/addon-modules/evaluation";
 
 // 評価対象外の部門名
 const EXCLUDED_DEPARTMENT_NAMES = ["役員・顧問"];
@@ -65,7 +65,7 @@ export async function GET(request: Request) {
     if (!periodId) {
       return NextResponse.json(
         { error: "periodId is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -83,8 +83,13 @@ export async function GET(request: Request) {
         if (weight.positionCode === "DEFAULT" && weight.gradeCode === "ALL") {
           // グローバルデフォルトの場合は、他の設定に該当しない社員数
           const configuredCombos = weights
-            .filter((w) => !(w.positionCode === "DEFAULT" && w.gradeCode === "ALL"))
-            .map((w) => ({ positionCode: w.positionCode, gradeCode: w.gradeCode }));
+            .filter(
+              (w) => !(w.positionCode === "DEFAULT" && w.gradeCode === "ALL"),
+            )
+            .map((w) => ({
+              positionCode: w.positionCode,
+              gradeCode: w.gradeCode,
+            }));
 
           // 設定済みの組み合わせに含まれない社員をカウント
           const allEmployees = await prisma.employee.findMany({
@@ -92,7 +97,11 @@ export async function GET(request: Request) {
               isActive: true,
               department: { name: { notIn: EXCLUDED_DEPARTMENT_NAMES } },
             },
-            select: { positionCode: true, qualificationGradeCode: true, name: true },
+            select: {
+              positionCode: true,
+              qualificationGradeCode: true,
+              name: true,
+            },
           });
 
           const matchingEmployees = allEmployees.filter((e) => {
@@ -101,16 +110,18 @@ export async function GET(request: Request) {
 
             // この社員に適用される重みがあるかチェック
             const hasSpecificMatch = configuredCombos.some(
-              (c) => c.positionCode === posCode && c.gradeCode === gradeCode
+              (c) => c.positionCode === posCode && c.gradeCode === gradeCode,
             );
             const hasPositionAllMatch = configuredCombos.some(
-              (c) => c.positionCode === posCode && c.gradeCode === "ALL"
+              (c) => c.positionCode === posCode && c.gradeCode === "ALL",
             );
             const hasGradeDefaultMatch = configuredCombos.some(
-              (c) => c.positionCode === "DEFAULT" && c.gradeCode === gradeCode
+              (c) => c.positionCode === "DEFAULT" && c.gradeCode === gradeCode,
             );
 
-            return !hasSpecificMatch && !hasPositionAllMatch && !hasGradeDefaultMatch;
+            return (
+              !hasSpecificMatch && !hasPositionAllMatch && !hasGradeDefaultMatch
+            );
           });
           employeeCount = matchingEmployees.length;
           if (includeNames) {
@@ -191,7 +202,7 @@ export async function GET(request: Request) {
           employeeCount,
           ...(includeNames && { employeeNames }),
         };
-      })
+      }),
     );
 
     // 等級コードでカスタムソート（"000"を末尾に配置）
@@ -208,7 +219,7 @@ export async function GET(request: Request) {
     console.error("Error fetching weights:", error);
     return NextResponse.json(
       { error: "Failed to fetch weights" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -229,12 +240,15 @@ async function detectMissingCombinations(periodId: string | null) {
   });
 
   // 役職ごとにグループ化
-  const positionMap = new Map<string, {
-    positionCode: string;
-    positionName: string;
-    grades: Array<{ gradeCode: string; employeeCount: number }>;
-    totalEmployees: number;
-  }>();
+  const positionMap = new Map<
+    string,
+    {
+      positionCode: string;
+      positionName: string;
+      grades: Array<{ gradeCode: string; employeeCount: number }>;
+      totalEmployees: number;
+    }
+  >();
 
   for (const emp of employees) {
     const posCode = emp.positionCode || "UNKNOWN";
@@ -267,7 +281,10 @@ async function detectMissingCombinations(periodId: string | null) {
   }
 
   // 現在設定されている組み合わせを取得
-  let configuredCombinations: Array<{ positionCode: string; gradeCode: string }> = [];
+  let configuredCombinations: Array<{
+    positionCode: string;
+    gradeCode: string;
+  }> = [];
   if (periodId) {
     const weights = await prisma.evaluationWeight.findMany({
       where: { periodId },
@@ -283,25 +300,27 @@ async function detectMissingCombinations(periodId: string | null) {
   const missingCombinations = allCombinations.filter((combo) => {
     // 完全一致
     const hasExact = configuredCombinations.some(
-      (c) => c.positionCode === combo.positionCode && c.gradeCode === combo.gradeCode
+      (c) =>
+        c.positionCode === combo.positionCode &&
+        c.gradeCode === combo.gradeCode,
     );
     if (hasExact) return false;
 
     // 役職のALL設定
     const hasPositionAll = configuredCombinations.some(
-      (c) => c.positionCode === combo.positionCode && c.gradeCode === "ALL"
+      (c) => c.positionCode === combo.positionCode && c.gradeCode === "ALL",
     );
     if (hasPositionAll) return false;
 
     // DEFAULT等級設定
     const hasDefaultGrade = configuredCombinations.some(
-      (c) => c.positionCode === "DEFAULT" && c.gradeCode === combo.gradeCode
+      (c) => c.positionCode === "DEFAULT" && c.gradeCode === combo.gradeCode,
     );
     if (hasDefaultGrade) return false;
 
     // グローバルデフォルト
     const hasGlobalDefault = configuredCombinations.some(
-      (c) => c.positionCode === "DEFAULT" && c.gradeCode === "ALL"
+      (c) => c.positionCode === "DEFAULT" && c.gradeCode === "ALL",
     );
     if (hasGlobalDefault) return false;
 
@@ -312,7 +331,9 @@ async function detectMissingCombinations(periodId: string | null) {
   const positionStats = Array.from(positionMap.values())
     .map((pos) => ({
       ...pos,
-      grades: pos.grades.sort((a, b) => compareGradeCodes(a.gradeCode, b.gradeCode)),
+      grades: pos.grades.sort((a, b) =>
+        compareGradeCodes(a.gradeCode, b.gradeCode),
+      ),
     }))
     .sort((a, b) => a.positionCode.localeCompare(b.positionCode));
 
@@ -359,7 +380,7 @@ export async function POST(request: Request) {
       if (!periodId || !combinations || !Array.isArray(combinations)) {
         return NextResponse.json(
           { error: "periodId and combinations array are required" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -396,13 +417,17 @@ export async function POST(request: Request) {
       if (!periodId || !positionCode) {
         return NextResponse.json(
           { error: "periodId and positionCode are required" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
       await prisma.evaluationWeight.upsert({
         where: {
-          periodId_positionCode_gradeCode: { periodId, positionCode, gradeCode: "ALL" },
+          periodId_positionCode_gradeCode: {
+            periodId,
+            positionCode,
+            gradeCode: "ALL",
+          },
         },
         update: {
           positionName,
@@ -429,7 +454,7 @@ export async function POST(request: Request) {
       if (!periodId || !positionCode || !gradeCode) {
         return NextResponse.json(
           { error: "periodId, positionCode, and gradeCode are required" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -444,7 +469,7 @@ export async function POST(request: Request) {
       if (!periodId || !weights || !Array.isArray(weights)) {
         return NextResponse.json(
           { error: "periodId and weights array are required" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -454,36 +479,37 @@ export async function POST(request: Request) {
         if (total !== 100) {
           return NextResponse.json(
             { error: `Weight total must be 100%, got ${total}%` },
-            { status: 400 }
+            { status: 400 },
           );
         }
       }
 
       // トランザクションで一括更新
       const results = await prisma.$transaction(
-        weights.map((w: {
-          positionCode: string;
-          positionName: string | null;
-          gradeCode: string;
-          resultsWeight: number;
-          processWeight: number;
-          growthWeight: number;
-        }) =>
-          prisma.evaluationWeight.update({
-            where: {
-              periodId_positionCode_gradeCode: {
-                periodId,
-                positionCode: w.positionCode,
-                gradeCode: w.gradeCode,
+        weights.map(
+          (w: {
+            positionCode: string;
+            positionName: string | null;
+            gradeCode: string;
+            resultsWeight: number;
+            processWeight: number;
+            growthWeight: number;
+          }) =>
+            prisma.evaluationWeight.update({
+              where: {
+                periodId_positionCode_gradeCode: {
+                  periodId,
+                  positionCode: w.positionCode,
+                  gradeCode: w.gradeCode,
+                },
               },
-            },
-            data: {
-              resultsWeight: w.resultsWeight,
-              processWeight: w.processWeight,
-              growthWeight: w.growthWeight,
-            },
-          })
-        )
+              data: {
+                resultsWeight: w.resultsWeight,
+                processWeight: w.processWeight,
+                growthWeight: w.growthWeight,
+              },
+            }),
+        ),
       );
 
       return NextResponse.json({ updated: results.length });
@@ -493,7 +519,7 @@ export async function POST(request: Request) {
     if (!periodId || !positionCode || !gradeCode) {
       return NextResponse.json(
         { error: "periodId, positionCode, and gradeCode are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -502,15 +528,21 @@ export async function POST(request: Request) {
     if (total !== 100) {
       return NextResponse.json(
         { error: `Weight total must be 100%, got ${total}%` },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    await upsertWeight(periodId, positionCode, gradeCode, {
-      resultsWeight,
-      processWeight,
-      growthWeight,
-    }, positionName);
+    await upsertWeight(
+      periodId,
+      positionCode,
+      gradeCode,
+      {
+        resultsWeight,
+        processWeight,
+        growthWeight,
+      },
+      positionName,
+    );
 
     const weight = await prisma.evaluationWeight.findUnique({
       where: {
@@ -523,7 +555,7 @@ export async function POST(request: Request) {
     console.error("Error updating weight:", error);
     return NextResponse.json(
       { error: "Failed to update weight" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

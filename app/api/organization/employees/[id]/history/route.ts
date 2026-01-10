@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
 import { changeTypeMapping } from "@/lib/history/types";
+import { prisma } from "@/lib/prisma";
 
 /**
  * GET /api/organization/employees/[id]/history
@@ -13,7 +13,7 @@ import { changeTypeMapping } from "@/lib/history/types";
  */
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await auth();
@@ -40,7 +40,7 @@ export async function GET(
     if (!employee) {
       return NextResponse.json(
         { error: "Employee not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -67,7 +67,7 @@ export async function GET(
       const relatedLogs = changeLogs.filter(
         (log) =>
           log.changedAt.getTime() >= history.validFrom.getTime() - 1000 &&
-          log.changedAt.getTime() <= history.validFrom.getTime() + 1000
+          log.changedAt.getTime() <= history.validFrom.getTime() + 1000,
       );
 
       return {
@@ -75,7 +75,8 @@ export async function GET(
         validFrom: history.validFrom,
         validTo: history.validTo,
         changeType: history.changeType,
-        changeTypeJa: changeTypeMapping[history.changeType] || history.changeType,
+        changeTypeJa:
+          changeTypeMapping[history.changeType] || history.changeType,
         changeReason: history.changeReason,
         // 所属情報
         department: history.departmentName,
@@ -119,7 +120,7 @@ export async function GET(
     console.error("Error fetching employee history:", error);
     return NextResponse.json(
       { error: "Failed to fetch employee history" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

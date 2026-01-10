@@ -4,7 +4,7 @@
  * 評価システムで使用する定数を集約
  */
 
-import type { WeightConfig, ScoreRange } from "./types";
+import type { ScoreRange, WeightConfig } from "./types";
 
 // ============================================
 // レベル → スコア変換
@@ -97,10 +97,10 @@ export const FIXED_GRADE_THRESHOLDS = {
  * - 120%以上 → 最大スコア付近
  */
 export const ACHIEVEMENT_RATE_THRESHOLDS = {
-  LOW: 80,      // 80%未満は低評価
+  LOW: 80, // 80%未満は低評価
   STANDARD: 100, // 100%が標準
-  HIGH: 120,    // 120%以上は高評価
-  MAX: 160,     // 160%で最高スコア
+  HIGH: 120, // 120%以上は高評価
+  MAX: 160, // 160%で最高スコア
 } as const;
 
 // ============================================
@@ -111,11 +111,36 @@ export const ACHIEVEMENT_RATE_THRESHOLDS = {
  * デフォルトのプロセス評価項目
  */
 export const DEFAULT_PROCESS_CATEGORIES = [
-  { name: "主体性", nameEn: "Initiative", description: "自ら考え、積極的に行動する姿勢", sortOrder: 1 },
-  { name: "協調性", nameEn: "Teamwork", description: "チーム内での協力・連携", sortOrder: 2 },
-  { name: "責任感", nameEn: "Responsibility", description: "役割達成への意識・コミットメント", sortOrder: 3 },
-  { name: "改善力", nameEn: "Improvement", description: "より良い方法を模索・提案する力", sortOrder: 4 },
-  { name: "専門性", nameEn: "Expertise", description: "業務に必要な知識・スキルの発揮", sortOrder: 5 },
+  {
+    name: "主体性",
+    nameEn: "Initiative",
+    description: "自ら考え、積極的に行動する姿勢",
+    sortOrder: 1,
+  },
+  {
+    name: "協調性",
+    nameEn: "Teamwork",
+    description: "チーム内での協力・連携",
+    sortOrder: 2,
+  },
+  {
+    name: "責任感",
+    nameEn: "Responsibility",
+    description: "役割達成への意識・コミットメント",
+    sortOrder: 3,
+  },
+  {
+    name: "改善力",
+    nameEn: "Improvement",
+    description: "より良い方法を模索・提案する力",
+    sortOrder: 4,
+  },
+  {
+    name: "専門性",
+    nameEn: "Expertise",
+    description: "業務に必要な知識・スキルの発揮",
+    sortOrder: 5,
+  },
 ] as const;
 
 // ============================================
@@ -126,13 +151,55 @@ export const DEFAULT_PROCESS_CATEGORIES = [
  * デフォルトの成長評価カテゴリ
  */
 export const DEFAULT_GROWTH_CATEGORIES = [
-  { name: "専門スキル向上", nameEn: "Professional Skill Improvement", description: "業務スキルの習得・向上", coefficient: 1.0, sortOrder: 1 },
-  { name: "資格取得・認定", nameEn: "Certification", description: "業務関連資格の取得", coefficient: 1.2, sortOrder: 2 },
-  { name: "業務知識深化", nameEn: "Domain Knowledge", description: "業界・業務知識の深化", coefficient: 1.0, sortOrder: 3 },
-  { name: "部下・後輩指導", nameEn: "Mentoring", description: "部下や後輩の育成・指導", coefficient: 1.3, sortOrder: 4 },
-  { name: "リーダーシップ発揮", nameEn: "Leadership", description: "チームを牽引するリーダーシップ", coefficient: 1.3, sortOrder: 5 },
-  { name: "問題解決・改善提案", nameEn: "Problem Solving", description: "課題の解決と改善提案", coefficient: 1.1, sortOrder: 6 },
-  { name: "新規領域への挑戦", nameEn: "New Challenge", description: "新しい分野・技術への挑戦", coefficient: 1.2, sortOrder: 7 },
+  {
+    name: "専門スキル向上",
+    nameEn: "Professional Skill Improvement",
+    description: "業務スキルの習得・向上",
+    coefficient: 1.0,
+    sortOrder: 1,
+  },
+  {
+    name: "資格取得・認定",
+    nameEn: "Certification",
+    description: "業務関連資格の取得",
+    coefficient: 1.2,
+    sortOrder: 2,
+  },
+  {
+    name: "業務知識深化",
+    nameEn: "Domain Knowledge",
+    description: "業界・業務知識の深化",
+    coefficient: 1.0,
+    sortOrder: 3,
+  },
+  {
+    name: "部下・後輩指導",
+    nameEn: "Mentoring",
+    description: "部下や後輩の育成・指導",
+    coefficient: 1.3,
+    sortOrder: 4,
+  },
+  {
+    name: "リーダーシップ発揮",
+    nameEn: "Leadership",
+    description: "チームを牽引するリーダーシップ",
+    coefficient: 1.3,
+    sortOrder: 5,
+  },
+  {
+    name: "問題解決・改善提案",
+    nameEn: "Problem Solving",
+    description: "課題の解決と改善提案",
+    coefficient: 1.1,
+    sortOrder: 6,
+  },
+  {
+    name: "新規領域への挑戦",
+    nameEn: "New Challenge",
+    description: "新しい分野・技術への挑戦",
+    coefficient: 1.2,
+    sortOrder: 7,
+  },
 ] as const;
 
 // ============================================

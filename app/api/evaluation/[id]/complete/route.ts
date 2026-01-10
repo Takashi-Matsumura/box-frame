@@ -26,7 +26,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     if (!evaluation) {
       return NextResponse.json(
         { error: "Evaluation not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -34,7 +34,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     if (!evaluation.score2 || !evaluation.score3) {
       return NextResponse.json(
         { error: "All scores must be entered before completing" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -51,7 +51,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     console.error("Error completing evaluation:", error);
     return NextResponse.json(
       { error: "Failed to complete evaluation" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -9,9 +9,9 @@ export { AIService } from "./ai-service";
 
 // トークンユーティリティ
 export {
-  estimateTokens,
-  estimateMessagesTokens,
-  getContextWindowSize,
   calculateContextUsage,
+  estimateMessagesTokens,
+  estimateTokens,
   formatTokenCount,
+  getContextWindowSize,
 } from "./token-utils";

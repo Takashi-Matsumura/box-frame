@@ -1,12 +1,12 @@
 // コアモジュール（静的インポート）
-import { aiModule } from "@/lib/core-modules/ai";
-import { systemModule } from "@/lib/core-modules/system";
 
 // アドオンモジュール
 import { evaluationModule } from "@/lib/addon-modules/evaluation/module";
 import { ldapMigrationModule } from "@/lib/addon-modules/ldap-migration";
 import { openldapModule } from "@/lib/addon-modules/openldap";
 import { organizationModule } from "@/lib/addon-modules/organization";
+import { aiModule } from "@/lib/core-modules/ai";
+import { systemModule } from "@/lib/core-modules/system";
 import { prisma } from "@/lib/prisma";
 import type {
   AppMenu,

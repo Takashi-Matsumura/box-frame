@@ -34,7 +34,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     console.error("Error deleting custom evaluator:", error);
     return NextResponse.json(
       { error: "Failed to delete custom evaluator" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -4,26 +4,26 @@
  * Anthropic API を使用したAI機能の実装
  */
 
+import {
+  ANTHROPIC_API_VERSION,
+  API_ENDPOINTS,
+  DEFAULT_MODELS,
+} from "../constants";
 import type {
   AIConfig,
   ChatMessage,
-  TranslateRequest,
-  TranslateResponse,
   ChatResponse,
   GenerateResponse,
+  TranslateRequest,
+  TranslateResponse,
 } from "../types";
-import {
-  API_ENDPOINTS,
-  ANTHROPIC_API_VERSION,
-  DEFAULT_MODELS,
-} from "../constants";
 
 /**
  * Anthropic APIで翻訳
  */
 export async function translateWithAnthropic(
   request: TranslateRequest,
-  config: AIConfig
+  config: AIConfig,
 ): Promise<TranslateResponse> {
   const targetLang = request.targetLanguage === "ja" ? "Japanese" : "English";
   const sourceLang = request.sourceLanguage === "ja" ? "Japanese" : "English";
@@ -50,7 +50,7 @@ export async function translateWithAnthropic(
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(
-      error.error?.message || `Anthropic API error: ${response.status}`
+      error.error?.message || `Anthropic API error: ${response.status}`,
     );
   }
 
@@ -73,7 +73,7 @@ export async function translateWithAnthropic(
  */
 export async function chatWithAnthropic(
   messages: ChatMessage[],
-  config: AIConfig
+  config: AIConfig,
 ): Promise<ChatResponse> {
   // Anthropicはsystemをmessagesから分離する必要がある
   const systemMessage = messages.find((m) => m.role === "system");
@@ -102,7 +102,7 @@ export async function chatWithAnthropic(
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(
-      error.error?.message || `Anthropic API error: ${response.status}`
+      error.error?.message || `Anthropic API error: ${response.status}`,
     );
   }
 
@@ -127,7 +127,7 @@ export async function generateWithAnthropic(
   messages: ChatMessage[],
   config: AIConfig,
   temperature: number,
-  maxTokens: number
+  maxTokens: number,
 ): Promise<GenerateResponse> {
   const systemMessage = messages.find((m) => m.role === "system");
   const chatMessages = messages
@@ -156,7 +156,7 @@ export async function generateWithAnthropic(
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(
-      error.error?.message || `Anthropic API error: ${response.status}`
+      error.error?.message || `Anthropic API error: ${response.status}`,
     );
   }
 

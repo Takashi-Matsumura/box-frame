@@ -35,7 +35,7 @@ export async function GET(request: Request, { params }: RouteParams) {
     if (!period) {
       return NextResponse.json(
         { error: "Evaluation period not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -44,7 +44,7 @@ export async function GET(request: Request, { params }: RouteParams) {
     console.error("Error fetching evaluation period:", error);
     return NextResponse.json(
       { error: "Failed to fetch evaluation period" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -83,7 +83,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     console.error("Error updating evaluation period:", error);
     return NextResponse.json(
       { error: "Failed to update evaluation period" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -113,7 +113,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     if (evaluationCount > 0) {
       return NextResponse.json(
         { error: "Cannot delete period with existing evaluations" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -126,7 +126,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     console.error("Error deleting evaluation period:", error);
     return NextResponse.json(
       { error: "Failed to delete evaluation period" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

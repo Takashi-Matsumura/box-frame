@@ -42,7 +42,7 @@ export async function GET() {
     console.error("Error fetching organizations:", error);
     return NextResponse.json(
       { error: "Failed to fetch organizations" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     if (!name) {
       return NextResponse.json(
         { error: "Organization name is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     if (existing) {
       return NextResponse.json(
         { error: "Organization already exists" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
     console.error("Error creating organization:", error);
     return NextResponse.json(
       { error: "Failed to create organization" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

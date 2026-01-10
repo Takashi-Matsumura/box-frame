@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { CheckCircle2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -10,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CheckCircle2 } from "lucide-react";
 
 interface GrowthCategory {
   id: string;
@@ -63,7 +63,8 @@ export function GrowthEvaluationSupport({
   initialCategoryId = "",
   initialLevel = "T2",
 }: GrowthEvaluationSupportProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategoryId);
+  const [selectedCategory, setSelectedCategory] =
+    useState<string>(initialCategoryId);
   const [selectedLevel, setSelectedLevel] = useState<string>(initialLevel);
   const [baseScore, setBaseScore] = useState<number>(0);
   const [finalScore, setFinalScore] = useState<number>(0);
@@ -92,7 +93,9 @@ export function GrowthEvaluationSupport({
     onScoreCalculated(calculatedFinalScore, selectedCategory, selectedLevel);
   }, [selectedCategory, selectedLevel, categories, onScoreCalculated]);
 
-  const selectedCategoryData = categories.find((c) => c.id === selectedCategory);
+  const selectedCategoryData = categories.find(
+    (c) => c.id === selectedCategory,
+  );
 
   const getCategoryName = (cat: GrowthCategory) => {
     if (language === "en" && cat.nameEn) {
@@ -110,13 +113,14 @@ export function GrowthEvaluationSupport({
             <span className="font-medium text-purple-600 dark:text-purple-400 whitespace-nowrap">
               {language === "ja" ? "成長カテゴリー:" : "Growth Category:"}
             </span>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <Select
+              value={selectedCategory}
+              onValueChange={setSelectedCategory}
+            >
               <SelectTrigger className="flex-1">
                 <SelectValue
                   placeholder={
-                    language === "ja"
-                      ? "カテゴリーを選択"
-                      : "Select category"
+                    language === "ja" ? "カテゴリーを選択" : "Select category"
                   }
                 />
               </SelectTrigger>
@@ -126,7 +130,9 @@ export function GrowthEvaluationSupport({
                     <span>
                       {getCategoryName(category)}
                       {category.description && (
-                        <span className="text-muted-foreground">（{category.description}）</span>
+                        <span className="text-muted-foreground">
+                          （{category.description}）
+                        </span>
                       )}
                     </span>
                   </SelectItem>
@@ -134,7 +140,6 @@ export function GrowthEvaluationSupport({
               </SelectContent>
             </Select>
           </div>
-
 
           {/* 達成度選択 */}
           {selectedCategory && (
@@ -158,13 +163,17 @@ export function GrowthEvaluationSupport({
                           : "border-border hover:border-purple-500/50 hover:bg-muted/50"
                       }`}
                     >
-                      <p className={`font-bold text-sm ${isSelected ? "text-purple-600 dark:text-purple-400" : ""}`}>
+                      <p
+                        className={`font-bold text-sm ${isSelected ? "text-purple-600 dark:text-purple-400" : ""}`}
+                      >
                         {level.level}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {language === "ja" ? level.labelJa : level.labelEn}
                       </p>
-                      <p className={`text-sm font-medium mt-1 ${isSelected ? "text-purple-600 dark:text-purple-400" : "text-muted-foreground"}`}>
+                      <p
+                        className={`text-sm font-medium mt-1 ${isSelected ? "text-purple-600 dark:text-purple-400" : "text-muted-foreground"}`}
+                      >
                         {score.toFixed(1)}
                       </p>
                     </button>
@@ -185,9 +194,13 @@ export function GrowthEvaluationSupport({
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
-                  {language === "ja" ? "カテゴリ係数:" : "Category Coefficient:"}
+                  {language === "ja"
+                    ? "カテゴリ係数:"
+                    : "Category Coefficient:"}
                 </span>
-                <span className="font-mono">×{(selectedCategoryData.coefficient ?? 1.0).toFixed(1)}</span>
+                <span className="font-mono">
+                  ×{(selectedCategoryData.coefficient ?? 1.0).toFixed(1)}
+                </span>
               </div>
               <div className="flex items-center justify-between pt-2 border-t">
                 <span className="font-medium">
@@ -207,13 +220,17 @@ export function GrowthEvaluationSupport({
         <div className="flex items-center gap-2">
           <CheckCircle2 className="w-5 h-5 text-purple-500 dark:text-purple-400" />
           <span className="font-medium">
-            {language === "ja" ? "成長評価最終スコア" : "Final Growth Evaluation Score"}
+            {language === "ja"
+              ? "成長評価最終スコア"
+              : "Final Growth Evaluation Score"}
           </span>
           {selectedCategoryData && (
             <Badge variant="secondary" className="text-xs">
               {getCategoryName(selectedCategoryData)}
               {(selectedCategoryData.coefficient ?? 1.0) !== 1.0 && (
-                <span className="ml-1">×{(selectedCategoryData.coefficient ?? 1.0).toFixed(1)}</span>
+                <span className="ml-1">
+                  ×{(selectedCategoryData.coefficient ?? 1.0).toFixed(1)}
+                </span>
               )}
             </Badge>
           )}

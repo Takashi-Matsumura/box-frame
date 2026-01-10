@@ -1,7 +1,7 @@
+import type { ChangeType } from "@prisma/client";
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { HistoryRecorder } from "@/lib/history";
-import type { ChangeType } from "@prisma/client";
 
 /**
  * GET /api/admin/organization/history
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     if (limit < 1 || limit > 500) {
       return NextResponse.json(
         { error: "Invalid limit parameter" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -50,16 +50,27 @@ export async function GET(request: NextRequest) {
     } else if (entityType && entityId) {
       // エンティティ指定で検索
       logs = await HistoryRecorder.getEntityHistory(
-        entityType as "Employee" | "Department" | "Section" | "Course" | "Organization",
+        entityType as
+          | "Employee"
+          | "Department"
+          | "Section"
+          | "Course"
+          | "Organization",
         entityId,
-        limit
+        limit,
       );
     } else if (startDate && endDate) {
       // 期間指定で検索
       logs = await HistoryRecorder.getChangeLogsByDateRange(
         new Date(startDate),
         new Date(endDate),
-        entityType as "Employee" | "Department" | "Section" | "Course" | "Organization" | undefined
+        entityType as
+          | "Employee"
+          | "Department"
+          | "Section"
+          | "Course"
+          | "Organization"
+          | undefined,
       );
     } else if (changeType) {
       // 変更タイプで検索
@@ -77,7 +88,7 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching history:", error);
     return NextResponse.json(
       { error: "Failed to fetch history" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -103,7 +114,7 @@ export async function POST(request: Request) {
 
     const statistics = await HistoryRecorder.getChangeStatistics(
       startDate ? new Date(startDate) : undefined,
-      endDate ? new Date(endDate) : undefined
+      endDate ? new Date(endDate) : undefined,
     );
 
     return NextResponse.json({ statistics });
@@ -111,7 +122,7 @@ export async function POST(request: Request) {
     console.error("Error fetching statistics:", error);
     return NextResponse.json(
       { error: "Failed to fetch statistics" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

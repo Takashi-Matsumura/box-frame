@@ -18,16 +18,20 @@
  */
 
 import { GET, POST } from "@/app/api/ai/translate/route";
-import { AIService } from "@/lib/core-modules/ai";
 import { auth } from "@/auth";
+import { AIService } from "@/lib/core-modules/ai";
 
 // モック
 jest.mock("@/auth");
 jest.mock("@/lib/core-modules/ai/ai-service");
 
 const mockAuth = auth as jest.MockedFunction<typeof auth>;
-const mockIsAvailable = AIService.isAvailable as jest.MockedFunction<typeof AIService.isAvailable>;
-const mockTranslate = AIService.translate as jest.MockedFunction<typeof AIService.translate>;
+const mockIsAvailable = AIService.isAvailable as jest.MockedFunction<
+  typeof AIService.isAvailable
+>;
+const mockTranslate = AIService.translate as jest.MockedFunction<
+  typeof AIService.translate
+>;
 
 // モックセッション
 const mockSession = {
@@ -92,7 +96,7 @@ describe("/api/ai/translate", () => {
             text: "こんにちは",
             sourceLanguage: "ja",
             targetLanguage: "en",
-          })
+          }),
         );
 
         expect(response.status).toBe(401);
@@ -105,7 +109,7 @@ describe("/api/ai/translate", () => {
           createPostRequest({
             sourceLanguage: "ja",
             targetLanguage: "en",
-          })
+          }),
         );
 
         expect(response.status).toBe(400);
@@ -118,7 +122,7 @@ describe("/api/ai/translate", () => {
           createPostRequest({
             text: "こんにちは",
             targetLanguage: "en",
-          })
+          }),
         );
 
         expect(response.status).toBe(400);
@@ -131,7 +135,7 @@ describe("/api/ai/translate", () => {
           createPostRequest({
             text: "こんにちは",
             sourceLanguage: "ja",
-          })
+          }),
         );
 
         expect(response.status).toBe(400);
@@ -145,7 +149,7 @@ describe("/api/ai/translate", () => {
             text: "test",
             sourceLanguage: "fr",
             targetLanguage: "en",
-          })
+          }),
         );
 
         expect(response.status).toBe(400);
@@ -159,7 +163,7 @@ describe("/api/ai/translate", () => {
             text: "test",
             sourceLanguage: "ja",
             targetLanguage: "fr",
-          })
+          }),
         );
 
         expect(response.status).toBe(400);
@@ -181,7 +185,7 @@ describe("/api/ai/translate", () => {
             text: "こんにちは",
             sourceLanguage: "ja",
             targetLanguage: "en",
-          })
+          }),
         );
 
         expect(response.status).toBe(200);
@@ -204,7 +208,7 @@ describe("/api/ai/translate", () => {
             text: "Hello",
             sourceLanguage: "en",
             targetLanguage: "ja",
-          })
+          }),
         );
 
         expect(response.status).toBe(200);
@@ -224,7 +228,7 @@ describe("/api/ai/translate", () => {
             text: "テスト",
             sourceLanguage: "ja",
             targetLanguage: "en",
-          })
+          }),
         );
 
         expect(mockTranslate).toHaveBeenCalledWith({
@@ -244,7 +248,7 @@ describe("/api/ai/translate", () => {
             text: "test",
             sourceLanguage: "ja",
             targetLanguage: "en",
-          })
+          }),
         );
 
         expect(response.status).toBe(500);

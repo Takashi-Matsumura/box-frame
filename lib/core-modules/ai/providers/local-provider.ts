@@ -4,16 +4,16 @@
  * llama.cpp、LM Studio、Ollama を使用したAI機能の実装
  */
 
+import { DEFAULT_SYSTEM_PROMPTS } from "../constants";
 import type {
   AIConfig,
   ChatMessage,
+  ChatResponse,
+  ConnectionTestResult,
+  GenerateResponse,
   TranslateRequest,
   TranslateResponse,
-  ChatResponse,
-  GenerateResponse,
-  ConnectionTestResult,
 } from "../types";
-import { DEFAULT_SYSTEM_PROMPTS } from "../constants";
 
 // ============================================
 // 接続テスト
@@ -23,7 +23,7 @@ import { DEFAULT_SYSTEM_PROMPTS } from "../constants";
  * ローカルLLMの接続テスト
  */
 export async function testLocalConnection(
-  config: AIConfig
+  config: AIConfig,
 ): Promise<ConnectionTestResult> {
   if (config.provider !== "local") {
     return {
@@ -36,7 +36,7 @@ export async function testLocalConnection(
     if (config.localProvider === "ollama") {
       const response = await fetch(
         config.localEndpoint.replace("/api/chat", "/api/tags"),
-        { method: "GET" }
+        { method: "GET" },
       );
       if (response.ok) {
         return { success: true, message: "Ollama is running" };
@@ -45,7 +45,7 @@ export async function testLocalConnection(
       // OpenAI互換API (llama.cpp, LM Studio)
       const response = await fetch(
         config.localEndpoint.replace("/v1/chat/completions", "/v1/models"),
-        { method: "GET" }
+        { method: "GET" },
       );
       if (response.ok) {
         return {
@@ -68,7 +68,7 @@ export async function testLocalConnection(
  * ローカルLLMの実際のモデル名を取得
  */
 export async function getLocalModelName(
-  config: AIConfig
+  config: AIConfig,
 ): Promise<string | null> {
   if (config.provider !== "local") {
     return null;
@@ -81,7 +81,7 @@ export async function getLocalModelName(
       // OpenAI互換API (llama.cpp, LM Studio)
       const response = await fetch(
         config.localEndpoint.replace("/v1/chat/completions", "/v1/models"),
-        { method: "GET" }
+        { method: "GET" },
       );
       if (response.ok) {
         const data = await response.json();
@@ -137,7 +137,7 @@ function parseModelName(rawName: string): string {
  */
 export async function translateWithLocal(
   request: TranslateRequest,
-  config: AIConfig
+  config: AIConfig,
 ): Promise<TranslateResponse> {
   const targetLang = request.targetLanguage === "ja" ? "Japanese" : "English";
   const sourceLang = request.sourceLanguage === "ja" ? "Japanese" : "English";
@@ -145,7 +145,12 @@ export async function translateWithLocal(
   if (config.localProvider === "ollama") {
     return translateWithOllama(request, config, sourceLang, targetLang);
   } else {
-    return translateWithOpenAICompatible(request, config, sourceLang, targetLang);
+    return translateWithOpenAICompatible(
+      request,
+      config,
+      sourceLang,
+      targetLang,
+    );
   }
 }
 
@@ -156,7 +161,7 @@ async function translateWithOpenAICompatible(
   request: TranslateRequest,
   config: AIConfig,
   sourceLang: string,
-  targetLang: string
+  targetLang: string,
 ): Promise<TranslateResponse> {
   const response = await fetch(config.localEndpoint, {
     method: "POST",
@@ -204,7 +209,7 @@ async function translateWithOllama(
   request: TranslateRequest,
   config: AIConfig,
   sourceLang: string,
-  targetLang: string
+  targetLang: string,
 ): Promise<TranslateResponse> {
   const response = await fetch(config.localEndpoint, {
     method: "POST",
@@ -253,7 +258,7 @@ async function translateWithOllama(
  */
 export async function chatWithLocal(
   messages: ChatMessage[],
-  config: AIConfig
+  config: AIConfig,
 ): Promise<ChatResponse> {
   if (config.localProvider === "ollama") {
     return chatWithOllama(messages, config);
@@ -267,7 +272,7 @@ export async function chatWithLocal(
  */
 async function chatWithOpenAICompatible(
   messages: ChatMessage[],
-  config: AIConfig
+  config: AIConfig,
 ): Promise<ChatResponse> {
   const response = await fetch(config.localEndpoint, {
     method: "POST",
@@ -304,7 +309,7 @@ async function chatWithOpenAICompatible(
  */
 async function chatWithOllama(
   messages: ChatMessage[],
-  config: AIConfig
+  config: AIConfig,
 ): Promise<ChatResponse> {
   const response = await fetch(config.localEndpoint, {
     method: "POST",
@@ -346,7 +351,7 @@ export async function generateWithLocal(
   messages: ChatMessage[],
   config: AIConfig,
   temperature: number,
-  maxTokens: number
+  maxTokens: number,
 ): Promise<GenerateResponse> {
   if (config.localProvider === "ollama") {
     const response = await fetch(config.localEndpoint, {

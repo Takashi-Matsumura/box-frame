@@ -1,9 +1,9 @@
 import {
-  Bell,
-  Shield,
   AlertCircle,
-  Info,
   AlertTriangle,
+  Bell,
+  Info,
+  Shield,
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -45,7 +45,7 @@ export function NotificationTypeIcon({
         "flex items-center justify-center w-8 h-8 rounded-full",
         colorMap[type],
         priority === "URGENT" && "ring-2 ring-red-500 ring-offset-2",
-        className
+        className,
       )}
     >
       <Icon className="h-4 w-4" />

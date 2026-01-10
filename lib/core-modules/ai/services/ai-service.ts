@@ -6,47 +6,47 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import type {
-  AIConfig,
-  AIProvider,
-  LocalLLMProvider,
-  ChatMessage,
-  TranslateRequest,
-  TranslateResponse,
-  ChatRequest,
-  ChatResponse,
-  GenerateRequest,
-  GenerateResponse,
-  SummarizeRequest,
-  SummarizeResponse,
-  ExtractRequest,
-  ExtractResponse,
-  ConnectionTestResult,
-} from "../types";
 import {
   AI_SETTINGS,
-  LOCAL_LLM_DEFAULTS,
-  DEFAULT_SYSTEM_PROMPTS,
   DEFAULT_GENERATION_PARAMS,
+  DEFAULT_SYSTEM_PROMPTS,
+  LOCAL_LLM_DEFAULTS,
   SUMMARIZE_LENGTH_INSTRUCTIONS,
 } from "../constants";
 import {
-  translateWithOpenAI,
-  chatWithOpenAI,
-  generateWithOpenAI,
-} from "../providers/openai-provider";
-import {
-  translateWithAnthropic,
   chatWithAnthropic,
   generateWithAnthropic,
+  translateWithAnthropic,
 } from "../providers/anthropic-provider";
 import {
-  testLocalConnection,
-  getLocalModelName,
-  translateWithLocal,
   chatWithLocal,
   generateWithLocal,
+  getLocalModelName,
+  testLocalConnection,
+  translateWithLocal,
 } from "../providers/local-provider";
+import {
+  chatWithOpenAI,
+  generateWithOpenAI,
+  translateWithOpenAI,
+} from "../providers/openai-provider";
+import type {
+  AIConfig,
+  AIProvider,
+  ChatMessage,
+  ChatRequest,
+  ChatResponse,
+  ConnectionTestResult,
+  ExtractRequest,
+  ExtractResponse,
+  GenerateRequest,
+  GenerateResponse,
+  LocalLLMProvider,
+  SummarizeRequest,
+  SummarizeResponse,
+  TranslateRequest,
+  TranslateResponse,
+} from "../types";
 
 /**
  * AIサービス
@@ -174,7 +174,9 @@ export class AIService {
   /**
    * テキストを翻訳
    */
-  static async translate(request: TranslateRequest): Promise<TranslateResponse> {
+  static async translate(
+    request: TranslateRequest,
+  ): Promise<TranslateResponse> {
     const config = await AIService.getConfig();
 
     if (!config.enabled) {
@@ -256,7 +258,8 @@ export class AIService {
       { role: "user", content: request.input },
     ];
 
-    const temperature = request.temperature ?? DEFAULT_GENERATION_PARAMS.temperature;
+    const temperature =
+      request.temperature ?? DEFAULT_GENERATION_PARAMS.temperature;
     const maxTokens = request.maxTokens ?? DEFAULT_GENERATION_PARAMS.maxTokens;
 
     switch (config.provider) {
@@ -280,7 +283,9 @@ export class AIService {
   /**
    * テキスト要約（外部モジュール向け）
    */
-  static async summarize(request: SummarizeRequest): Promise<SummarizeResponse> {
+  static async summarize(
+    request: SummarizeRequest,
+  ): Promise<SummarizeResponse> {
     const lengthInstruction =
       SUMMARIZE_LENGTH_INSTRUCTIONS[request.length || "medium"];
     const langInstruction =
@@ -292,7 +297,7 @@ export class AIService {
 
     const systemPrompt = DEFAULT_SYSTEM_PROMPTS.summarize(
       lengthInstruction,
-      langInstruction
+      langInstruction,
     );
 
     const result = await AIService.generate({
@@ -329,7 +334,7 @@ export class AIService {
 
     const systemPrompt = DEFAULT_SYSTEM_PROMPTS.extract(
       schemaDescription,
-      langInstruction
+      langInstruction,
     );
 
     const result = await AIService.generate({
@@ -354,7 +359,7 @@ export class AIService {
       data = JSON.parse(jsonStr.trim());
     } catch {
       throw new Error(
-        `Failed to parse extraction result as JSON: ${result.output}`
+        `Failed to parse extraction result as JSON: ${result.output}`,
       );
     }
 

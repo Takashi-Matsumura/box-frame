@@ -1,12 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
 import {
-  getWeightsForPositionGrade,
   calculateResultsScore,
-  getEvaluationScoreRange,
   determineGradeWithRange,
+  getEvaluationScoreRange,
+  getWeightsForPositionGrade,
 } from "@/lib/addon-modules/evaluation";
+import { prisma } from "@/lib/prisma";
 
 /**
  * Criteria1の達成率を評価スコア（score1）に自動反映
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     if (!periodId) {
       return NextResponse.json(
         { error: "periodId is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     if (!period) {
       return NextResponse.json(
         { error: "Evaluation period not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
           const weights = await getWeightsForPositionGrade(
             periodId,
             employee.positionCode,
-            existingEvaluation.gradeCode
+            existingEvaluation.gradeCode,
           );
 
           // 加重スコアを計算
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         console.error(
           `Failed to update evaluation for employee ${employee.id}:`,
-          error
+          error,
         );
         errorCount++;
       }
@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
     console.error("Failed to sync scores:", error);
     return NextResponse.json(
       { error: "Failed to sync scores" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

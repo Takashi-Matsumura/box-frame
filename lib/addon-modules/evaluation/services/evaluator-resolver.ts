@@ -8,8 +8,8 @@
  * 4. 本部の責任者（Department.managerId）
  */
 
-import { prisma } from "@/lib/prisma";
 import type { Employee } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import type { EmployeeWithOrg, EvaluatorInfo } from "../types";
 
 /**
@@ -17,7 +17,7 @@ import type { EmployeeWithOrg, EvaluatorInfo } from "../types";
  */
 export async function determineEvaluator(
   employee: EmployeeWithOrg,
-  periodId: string
+  periodId: string,
 ): Promise<Employee | null> {
   // ========================================
   // 優先順位1: カスタム評価者（最優先）
@@ -27,18 +27,19 @@ export async function determineEvaluator(
     where: {
       employeeId: employee.id,
       OR: [
-        { periodId: periodId },  // 期間指定
-        { periodId: null },       // 全期間有効
+        { periodId: periodId }, // 期間指定
+        { periodId: null }, // 全期間有効
       ],
     },
     include: { evaluator: true },
-    orderBy: { periodId: "desc" },  // 期間指定優先
+    orderBy: { periodId: "desc" }, // 期間指定優先
   });
 
   if (customEvaluator) {
     // 有効期間チェック
     const isInEffectivePeriod =
-      (!customEvaluator.effectiveFrom || customEvaluator.effectiveFrom <= now) &&
+      (!customEvaluator.effectiveFrom ||
+        customEvaluator.effectiveFrom <= now) &&
       (!customEvaluator.effectiveTo || customEvaluator.effectiveTo >= now);
 
     if (isInEffectivePeriod) {
@@ -49,10 +50,7 @@ export async function determineEvaluator(
   // ========================================
   // 優先順位2: 課の責任者（課長）
   // ========================================
-  if (
-    employee.course?.manager &&
-    employee.course.manager.id !== employee.id
-  ) {
+  if (employee.course?.manager && employee.course.manager.id !== employee.id) {
     return employee.course.manager;
   }
 
@@ -86,7 +84,7 @@ export async function determineEvaluator(
  */
 export async function getEvaluatees(
   evaluatorId: string,
-  periodId: string
+  periodId: string,
 ): Promise<string[]> {
   // 1. カスタム評価者として設定されている社員
   const customEvaluatees = await prisma.customEvaluator.findMany({
@@ -120,7 +118,9 @@ export async function getEvaluatees(
     },
     select: { employeeId: true },
   });
-  const otherCustomIds = new Set(otherCustomEvaluatees.map((ce) => ce.employeeId));
+  const otherCustomIds = new Set(
+    otherCustomEvaluatees.map((ce) => ce.employeeId),
+  );
 
   const managedIds = managedEmployees
     .filter((e) => !otherCustomIds.has(e.id))
@@ -134,7 +134,7 @@ export async function getEvaluatees(
  */
 export async function getEvaluatorInfo(
   employeeId: string,
-  periodId: string
+  periodId: string,
 ): Promise<EvaluatorInfo> {
   const employee = await prisma.employee.findUnique({
     where: { id: employeeId },
@@ -162,7 +162,8 @@ export async function getEvaluatorInfo(
 
   if (customEvaluator) {
     const isInEffectivePeriod =
-      (!customEvaluator.effectiveFrom || customEvaluator.effectiveFrom <= now) &&
+      (!customEvaluator.effectiveFrom ||
+        customEvaluator.effectiveFrom <= now) &&
       (!customEvaluator.effectiveTo || customEvaluator.effectiveTo >= now);
 
     if (isInEffectivePeriod) {
@@ -175,11 +176,17 @@ export async function getEvaluatorInfo(
     return { evaluator: employee.course.manager, source: "course" };
   }
 
-  if (employee.section?.manager && employee.section.manager.id !== employee.id) {
+  if (
+    employee.section?.manager &&
+    employee.section.manager.id !== employee.id
+  ) {
     return { evaluator: employee.section.manager, source: "section" };
   }
 
-  if (employee.department?.manager && employee.department.manager.id !== employee.id) {
+  if (
+    employee.department?.manager &&
+    employee.department.manager.id !== employee.id
+  ) {
     return { evaluator: employee.department.manager, source: "department" };
   }
 

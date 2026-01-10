@@ -1,10 +1,27 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import {
+  AlertTriangle,
+  Check,
+  Search,
+  UserCheck,
+  Users,
+  UserX,
+  X,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -14,12 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -28,13 +40,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Users, Search, UserCheck, X, AlertTriangle, UserX, Check } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { evaluatorSettingsTranslations } from "./translations";
 import { useIsTabletOrMobile } from "@/hooks/use-mobile";
+import { evaluatorSettingsTranslations } from "./translations";
 
 interface DefaultManager {
   id: string;
@@ -137,14 +145,15 @@ export default function EvaluatorSettingsClient({
   const [subordinates, setSubordinates] = useState<Employee[]>([]);
   const [managers, setManagers] = useState<Evaluator[]>([]);
   const [customEvaluators, setCustomEvaluators] = useState<CustomEvaluator[]>(
-    []
+    [],
   );
   const [periods, setPeriods] = useState<Period[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>("__all__");
+  const [selectedDepartmentId, setSelectedDepartmentId] =
+    useState<string>("__all__");
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
-    null
+    null,
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -175,14 +184,19 @@ export default function EvaluatorSettingsClient({
       setLoading(true);
     }
     try {
-      const [subordinatesRes, managersRes, customRes, periodsRes, exclusionsRes] =
-        await Promise.all([
-          fetch("/api/evaluation/subordinates"),
-          fetch("/api/evaluation/available-evaluators"),
-          fetch("/api/evaluation/custom-evaluators"),
-          fetch("/api/evaluation/periods"),
-          fetch("/api/evaluation/exclusions"),
-        ]);
+      const [
+        subordinatesRes,
+        managersRes,
+        customRes,
+        periodsRes,
+        exclusionsRes,
+      ] = await Promise.all([
+        fetch("/api/evaluation/subordinates"),
+        fetch("/api/evaluation/available-evaluators"),
+        fetch("/api/evaluation/custom-evaluators"),
+        fetch("/api/evaluation/periods"),
+        fetch("/api/evaluation/exclusions"),
+      ]);
 
       if (subordinatesRes.ok) {
         const data: Employee[] = await subordinatesRes.json();
@@ -198,13 +212,16 @@ export default function EvaluatorSettingsClient({
         // 部門一覧を抽出（重複を除去して部署コード順にソート）
         // 各部門について評価者未設定の社員がいるかチェック
         const deptMap = new Map<string, Department>();
-        const customEvalEmployeeIds = new Set(customEvalData.map((ce) => ce.employeeId));
+        const customEvalEmployeeIds = new Set(
+          customEvalData.map((ce) => ce.employeeId),
+        );
 
         data.forEach((emp) => {
           if (emp.departmentId && emp.departmentName) {
             const existing = deptMap.get(emp.departmentId);
             // 評価者未設定: デフォルトマネージャーがいない AND カスタム評価者もいない
-            const hasNoEvaluator = !emp.defaultManager && !customEvalEmployeeIds.has(emp.id);
+            const hasNoEvaluator =
+              !emp.defaultManager && !customEvalEmployeeIds.has(emp.id);
 
             if (existing) {
               // 既存の部門に評価者未設定の社員がいれば更新
@@ -273,9 +290,7 @@ export default function EvaluatorSettingsClient({
   };
 
   const getCustomEvaluator = (employeeId: string): CustomEvaluator | null => {
-    return (
-      customEvaluators.find((ce) => ce.employeeId === employeeId) || null
-    );
+    return customEvaluators.find((ce) => ce.employeeId === employeeId) || null;
   };
 
   const getExclusion = (employeeId: string): Exclusion | null => {
@@ -368,7 +383,7 @@ export default function EvaluatorSettingsClient({
         `/api/evaluation/custom-evaluators/${customEvaluatorId}`,
         {
           method: "DELETE",
-        }
+        },
       );
 
       if (res.ok) {
@@ -415,7 +430,10 @@ export default function EvaluatorSettingsClient({
           employeeId: selectedEmployee.id,
           reason: exclusionFormData.reason,
           note: exclusionFormData.note || null,
-          periodId: exclusionFormData.periodId === "__all__" ? null : exclusionFormData.periodId,
+          periodId:
+            exclusionFormData.periodId === "__all__"
+              ? null
+              : exclusionFormData.periodId,
         }),
       });
 
@@ -455,16 +473,22 @@ export default function EvaluatorSettingsClient({
   };
 
   // 評価対象外トグル
-  const handleToggleExclusion = async (employee: Employee, currentlyExcluded: boolean) => {
+  const handleToggleExclusion = async (
+    employee: Employee,
+    currentlyExcluded: boolean,
+  ) => {
     saveScrollPosition();
     if (currentlyExcluded) {
       // 解除
       const exclusion = getExclusion(employee.id);
       if (exclusion) {
         try {
-          const res = await fetch(`/api/evaluation/exclusions/${exclusion.id}`, {
-            method: "DELETE",
-          });
+          const res = await fetch(
+            `/api/evaluation/exclusions/${exclusion.id}`,
+            {
+              method: "DELETE",
+            },
+          );
           if (res.ok) {
             fetchData(false);
           }
@@ -496,7 +520,10 @@ export default function EvaluatorSettingsClient({
 
   const filteredSubordinates = subordinates.filter((emp) => {
     // 部門フィルタ
-    if (selectedDepartmentId !== "__all__" && emp.departmentId !== selectedDepartmentId) {
+    if (
+      selectedDepartmentId !== "__all__" &&
+      emp.departmentId !== selectedDepartmentId
+    ) {
       return false;
     }
     // 検索フィルタ
@@ -511,7 +538,12 @@ export default function EvaluatorSettingsClient({
   const getDepartmentDisplay = (employee: Employee) => {
     if (isTabletOrMobile) {
       // 課 → 部 → 本部 の優先順で1つだけ表示
-      return employee.courseName || employee.sectionName || employee.departmentName || "-";
+      return (
+        employee.courseName ||
+        employee.sectionName ||
+        employee.departmentName ||
+        "-"
+      );
     }
     // デスクトップ: フル表示
     const parts = [
@@ -527,9 +559,7 @@ export default function EvaluatorSettingsClient({
       <div className="max-w-7xl mx-auto h-[calc(100vh-128px)] overflow-hidden">
         <Card className="h-full">
           <CardContent className="p-6 h-full flex items-center justify-center">
-            <div className="text-center text-muted-foreground">
-              {t.loading}
-            </div>
+            <div className="text-center text-muted-foreground">{t.loading}</div>
           </CardContent>
         </Card>
       </div>
@@ -592,7 +622,12 @@ export default function EvaluatorSettingsClient({
                       <>
                         <AlertTriangle className="w-4 h-4 text-orange-500" />
                         <span className="text-xs text-orange-500">
-                          ({departments.filter((d) => d.hasIncompleteEvaluators).length}{t.departmentsWithIssues})
+                          (
+                          {
+                            departments.filter((d) => d.hasIncompleteEvaluators)
+                              .length
+                          }
+                          {t.departmentsWithIssues})
                         </span>
                       </>
                     )}
@@ -619,7 +654,10 @@ export default function EvaluatorSettingsClient({
               <p>{t.noEmployees}</p>
             </div>
           ) : (
-            <div ref={tableContainerRef} className="overflow-auto flex-1 min-h-0">
+            <div
+              ref={tableContainerRef}
+              className="overflow-auto flex-1 min-h-0"
+            >
               <Table>
                 <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
@@ -628,7 +666,9 @@ export default function EvaluatorSettingsClient({
                     <TableHead>{t.employeeName}</TableHead>
                     <TableHead>{t.position}</TableHead>
                     <TableHead>{t.department}</TableHead>
-                    <TableHead className="text-center">{t.exclusionColumn}</TableHead>
+                    <TableHead className="text-center">
+                      {t.exclusionColumn}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -647,7 +687,10 @@ export default function EvaluatorSettingsClient({
                           ) : customEval ? (
                             <Badge
                               className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-800"
-                              onClick={() => canEditEmployee(employee) && handleOpenDialog(employee)}
+                              onClick={() =>
+                                canEditEmployee(employee) &&
+                                handleOpenDialog(employee)
+                              }
                             >
                               <UserCheck className="w-3 h-3 mr-1" />
                               {customEval.evaluator.name}
@@ -655,8 +698,15 @@ export default function EvaluatorSettingsClient({
                           ) : (
                             <Badge
                               variant="secondary"
-                              className={canEditEmployee(employee) ? "cursor-pointer hover:bg-muted" : ""}
-                              onClick={() => canEditEmployee(employee) && handleOpenDialog(employee)}
+                              className={
+                                canEditEmployee(employee)
+                                  ? "cursor-pointer hover:bg-muted"
+                                  : ""
+                              }
+                              onClick={() =>
+                                canEditEmployee(employee) &&
+                                handleOpenDialog(employee)
+                              }
                             >
                               {employee.defaultManager
                                 ? employee.defaultManager.name
@@ -668,7 +718,9 @@ export default function EvaluatorSettingsClient({
                           {employee.employeeId}
                         </TableCell>
                         <TableCell>
-                          <span className={`font-medium ${excluded ? "text-muted-foreground" : ""}`}>
+                          <span
+                            className={`font-medium ${excluded ? "text-muted-foreground" : ""}`}
+                          >
                             {employee.name}
                           </span>
                         </TableCell>
@@ -680,7 +732,9 @@ export default function EvaluatorSettingsClient({
                           {canEditEmployee(employee) && (
                             <Switch
                               checked={excluded}
-                              onCheckedChange={() => handleToggleExclusion(employee, excluded)}
+                              onCheckedChange={() =>
+                                handleToggleExclusion(employee, excluded)
+                              }
                             />
                           )}
                         </TableCell>
@@ -735,7 +789,8 @@ export default function EvaluatorSettingsClient({
                       m.employeeId.toLowerCase().includes(search) ||
                       m.name.toLowerCase().includes(search) ||
                       (m.position?.toLowerCase().includes(search) ?? false) ||
-                      (m.departmentName?.toLowerCase().includes(search) ?? false) ||
+                      (m.departmentName?.toLowerCase().includes(search) ??
+                        false) ||
                       (m.sectionName?.toLowerCase().includes(search) ?? false)
                     );
                   };
@@ -746,7 +801,7 @@ export default function EvaluatorSettingsClient({
                       (m) =>
                         m.id !== selectedEmployee.id &&
                         m.isExecutive &&
-                        matchesSearch(m)
+                        matchesSearch(m),
                     )
                     .sort((a, b) => a.employeeId.localeCompare(b.employeeId));
 
@@ -757,8 +812,10 @@ export default function EvaluatorSettingsClient({
                         m.id !== selectedEmployee.id &&
                         !m.isExecutive &&
                         m.departmentId === selectedEmployee.departmentId &&
-                        (m.isDepartmentManager || m.isSectionManager || m.isCourseManager) &&
-                        matchesSearch(m)
+                        (m.isDepartmentManager ||
+                          m.isSectionManager ||
+                          m.isCourseManager) &&
+                        matchesSearch(m),
                     )
                     .sort(sortByPosition);
 
@@ -772,10 +829,12 @@ export default function EvaluatorSettingsClient({
                           s.id !== selectedEmployee.id &&
                           !s.isExecutive &&
                           s.departmentId === selectedEmployee.departmentId &&
-                          (s.isDepartmentManager || s.isSectionManager || s.isCourseManager) &&
-                          s.id === m.id
+                          (s.isDepartmentManager ||
+                            s.isSectionManager ||
+                            s.isCourseManager) &&
+                          s.id === m.id,
                       ) &&
-                      matchesSearch(m)
+                      matchesSearch(m),
                   );
 
                   // 部門ごとにグループ化して、各グループ内で役職順にソート
@@ -789,8 +848,13 @@ export default function EvaluatorSettingsClient({
                   });
                   otherByDept.forEach((list) => list.sort(sortByPosition));
 
-                  const selectedEvaluator = managers.find((m) => m.id === formData.evaluatorId);
-                  const hasResults = executives.length > 0 || sameDeptManagers.length > 0 || otherByDept.size > 0;
+                  const selectedEvaluator = managers.find(
+                    (m) => m.id === formData.evaluatorId,
+                  );
+                  const hasResults =
+                    executives.length > 0 ||
+                    sameDeptManagers.length > 0 ||
+                    otherByDept.size > 0;
 
                   return (
                     <div className="border rounded-md">
@@ -801,7 +865,9 @@ export default function EvaluatorSettingsClient({
                           <Input
                             placeholder={t.searchEmployee}
                             value={evaluatorSearchTerm}
-                            onChange={(e) => setEvaluatorSearchTerm(e.target.value)}
+                            onChange={(e) =>
+                              setEvaluatorSearchTerm(e.target.value)
+                            }
                             className="pl-8 h-8"
                           />
                         </div>
@@ -813,15 +879,19 @@ export default function EvaluatorSettingsClient({
                           <div className="flex items-center gap-2">
                             <Check className="w-4 h-4 text-primary" />
                             <span className="text-sm font-medium">
-                              {selectedEvaluator.employeeId} - {selectedEvaluator.name}
-                              {selectedEvaluator.position && ` (${selectedEvaluator.position})`}
+                              {selectedEvaluator.employeeId} -{" "}
+                              {selectedEvaluator.name}
+                              {selectedEvaluator.position &&
+                                ` (${selectedEvaluator.position})`}
                             </span>
                           </div>
                           <Button
                             variant="ghost"
                             size="sm"
                             className="h-6 w-6 p-0"
-                            onClick={() => setFormData({ ...formData, evaluatorId: "" })}
+                            onClick={() =>
+                              setFormData({ ...formData, evaluatorId: "" })
+                            }
                           >
                             <X className="w-3 h-3" />
                           </Button>
@@ -847,13 +917,21 @@ export default function EvaluatorSettingsClient({
                                     key={manager.id}
                                     type="button"
                                     className={`w-full text-left px-2 py-1.5 text-sm rounded hover:bg-muted flex items-center justify-between ${
-                                      formData.evaluatorId === manager.id ? "bg-muted" : ""
+                                      formData.evaluatorId === manager.id
+                                        ? "bg-muted"
+                                        : ""
                                     }`}
-                                    onClick={() => setFormData({ ...formData, evaluatorId: manager.id })}
+                                    onClick={() =>
+                                      setFormData({
+                                        ...formData,
+                                        evaluatorId: manager.id,
+                                      })
+                                    }
                                   >
                                     <span>
                                       {manager.employeeId} - {manager.name}
-                                      {manager.position && ` (${manager.position})`}
+                                      {manager.position &&
+                                        ` (${manager.position})`}
                                     </span>
                                     {formData.evaluatorId === manager.id && (
                                       <Check className="w-4 h-4 text-primary" />
@@ -863,31 +941,41 @@ export default function EvaluatorSettingsClient({
                               </div>
                             )}
                             {/* その他の部門グループ */}
-                            {Array.from(otherByDept.entries()).map(([deptName, deptManagers]) => (
-                              <div key={deptName} className="mb-2">
-                                <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
-                                  {deptName}
+                            {Array.from(otherByDept.entries()).map(
+                              ([deptName, deptManagers]) => (
+                                <div key={deptName} className="mb-2">
+                                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
+                                    {deptName}
+                                  </div>
+                                  {deptManagers.map((manager) => (
+                                    <button
+                                      key={manager.id}
+                                      type="button"
+                                      className={`w-full text-left px-2 py-1.5 text-sm rounded hover:bg-muted flex items-center justify-between ${
+                                        formData.evaluatorId === manager.id
+                                          ? "bg-muted"
+                                          : ""
+                                      }`}
+                                      onClick={() =>
+                                        setFormData({
+                                          ...formData,
+                                          evaluatorId: manager.id,
+                                        })
+                                      }
+                                    >
+                                      <span>
+                                        {manager.employeeId} - {manager.name}
+                                        {manager.position &&
+                                          ` (${manager.position})`}
+                                      </span>
+                                      {formData.evaluatorId === manager.id && (
+                                        <Check className="w-4 h-4 text-primary" />
+                                      )}
+                                    </button>
+                                  ))}
                                 </div>
-                                {deptManagers.map((manager) => (
-                                  <button
-                                    key={manager.id}
-                                    type="button"
-                                    className={`w-full text-left px-2 py-1.5 text-sm rounded hover:bg-muted flex items-center justify-between ${
-                                      formData.evaluatorId === manager.id ? "bg-muted" : ""
-                                    }`}
-                                    onClick={() => setFormData({ ...formData, evaluatorId: manager.id })}
-                                  >
-                                    <span>
-                                      {manager.employeeId} - {manager.name}
-                                      {manager.position && ` (${manager.position})`}
-                                    </span>
-                                    {formData.evaluatorId === manager.id && (
-                                      <Check className="w-4 h-4 text-primary" />
-                                    )}
-                                  </button>
-                                ))}
-                              </div>
-                            ))}
+                              ),
+                            )}
                             {/* 役員グループ（最下部に表示） */}
                             {executives.length > 0 && (
                               <div className="mb-2">
@@ -899,13 +987,21 @@ export default function EvaluatorSettingsClient({
                                     key={manager.id}
                                     type="button"
                                     className={`w-full text-left px-2 py-1.5 text-sm rounded hover:bg-muted flex items-center justify-between ${
-                                      formData.evaluatorId === manager.id ? "bg-muted" : ""
+                                      formData.evaluatorId === manager.id
+                                        ? "bg-muted"
+                                        : ""
                                     }`}
-                                    onClick={() => setFormData({ ...formData, evaluatorId: manager.id })}
+                                    onClick={() =>
+                                      setFormData({
+                                        ...formData,
+                                        evaluatorId: manager.id,
+                                      })
+                                    }
                                   >
                                     <span>
                                       {manager.employeeId} - {manager.name}
-                                      {manager.position && ` (${manager.position})`}
+                                      {manager.position &&
+                                        ` (${manager.position})`}
                                     </span>
                                     {formData.evaluatorId === manager.id && (
                                       <Check className="w-4 h-4 text-primary" />
@@ -953,7 +1049,10 @@ export default function EvaluatorSettingsClient({
                     type="date"
                     value={formData.effectiveFrom}
                     onChange={(e) =>
-                      setFormData({ ...formData, effectiveFrom: e.target.value })
+                      setFormData({
+                        ...formData,
+                        effectiveFrom: e.target.value,
+                      })
                     }
                   />
                 </div>
@@ -976,7 +1075,9 @@ export default function EvaluatorSettingsClient({
                     <Button
                       variant="destructive"
                       onClick={() => {
-                        const customEval = getCustomEvaluator(selectedEmployee.id);
+                        const customEval = getCustomEvaluator(
+                          selectedEmployee.id,
+                        );
                         if (customEval) {
                           handleRemoveCustomEvaluator(customEval.id);
                           setIsDialogOpen(false);
@@ -1009,7 +1110,10 @@ export default function EvaluatorSettingsClient({
       </Dialog>
 
       {/* Exclusion dialog */}
-      <Dialog open={isExclusionDialogOpen} onOpenChange={setIsExclusionDialogOpen}>
+      <Dialog
+        open={isExclusionDialogOpen}
+        onOpenChange={setIsExclusionDialogOpen}
+      >
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
             <DialogTitle>{t.excludeFromEvaluation}</DialogTitle>
@@ -1072,7 +1176,10 @@ export default function EvaluatorSettingsClient({
                 <Select
                   value={exclusionFormData.periodId}
                   onValueChange={(value) =>
-                    setExclusionFormData({ ...exclusionFormData, periodId: value })
+                    setExclusionFormData({
+                      ...exclusionFormData,
+                      periodId: value,
+                    })
                   }
                 >
                   <SelectTrigger>

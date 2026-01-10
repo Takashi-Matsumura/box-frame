@@ -26,7 +26,8 @@ const nextConfig: NextConfig = {
   },
   // リライト設定
   async rewrites() {
-    const ragBackendUrl = process.env.RAG_BACKEND_URL || "http://localhost:8000";
+    const ragBackendUrl =
+      process.env.RAG_BACKEND_URL || "http://localhost:8000";
 
     return [
       // /uploads/profiles/* を /api/uploads/profiles/* にリライト

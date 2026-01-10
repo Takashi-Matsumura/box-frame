@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/evaluation/process-categories/[id] - 単一カテゴリ取得
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
 
@@ -21,7 +21,10 @@ export async function GET(
     });
 
     if (!category) {
-      return NextResponse.json({ error: "Category not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Category not found" },
+        { status: 404 },
+      );
     }
 
     return NextResponse.json(category);
@@ -29,7 +32,7 @@ export async function GET(
     console.error("Failed to fetch process category:", error);
     return NextResponse.json(
       { error: "Failed to fetch process category" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -37,7 +40,7 @@ export async function GET(
 // PATCH /api/evaluation/process-categories/[id] - カテゴリ更新
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
 
@@ -49,12 +52,24 @@ export async function PATCH(
 
   try {
     const body = await request.json();
-    const { name, nameEn, categoryCode, description, minItemCount, scores, sortOrder, isActive } = body;
+    const {
+      name,
+      nameEn,
+      categoryCode,
+      description,
+      minItemCount,
+      scores,
+      sortOrder,
+      isActive,
+    } = body;
 
     // scoresがオブジェクトの場合はJSON文字列に変換
-    const scoresJson = scores !== undefined
-      ? (typeof scores === "object" ? JSON.stringify(scores) : scores)
-      : undefined;
+    const scoresJson =
+      scores !== undefined
+        ? typeof scores === "object"
+          ? JSON.stringify(scores)
+          : scores
+        : undefined;
 
     const category = await prisma.processCategory.update({
       where: { id },
@@ -75,7 +90,7 @@ export async function PATCH(
     console.error("Failed to update process category:", error);
     return NextResponse.json(
       { error: "Failed to update process category" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -83,7 +98,7 @@ export async function PATCH(
 // DELETE /api/evaluation/process-categories/[id] - カテゴリ削除
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
 
@@ -104,7 +119,7 @@ export async function DELETE(
     console.error("Failed to delete process category:", error);
     return NextResponse.json(
       { error: "Failed to delete process category" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

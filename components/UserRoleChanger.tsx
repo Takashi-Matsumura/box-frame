@@ -90,7 +90,9 @@ export function UserRoleChanger({
       onValueChange={(value) => handleRoleChange(value as Role)}
       disabled={isLoading}
     >
-      <SelectTrigger className={`w-[120px] h-8 text-xs font-semibold border-0 ${getRoleColor(role)}`}>
+      <SelectTrigger
+        className={`w-[120px] h-8 text-xs font-semibold border-0 ${getRoleColor(role)}`}
+      >
         <SelectValue>{role}</SelectValue>
       </SelectTrigger>
       <SelectContent>

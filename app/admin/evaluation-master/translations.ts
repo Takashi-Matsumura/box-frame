@@ -36,13 +36,18 @@ export const evaluationMasterTranslations = {
     revertToDraft: "Revert to Draft",
     revertToActive: "Revert to Active",
     revertToReview: "Revert to Review",
-    confirmRevertToDraft: "Are you sure you want to revert this period to Draft status? Employees will no longer be able to enter evaluations.",
-    confirmRevertToActive: "Are you sure you want to revert this period to Active status? The review process will be reset.",
-    confirmRevertToReview: "Are you sure you want to reopen this period for review?",
+    confirmRevertToDraft:
+      "Are you sure you want to revert this period to Draft status? Employees will no longer be able to enter evaluations.",
+    confirmRevertToActive:
+      "Are you sure you want to revert this period to Active status? The review process will be reset.",
+    confirmRevertToReview:
+      "Are you sure you want to reopen this period for review?",
     advanceToReview: "Start Review",
     advanceToClosed: "Close Period",
-    confirmAdvanceToReview: "Are you sure you want to start the review phase? Employees will no longer be able to modify their self-evaluations.",
-    confirmAdvanceToClosed: "Are you sure you want to close this period? You can reopen it for review if needed.",
+    confirmAdvanceToReview:
+      "Are you sure you want to start the review phase? Employees will no longer be able to modify their self-evaluations.",
+    confirmAdvanceToClosed:
+      "Are you sure you want to close this period? You can reopen it for review if needed.",
 
     // Weights
     weightsTitle: "Weight Settings",
@@ -64,7 +69,8 @@ export const evaluationMasterTranslations = {
     configured: "Configured",
     notConfigured: "Not Configured",
     addMissingGrades: "Add Missing Grades",
-    confirmDeleteWeight: "Are you sure you want to delete the weight setting for \"{code}\"?",
+    confirmDeleteWeight:
+      'Are you sure you want to delete the weight setting for "{code}"?',
     totalEmployees: "Total Employees",
     people: " people",
     close: "Close",
@@ -90,20 +96,23 @@ export const evaluationMasterTranslations = {
     mergePositions: "Merge Positions",
     splitPosition: "Split",
     mergeDialogTitle: "Merge Positions",
-    mergeDialogDescription: "Select positions to merge into one group. Merged positions will share the same weight settings.",
+    mergeDialogDescription:
+      "Select positions to merge into one group. Merged positions will share the same weight settings.",
     splitDialogTitle: "Split Position Group",
     splitDialogDescription: "Select positions to separate from this group.",
     groupName: "Group Name",
     selectPositions: "Select Positions",
     merge: "Merge",
     split: "Split",
-    noGroupsYet: "Position groups not configured. Click 'Detect Combinations' to initialize.",
+    noGroupsYet:
+      "Position groups not configured. Click 'Detect Combinations' to initialize.",
     positionGroupsUpdated: "Position groups updated",
     deleteGroup: "Delete Group",
 
     // Results Evaluation (Criteria1)
     goalsTitle: "Results Evaluation",
-    goalsDescription: "Set target and actual profit values for each organization",
+    goalsDescription:
+      "Set target and actual profit values for each organization",
     organizationType: "Level",
     organizationName: "Organization",
     targetProfit: "Target Profit",
@@ -170,7 +179,8 @@ export const evaluationMasterTranslations = {
 
     // Growth Categories
     growthCategoriesTitle: "Growth Evaluation Categories",
-    growthCategoriesDescription: "Define growth assessment criteria with achievement level scores",
+    growthCategoriesDescription:
+      "Define growth assessment criteria with achievement level scores",
     coefficient: "Coefficient",
     scoreT1: "T1",
     scoreT2: "T2",
@@ -230,13 +240,17 @@ export const evaluationMasterTranslations = {
     revertToDraft: "準備中に戻す",
     revertToActive: "評価中に戻す",
     revertToReview: "レビューに戻す",
-    confirmRevertToDraft: "この評価期間を準備中に戻しますか？社員は評価を入力できなくなります。",
-    confirmRevertToActive: "この評価期間を評価中に戻しますか？レビュープロセスがリセットされます。",
+    confirmRevertToDraft:
+      "この評価期間を準備中に戻しますか？社員は評価を入力できなくなります。",
+    confirmRevertToActive:
+      "この評価期間を評価中に戻しますか？レビュープロセスがリセットされます。",
     confirmRevertToReview: "この評価期間をレビュー状態に戻しますか？",
     advanceToReview: "レビュー開始",
     advanceToClosed: "期間を完了",
-    confirmAdvanceToReview: "レビューフェーズを開始しますか？社員は自己評価を変更できなくなります。",
-    confirmAdvanceToClosed: "この評価期間を完了しますか？完了後も必要に応じてレビュー状態に戻すことができます。",
+    confirmAdvanceToReview:
+      "レビューフェーズを開始しますか？社員は自己評価を変更できなくなります。",
+    confirmAdvanceToClosed:
+      "この評価期間を完了しますか？完了後も必要に応じてレビュー状態に戻すことができます。",
 
     // Weights
     weightsTitle: "重み設定",
@@ -284,14 +298,16 @@ export const evaluationMasterTranslations = {
     mergePositions: "役職を結合",
     splitPosition: "分離",
     mergeDialogTitle: "役職の結合",
-    mergeDialogDescription: "結合する役職を選択してください。結合された役職は同じ重み設定を共有します。",
+    mergeDialogDescription:
+      "結合する役職を選択してください。結合された役職は同じ重み設定を共有します。",
     splitDialogTitle: "役職グループの分離",
     splitDialogDescription: "このグループから分離する役職を選択してください。",
     groupName: "グループ名",
     selectPositions: "役職を選択",
     merge: "結合",
     split: "分離",
-    noGroupsYet: "役職グループが未設定です。「組み合わせ検出」をクリックして初期化してください。",
+    noGroupsYet:
+      "役職グループが未設定です。「組み合わせ検出」をクリックして初期化してください。",
     positionGroupsUpdated: "役職グループを更新しました",
     deleteGroup: "グループを削除",
 

@@ -28,10 +28,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     const validStatuses = ["DRAFT", "ACTIVE", "REVIEW", "CLOSED"];
     if (!validStatuses.includes(status)) {
-      return NextResponse.json(
-        { error: "Invalid status" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
 
     // 現在のステータスを取得
@@ -40,10 +37,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     });
 
     if (!period) {
-      return NextResponse.json(
-        { error: "Period not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Period not found" }, { status: 404 });
     }
 
     // ステータス遷移のバリデーション
@@ -59,7 +53,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         {
           error: `Cannot transition from ${period.status} to ${status}`,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -72,7 +66,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       if (evaluationCount === 0) {
         return NextResponse.json(
           { error: "No evaluations exist. Generate evaluations first." },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -87,7 +81,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     console.error("Error updating evaluation period status:", error);
     return NextResponse.json(
       { error: "Failed to update status" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

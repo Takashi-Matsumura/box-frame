@@ -1,7 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { FaUsers, FaSearch, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { useCallback, useEffect, useState } from "react";
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaSearch,
+  FaUsers,
+} from "react-icons/fa";
 import type { DataManagementTranslation } from "../translations";
 
 interface Employee {
@@ -24,7 +29,11 @@ interface EmployeesTabProps {
   t: DataManagementTranslation;
 }
 
-export function EmployeesTab({ organizationId, language, t }: EmployeesTabProps) {
+export function EmployeesTab({
+  organizationId,
+  language,
+  t,
+}: EmployeesTabProps) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -48,7 +57,9 @@ export function EmployeesTab({ organizationId, language, t }: EmployeesTabProps)
         params.set("search", search);
       }
 
-      const response = await fetch(`/api/admin/organization/employees?${params}`);
+      const response = await fetch(
+        `/api/admin/organization/employees?${params}`,
+      );
       if (response.ok) {
         const data = await response.json();
         setEmployees(data.employees);
@@ -78,7 +89,9 @@ export function EmployeesTab({ organizationId, language, t }: EmployeesTabProps)
     <div>
       <div className="flex items-center gap-3 mb-6">
         <FaUsers className="w-6 h-6 text-green-600" />
-        <h2 className="text-xl font-semibold text-foreground">{t.employeesTitle}</h2>
+        <h2 className="text-xl font-semibold text-foreground">
+          {t.employeesTitle}
+        </h2>
       </div>
 
       {/* Search and Filters */}
@@ -155,12 +168,16 @@ export function EmployeesTab({ organizationId, language, t }: EmployeesTabProps)
               <tbody className="divide-y divide-border">
                 {employees.map((emp) => (
                   <tr key={emp.id} className="hover:bg-muted/50">
-                    <td className="px-4 py-3 text-foreground">{emp.employeeId}</td>
+                    <td className="px-4 py-3 text-foreground">
+                      {emp.employeeId}
+                    </td>
                     <td className="px-4 py-3 text-foreground">
                       <div>
                         <p className="font-medium">{emp.name}</p>
                         {emp.nameKana && (
-                          <p className="text-xs text-muted-foreground">{emp.nameKana}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {emp.nameKana}
+                          </p>
                         )}
                       </div>
                     </td>
@@ -173,8 +190,12 @@ export function EmployeesTab({ organizationId, language, t }: EmployeesTabProps)
                     <td className="px-4 py-3 text-foreground">
                       {emp.course?.name || "-"}
                     </td>
-                    <td className="px-4 py-3 text-foreground">{emp.position}</td>
-                    <td className="px-4 py-3 text-foreground">{emp.email || "-"}</td>
+                    <td className="px-4 py-3 text-foreground">
+                      {emp.position}
+                    </td>
+                    <td className="px-4 py-3 text-foreground">
+                      {emp.email || "-"}
+                    </td>
                     <td className="px-4 py-3">
                       <span
                         className={`px-2 py-1 text-xs rounded-full ${

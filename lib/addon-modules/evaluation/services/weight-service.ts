@@ -5,8 +5,8 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import type { WeightConfig } from "../types";
 import { DEFAULT_WEIGHTS } from "../constants";
+import type { WeightConfig } from "../types";
 
 /**
  * 役職×等級に応じた重みを取得
@@ -21,7 +21,7 @@ import { DEFAULT_WEIGHTS } from "../constants";
 export async function getWeightsForPositionGrade(
   periodId: string,
   positionCode: string | null,
-  gradeCode: string | null
+  gradeCode: string | null,
 ): Promise<WeightConfig> {
   // 1. 役職×等級別の重みを検索
   if (positionCode && gradeCode) {
@@ -44,7 +44,11 @@ export async function getWeightsForPositionGrade(
   if (positionCode) {
     const positionDefault = await prisma.evaluationWeight.findUnique({
       where: {
-        periodId_positionCode_gradeCode: { periodId, positionCode, gradeCode: "ALL" },
+        periodId_positionCode_gradeCode: {
+          periodId,
+          positionCode,
+          gradeCode: "ALL",
+        },
       },
     });
 
@@ -61,7 +65,11 @@ export async function getWeightsForPositionGrade(
   if (gradeCode) {
     const gradeDefault = await prisma.evaluationWeight.findUnique({
       where: {
-        periodId_positionCode_gradeCode: { periodId, positionCode: "DEFAULT", gradeCode },
+        periodId_positionCode_gradeCode: {
+          periodId,
+          positionCode: "DEFAULT",
+          gradeCode,
+        },
       },
     });
 
@@ -77,7 +85,11 @@ export async function getWeightsForPositionGrade(
   // 4. グローバルデフォルトを検索
   const globalDefault = await prisma.evaluationWeight.findUnique({
     where: {
-      periodId_positionCode_gradeCode: { periodId, positionCode: "DEFAULT", gradeCode: "ALL" },
+      periodId_positionCode_gradeCode: {
+        periodId,
+        positionCode: "DEFAULT",
+        gradeCode: "ALL",
+      },
     },
   });
 
@@ -99,7 +111,7 @@ export async function getWeightsForPositionGrade(
  */
 export async function getWeightsForGrade(
   periodId: string,
-  gradeCode: string | null
+  gradeCode: string | null,
 ): Promise<WeightConfig> {
   return getWeightsForPositionGrade(periodId, null, gradeCode);
 }
@@ -108,8 +120,16 @@ export async function getWeightsForGrade(
  * 評価期間の全重み設定を取得
  */
 export async function getAllWeightsForPeriod(
-  periodId: string
-): Promise<Array<{ positionCode: string; positionName: string | null; gradeCode: string } & WeightConfig>> {
+  periodId: string,
+): Promise<
+  Array<
+    {
+      positionCode: string;
+      positionName: string | null;
+      gradeCode: string;
+    } & WeightConfig
+  >
+> {
   const weights = await prisma.evaluationWeight.findMany({
     where: { periodId },
     orderBy: [{ positionCode: "asc" }, { gradeCode: "asc" }],
@@ -133,10 +153,11 @@ export async function upsertWeight(
   positionCode: string,
   gradeCode: string,
   weights: WeightConfig,
-  positionName?: string
+  positionName?: string,
 ): Promise<void> {
   // 合計が100%になることを確認
-  const total = weights.resultsWeight + weights.processWeight + weights.growthWeight;
+  const total =
+    weights.resultsWeight + weights.processWeight + weights.growthWeight;
   if (total !== 100) {
     throw new Error(`Weight total must be 100%, got ${total}%`);
   }
@@ -170,7 +191,9 @@ export async function upsertWeight(
  * @deprecated 各役職×等級ごとに重みを設定するため、グローバルデフォルトは不要。
  * フォールバックはコード内のDEFAULT_WEIGHTS定数で対応。
  */
-export async function initializeDefaultWeights(_periodId: string): Promise<void> {
+export async function initializeDefaultWeights(
+  _periodId: string,
+): Promise<void> {
   // 何もしない - 各役職×等級ごとに設定するためグローバルデフォルトは不要
   // フォールバックはgetWeightsForPositionGrade()内のDEFAULT_WEIGHTSで対応
 }
@@ -181,7 +204,7 @@ export async function initializeDefaultWeights(_periodId: string): Promise<void>
 export async function deleteWeight(
   periodId: string,
   positionCode: string,
-  gradeCode: string
+  gradeCode: string,
 ): Promise<void> {
   await prisma.evaluationWeight.delete({
     where: {

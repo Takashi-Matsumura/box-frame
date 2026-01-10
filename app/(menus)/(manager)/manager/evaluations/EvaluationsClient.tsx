@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Search, Users, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -18,11 +20,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Users, Search, X } from "lucide-react";
-import { evaluationsTranslations } from "./translations";
-import EvaluationForm from "./components/EvaluationForm";
 import { useIsTabletOrMobile } from "@/hooks/use-mobile";
+import EvaluationForm from "./components/EvaluationForm";
+import { evaluationsTranslations } from "./translations";
 
 interface Period {
   id: string;
@@ -73,7 +73,9 @@ export default function EvaluationsClient({
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedEvaluationId, setSelectedEvaluationId] = useState<string | null>(null);
+  const [selectedEvaluationId, setSelectedEvaluationId] = useState<
+    string | null
+  >(null);
 
   // ADMIN用フィルター状態
   const [searchName, setSearchName] = useState("");
@@ -81,7 +83,6 @@ export default function EvaluationsClient({
   const [selectedSection, setSelectedSection] = useState<string>("all");
   const [selectedCourse, setSelectedCourse] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
-
 
   // 本部変更時に部・課をリセット
   const handleDepartmentChange = useCallback((value: string) => {
@@ -105,7 +106,7 @@ export default function EvaluationsClient({
           const data = await res.json();
           // ACTIVE, REVIEWステータスの期間のみ表示
           const activePeriods = data.filter(
-            (p: Period) => p.status === "ACTIVE" || p.status === "REVIEW"
+            (p: Period) => p.status === "ACTIVE" || p.status === "REVIEW",
           );
           setPeriods(activePeriods);
           if (activePeriods.length > 0) {
@@ -127,7 +128,9 @@ export default function EvaluationsClient({
 
     setLoading(true);
     try {
-      const res = await fetch(`/api/evaluation/evaluatees?periodId=${selectedPeriodId}`);
+      const res = await fetch(
+        `/api/evaluation/evaluatees?periodId=${selectedPeriodId}`,
+      );
       if (res.ok) {
         const data = await res.json();
         setEvaluations(data);
@@ -158,7 +161,12 @@ export default function EvaluationsClient({
   const getDepartmentDisplay = (employee: Employee) => {
     if (isTabletOrMobile) {
       // 課 → 部 → 本部 の優先順で1つだけ表示
-      return employee.course?.name || employee.section?.name || employee.department?.name || "-";
+      return (
+        employee.course?.name ||
+        employee.section?.name ||
+        employee.department?.name ||
+        "-"
+      );
     }
     // デスクトップ: フル表示
     let display = employee.department?.name || "-";
@@ -170,9 +178,12 @@ export default function EvaluationsClient({
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
       PENDING: "bg-muted text-muted-foreground",
-      IN_PROGRESS: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-      COMPLETED: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      CONFIRMED: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+      IN_PROGRESS:
+        "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+      COMPLETED:
+        "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+      CONFIRMED:
+        "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
     };
     const labels: Record<string, string> = {
       PENDING: t.evalPending,
@@ -208,7 +219,9 @@ export default function EvaluationsClient({
         });
       }
     });
-    return Array.from(deptMap.values()).sort((a, b) => a.code.localeCompare(b.code));
+    return Array.from(deptMap.values()).sort((a, b) =>
+      a.code.localeCompare(b.code),
+    );
   }, [evaluations]);
 
   // ADMIN用: 部リストを抽出（選択した本部に応じてフィルタ、コード順）
@@ -227,7 +240,9 @@ export default function EvaluationsClient({
         });
       }
     });
-    return Array.from(secMap.values()).sort((a, b) => a.code.localeCompare(b.code));
+    return Array.from(secMap.values()).sort((a, b) =>
+      a.code.localeCompare(b.code),
+    );
   }, [evaluations, selectedDepartment]);
 
   // ADMIN用: 課リストを抽出（選択した部に応じてフィルタ、コード順）
@@ -247,7 +262,9 @@ export default function EvaluationsClient({
         });
       }
     });
-    return Array.from(courseMap.values()).sort((a, b) => a.code.localeCompare(b.code));
+    return Array.from(courseMap.values()).sort((a, b) =>
+      a.code.localeCompare(b.code),
+    );
   }, [evaluations, selectedDepartment, selectedSection]);
 
   // ADMIN用: フィルタリング済み評価リスト
@@ -289,7 +306,15 @@ export default function EvaluationsClient({
 
       return true;
     });
-  }, [isAdmin, evaluations, searchName, selectedDepartment, selectedSection, selectedCourse, selectedStatus]);
+  }, [
+    isAdmin,
+    evaluations,
+    searchName,
+    selectedDepartment,
+    selectedSection,
+    selectedCourse,
+    selectedStatus,
+  ]);
 
   // 評価フォーム表示中
   if (selectedEvaluationId) {
@@ -313,7 +338,10 @@ export default function EvaluationsClient({
           {/* Period Info - Compact */}
           <div className="flex items-center justify-between mb-3 pb-3 border-b">
             <div className="flex items-center gap-4 text-sm">
-              <Select value={selectedPeriodId} onValueChange={setSelectedPeriodId}>
+              <Select
+                value={selectedPeriodId}
+                onValueChange={setSelectedPeriodId}
+              >
                 <SelectTrigger className="w-[180px] h-8">
                   <SelectValue placeholder={t.selectPeriod} />
                 </SelectTrigger>
@@ -334,17 +362,26 @@ export default function EvaluationsClient({
                         : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
                     }
                   >
-                    {selectedPeriod.status === "ACTIVE" ? t.statusActive : t.statusReview}
+                    {selectedPeriod.status === "ACTIVE"
+                      ? t.statusActive
+                      : t.statusReview}
                   </Badge>
                   <span className="text-muted-foreground">
-                    {new Date(selectedPeriod.startDate).toLocaleDateString(language)} 〜 {new Date(selectedPeriod.endDate).toLocaleDateString(language)}
+                    {new Date(selectedPeriod.startDate).toLocaleDateString(
+                      language,
+                    )}{" "}
+                    〜{" "}
+                    {new Date(selectedPeriod.endDate).toLocaleDateString(
+                      language,
+                    )}
                   </span>
                 </>
               )}
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Users className="w-4 h-4" />
-              {t.evaluatees}: {isAdmin && filteredEvaluations.length !== evaluations.length
+              {t.evaluatees}:{" "}
+              {isAdmin && filteredEvaluations.length !== evaluations.length
                 ? `${filteredEvaluations.length} / ${evaluations.length} ${t.evaluateeCount}`
                 : `${evaluations.length} ${t.evaluateeCount}`}
             </div>
@@ -371,7 +408,10 @@ export default function EvaluationsClient({
                 )}
               </div>
               {/* 本部フィルター */}
-              <Select value={selectedDepartment} onValueChange={handleDepartmentChange}>
+              <Select
+                value={selectedDepartment}
+                onValueChange={handleDepartmentChange}
+              >
                 <SelectTrigger className="w-[160px] h-8">
                   <SelectValue placeholder={t.allDepartments} />
                 </SelectTrigger>
@@ -386,7 +426,10 @@ export default function EvaluationsClient({
               </Select>
               {/* 部フィルター（本部選択時のみ表示） */}
               {selectedDepartment !== "all" && sections.length > 0 && (
-                <Select value={selectedSection} onValueChange={handleSectionChange}>
+                <Select
+                  value={selectedSection}
+                  onValueChange={handleSectionChange}
+                >
                   <SelectTrigger className="w-[160px] h-8">
                     <SelectValue placeholder={t.allSections} />
                   </SelectTrigger>
@@ -402,7 +445,10 @@ export default function EvaluationsClient({
               )}
               {/* 課フィルター（部選択時のみ表示） */}
               {selectedSection !== "all" && courses.length > 0 && (
-                <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+                <Select
+                  value={selectedCourse}
+                  onValueChange={setSelectedCourse}
+                >
                   <SelectTrigger className="w-[160px] h-8">
                     <SelectValue placeholder={t.allCourses} />
                   </SelectTrigger>
@@ -425,12 +471,16 @@ export default function EvaluationsClient({
                   <SelectItem value="all">{t.allStatuses}</SelectItem>
                   <SelectItem value="incomplete">{t.incompleteOnly}</SelectItem>
                   <SelectItem value="PENDING">{t.evalPending}</SelectItem>
-                  <SelectItem value="IN_PROGRESS">{t.evalInProgress}</SelectItem>
+                  <SelectItem value="IN_PROGRESS">
+                    {t.evalInProgress}
+                  </SelectItem>
                   <SelectItem value="COMPLETED">{t.evalCompleted}</SelectItem>
                   <SelectItem value="CONFIRMED">{t.evalConfirmed}</SelectItem>
                 </SelectContent>
               </Select>
-              {(searchName || selectedDepartment !== "all" || selectedStatus !== "all") && (
+              {(searchName ||
+                selectedDepartment !== "all" ||
+                selectedStatus !== "all") && (
                 <button
                   onClick={() => {
                     setSearchName("");
@@ -447,49 +497,61 @@ export default function EvaluationsClient({
 
           {/* Evaluatees Table */}
           {loading ? (
-            <div className="text-center py-8 text-muted-foreground">{t.loading}</div>
+            <div className="text-center py-8 text-muted-foreground">
+              {t.loading}
+            </div>
           ) : periods.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">{t.noPeriods}</div>
+            <div className="text-center py-12 text-muted-foreground">
+              {t.noPeriods}
+            </div>
           ) : evaluations.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">{t.noEvaluatees}</div>
+            <div className="text-center py-12 text-muted-foreground">
+              {t.noEvaluatees}
+            </div>
           ) : (
             <div className="overflow-auto flex-1">
-            <Table>
-              <TableHeader className="sticky top-0 bg-background z-10">
-                <TableRow>
-                  <TableHead>{t.employeeNumber}</TableHead>
-                  <TableHead>{t.employeeInfo}</TableHead>
-                  <TableHead>{t.position}</TableHead>
-                  <TableHead>{t.grade}</TableHead>
-                  <TableHead>{t.department}</TableHead>
-                  <TableHead>{t.periodStatus}</TableHead>
-                  <TableHead>{t.finalGrade}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredEvaluations.map((evaluation) => (
-                  <TableRow
-                    key={evaluation.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => setSelectedEvaluationId(evaluation.id)}
-                  >
-                    <TableCell className="font-mono text-sm">
-                      {evaluation.employee.employeeId}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {getEmployeeName(evaluation.employee)}
-                    </TableCell>
-                    <TableCell>{evaluation.employee.position || "-"}</TableCell>
-                    <TableCell>{getGradeCode(evaluation.employee.qualificationGrade)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {getDepartmentDisplay(evaluation.employee)}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(evaluation.status)}</TableCell>
-                    <TableCell>{getGradeBadge(evaluation.finalGrade)}</TableCell>
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableRow>
+                    <TableHead>{t.employeeNumber}</TableHead>
+                    <TableHead>{t.employeeInfo}</TableHead>
+                    <TableHead>{t.position}</TableHead>
+                    <TableHead>{t.grade}</TableHead>
+                    <TableHead>{t.department}</TableHead>
+                    <TableHead>{t.periodStatus}</TableHead>
+                    <TableHead>{t.finalGrade}</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredEvaluations.map((evaluation) => (
+                    <TableRow
+                      key={evaluation.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => setSelectedEvaluationId(evaluation.id)}
+                    >
+                      <TableCell className="font-mono text-sm">
+                        {evaluation.employee.employeeId}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {getEmployeeName(evaluation.employee)}
+                      </TableCell>
+                      <TableCell>
+                        {evaluation.employee.position || "-"}
+                      </TableCell>
+                      <TableCell>
+                        {getGradeCode(evaluation.employee.qualificationGrade)}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {getDepartmentDisplay(evaluation.employee)}
+                      </TableCell>
+                      <TableCell>{getStatusBadge(evaluation.status)}</TableCell>
+                      <TableCell>
+                        {getGradeBadge(evaluation.finalGrade)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>

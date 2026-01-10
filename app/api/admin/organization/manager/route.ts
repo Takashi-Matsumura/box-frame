@@ -26,14 +26,14 @@ export async function PATCH(request: Request) {
     if (!type || !id) {
       return NextResponse.json(
         { error: "Type and ID are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!["department", "section", "course"].includes(type)) {
       return NextResponse.json(
         { error: "Invalid type. Must be department, section, or course" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -82,7 +82,7 @@ export async function PATCH(request: Request) {
     console.error("Error updating manager:", error);
     return NextResponse.json(
       { error: "Failed to update manager" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

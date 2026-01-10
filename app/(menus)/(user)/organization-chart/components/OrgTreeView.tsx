@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { Translations, Language } from "../translations";
+import type { Language, Translations } from "../translations";
 
 // 型定義
 interface Manager {
@@ -66,7 +66,7 @@ interface OrgTreeViewProps {
   onSelectNode: (
     type: "organization" | "department" | "section" | "course",
     id: string | null,
-    name: string | null
+    name: string | null,
   ) => void;
   loading: boolean;
   error: string | null;
@@ -162,18 +162,26 @@ export function OrgTreeView({
   }
 
   const isOrgSelected =
-    !selection.departmentId &&
-    !selection.sectionId &&
-    !selection.courseId;
+    !selection.departmentId && !selection.sectionId && !selection.courseId;
 
   return (
     <div className="space-y-2 pr-3">
       {/* 展開/折りたたみボタン */}
       <div className="flex gap-2 mb-4">
-        <Button variant="ghost" size="sm" onClick={expandAll} className="text-xs">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={expandAll}
+          className="text-xs"
+        >
           {t.expandAll}
         </Button>
-        <Button variant="ghost" size="sm" onClick={collapseAll} className="text-xs">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={collapseAll}
+          className="text-xs"
+        >
           {t.collapseAll}
         </Button>
       </div>
@@ -186,14 +194,14 @@ export function OrgTreeView({
           "w-full flex items-center justify-between p-2 rounded-md text-left transition-colors",
           isOrgSelected
             ? "bg-primary text-primary-foreground"
-            : "hover:bg-muted"
+            : "hover:bg-muted",
         )}
       >
         <span className="font-semibold">{organization.name}</span>
         <Badge
           variant="secondary"
           className={cn(
-            isOrgSelected && "bg-primary-foreground/20 text-primary-foreground"
+            isOrgSelected && "bg-primary-foreground/20 text-primary-foreground",
           )}
         >
           {organization.employeeCount}
@@ -217,14 +225,11 @@ export function OrgTreeView({
           >
             <div className="flex items-center">
               <CollapsibleTrigger asChild>
-                <button
-                  type="button"
-                  className="p-1 hover:bg-muted rounded"
-                >
+                <button type="button" className="p-1 hover:bg-muted rounded">
                   <svg
                     className={cn(
                       "w-4 h-4 transition-transform",
-                      isDeptExpanded && "rotate-90"
+                      isDeptExpanded && "rotate-90",
                     )}
                     fill="none"
                     stroke="currentColor"
@@ -246,7 +251,7 @@ export function OrgTreeView({
                   "flex-1 flex flex-col p-2 rounded-md text-left transition-colors",
                   isDeptSelected
                     ? "bg-primary text-primary-foreground"
-                    : "hover:bg-muted"
+                    : "hover:bg-muted",
                 )}
               >
                 <div className="flex items-center justify-between w-full">
@@ -256,22 +261,38 @@ export function OrgTreeView({
                     className={cn(
                       "text-xs",
                       isDeptSelected &&
-                        "bg-primary-foreground/20 text-primary-foreground"
+                        "bg-primary-foreground/20 text-primary-foreground",
                     )}
                   >
                     {dept.employeeCount}
                   </Badge>
                 </div>
                 {dept.manager && (
-                  <div className={cn(
-                    "text-xs mt-1 flex items-center gap-1",
-                    isDeptSelected ? "text-primary-foreground/80" : "text-muted-foreground"
-                  )}>
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <div
+                    className={cn(
+                      "text-xs mt-1 flex items-center gap-1",
+                      isDeptSelected
+                        ? "text-primary-foreground/80"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
                     </svg>
                     <span>{dept.manager.name}</span>
-                    <span className="opacity-70">({dept.manager.position})</span>
+                    <span className="opacity-70">
+                      ({dept.manager.position})
+                    </span>
                   </div>
                 )}
               </button>
@@ -299,7 +320,7 @@ export function OrgTreeView({
                             <svg
                               className={cn(
                                 "w-3 h-3 transition-transform",
-                                isSectExpanded && "rotate-90"
+                                isSectExpanded && "rotate-90",
                               )}
                               fill="none"
                               stroke="currentColor"
@@ -332,7 +353,7 @@ export function OrgTreeView({
                           "flex-1 flex flex-col p-1.5 rounded-md text-left text-sm transition-colors",
                           isSectSelected
                             ? "bg-primary text-primary-foreground"
-                            : "hover:bg-muted"
+                            : "hover:bg-muted",
                         )}
                       >
                         <div className="flex items-center justify-between w-full">
@@ -342,19 +363,33 @@ export function OrgTreeView({
                             className={cn(
                               "text-xs",
                               isSectSelected &&
-                                "bg-primary-foreground/20 text-primary-foreground"
+                                "bg-primary-foreground/20 text-primary-foreground",
                             )}
                           >
                             {sect.employeeCount}
                           </Badge>
                         </div>
                         {sect.manager && (
-                          <div className={cn(
-                            "text-xs mt-0.5 flex items-center gap-1",
-                            isSectSelected ? "text-primary-foreground/80" : "text-muted-foreground"
-                          )}>
-                            <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          <div
+                            className={cn(
+                              "text-xs mt-0.5 flex items-center gap-1",
+                              isSectSelected
+                                ? "text-primary-foreground/80"
+                                : "text-muted-foreground",
+                            )}
+                          >
+                            <svg
+                              className="w-2.5 h-2.5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                              />
                             </svg>
                             <span>{sect.manager.name}</span>
                           </div>
@@ -389,7 +424,7 @@ export function OrgTreeView({
                               "w-full flex flex-col p-1.5 rounded-md text-left text-sm transition-colors",
                               isCourseSelected
                                 ? "bg-primary text-primary-foreground"
-                                : "hover:bg-muted"
+                                : "hover:bg-muted",
                             )}
                           >
                             <div className="flex items-center justify-between w-full">
@@ -399,19 +434,33 @@ export function OrgTreeView({
                                 className={cn(
                                   "text-xs",
                                   isCourseSelected &&
-                                    "bg-primary-foreground/20 text-primary-foreground"
+                                    "bg-primary-foreground/20 text-primary-foreground",
                                 )}
                               >
                                 {course.employeeCount}
                               </Badge>
                             </div>
                             {course.manager && (
-                              <div className={cn(
-                                "text-xs mt-0.5 flex items-center gap-1",
-                                isCourseSelected ? "text-primary-foreground/80" : "text-muted-foreground"
-                              )}>
-                                <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              <div
+                                className={cn(
+                                  "text-xs mt-0.5 flex items-center gap-1",
+                                  isCourseSelected
+                                    ? "text-primary-foreground/80"
+                                    : "text-muted-foreground",
+                                )}
+                              >
+                                <svg
+                                  className="w-2.5 h-2.5"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                  />
                                 </svg>
                                 <span>{course.manager.name}</span>
                               </div>

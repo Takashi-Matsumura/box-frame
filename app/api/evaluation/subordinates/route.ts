@@ -7,14 +7,16 @@ import { prisma } from "@/lib/prisma";
  * 本部コード → 部コード → 課コード → 役職コード → 氏名（ふりがな） の順
  * ※部・課に所属しない社員（本部直属など）は先頭に表示
  */
-function sortEmployeesByCode<T extends {
-  department?: { code: string | null } | null;
-  section?: { code: string | null } | null;
-  course?: { code: string | null } | null;
-  positionCode?: string | null;
-  nameKana?: string | null;
-  name: string;
-}>(employees: T[]): T[] {
+function sortEmployeesByCode<
+  T extends {
+    department?: { code: string | null } | null;
+    section?: { code: string | null } | null;
+    course?: { code: string | null } | null;
+    positionCode?: string | null;
+    nameKana?: string | null;
+    name: string;
+  },
+>(employees: T[]): T[] {
   return employees.sort((a, b) => {
     // 1. 本部コード
     const deptCodeA = a.department?.code || "zz";
@@ -25,7 +27,7 @@ function sortEmployeesByCode<T extends {
     // 2. 部コード（null=本部直属は先頭に）
     const hasSectionA = !!a.section?.code;
     const hasSectionB = !!b.section?.code;
-    if (!hasSectionA && hasSectionB) return -1;  // 本部直属を先に
+    if (!hasSectionA && hasSectionB) return -1; // 本部直属を先に
     if (hasSectionA && !hasSectionB) return 1;
     const secCodeA = a.section?.code || "";
     const secCodeB = b.section?.code || "";
@@ -35,7 +37,7 @@ function sortEmployeesByCode<T extends {
     // 3. 課コード（null=部直属は先頭に）
     const hasCourseA = !!a.course?.code;
     const hasCourseB = !!b.course?.code;
-    if (!hasCourseA && hasCourseB) return -1;  // 部直属を先に
+    if (!hasCourseA && hasCourseB) return -1; // 部直属を先に
     if (hasCourseA && !hasCourseB) return 1;
     const courseCodeA = a.course?.code || "";
     const courseCodeB = b.course?.code || "";
@@ -69,9 +71,18 @@ function sortEmployeesByCode<T extends {
  */
 function getDefaultManager(
   employeeId: string,
-  courseManager: { id: string; name: string; position: string | null } | null | undefined,
-  sectionManager: { id: string; name: string; position: string | null } | null | undefined,
-  departmentManager: { id: string; name: string; position: string | null } | null | undefined
+  courseManager:
+    | { id: string; name: string; position: string | null }
+    | null
+    | undefined,
+  sectionManager:
+    | { id: string; name: string; position: string | null }
+    | null
+    | undefined,
+  departmentManager:
+    | { id: string; name: string; position: string | null }
+    | null
+    | undefined,
 ): { id: string; name: string; position: string | null } | null {
   // 課長（課の責任者）の場合 → 部長が評価者
   if (courseManager && courseManager.id === employeeId) {
@@ -159,7 +170,7 @@ export async function GET() {
           emp.id,
           emp.course?.manager,
           emp.section?.manager,
-          emp.department?.manager
+          emp.department?.manager,
         );
 
         return {
@@ -241,7 +252,7 @@ export async function GET() {
           emp.id,
           emp.course?.manager,
           emp.section?.manager,
-          emp.department?.manager
+          emp.department?.manager,
         );
 
         return {
@@ -313,7 +324,7 @@ export async function GET() {
         emp.id,
         emp.course?.manager,
         emp.section?.manager,
-        emp.department?.manager
+        emp.department?.manager,
       );
 
       return {
@@ -339,7 +350,7 @@ export async function GET() {
     console.error("Failed to fetch subordinates:", error);
     return NextResponse.json(
       { error: "Failed to fetch subordinates" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

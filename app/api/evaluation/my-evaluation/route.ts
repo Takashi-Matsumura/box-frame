@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
 import { getWeightsForPositionGrade } from "@/lib/addon-modules/evaluation";
+import { prisma } from "@/lib/prisma";
 
 /**
  * GET /api/evaluation/my-evaluation
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     if (!employee) {
       return NextResponse.json(
         { error: "Employee not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       if (!evaluation) {
         return NextResponse.json(
           { error: "Evaluation not found" },
-          { status: 404 }
+          { status: 404 },
         );
       }
 
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
       const weights = await getWeightsForPositionGrade(
         evaluation.periodId,
         employee.positionCode,
-        evaluation.gradeCode
+        evaluation.gradeCode,
       );
 
       // 結果評価データ（Criteria1）を取得（課→部→本部の優先順）
@@ -183,7 +183,7 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching my evaluations:", error);
     return NextResponse.json(
       { error: "Failed to fetch evaluations" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

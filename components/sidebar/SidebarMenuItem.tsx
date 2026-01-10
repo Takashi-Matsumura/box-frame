@@ -1,8 +1,8 @@
 "use client";
 
+import { ChevronRight, Key } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, Key } from "lucide-react";
 import { useState } from "react";
 import {
   Collapsible,
@@ -59,7 +59,9 @@ export function SidebarMenuItemComponent({
 
     return (
       <div className="relative flex items-center justify-center size-5 [&>svg]:size-4">
-        <div style={hexColor ? { color: hexColor } : undefined}>{menu.icon}</div>
+        <div style={hexColor ? { color: hexColor } : undefined}>
+          {menu.icon}
+        </div>
         {isAddonModule && hexColor && (
           <div
             className="absolute -bottom-1 left-0.5 right-0.5 h-0.5 rounded-full"

@@ -100,8 +100,10 @@ export const myEvaluationTranslations = {
     loading: "Loading...",
     noData: "No data",
     notYetEvaluated: "Not yet evaluated",
-    pendingEvaluation: "Your evaluation is pending. Please wait for your evaluator to complete the assessment.",
-    evaluationCompleted: "Your evaluation has been completed. Review the results below.",
+    pendingEvaluation:
+      "Your evaluation is pending. Please wait for your evaluator to complete the assessment.",
+    evaluationCompleted:
+      "Your evaluation has been completed. Review the results below.",
   },
   ja: {
     title: "マイ評価",
@@ -204,7 +206,8 @@ export const myEvaluationTranslations = {
     loading: "読み込み中...",
     noData: "データなし",
     notYetEvaluated: "まだ評価されていません",
-    pendingEvaluation: "あなたの評価は未着手です。評価者が評価を完了するまでお待ちください。",
+    pendingEvaluation:
+      "あなたの評価は未着手です。評価者が評価を完了するまでお待ちください。",
     evaluationCompleted: "評価が完了しました。以下の結果をご確認ください。",
   },
 } as const;

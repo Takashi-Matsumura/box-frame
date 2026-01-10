@@ -45,9 +45,12 @@ export async function POST(request: Request, { params }: RouteParams) {
     console.error("Error generating evaluations:", error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Failed to generate evaluations",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to generate evaluations",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     if (!organizationId) {
       return NextResponse.json(
         { error: "Organization ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     if (page < 1 || pageSize < 1 || pageSize > 200) {
       return NextResponse.json(
         { error: "Invalid parameters" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     ) {
       return NextResponse.json(
         { error: "Invalid sort parameters" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -166,7 +166,7 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching employees:", error);
     return NextResponse.json(
       { error: "Failed to fetch employees" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

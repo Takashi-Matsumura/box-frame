@@ -29,10 +29,13 @@ export async function POST(request: Request) {
     // Validate message format
     for (const msg of messages) {
       if (!msg.role || !msg.content) {
-        return new Response(JSON.stringify({ error: "Invalid message format" }), {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: "Invalid message format" }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
       }
     }
 
@@ -46,7 +49,8 @@ export async function POST(request: Request) {
     }
 
     // デフォルトのシステムプロンプト
-    const defaultSystemPrompt = "You are a helpful AI assistant. Be concise and helpful in your responses. Respond in the same language as the user's message.";
+    const defaultSystemPrompt =
+      "You are a helpful AI assistant. Be concise and helpful in your responses. Respond in the same language as the user's message.";
     const finalSystemPrompt = systemPrompt || defaultSystemPrompt;
 
     // システムプロンプトをメッセージの先頭に追加
@@ -61,8 +65,13 @@ export async function POST(request: Request) {
         try {
           await streamChat(config, messagesWithSystem, controller);
         } catch (error) {
-          const message = error instanceof Error ? error.message : "Streaming failed";
-          controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ error: message })}\n\n`));
+          const message =
+            error instanceof Error ? error.message : "Streaming failed";
+          controller.enqueue(
+            new TextEncoder().encode(
+              `data: ${JSON.stringify({ error: message })}\n\n`,
+            ),
+          );
         } finally {
           controller.close();
         }
@@ -78,7 +87,8 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Error in AI chat stream:", error);
-    const message = error instanceof Error ? error.message : "Failed to stream AI response";
+    const message =
+      error instanceof Error ? error.message : "Failed to stream AI response";
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
@@ -89,16 +99,20 @@ export async function POST(request: Request) {
 async function streamChat(
   config: Awaited<ReturnType<typeof AIService.getConfig>>,
   messages: ChatMessage[],
-  controller: ReadableStreamDefaultController
+  controller: ReadableStreamDefaultController,
 ) {
   const encoder = new TextEncoder();
 
   const sendChunk = (content: string) => {
-    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`));
+    controller.enqueue(
+      encoder.encode(`data: ${JSON.stringify({ content })}\n\n`),
+    );
   };
 
   const sendDone = () => {
-    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
+    controller.enqueue(
+      encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`),
+    );
   };
 
   if (config.provider === "local") {
@@ -119,7 +133,7 @@ async function streamOpenAI(
   config: Awaited<ReturnType<typeof AIService.getConfig>>,
   messages: ChatMessage[],
   sendChunk: (content: string) => void,
-  sendDone: () => void
+  sendDone: () => void,
 ) {
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -148,7 +162,7 @@ async function streamAnthropic(
   config: Awaited<ReturnType<typeof AIService.getConfig>>,
   messages: ChatMessage[],
   sendChunk: (content: string) => void,
-  sendDone: () => void
+  sendDone: () => void,
 ) {
   const systemMessage = messages.find((m) => m.role === "system");
   const chatMessages = messages
@@ -186,7 +200,7 @@ async function streamOpenAICompatible(
   config: Awaited<ReturnType<typeof AIService.getConfig>>,
   messages: ChatMessage[],
   sendChunk: (content: string) => void,
-  sendDone: () => void
+  sendDone: () => void,
 ) {
   const response = await fetch(config.localEndpoint, {
     method: "POST",
@@ -214,7 +228,7 @@ async function streamOllama(
   config: Awaited<ReturnType<typeof AIService.getConfig>>,
   messages: ChatMessage[],
   sendChunk: (content: string) => void,
-  sendDone: () => void
+  sendDone: () => void,
 ) {
   const response = await fetch(config.localEndpoint, {
     method: "POST",
@@ -272,7 +286,7 @@ async function processSSEStream(
   response: Response,
   sendChunk: (content: string) => void,
   sendDone: () => void,
-  format: "openai" | "anthropic"
+  format: "openai" | "anthropic",
 ) {
   const reader = response.body?.getReader();
   if (!reader) throw new Error("No response body");

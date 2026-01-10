@@ -1,6 +1,6 @@
 import type { Role } from "@prisma/client";
-import type { AppMenu, AppModule, AppTab, MenuGroup } from "@/types/module";
 import type { MenuGroupId } from "@/types/common";
+import type { AppMenu, AppModule, AppTab, MenuGroup } from "@/types/module";
 
 /**
  * アクセスキー権限の粒度
@@ -46,10 +46,7 @@ export function getAccessibleMenuGroups(
 /**
  * メニューグループがユーザのロールでアクセス可能かチェック
  */
-export function canAccessMenuGroup(
-  groupId: string,
-  userRole: Role,
-): boolean {
+export function canAccessMenuGroup(groupId: string, userRole: Role): boolean {
   const accessibleGroupIds = ROLE_HIERARCHY[userRole] || [];
   return accessibleGroupIds.includes(groupId as MenuGroupId);
 }
@@ -333,9 +330,7 @@ export function canAccessTab(
 
   // アクセスキーによるアクセス権チェック
   for (const permission of userAccessKeyPermissions) {
-    if (
-      checkPermissionForTab(permission, moduleId, menu.path, tab.id)
-    ) {
+    if (checkPermissionForTab(permission, moduleId, menu.path, tab.id)) {
       return true;
     }
   }

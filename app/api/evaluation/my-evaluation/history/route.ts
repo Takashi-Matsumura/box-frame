@@ -25,7 +25,7 @@ export async function GET() {
     if (!employee) {
       return NextResponse.json(
         { error: "Employee not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -76,7 +76,7 @@ export async function GET() {
     console.error("Error fetching evaluation history:", error);
     return NextResponse.json(
       { error: "Failed to fetch evaluation history" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

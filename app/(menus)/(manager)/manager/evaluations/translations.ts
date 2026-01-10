@@ -93,7 +93,8 @@ export const evaluationsTranslations = {
     // Actions
     save: "Save Draft",
     complete: "Complete Evaluation",
-    confirmComplete: "Are you sure you want to complete this evaluation? This action cannot be undone.",
+    confirmComplete:
+      "Are you sure you want to complete this evaluation? This action cannot be undone.",
     back: "Back to List",
     saving: "Saving...",
     completing: "Completing...",
@@ -174,7 +175,8 @@ export const evaluationsTranslations = {
       categoryPlaceholder: "Please select a category",
       achievementLevel: "Achievement Level",
       t4: "T4 - Exceptional",
-      t4desc: "Far exceeded expectations with significant organizational impact",
+      t4desc:
+        "Far exceeded expectations with significant organizational impact",
       t3: "T3 - Exceeded",
       t3desc: "Exceeded targets and created high added value",
       t2: "T2 - As Expected",
@@ -369,7 +371,8 @@ export const evaluationsTranslations = {
       categoryPlaceholder: "カテゴリを選択してください",
       achievementLevel: "達成度",
       t4: "T4 - 卓越した水準",
-      t4desc: "期待を大幅に上回る成果を上げ、組織の優位性に顕著なインパクトを与えた",
+      t4desc:
+        "期待を大幅に上回る成果を上げ、組織の優位性に顕著なインパクトを与えた",
       t3: "T3 - 期待を超過",
       t3desc: "目標を上回る成果を達成し、高い付加価値を創出した",
       t2: "T2 - 期待通り",

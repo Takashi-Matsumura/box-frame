@@ -1,8 +1,8 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import type { Role } from "@prisma/client";
 import type { NextAuthConfig } from "next-auth";
-import Google from "next-auth/providers/google";
 import GitHub from "next-auth/providers/github";
+import Google from "next-auth/providers/google";
 import { prisma } from "@/lib/prisma";
 
 // Lightweight auth config for middleware (Edge Runtime compatible)
@@ -34,7 +34,10 @@ export const authConfig = {
   callbacks: {
     async signIn({ user, account }) {
       // OAuth プロバイダー（Google/GitHub）でのサインイン時
-      if ((account?.provider === "google" || account?.provider === "github") && user.email) {
+      if (
+        (account?.provider === "google" || account?.provider === "github") &&
+        user.email
+      ) {
         // 既存のユーザを検索
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email },
@@ -80,39 +83,45 @@ export const authConfig = {
           });
 
           // プロバイダー名の取得
-          const providerName = account.provider === "google" ? "Google" : "GitHub";
-          const providerNameJa = account.provider === "google" ? "Google" : "GitHub";
+          const providerName =
+            account.provider === "google" ? "Google" : "GitHub";
+          const providerNameJa =
+            account.provider === "google" ? "Google" : "GitHub";
 
           // ログイン通知を発行
-          await prisma.notification.create({
-            data: {
-              userId: existingUser.id,
-              type: "SECURITY",
-              priority: "NORMAL",
-              title: "New login detected",
-              titleJa: "新しいログインを検出しました",
-              message: `You have successfully logged in via ${providerName}.`,
-              messageJa: `${providerNameJa}でログインしました。`,
-              source: "AUTH",
-            },
-          }).catch((err) => {
-            console.error("[Auth] Failed to create login notification:", err);
-          });
+          await prisma.notification
+            .create({
+              data: {
+                userId: existingUser.id,
+                type: "SECURITY",
+                priority: "NORMAL",
+                title: "New login detected",
+                titleJa: "新しいログインを検出しました",
+                message: `You have successfully logged in via ${providerName}.`,
+                messageJa: `${providerNameJa}でログインしました。`,
+                source: "AUTH",
+              },
+            })
+            .catch((err) => {
+              console.error("[Auth] Failed to create login notification:", err);
+            });
 
           // ログイン成功を監査ログに記録
-          await prisma.auditLog.create({
-            data: {
-              action: "LOGIN_SUCCESS",
-              category: "AUTH",
-              userId: existingUser.id,
-              details: JSON.stringify({
-                provider: account.provider,
-                email: user.email,
-              }),
-            },
-          }).catch((err) => {
-            console.error("[Auth] Failed to create audit log:", err);
-          });
+          await prisma.auditLog
+            .create({
+              data: {
+                action: "LOGIN_SUCCESS",
+                category: "AUTH",
+                userId: existingUser.id,
+                details: JSON.stringify({
+                  provider: account.provider,
+                  email: user.email,
+                }),
+              },
+            })
+            .catch((err) => {
+              console.error("[Auth] Failed to create audit log:", err);
+            });
         }
       }
 

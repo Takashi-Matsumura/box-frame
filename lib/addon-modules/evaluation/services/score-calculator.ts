@@ -8,14 +8,14 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import type { ScoreRange, ScoreResult, WeightConfig } from "../types";
 import {
-  LEVEL_TO_SCORE,
   DEFAULT_SCORE_RANGE,
-  GRADE_THRESHOLDS,
   FIXED_GRADE_THRESHOLDS,
+  GRADE_THRESHOLDS,
+  LEVEL_TO_SCORE,
   MAX_GROWTH_SCORE,
 } from "../constants";
+import type { ScoreRange, ScoreResult, WeightConfig } from "../types";
 import { getWeightsForPositionGrade } from "./weight-service";
 
 /**
@@ -105,7 +105,10 @@ function determineGrade(score: number): string {
  *
  * スコア範囲内での相対位置に基づいてグレードを判定
  */
-export function determineGradeWithRange(score: number, scoreRange: ScoreRange): string {
+export function determineGradeWithRange(
+  score: number,
+  scoreRange: ScoreRange,
+): string {
   const { min, max } = scoreRange;
   const range = max - min;
 
@@ -133,7 +136,7 @@ export function determineGradeWithRange(score: number, scoreRange: ScoreRange): 
  */
 export function calculateResultsScore(
   achievementRate: number,
-  scoreRange?: ScoreRange
+  scoreRange?: ScoreRange,
 ): number {
   const min = scoreRange?.min ?? DEFAULT_SCORE_RANGE.min;
   const max = scoreRange?.max ?? DEFAULT_SCORE_RANGE.max;
@@ -166,7 +169,7 @@ export function calculateResultsScore(
  * 基準1: 結果評価スコアを非同期で計算（DB からスコア範囲を取得）
  */
 export async function calculateResultsScoreAsync(
-  achievementRate: number
+  achievementRate: number,
 ): Promise<number> {
   const scoreRange = await getEvaluationScoreRange();
   return calculateResultsScore(achievementRate, scoreRange);
@@ -177,7 +180,7 @@ export async function calculateResultsScoreAsync(
  * 各項目(T1-T4)の平均スコア
  */
 export function calculateProcessScore(
-  processScores: Record<string, number>
+  processScores: Record<string, number>,
 ): number {
   const values = Object.values(processScores);
   if (values.length === 0) return 0;
@@ -193,7 +196,7 @@ export function calculateProcessScore(
  */
 export async function calculateGrowthScore(
   growthCategoryId: string,
-  growthLevel: number
+  growthLevel: number,
 ): Promise<number> {
   const category = await prisma.growthCategory.findUnique({
     where: { id: growthCategoryId },
@@ -203,7 +206,10 @@ export async function calculateGrowthScore(
   const coefficient = category?.coefficient || 1.0;
 
   // 係数を適用し、上限を超えない
-  return Math.min(Math.round(levelScore * coefficient * 100) / 100, MAX_GROWTH_SCORE);
+  return Math.min(
+    Math.round(levelScore * coefficient * 100) / 100,
+    MAX_GROWTH_SCORE,
+  );
 }
 
 /**
@@ -211,10 +217,13 @@ export async function calculateGrowthScore(
  */
 export function calculateGrowthScoreSync(
   growthLevel: number,
-  coefficient: number
+  coefficient: number,
 ): number {
   const levelScore = LEVEL_TO_SCORE[growthLevel] || 2.5;
-  return Math.min(Math.round(levelScore * coefficient * 100) / 100, MAX_GROWTH_SCORE);
+  return Math.min(
+    Math.round(levelScore * coefficient * 100) / 100,
+    MAX_GROWTH_SCORE,
+  );
 }
 
 /**
@@ -224,15 +233,19 @@ export function calculateFinalScore(
   score1: number,
   score2: number,
   score3: number,
-  weights: WeightConfig
+  weights: WeightConfig,
 ): ScoreResult {
   // 加重スコアを計算
-  const weightedScore1 = Math.round((score1 * weights.resultsWeight / 100) * 100) / 100;
-  const weightedScore2 = Math.round((score2 * weights.processWeight / 100) * 100) / 100;
-  const weightedScore3 = Math.round((score3 * weights.growthWeight / 100) * 100) / 100;
+  const weightedScore1 =
+    Math.round(((score1 * weights.resultsWeight) / 100) * 100) / 100;
+  const weightedScore2 =
+    Math.round(((score2 * weights.processWeight) / 100) * 100) / 100;
+  const weightedScore3 =
+    Math.round(((score3 * weights.growthWeight) / 100) * 100) / 100;
 
   // 最終スコア
-  const finalScore = Math.round((weightedScore1 + weightedScore2 + weightedScore3) * 100) / 100;
+  const finalScore =
+    Math.round((weightedScore1 + weightedScore2 + weightedScore3) * 100) / 100;
 
   // グレード判定
   const finalGrade = determineGrade(finalScore);
@@ -253,7 +266,7 @@ export function calculateFinalScore(
  * 評価データを更新してスコアを再計算
  */
 export async function recalculateEvaluationScore(
-  evaluationId: string
+  evaluationId: string,
 ): Promise<ScoreResult | null> {
   const evaluation = await prisma.evaluation.findUnique({
     where: { id: evaluationId },
@@ -266,7 +279,7 @@ export async function recalculateEvaluationScore(
   const weights = await getWeightsForPositionGrade(
     evaluation.periodId,
     evaluation.employee.positionCode,
-    evaluation.gradeCode || null
+    evaluation.gradeCode || null,
   );
 
   // スコアを取得（null の場合は0として扱う）
@@ -299,7 +312,7 @@ export async function recalculateEvaluationScore(
 export async function syncResultsScoreFromCriteria1(
   periodId: string,
   organizationLevel: "DEPARTMENT" | "SECTION" | "COURSE",
-  organizationId: string
+  organizationId: string,
 ): Promise<number> {
   // Criteria1Resultを取得
   const result = await prisma.criteria1Result.findUnique({
@@ -331,11 +344,20 @@ export async function syncResultsScoreFromCriteria1(
   for (const evaluation of evaluations) {
     let shouldUpdate = false;
 
-    if (organizationLevel === "DEPARTMENT" && evaluation.employee.departmentId === organizationId) {
+    if (
+      organizationLevel === "DEPARTMENT" &&
+      evaluation.employee.departmentId === organizationId
+    ) {
       shouldUpdate = true;
-    } else if (organizationLevel === "SECTION" && evaluation.employee.sectionId === organizationId) {
+    } else if (
+      organizationLevel === "SECTION" &&
+      evaluation.employee.sectionId === organizationId
+    ) {
       shouldUpdate = true;
-    } else if (organizationLevel === "COURSE" && evaluation.employee.courseId === organizationId) {
+    } else if (
+      organizationLevel === "COURSE" &&
+      evaluation.employee.courseId === organizationId
+    ) {
       shouldUpdate = true;
     }
 
@@ -355,4 +377,5 @@ export async function syncResultsScoreFromCriteria1(
 }
 
 // 後方互換性のためのエイリアス
-export const syncResultsScoreFromOrganizationGoal = syncResultsScoreFromCriteria1;
+export const syncResultsScoreFromOrganizationGoal =
+  syncResultsScoreFromCriteria1;

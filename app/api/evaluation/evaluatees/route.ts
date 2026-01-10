@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
 import { getEvaluatees } from "@/lib/addon-modules/evaluation";
+import { prisma } from "@/lib/prisma";
 
 /**
  * GET /api/evaluation/evaluatees
@@ -21,12 +21,17 @@ export async function GET(request: Request) {
     if (!periodId) {
       return NextResponse.json(
         { error: "periodId is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // デバッグログ
-    console.log("[evaluatees] Session user:", session.user?.email, "Role:", session.user?.role);
+    console.log(
+      "[evaluatees] Session user:",
+      session.user?.email,
+      "Role:",
+      session.user?.role,
+    );
 
     // 対象外社員のIDを取得（periodIdが一致するか、全期間対象外の場合）
     const exclusions = await prisma.evaluationExclusion.findMany({
@@ -82,7 +87,8 @@ export async function GET(request: Request) {
         const courseCodeB = empB.course?.code || "";
         if (!courseCodeA && courseCodeB) return -1;
         if (courseCodeA && !courseCodeB) return 1;
-        if (courseCodeA !== courseCodeB) return courseCodeA.localeCompare(courseCodeB);
+        if (courseCodeA !== courseCodeB)
+          return courseCodeA.localeCompare(courseCodeB);
 
         // 4. 役職コード（000=一般は最後、それ以外は昇順）
         const posCodeA = empA.positionCode || "999";
@@ -113,7 +119,7 @@ export async function GET(request: Request) {
     if (!evaluatorEmployee) {
       return NextResponse.json(
         { error: "Evaluator employee not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -122,7 +128,7 @@ export async function GET(request: Request) {
 
     // 対象外社員を除外したIDリスト
     const filteredEvaluateeIds = evaluateeIds.filter(
-      (id) => !excludedEmployeeIds.includes(id)
+      (id) => !excludedEmployeeIds.includes(id),
     );
 
     // 評価データを取得
@@ -164,7 +170,7 @@ export async function GET(request: Request) {
     console.error("Error fetching evaluatees:", error);
     return NextResponse.json(
       { error: "Failed to fetch evaluatees" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

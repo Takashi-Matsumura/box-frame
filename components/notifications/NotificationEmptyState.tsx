@@ -17,9 +17,7 @@ export function NotificationEmptyState({
       <div className="flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-4">
         <Bell className="h-6 w-6 text-muted-foreground" />
       </div>
-      <p className="text-sm font-medium text-foreground">
-        {t.noNotifications}
-      </p>
+      <p className="text-sm font-medium text-foreground">{t.noNotifications}</p>
       <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">
         {t.noNotificationsDescription}
       </p>

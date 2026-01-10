@@ -4,7 +4,7 @@
  * 評価システムで使用する共通の型定義を集約
  */
 
-import type { Employee, Course, Section, Department } from "@prisma/client";
+import type { Course, Department, Employee, Section } from "@prisma/client";
 
 // ============================================
 // 重み設定の型
@@ -146,7 +146,11 @@ export interface InterviewDate {
 /**
  * 評価ステータス
  */
-export type EvaluationStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CONFIRMED";
+export type EvaluationStatus =
+  | "PENDING"
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "CONFIRMED";
 
 /**
  * 評価期間ステータス

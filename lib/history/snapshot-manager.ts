@@ -14,7 +14,7 @@ export class SnapshotManager {
    * 組織の現在のスナップショットを作成
    */
   static async createOrganizationSnapshot(
-    organizationId: string
+    organizationId: string,
   ): Promise<OrganizationSnapshot> {
     const organization = await prisma.organization.findUnique({
       where: { id: organizationId },
@@ -68,7 +68,7 @@ export class SnapshotManager {
    */
   static compareSnapshots(
     oldSnapshot: OrganizationSnapshot,
-    newSnapshot: OrganizationSnapshot
+    newSnapshot: OrganizationSnapshot,
   ): {
     addedDepartments: string[];
     removedDepartments: string[];
@@ -82,28 +82,30 @@ export class SnapshotManager {
     const newDeptIds = new Set(newSnapshot.departments.map((d) => d.id));
 
     const oldSectionIds = new Set(
-      oldSnapshot.departments.flatMap((d) => d.sections.map((s) => s.id))
+      oldSnapshot.departments.flatMap((d) => d.sections.map((s) => s.id)),
     );
     const newSectionIds = new Set(
-      newSnapshot.departments.flatMap((d) => d.sections.map((s) => s.id))
+      newSnapshot.departments.flatMap((d) => d.sections.map((s) => s.id)),
     );
 
     const oldCourseIds = new Set(
       oldSnapshot.departments.flatMap((d) =>
-        d.sections.flatMap((s) => s.courses.map((c) => c.id))
-      )
+        d.sections.flatMap((s) => s.courses.map((c) => c.id)),
+      ),
     );
     const newCourseIds = new Set(
       newSnapshot.departments.flatMap((d) =>
-        d.sections.flatMap((s) => s.courses.map((c) => c.id))
-      )
+        d.sections.flatMap((s) => s.courses.map((c) => c.id)),
+      ),
     );
 
     return {
       addedDepartments: [...newDeptIds].filter((id) => !oldDeptIds.has(id)),
       removedDepartments: [...oldDeptIds].filter((id) => !newDeptIds.has(id)),
       addedSections: [...newSectionIds].filter((id) => !oldSectionIds.has(id)),
-      removedSections: [...oldSectionIds].filter((id) => !newSectionIds.has(id)),
+      removedSections: [...oldSectionIds].filter(
+        (id) => !newSectionIds.has(id),
+      ),
       addedCourses: [...newCourseIds].filter((id) => !oldCourseIds.has(id)),
       removedCourses: [...oldCourseIds].filter((id) => !newCourseIds.has(id)),
       employeeCountDiff: newSnapshot.employeeCount - oldSnapshot.employeeCount,
@@ -201,10 +203,7 @@ export class SnapshotManager {
   /**
    * 組織の履歴をタイムライン形式で取得
    */
-  static async getOrganizationTimeline(
-    organizationId: string,
-    limit = 10
-  ) {
+  static async getOrganizationTimeline(organizationId: string, limit = 10) {
     const histories = await prisma.organizationHistory.findMany({
       where: { organizationId },
       orderBy: { validFrom: "desc" },

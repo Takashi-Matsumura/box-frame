@@ -61,23 +61,33 @@ export function ProfileClient({
           </h3>
           <div className="space-y-3">
             <div className="flex justify-between py-3 border-b">
-              <span className="text-muted-foreground font-medium">{t.userId}</span>
+              <span className="text-muted-foreground font-medium">
+                {t.userId}
+              </span>
               <span className="text-foreground">{user.id}</span>
             </div>
             <div className="flex justify-between py-3 border-b">
-              <span className="text-muted-foreground font-medium">{t.name}</span>
+              <span className="text-muted-foreground font-medium">
+                {t.name}
+              </span>
               <span className="text-foreground">{user.name}</span>
             </div>
             <div className="flex justify-between py-3 border-b">
-              <span className="text-muted-foreground font-medium">{t.email}</span>
+              <span className="text-muted-foreground font-medium">
+                {t.email}
+              </span>
               <span className="text-foreground">{user.email}</span>
             </div>
             <div className="flex justify-between py-3 border-b">
-              <span className="text-muted-foreground font-medium">{t.role}</span>
+              <span className="text-muted-foreground font-medium">
+                {t.role}
+              </span>
               <RoleBadge role={user.role} />
             </div>
             <div className="flex justify-between py-3 border-b">
-              <span className="text-muted-foreground font-medium">{t.lastSignIn}</span>
+              <span className="text-muted-foreground font-medium">
+                {t.lastSignIn}
+              </span>
               <span className="text-foreground">
                 {user.lastSignInAt
                   ? new Date(user.lastSignInAt).toLocaleString(

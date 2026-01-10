@@ -4,38 +4,35 @@
  * 評価システムの型定義、定数、サービスを提供
  */
 
-// モジュール定義
-export { evaluationModule } from "./module";
-
-// 型定義
-export type {
-  WeightConfig,
-  ScoreRange,
-  ScoreResult,
-  EmployeeWithOrg,
-  EvaluatorInfo,
-  BatchGenerationResult,
-  EvaluationProgress,
-  ProcessGoal,
-  GrowthGoal,
-  InterviewDate,
-  EvaluationStatus,
-  PeriodStatus,
-  OrganizationLevel,
-} from "./types";
-
 // 定数
 export {
-  LEVEL_TO_SCORE,
-  DEFAULT_WEIGHTS,
-  DEFAULT_SCORE_RANGE,
-  GRADE_THRESHOLDS,
-  FIXED_GRADE_THRESHOLDS,
   ACHIEVEMENT_RATE_THRESHOLDS,
-  DEFAULT_PROCESS_CATEGORIES,
   DEFAULT_GROWTH_CATEGORIES,
+  DEFAULT_PROCESS_CATEGORIES,
+  DEFAULT_SCORE_RANGE,
+  DEFAULT_WEIGHTS,
+  FIXED_GRADE_THRESHOLDS,
+  GRADE_THRESHOLDS,
+  LEVEL_TO_SCORE,
   MAX_GROWTH_SCORE,
 } from "./constants";
-
+// モジュール定義
+export { evaluationModule } from "./module";
 // サービス
 export * from "./services";
+// 型定義
+export type {
+  BatchGenerationResult,
+  EmployeeWithOrg,
+  EvaluationProgress,
+  EvaluationStatus,
+  EvaluatorInfo,
+  GrowthGoal,
+  InterviewDate,
+  OrganizationLevel,
+  PeriodStatus,
+  ProcessGoal,
+  ScoreRange,
+  ScoreResult,
+  WeightConfig,
+} from "./types";

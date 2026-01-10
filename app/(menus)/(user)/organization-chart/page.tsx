@@ -1,5 +1,5 @@
-import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import { getLanguage } from "@/lib/i18n/get-language";
 import { OrganizationChartClient } from "./OrganizationChartClient";
 import type { Language } from "./translations";

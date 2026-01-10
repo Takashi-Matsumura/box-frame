@@ -89,11 +89,13 @@ export const dataManagementTranslations = {
 
     // Options
     markMissingAsRetired: "Mark missing employees as retired",
-    markMissingAsRetiredDesc: "Employees not in the import file will be marked as retired",
+    markMissingAsRetiredDesc:
+      "Employees not in the import file will be marked as retired",
 
     // Organize Tab
     organizeTitle: "Organization Setup",
-    organizeDescription: "Assign managers to departments, sections, and courses",
+    organizeDescription:
+      "Assign managers to departments, sections, and courses",
     manager: "Manager",
     noManager: "No manager assigned",
     assignManager: "Assign Manager",
@@ -107,7 +109,8 @@ export const dataManagementTranslations = {
 
     // Publish Settings
     publishSettings: "Publish Settings",
-    publishSettingsDescription: "Set when this organization data will be published",
+    publishSettingsDescription:
+      "Set when this organization data will be published",
     organizationStatus: "Status",
     statusDraft: "Draft",
     statusScheduled: "Scheduled",
@@ -120,8 +123,10 @@ export const dataManagementTranslations = {
     schedulePublish: "Schedule Publish",
     cancelSchedule: "Cancel Schedule",
     confirmPublish: "Are you sure you want to publish this organization data?",
-    confirmPublishNow: "This will make the organization data visible immediately.",
-    confirmSchedule: "The organization data will be published on the specified date.",
+    confirmPublishNow:
+      "This will make the organization data visible immediately.",
+    confirmSchedule:
+      "The organization data will be published on the specified date.",
     publishSuccess: "Organization data published successfully",
     scheduleSuccess: "Publish scheduled successfully",
     unpublished: "Not published",
@@ -130,8 +135,10 @@ export const dataManagementTranslations = {
     // Import Cancel
     cancelImport: "Cancel Import",
     cancelImportTitle: "Cancel Import",
-    cancelImportDescription: "This will rollback the import and restore the previous data state.",
-    cancelImportConfirm: "Are you sure you want to cancel this import? This action cannot be undone.",
+    cancelImportDescription:
+      "This will rollback the import and restore the previous data state.",
+    cancelImportConfirm:
+      "Are you sure you want to cancel this import? This action cannot be undone.",
     cancelImportSuccess: "Import cancelled successfully",
     cancelImportError: "Failed to cancel import",
     noImportToCancel: "No import to cancel",
@@ -148,7 +155,8 @@ export const dataManagementTranslations = {
 
     // Import Tab
     importTitle: "組織データインポート",
-    importDescription: "CSVまたはExcelファイルをアップロードして社員データをインポート",
+    importDescription:
+      "CSVまたはExcelファイルをアップロードして社員データをインポート",
     selectFile: "ファイルを選択",
     dropFileHere: "ここにファイルをドロップまたはクリックして選択",
     supportedFormats: "対応形式: CSV, XLSX",
@@ -229,7 +237,8 @@ export const dataManagementTranslations = {
 
     // Options
     markMissingAsRetired: "インポートデータにない社員を退職扱いにする",
-    markMissingAsRetiredDesc: "インポートファイルに含まれない社員は退職として処理されます",
+    markMissingAsRetiredDesc:
+      "インポートファイルに含まれない社員は退職として処理されます",
 
     // Organize Tab
     organizeTitle: "組織整備",
@@ -270,8 +279,10 @@ export const dataManagementTranslations = {
     // Import Cancel
     cancelImport: "インポート取消",
     cancelImportTitle: "インポート取消",
-    cancelImportDescription: "インポートをロールバックし、前回の状態に戻します。",
-    cancelImportConfirm: "このインポートを取り消しますか？この操作は元に戻せません。",
+    cancelImportDescription:
+      "インポートをロールバックし、前回の状態に戻します。",
+    cancelImportConfirm:
+      "このインポートを取り消しますか？この操作は元に戻せません。",
     cancelImportSuccess: "インポートを取り消しました",
     cancelImportError: "インポートの取り消しに失敗しました",
     noImportToCancel: "取り消すインポートがありません",

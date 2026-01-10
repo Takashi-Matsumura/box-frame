@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Collapsible,
   CollapsibleContent,
@@ -12,15 +15,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { EXECUTIVES_DEPARTMENT_NAME } from "@/lib/importers/organization/parser";
 import { cn } from "@/lib/utils";
 import type { DataManagementTranslation } from "../translations";
-import { EXECUTIVES_DEPARTMENT_NAME } from "@/lib/importers/organization/parser";
 
 // 型定義
 interface Manager {
@@ -114,10 +114,13 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
   const [updating, setUpdating] = useState(false);
 
   // Publish settings
-  const [publishSettings, setPublishSettings] = useState<PublishSettings | null>(null);
+  const [publishSettings, setPublishSettings] =
+    useState<PublishSettings | null>(null);
   const [showPublishDialog, setShowPublishDialog] = useState(false);
   const [publishDate, setPublishDate] = useState("");
-  const [publishAction, setPublishAction] = useState<"publish" | "schedule">("publish");
+  const [publishAction, setPublishAction] = useState<"publish" | "schedule">(
+    "publish",
+  );
   const [updatingPublish, setUpdatingPublish] = useState(false);
 
   // Cancel import
@@ -151,7 +154,9 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
   const fetchPublishSettings = useCallback(async () => {
     if (!organizationId) return;
     try {
-      const response = await fetch(`/api/admin/organization/publish?organizationId=${organizationId}`);
+      const response = await fetch(
+        `/api/admin/organization/publish?organizationId=${organizationId}`,
+      );
       if (response.ok) {
         const data = await response.json();
         setPublishSettings(data);
@@ -186,7 +191,11 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
 
     try {
       setUpdatingPublish(true);
-      const body: { organizationId: string; action: string; publishAt?: string } = {
+      const body: {
+        organizationId: string;
+        action: string;
+        publishAt?: string;
+      } = {
         organizationId,
         action: publishAction,
       };
@@ -314,27 +323,37 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
   };
 
   // Fetch manager candidates for manager selection
-  const fetchEmployees = useCallback(async (unitType: UnitType, unitId: string) => {
-    try {
-      setLoadingEmployees(true);
-      const params = new URLSearchParams();
-      params.set("type", unitType);
-      params.set("id", unitId);
+  const fetchEmployees = useCallback(
+    async (unitType: UnitType, unitId: string) => {
+      try {
+        setLoadingEmployees(true);
+        const params = new URLSearchParams();
+        params.set("type", unitType);
+        params.set("id", unitId);
 
-      const response = await fetch(`/api/admin/organization/manager-candidates?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch manager candidates");
-      const data = await response.json();
-      setEmployees(data.candidates || []);
-    } catch (err) {
-      console.error("Error fetching manager candidates:", err);
-      setEmployees([]);
-    } finally {
-      setLoadingEmployees(false);
-    }
-  }, []);
+        const response = await fetch(
+          `/api/admin/organization/manager-candidates?${params}`,
+        );
+        if (!response.ok) throw new Error("Failed to fetch manager candidates");
+        const data = await response.json();
+        setEmployees(data.candidates || []);
+      } catch (err) {
+        console.error("Error fetching manager candidates:", err);
+        setEmployees([]);
+      } finally {
+        setLoadingEmployees(false);
+      }
+    },
+    [],
+  );
 
   // Handle unit click to open manager assignment dialog
-  const handleUnitClick = (type: UnitType, id: string, name: string, currentManager: Manager | null) => {
+  const handleUnitClick = (
+    type: UnitType,
+    id: string,
+    name: string,
+    currentManager: Manager | null,
+  ) => {
     setSelectedUnit({ type, id, name, currentManager });
     setEmployeeSearch("");
     fetchEmployees(type, id);
@@ -411,10 +430,11 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
   };
 
   // Filter employees by search
-  const filteredEmployees = employees.filter((emp) =>
-    emp.name.toLowerCase().includes(employeeSearch.toLowerCase()) ||
-    emp.employeeId.toLowerCase().includes(employeeSearch.toLowerCase()) ||
-    emp.position.toLowerCase().includes(employeeSearch.toLowerCase())
+  const filteredEmployees = employees.filter(
+    (emp) =>
+      emp.name.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+      emp.employeeId.toLowerCase().includes(employeeSearch.toLowerCase()) ||
+      emp.position.toLowerCase().includes(employeeSearch.toLowerCase()),
   );
 
   // Sort departments with "役員・顧問" last
@@ -461,8 +481,12 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
       {/* Header with Publish Settings */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">{t.organizeTitle}</h2>
-          <p className="text-sm text-muted-foreground">{t.organizeDescription}</p>
+          <h2 className="text-lg font-semibold text-foreground">
+            {t.organizeTitle}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {t.organizeDescription}
+          </p>
         </div>
         {publishSettings && (
           <div className="flex items-center gap-3">
@@ -474,16 +498,18 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
             </div>
 
             {/* Publish Date Info */}
-            {publishSettings.status === "SCHEDULED" && publishSettings.publishAt && (
-              <span className="text-xs text-muted-foreground">
-                {formatDate(publishSettings.publishAt)}
-              </span>
-            )}
-            {publishSettings.status === "PUBLISHED" && publishSettings.publishedAt && (
-              <span className="text-xs text-muted-foreground">
-                {formatDate(publishSettings.publishedAt)}
-              </span>
-            )}
+            {publishSettings.status === "SCHEDULED" &&
+              publishSettings.publishAt && (
+                <span className="text-xs text-muted-foreground">
+                  {formatDate(publishSettings.publishAt)}
+                </span>
+              )}
+            {publishSettings.status === "PUBLISHED" &&
+              publishSettings.publishedAt && (
+                <span className="text-xs text-muted-foreground">
+                  {formatDate(publishSettings.publishedAt)}
+                </span>
+              )}
 
             {/* Action Buttons */}
             {publishSettings.status === "DRAFT" && (
@@ -497,10 +523,7 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
                     {t.cancelImport}
                   </Button>
                 )}
-                <Button
-                  size="sm"
-                  onClick={() => setShowPublishDialog(true)}
-                >
+                <Button size="sm" onClick={() => setShowPublishDialog(true)}>
                   {t.setPublishDate}
                 </Button>
               </>
@@ -521,10 +544,20 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
 
       {/* Controls */}
       <div className="flex gap-2 mb-4">
-        <Button variant="ghost" size="sm" onClick={expandAll} className="text-xs">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={expandAll}
+          className="text-xs"
+        >
           {t.expandAll}
         </Button>
-        <Button variant="ghost" size="sm" onClick={collapseAll} className="text-xs">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={collapseAll}
+          className="text-xs"
+        >
           {t.collapseAll}
         </Button>
       </div>
@@ -544,11 +577,14 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
               >
                 <div className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
                   <CollapsibleTrigger asChild>
-                    <button type="button" className="p-1 hover:bg-muted rounded">
+                    <button
+                      type="button"
+                      className="p-1 hover:bg-muted rounded"
+                    >
                       <svg
                         className={cn(
                           "w-4 h-4 transition-transform",
-                          isDeptExpanded && "rotate-90"
+                          isDeptExpanded && "rotate-90",
                         )}
                         fill="none"
                         stroke="currentColor"
@@ -573,19 +609,48 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleUnitClick("department", dept.id, dept.name, dept.manager)}
+                      onClick={() =>
+                        handleUnitClick(
+                          "department",
+                          dept.id,
+                          dept.name,
+                          dept.manager,
+                        )
+                      }
                       className="text-xs mt-1 flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
                     >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      <svg
+                        className="w-3 h-3"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
                       </svg>
                       {dept.manager ? (
-                        <span>{dept.manager.name} ({dept.manager.position})</span>
+                        <span>
+                          {dept.manager.name} ({dept.manager.position})
+                        </span>
                       ) : (
                         <span className="text-orange-500">{t.noManager}</span>
                       )}
-                      <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      <svg
+                        className="w-3 h-3 ml-1"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                        />
                       </svg>
                     </button>
                   </div>
@@ -604,11 +669,14 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
                         <div className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
                           {sect.courses.length > 0 ? (
                             <CollapsibleTrigger asChild>
-                              <button type="button" className="p-1 hover:bg-muted rounded">
+                              <button
+                                type="button"
+                                className="p-1 hover:bg-muted rounded"
+                              >
                                 <svg
                                   className={cn(
                                     "w-3 h-3 transition-transform",
-                                    isSectExpanded && "rotate-90"
+                                    isSectExpanded && "rotate-90",
                                   )}
                                   fill="none"
                                   stroke="currentColor"
@@ -636,19 +704,48 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
                             </div>
                             <button
                               type="button"
-                              onClick={() => handleUnitClick("section", sect.id, sect.name, sect.manager)}
+                              onClick={() =>
+                                handleUnitClick(
+                                  "section",
+                                  sect.id,
+                                  sect.name,
+                                  sect.manager,
+                                )
+                              }
                               className="text-xs mt-0.5 flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
                             >
-                              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              <svg
+                                className="w-2.5 h-2.5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                />
                               </svg>
                               {sect.manager ? (
                                 <span>{sect.manager.name}</span>
                               ) : (
-                                <span className="text-orange-500">{t.noManager}</span>
+                                <span className="text-orange-500">
+                                  {t.noManager}
+                                </span>
                               )}
-                              <svg className="w-2.5 h-2.5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                              <svg
+                                className="w-2.5 h-2.5 ml-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                />
                               </svg>
                             </button>
                           </div>
@@ -656,30 +753,65 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
 
                         <CollapsibleContent className="ml-6 mt-1 space-y-1 border-l border-muted pl-2">
                           {sect.courses.map((course) => (
-                            <div key={course.id} className="flex items-center gap-2 p-1.5 rounded-md hover:bg-muted">
+                            <div
+                              key={course.id}
+                              className="flex items-center gap-2 p-1.5 rounded-md hover:bg-muted"
+                            >
                               <div className="w-5" />
                               <div className="flex-1">
                                 <div className="flex items-center justify-between">
                                   <span className="text-sm">{course.name}</span>
-                                  <Badge variant="secondary" className="text-xs">
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
                                     {course.employeeCount}
                                   </Badge>
                                 </div>
                                 <button
                                   type="button"
-                                  onClick={() => handleUnitClick("course", course.id, course.name, course.manager)}
+                                  onClick={() =>
+                                    handleUnitClick(
+                                      "course",
+                                      course.id,
+                                      course.name,
+                                      course.manager,
+                                    )
+                                  }
                                   className="text-xs mt-0.5 flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
                                 >
-                                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                  <svg
+                                    className="w-2.5 h-2.5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                    />
                                   </svg>
                                   {course.manager ? (
                                     <span>{course.manager.name}</span>
                                   ) : (
-                                    <span className="text-orange-500">{t.noManager}</span>
+                                    <span className="text-orange-500">
+                                      {t.noManager}
+                                    </span>
                                   )}
-                                  <svg className="w-2.5 h-2.5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                  <svg
+                                    className="w-2.5 h-2.5 ml-1"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                    />
                                   </svg>
                                 </button>
                               </div>
@@ -711,7 +843,8 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
               <p className="text-sm font-medium">{selectedUnit?.name}</p>
               {selectedUnit?.currentManager && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  {t.manager}: {selectedUnit.currentManager.name} ({selectedUnit.currentManager.position})
+                  {t.manager}: {selectedUnit.currentManager.name} (
+                  {selectedUnit.currentManager.position})
                 </p>
               )}
             </div>
@@ -743,7 +876,8 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
                       disabled={updating}
                       className={cn(
                         "w-full flex items-center justify-between p-2 rounded-md text-left hover:bg-muted transition-colors",
-                        selectedUnit?.currentManager?.id === emp.id && "bg-primary/10"
+                        selectedUnit?.currentManager?.id === emp.id &&
+                          "bg-primary/10",
                       )}
                     >
                       <div>
@@ -814,7 +948,9 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
 
             {/* Description */}
             <p className="text-sm text-muted-foreground">
-              {publishAction === "publish" ? t.confirmPublishNow : t.confirmSchedule}
+              {publishAction === "publish"
+                ? t.confirmPublishNow
+                : t.confirmSchedule}
             </p>
 
             {/* Date Picker for Schedule */}
@@ -846,9 +982,16 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
               </Button>
               <Button
                 onClick={handlePublishAction}
-                disabled={updatingPublish || (publishAction === "schedule" && !publishDate)}
+                disabled={
+                  updatingPublish ||
+                  (publishAction === "schedule" && !publishDate)
+                }
               >
-                {updatingPublish ? t.loading : publishAction === "publish" ? t.publishNow : t.schedulePublish}
+                {updatingPublish
+                  ? t.loading
+                  : publishAction === "publish"
+                    ? t.publishNow
+                    : t.schedulePublish}
               </Button>
             </div>
           </div>
@@ -876,7 +1019,9 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
                   <span>{formatDate(cancelStatus.importedAt || null)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{t.affectedRecords}:</span>
+                  <span className="text-muted-foreground">
+                    {t.affectedRecords}:
+                  </span>
                   <span>{cancelStatus.changeLogCount}</span>
                 </div>
               </div>

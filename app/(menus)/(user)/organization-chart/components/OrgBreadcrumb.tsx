@@ -23,7 +23,7 @@ interface OrgBreadcrumbProps {
   onSelectNode: (
     type: "organization" | "department" | "section" | "course",
     id: string | null,
-    name: string | null
+    name: string | null,
   ) => void;
   t: Translations;
 }
@@ -49,7 +49,11 @@ export function OrgBreadcrumb({
     breadcrumbs.push({
       label: selection.departmentName,
       onClick: () =>
-        onSelectNode("department", selection.departmentId, selection.departmentName),
+        onSelectNode(
+          "department",
+          selection.departmentId,
+          selection.departmentName,
+        ),
     });
   }
 

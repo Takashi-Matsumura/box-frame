@@ -1,8 +1,16 @@
 "use client";
 
-import { FaUserPlus, FaUserEdit, FaExchangeAlt, FaUserMinus, FaUserSlash, FaExclamationCircle, FaTimes } from "react-icons/fa";
-import type { DataManagementTranslation } from "../translations";
+import {
+  FaExchangeAlt,
+  FaExclamationCircle,
+  FaTimes,
+  FaUserEdit,
+  FaUserMinus,
+  FaUserPlus,
+  FaUserSlash,
+} from "react-icons/fa";
 import type { PreviewResult } from "@/lib/importers/organization/types";
+import type { DataManagementTranslation } from "../translations";
 
 interface PreviewDialogProps {
   preview: PreviewResult;
@@ -32,7 +40,9 @@ export function PreviewDialog({
       <div className="bg-card rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-lg font-semibold text-foreground">{t.previewTitle}</h2>
+          <h2 className="text-lg font-semibold text-foreground">
+            {t.previewTitle}
+          </h2>
           <button
             type="button"
             onClick={onClose}
@@ -88,11 +98,7 @@ export function PreviewDialog({
 
               {/* New Employees */}
               {preview.newEmployees.length > 0 && (
-                <Section
-                  title={t.newEmployees}
-                  icon={FaUserPlus}
-                  color="green"
-                >
+                <Section title={t.newEmployees} icon={FaUserPlus} color="green">
                   <table className="w-full text-sm">
                     <thead className="bg-muted">
                       <tr>
@@ -104,7 +110,10 @@ export function PreviewDialog({
                     </thead>
                     <tbody>
                       {preview.newEmployees.slice(0, 10).map((emp) => (
-                        <tr key={emp.employeeId} className="border-b border-border">
+                        <tr
+                          key={emp.employeeId}
+                          className="border-b border-border"
+                        >
                           <td className="px-3 py-2">{emp.employeeId}</td>
                           <td className="px-3 py-2">{emp.name}</td>
                           <td className="px-3 py-2">{emp.department}</td>
@@ -140,8 +149,13 @@ export function PreviewDialog({
                     </thead>
                     <tbody>
                       {preview.updatedEmployees.slice(0, 10).map((item) => (
-                        <tr key={item.employee.employeeId} className="border-b border-border">
-                          <td className="px-3 py-2">{item.employee.employeeId}</td>
+                        <tr
+                          key={item.employee.employeeId}
+                          className="border-b border-border"
+                        >
+                          <td className="px-3 py-2">
+                            {item.employee.employeeId}
+                          </td>
                           <td className="px-3 py-2">{item.employee.name}</td>
                           <td className="px-3 py-2">
                             {item.changes.map((change) => (
@@ -190,8 +204,13 @@ export function PreviewDialog({
                     </thead>
                     <tbody>
                       {preview.transferredEmployees.slice(0, 10).map((item) => (
-                        <tr key={item.employee.employeeId} className="border-b border-border">
-                          <td className="px-3 py-2">{item.employee.employeeId}</td>
+                        <tr
+                          key={item.employee.employeeId}
+                          className="border-b border-border"
+                        >
+                          <td className="px-3 py-2">
+                            {item.employee.employeeId}
+                          </td>
                           <td className="px-3 py-2">{item.employee.name}</td>
                           <td className="px-3 py-2">
                             <span className="line-through text-red-500">
@@ -233,7 +252,10 @@ export function PreviewDialog({
                     </thead>
                     <tbody>
                       {preview.retiredEmployees.slice(0, 10).map((emp) => (
-                        <tr key={emp.employeeId} className="border-b border-border">
+                        <tr
+                          key={emp.employeeId}
+                          className="border-b border-border"
+                        >
                           <td className="px-3 py-2">{emp.employeeId}</td>
                           <td className="px-3 py-2">{emp.name}</td>
                           <td className="px-3 py-2">{emp.department}</td>
@@ -264,18 +286,31 @@ export function PreviewDialog({
                         <th className="px-3 py-2 text-left">{t.employeeId}</th>
                         <th className="px-3 py-2 text-left">{t.name}</th>
                         <th className="px-3 py-2 text-left">{t.position}</th>
-                        <th className="px-3 py-2 text-left">{t.excludedReason}</th>
-                        <th className="px-3 py-2 text-left">{t.keptEmployeeId}</th>
+                        <th className="px-3 py-2 text-left">
+                          {t.excludedReason}
+                        </th>
+                        <th className="px-3 py-2 text-left">
+                          {t.keptEmployeeId}
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {preview.excludedDuplicates.map((dup) => (
-                        <tr key={dup.employeeId} className="border-b border-border">
-                          <td className="px-3 py-2 text-muted-foreground line-through">{dup.employeeId}</td>
+                        <tr
+                          key={dup.employeeId}
+                          className="border-b border-border"
+                        >
+                          <td className="px-3 py-2 text-muted-foreground line-through">
+                            {dup.employeeId}
+                          </td>
                           <td className="px-3 py-2">{dup.name}</td>
                           <td className="px-3 py-2">{dup.position}</td>
-                          <td className="px-3 py-2 text-orange-600 dark:text-orange-400">{dup.reason}</td>
-                          <td className="px-3 py-2 text-green-600 dark:text-green-400">{dup.keptEmployeeId}</td>
+                          <td className="px-3 py-2 text-orange-600 dark:text-orange-400">
+                            {dup.reason}
+                          </td>
+                          <td className="px-3 py-2 text-green-600 dark:text-green-400">
+                            {dup.keptEmployeeId}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -292,8 +327,13 @@ export function PreviewDialog({
                 >
                   <ul className="space-y-1">
                     {preview.errors.map((err, i) => (
-                      <li key={i} className="text-sm text-red-600 dark:text-red-400">
-                        {language === "ja" ? `行 ${err.row}: ` : `Row ${err.row}: `}
+                      <li
+                        key={i}
+                        className="text-sm text-red-600 dark:text-red-400"
+                      >
+                        {language === "ja"
+                          ? `行 ${err.row}: `
+                          : `Row ${err.row}: `}
                         {err.message}
                       </li>
                     ))}
@@ -341,11 +381,14 @@ function SummaryCard({
   color: "green" | "blue" | "yellow" | "red" | "orange";
 }) {
   const colorClasses = {
-    green: "bg-green-50 border-green-200 text-green-700 dark:bg-green-900/30 dark:border-green-800 dark:text-green-300",
+    green:
+      "bg-green-50 border-green-200 text-green-700 dark:bg-green-900/30 dark:border-green-800 dark:text-green-300",
     blue: "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300",
-    yellow: "bg-yellow-50 border-yellow-200 text-yellow-700 dark:bg-yellow-900/30 dark:border-yellow-800 dark:text-yellow-300",
+    yellow:
+      "bg-yellow-50 border-yellow-200 text-yellow-700 dark:bg-yellow-900/30 dark:border-yellow-800 dark:text-yellow-300",
     red: "bg-red-50 border-red-200 text-red-700 dark:bg-red-900/30 dark:border-red-800 dark:text-red-300",
-    orange: "bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/30 dark:border-orange-800 dark:text-orange-300",
+    orange:
+      "bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/30 dark:border-orange-800 dark:text-orange-300",
   };
 
   const iconColors = {

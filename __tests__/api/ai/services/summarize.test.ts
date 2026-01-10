@@ -15,15 +15,17 @@
  */
 
 import { POST } from "@/app/api/ai/services/summarize/route";
-import { AIService } from "@/lib/core-modules/ai";
 import { auth } from "@/auth";
+import { AIService } from "@/lib/core-modules/ai";
 
 // モック
 jest.mock("@/auth");
 jest.mock("@/lib/core-modules/ai/ai-service");
 
 const mockAuth = auth as jest.MockedFunction<typeof auth>;
-const mockSummarize = AIService.summarize as jest.MockedFunction<typeof AIService.summarize>;
+const mockSummarize = AIService.summarize as jest.MockedFunction<
+  typeof AIService.summarize
+>;
 
 // モックセッション
 const mockSession = {
@@ -68,7 +70,7 @@ describe("POST /api/ai/services/summarize", () => {
 
     it("length が不正な値の場合 400 エラー", async () => {
       const response = await POST(
-        createRequest({ text: "test", length: "invalid" })
+        createRequest({ text: "test", length: "invalid" }),
       );
 
       expect(response.status).toBe(400);
@@ -78,7 +80,7 @@ describe("POST /api/ai/services/summarize", () => {
 
     it("language が不正な値の場合 400 エラー", async () => {
       const response = await POST(
-        createRequest({ text: "test", language: "fr" })
+        createRequest({ text: "test", language: "fr" }),
       );
 
       expect(response.status).toBe(400);

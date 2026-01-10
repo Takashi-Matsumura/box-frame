@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
+import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
 
 /**
  * プロセス目標の型定義
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
         if (!latestPeriod) {
           return NextResponse.json(
             { error: "No evaluation period available" },
-            { status: 404 }
+            { status: 404 },
           );
         }
         targetPeriodId = latestPeriod.id;
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
     if (!period) {
       return NextResponse.json(
         { error: "Evaluation period not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -187,7 +187,7 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching goals:", error);
     return NextResponse.json(
       { error: "Failed to fetch goals" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -207,7 +207,13 @@ export async function POST(request: NextRequest) {
     const userId = session.user.id;
     const userEmail = session.user.email;
     const body = await request.json();
-    const { periodId, processGoals, growthGoal, selfReflection, interviewDates } = body as {
+    const {
+      periodId,
+      processGoals,
+      growthGoal,
+      selfReflection,
+      interviewDates,
+    } = body as {
       periodId: string;
       processGoals: ProcessGoal[];
       growthGoal: GrowthGoal | null;
@@ -218,7 +224,7 @@ export async function POST(request: NextRequest) {
     if (!periodId || !processGoals) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -230,7 +236,7 @@ export async function POST(request: NextRequest) {
     if (!period) {
       return NextResponse.json(
         { error: "Evaluation period not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -248,7 +254,8 @@ export async function POST(request: NextRequest) {
 
     // 個人目標データを保存（upsert）
     const processGoalsJson = processGoals as unknown as Prisma.InputJsonValue;
-    const interviewDatesJson = (interviewDates || []) as unknown as Prisma.InputJsonValue;
+    const interviewDatesJson = (interviewDates ||
+      []) as unknown as Prisma.InputJsonValue;
 
     const personalGoal = await prisma.personalGoal.upsert({
       where: {
@@ -294,7 +301,7 @@ export async function POST(request: NextRequest) {
     console.error("Error saving goals:", error);
     return NextResponse.json(
       { error: "Failed to save goals" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

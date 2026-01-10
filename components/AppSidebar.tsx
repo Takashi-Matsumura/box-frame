@@ -2,11 +2,11 @@
 
 import type { Session } from "next-auth";
 import { Sidebar, SidebarContent, SidebarRail } from "@/components/ui/sidebar";
+import { useSidebarStore } from "@/lib/stores/sidebar-store";
 import type { AppMenu } from "@/types/module";
 import { SidebarHeaderContent } from "./sidebar/SidebarHeaderContent";
 import { SidebarMenuGroup } from "./sidebar/SidebarMenuGroup";
 import { SidebarUserSection } from "./sidebar/SidebarUserSection";
-import { useSidebarStore } from "@/lib/stores/sidebar-store";
 
 interface AppSidebarProps {
   session: Session;

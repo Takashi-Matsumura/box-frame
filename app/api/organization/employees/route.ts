@@ -191,7 +191,7 @@ export async function GET(request: Request) {
     console.error("Error fetching employees:", error);
     return NextResponse.json(
       { error: "Failed to fetch employees" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

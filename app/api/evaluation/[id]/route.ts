@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
 import {
-  calculateProcessScore,
-  calculateGrowthScore,
   calculateFinalScore,
+  calculateGrowthScore,
+  calculateProcessScore,
   getWeightsForPositionGrade,
 } from "@/lib/addon-modules/evaluation";
+import { prisma } from "@/lib/prisma";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -43,7 +43,7 @@ export async function GET(request: Request, { params }: RouteParams) {
     if (!evaluation) {
       return NextResponse.json(
         { error: "Evaluation not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -63,7 +63,7 @@ export async function GET(request: Request, { params }: RouteParams) {
     const weights = await getWeightsForPositionGrade(
       evaluation.periodId,
       evaluation.employee.positionCode,
-      evaluation.gradeCode
+      evaluation.gradeCode,
     );
 
     // 結果評価データ（Criteria1）を取得（課→部→本部の優先順）
@@ -166,7 +166,11 @@ export async function GET(request: Request, { params }: RouteParams) {
           };
         }
         // 直接部門の場合
-        if (criteria1Result && criteria1Result.targetProfit && criteria1Result.targetProfit > 0) {
+        if (
+          criteria1Result &&
+          criteria1Result.targetProfit &&
+          criteria1Result.targetProfit > 0
+        ) {
           return {
             targetValue: criteria1Result.targetProfit,
             actualValue: criteria1Result.actualProfit,
@@ -182,7 +186,7 @@ export async function GET(request: Request, { params }: RouteParams) {
     console.error("Error fetching evaluation:", error);
     return NextResponse.json(
       { error: "Failed to fetch evaluation" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -227,7 +231,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     if (!evaluation) {
       return NextResponse.json(
         { error: "Evaluation not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -235,11 +239,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     const weights = await getWeightsForPositionGrade(
       evaluation.periodId,
       evaluation.employee.positionCode,
-      evaluation.gradeCode
+      evaluation.gradeCode,
     );
 
     // スコアを計算（入力値が直接指定されていればそれを使用）
-    let score1 = inputScore1 ?? evaluation.score1;
+    const score1 = inputScore1 ?? evaluation.score1;
     let score2 = inputScore2 ?? evaluation.score2;
     let score3 = inputScore3 ?? evaluation.score3;
 
@@ -262,7 +266,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         score1 || 0,
         score2 || 0,
         score3 || 0,
-        weights
+        weights,
       );
       finalScore = finalResult.finalScore;
       finalGrade = finalResult.finalGrade;
@@ -271,7 +275,8 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     // ステータスの決定
     let newStatus = inputStatus;
     if (!newStatus) {
-      newStatus = evaluation.status === "PENDING" ? "IN_PROGRESS" : evaluation.status;
+      newStatus =
+        evaluation.status === "PENDING" ? "IN_PROGRESS" : evaluation.status;
     }
 
     // 更新
@@ -292,7 +297,9 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         // 結果評価コメント
         ...(score1Comment !== undefined && { score1Comment }),
         // 最終評価
-        ...(evaluatorComment !== undefined && { overallComment: evaluatorComment }),
+        ...(evaluatorComment !== undefined && {
+          overallComment: evaluatorComment,
+        }),
         ...(overallComment !== undefined && { overallComment }),
         // 計算結果
         ...(finalScore !== undefined && { finalScore }),
@@ -311,7 +318,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     console.error("Error updating evaluation:", error);
     return NextResponse.json(
       { error: "Failed to update evaluation" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

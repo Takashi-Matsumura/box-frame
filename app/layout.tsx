@@ -5,7 +5,10 @@ import { auth } from "@/auth";
 import { ClientLayout } from "@/components/ClientLayout";
 import { Header } from "@/components/Header";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { getUserAccessKeyPermissions, type AccessKeyPermissions } from "@/lib/access-keys";
+import {
+  type AccessKeyPermissions,
+  getUserAccessKeyPermissions,
+} from "@/lib/access-keys";
 import { appConfig } from "@/lib/config/app";
 import {
   canAccessMenuGroup,
@@ -47,7 +50,10 @@ export default async function RootLayout({
   let groupedMenus: Record<string, AppMenu[]> = {};
   let sortedMenuGroups: MenuGroup[] = [];
   let mustChangePassword = false;
-  let accessKeyPermissions: AccessKeyPermissions = { menuPaths: [], tabPermissions: {} };
+  let accessKeyPermissions: AccessKeyPermissions = {
+    menuPaths: [],
+    tabPermissions: {},
+  };
 
   if (session) {
     const [permissions, user, fetchedAccessKeyPermissions] = await Promise.all([

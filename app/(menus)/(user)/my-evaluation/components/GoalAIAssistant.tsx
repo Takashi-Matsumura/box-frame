@@ -16,15 +16,15 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 interface Message {
   role: "user" | "assistant" | "system";
@@ -179,7 +179,9 @@ export function GoalAIAssistant({
   // バックエンドステータスとドキュメント一覧を取得
   const fetchBackendStatus = useCallback(async () => {
     try {
-      const res = await fetch("/api/rag-backend/documents/list?category=goalsetting");
+      const res = await fetch(
+        "/api/rag-backend/documents/list?category=goalsetting",
+      );
       if (res.ok) {
         const data = await res.json();
         setDocuments(data.documents || []);
@@ -214,7 +216,7 @@ export function GoalAIAssistant({
 
     try {
       const res = await fetch(
-        `/api/rag-backend/documents/content/${encodeURIComponent(filename)}`
+        `/api/rag-backend/documents/content/${encodeURIComponent(filename)}`,
       );
       if (res.ok) {
         const data = await res.json();
@@ -258,7 +260,11 @@ export function GoalAIAssistant({
 
     // ユーザーメッセージを追加
     const userMessage: Message = { role: "user", content: question };
-    setMessages((prev) => [...prev, userMessage, { role: "assistant", content: "" }]);
+    setMessages((prev) => [
+      ...prev,
+      userMessage,
+      { role: "assistant", content: "" },
+    ]);
     setInput("");
     setIsLoading(true);
 
@@ -410,11 +416,13 @@ export function GoalAIAssistant({
   const getFullContent = () => {
     if (!docContent) return "";
     // Use original_content if available (preserves formatting)
-    return docContent.original_content ||
+    return (
+      docContent.original_content ||
       docContent.chunks
         .sort((a, b) => a.chunk_index - b.chunk_index)
         .map((chunk) => chunk.content)
-        .join("\n");
+        .join("\n")
+    );
   };
 
   return (
@@ -683,9 +691,7 @@ export function GoalAIAssistant({
                       remarkPlugins={[remarkGfm]}
                       components={{
                         p: ({ children }) => (
-                          <p className="my-3 leading-relaxed">
-                            {children}
-                          </p>
+                          <p className="my-3 leading-relaxed">{children}</p>
                         ),
                         ul: ({ children }) => (
                           <ul className="my-3 ml-6 list-disc space-y-2">
@@ -711,9 +717,7 @@ export function GoalAIAssistant({
                           </h2>
                         ),
                         h3: ({ children }) => (
-                          <h3 className="text-lg font-bold my-4">
-                            {children}
-                          </h3>
+                          <h3 className="text-lg font-bold my-4">{children}</h3>
                         ),
                         h4: ({ children }) => (
                           <h4 className="text-base font-bold my-3">
@@ -721,9 +725,7 @@ export function GoalAIAssistant({
                           </h4>
                         ),
                         strong: ({ children }) => (
-                          <strong className="font-semibold">
-                            {children}
-                          </strong>
+                          <strong className="font-semibold">{children}</strong>
                         ),
                         em: ({ children }) => (
                           <em className="italic">{children}</em>
@@ -764,9 +766,7 @@ export function GoalAIAssistant({
                         thead: ({ children }) => (
                           <thead className="bg-muted/50">{children}</thead>
                         ),
-                        tbody: ({ children }) => (
-                          <tbody>{children}</tbody>
-                        ),
+                        tbody: ({ children }) => <tbody>{children}</tbody>,
                         tr: ({ children }) => (
                           <tr className="border-b border-border">{children}</tr>
                         ),
@@ -841,8 +841,10 @@ export function GoalAIAssistant({
                           </td>
                           <td className="px-6 py-4 text-right text-sm text-muted-foreground">
                             {doc.upload_timestamp
-                              ? new Date(doc.upload_timestamp).toLocaleDateString(
-                                  language === "ja" ? "ja-JP" : "en-US"
+                              ? new Date(
+                                  doc.upload_timestamp,
+                                ).toLocaleDateString(
+                                  language === "ja" ? "ja-JP" : "en-US",
                                 )
                               : "-"}
                           </td>

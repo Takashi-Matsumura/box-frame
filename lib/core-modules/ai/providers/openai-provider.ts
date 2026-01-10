@@ -4,26 +4,26 @@
  * OpenAI API を使用したAI機能の実装
  */
 
-import type {
-  AIConfig,
-  ChatMessage,
-  TranslateRequest,
-  TranslateResponse,
-  ChatResponse,
-  GenerateResponse,
-} from "../types";
 import {
   API_ENDPOINTS,
   DEFAULT_MODELS,
   DEFAULT_SYSTEM_PROMPTS,
 } from "../constants";
+import type {
+  AIConfig,
+  ChatMessage,
+  ChatResponse,
+  GenerateResponse,
+  TranslateRequest,
+  TranslateResponse,
+} from "../types";
 
 /**
  * OpenAI APIで翻訳
  */
 export async function translateWithOpenAI(
   request: TranslateRequest,
-  config: AIConfig
+  config: AIConfig,
 ): Promise<TranslateResponse> {
   const targetLang = request.targetLanguage === "ja" ? "Japanese" : "English";
   const sourceLang = request.sourceLanguage === "ja" ? "Japanese" : "English";
@@ -54,7 +54,7 @@ export async function translateWithOpenAI(
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(
-      error.error?.message || `OpenAI API error: ${response.status}`
+      error.error?.message || `OpenAI API error: ${response.status}`,
     );
   }
 
@@ -77,7 +77,7 @@ export async function translateWithOpenAI(
  */
 export async function chatWithOpenAI(
   messages: ChatMessage[],
-  config: AIConfig
+  config: AIConfig,
 ): Promise<ChatResponse> {
   const response = await fetch(API_ENDPOINTS.OPENAI_CHAT, {
     method: "POST",
@@ -96,7 +96,7 @@ export async function chatWithOpenAI(
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(
-      error.error?.message || `OpenAI API error: ${response.status}`
+      error.error?.message || `OpenAI API error: ${response.status}`,
     );
   }
 
@@ -121,7 +121,7 @@ export async function generateWithOpenAI(
   messages: ChatMessage[],
   config: AIConfig,
   temperature: number,
-  maxTokens: number
+  maxTokens: number,
 ): Promise<GenerateResponse> {
   const response = await fetch(API_ENDPOINTS.OPENAI_CHAT, {
     method: "POST",
@@ -140,7 +140,7 @@ export async function generateWithOpenAI(
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(
-      error.error?.message || `OpenAI API error: ${response.status}`
+      error.error?.message || `OpenAI API error: ${response.status}`,
     );
   }
 

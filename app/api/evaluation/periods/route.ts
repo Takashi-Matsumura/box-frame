@@ -28,7 +28,7 @@ export async function GET() {
     console.error("Error fetching evaluation periods:", error);
     return NextResponse.json(
       { error: "Failed to fetch evaluation periods" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     if (!name || !year || !term || !startDate || !endDate) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     if (existing) {
       return NextResponse.json(
         { error: "Period already exists for this year and term" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
     console.error("Error creating evaluation period:", error);
     return NextResponse.json(
       { error: "Failed to create evaluation period" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

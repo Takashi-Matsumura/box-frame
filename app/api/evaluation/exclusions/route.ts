@@ -1,7 +1,7 @@
+import type { ExclusionReason } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import type { ExclusionReason } from "@prisma/client";
 
 /**
  * GET /api/evaluation/exclusions
@@ -58,7 +58,7 @@ export async function GET(request: Request) {
     console.error("Error fetching exclusions:", error);
     return NextResponse.json(
       { error: "Failed to fetch exclusions" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
     if (!employeeId) {
       return NextResponse.json(
         { error: "employeeId is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
     if (reason && !validReasons.includes(reason)) {
       return NextResponse.json(
         { error: "Invalid exclusion reason" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -150,7 +150,7 @@ export async function POST(request: Request) {
     console.error("Error creating exclusion:", error);
     return NextResponse.json(
       { error: "Failed to create exclusion" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

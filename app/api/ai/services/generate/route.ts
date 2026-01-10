@@ -44,28 +44,34 @@ export async function POST(request: Request) {
     if (!input || typeof input !== "string") {
       return NextResponse.json(
         { error: "input is required and must be a string" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!systemPrompt || typeof systemPrompt !== "string") {
       return NextResponse.json(
         { error: "systemPrompt is required and must be a string" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    if (temperature !== undefined && (typeof temperature !== "number" || temperature < 0 || temperature > 2)) {
+    if (
+      temperature !== undefined &&
+      (typeof temperature !== "number" || temperature < 0 || temperature > 2)
+    ) {
       return NextResponse.json(
         { error: "temperature must be a number between 0 and 2" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    if (maxTokens !== undefined && (typeof maxTokens !== "number" || maxTokens < 1 || maxTokens > 10000)) {
+    if (
+      maxTokens !== undefined &&
+      (typeof maxTokens !== "number" || maxTokens < 1 || maxTokens > 10000)
+    ) {
       return NextResponse.json(
         { error: "maxTokens must be a number between 1 and 10000" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -79,7 +85,8 @@ export async function POST(request: Request) {
     return NextResponse.json(response);
   } catch (error) {
     console.error("Error in AI generate:", error);
-    const message = error instanceof Error ? error.message : "Failed to generate text";
+    const message =
+      error instanceof Error ? error.message : "Failed to generate text";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

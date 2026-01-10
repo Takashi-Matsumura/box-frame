@@ -150,7 +150,7 @@ export async function GET() {
     console.error("Failed to fetch available evaluators:", error);
     return NextResponse.json(
       { error: "Failed to fetch available evaluators" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

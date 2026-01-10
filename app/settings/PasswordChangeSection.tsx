@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { RiAlertLine, RiCheckLine, RiCloseLine, RiArrowDownSLine } from "react-icons/ri";
+import {
+  RiAlertLine,
+  RiArrowDownSLine,
+  RiCheckLine,
+  RiCloseLine,
+} from "react-icons/ri";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -111,9 +116,7 @@ export function PasswordChangeSection({
       >
         <div className="flex items-center gap-3">
           <h3 className="text-xl font-semibold">{t.title}</h3>
-          {mustChangePassword && (
-            <Badge variant="destructive">!</Badge>
-          )}
+          {mustChangePassword && <Badge variant="destructive">!</Badge>}
         </div>
         <RiArrowDownSLine
           className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${
@@ -130,14 +133,20 @@ export function PasswordChangeSection({
         }`}
       >
         {mustChangePassword && (
-          <Alert variant="default" className="mb-4 border-amber-200 bg-amber-50 text-amber-800">
+          <Alert
+            variant="default"
+            className="mb-4 border-amber-200 bg-amber-50 text-amber-800"
+          >
             <RiAlertLine className="h-4 w-4" />
             <AlertDescription>{t.mustChangeWarning}</AlertDescription>
           </Alert>
         )}
 
         {success && (
-          <Alert variant="default" className="mb-4 border-green-200 bg-green-50 text-green-800">
+          <Alert
+            variant="default"
+            className="mb-4 border-green-200 bg-green-50 text-green-800"
+          >
             <RiCheckLine className="h-4 w-4" />
             <AlertDescription>{t.success}</AlertDescription>
           </Alert>

@@ -1,23 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  CheckCircle,
+  Lock,
+  Play,
+  Plus,
+  RefreshCw,
+  Trash2,
+  Undo2,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +21,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -36,9 +39,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Plus, Play, RefreshCw, Trash2, CheckCircle, Undo2, Lock } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { evaluationMasterTranslations } from "../translations";
 
 interface Period {
@@ -186,8 +194,10 @@ export default function PeriodsSection({
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
       DRAFT: "bg-muted text-muted-foreground",
-      ACTIVE: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      REVIEW: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+      ACTIVE:
+        "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+      REVIEW:
+        "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
       CLOSED: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
     };
     const labels: Record<string, string> = {
@@ -209,15 +219,21 @@ export default function PeriodsSection({
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-muted-foreground">{t.loading}</div>;
+    return (
+      <div className="text-center py-8 text-muted-foreground">{t.loading}</div>
+    );
   }
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex items-center justify-between mb-6 flex-shrink-0">
         <div>
-          <h2 className="text-xl font-semibold text-foreground">{t.periodsTitle}</h2>
-          <p className="text-sm text-muted-foreground">{t.periodsDescription}</p>
+          <h2 className="text-xl font-semibold text-foreground">
+            {t.periodsTitle}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {t.periodsDescription}
+          </p>
         </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
@@ -248,7 +264,10 @@ export default function PeriodsSection({
                     type="number"
                     value={formData.year}
                     onChange={(e) =>
-                      setFormData({ ...formData, year: parseInt(e.target.value) })
+                      setFormData({
+                        ...formData,
+                        year: parseInt(e.target.value),
+                      })
                     }
                   />
                 </div>
@@ -294,7 +313,10 @@ export default function PeriodsSection({
                 </div>
               </div>
               <div className="flex justify-end gap-3 mt-6">
-                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCreateOpen(false)}
+                >
                   {t.cancel}
                 </Button>
                 <Button onClick={handleCreate} disabled={creating}>
@@ -394,17 +416,25 @@ export default function PeriodsSection({
                                 <CheckCircle className="w-4 h-4" />
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogContent
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <AlertDialogHeader>
-                                <AlertDialogTitle>{t.advanceToReview}</AlertDialogTitle>
+                                <AlertDialogTitle>
+                                  {t.advanceToReview}
+                                </AlertDialogTitle>
                                 <AlertDialogDescription>
                                   {t.confirmAdvanceToReview}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+                                <AlertDialogCancel>
+                                  {t.cancel}
+                                </AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => handleStatusChange(period.id, "REVIEW")}
+                                  onClick={() =>
+                                    handleStatusChange(period.id, "REVIEW")
+                                  }
                                 >
                                   {t.advanceToReview}
                                 </AlertDialogAction>
@@ -422,17 +452,25 @@ export default function PeriodsSection({
                                 <Undo2 className="w-4 h-4 text-muted-foreground" />
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogContent
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <AlertDialogHeader>
-                                <AlertDialogTitle>{t.revertToDraft}</AlertDialogTitle>
+                                <AlertDialogTitle>
+                                  {t.revertToDraft}
+                                </AlertDialogTitle>
                                 <AlertDialogDescription>
                                   {t.confirmRevertToDraft}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+                                <AlertDialogCancel>
+                                  {t.cancel}
+                                </AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => handleStatusChange(period.id, "DRAFT")}
+                                  onClick={() =>
+                                    handleStatusChange(period.id, "DRAFT")
+                                  }
                                 >
                                   {t.revertToDraft}
                                 </AlertDialogAction>
@@ -456,17 +494,25 @@ export default function PeriodsSection({
                                 <Lock className="w-4 h-4" />
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogContent
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <AlertDialogHeader>
-                                <AlertDialogTitle>{t.advanceToClosed}</AlertDialogTitle>
+                                <AlertDialogTitle>
+                                  {t.advanceToClosed}
+                                </AlertDialogTitle>
                                 <AlertDialogDescription>
                                   {t.confirmAdvanceToClosed}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+                                <AlertDialogCancel>
+                                  {t.cancel}
+                                </AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => handleStatusChange(period.id, "CLOSED")}
+                                  onClick={() =>
+                                    handleStatusChange(period.id, "CLOSED")
+                                  }
                                 >
                                   {t.advanceToClosed}
                                 </AlertDialogAction>
@@ -484,17 +530,25 @@ export default function PeriodsSection({
                                 <Undo2 className="w-4 h-4 text-muted-foreground" />
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogContent
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <AlertDialogHeader>
-                                <AlertDialogTitle>{t.revertToActive}</AlertDialogTitle>
+                                <AlertDialogTitle>
+                                  {t.revertToActive}
+                                </AlertDialogTitle>
                                 <AlertDialogDescription>
                                   {t.confirmRevertToActive}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+                                <AlertDialogCancel>
+                                  {t.cancel}
+                                </AlertDialogCancel>
                                 <AlertDialogAction
-                                  onClick={() => handleStatusChange(period.id, "ACTIVE")}
+                                  onClick={() =>
+                                    handleStatusChange(period.id, "ACTIVE")
+                                  }
                                 >
                                   {t.revertToActive}
                                 </AlertDialogAction>
@@ -517,9 +571,13 @@ export default function PeriodsSection({
                               <Undo2 className="w-4 h-4 text-muted-foreground" />
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                          <AlertDialogContent
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <AlertDialogHeader>
-                              <AlertDialogTitle>{t.revertToReview}</AlertDialogTitle>
+                              <AlertDialogTitle>
+                                {t.revertToReview}
+                              </AlertDialogTitle>
                               <AlertDialogDescription>
                                 {t.confirmRevertToReview}
                               </AlertDialogDescription>
@@ -527,7 +585,9 @@ export default function PeriodsSection({
                             <AlertDialogFooter>
                               <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
                               <AlertDialogAction
-                                onClick={() => handleStatusChange(period.id, "REVIEW")}
+                                onClick={() =>
+                                  handleStatusChange(period.id, "REVIEW")
+                                }
                               >
                                 {t.revertToReview}
                               </AlertDialogAction>

@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     if (!pendingSetting) {
       return NextResponse.json(
         { error: "No pending import found" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     if (!pendingData.pending || !pendingData.batchId) {
       return NextResponse.json(
         { error: "No pending import to cancel" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -62,11 +62,12 @@ export async function POST(request: Request) {
       for (const employeeId of employeeIds) {
         // 社員の変更ログを取得
         const employeeLogs = changeLogs.filter(
-          (log) => log.entityId === employeeId
+          (log) => log.entityId === employeeId,
         );
 
         // 最初の変更タイプを確認
-        const firstChangeType = employeeLogs[employeeLogs.length - 1]?.changeType;
+        const firstChangeType =
+          employeeLogs[employeeLogs.length - 1]?.changeType;
 
         if (firstChangeType === "CREATE") {
           // 新規作成された社員は削除
@@ -175,11 +176,13 @@ export async function POST(request: Request) {
                   phone: previousHistory.phone || undefined,
                   position: previousHistory.position || undefined,
                   positionCode: previousHistory.positionCode || undefined,
-                  qualificationGrade: previousHistory.qualificationGrade || undefined,
+                  qualificationGrade:
+                    previousHistory.qualificationGrade || undefined,
                   qualificationGradeCode:
                     previousHistory.qualificationGradeCode || undefined,
                   employmentType: previousHistory.employmentType || undefined,
-                  employmentTypeCode: previousHistory.employmentTypeCode || undefined,
+                  employmentTypeCode:
+                    previousHistory.employmentTypeCode || undefined,
                   departmentCode: previousHistory.departmentCode || undefined,
                   isActive: previousHistory.isActive,
                   departmentId: previousHistory.departmentId || undefined,
@@ -247,7 +250,7 @@ export async function POST(request: Request) {
     console.error("Error cancelling import:", error);
     return NextResponse.json(
       { error: "Failed to cancel import" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -312,7 +315,7 @@ export async function GET(request: Request) {
     console.error("Error checking cancel status:", error);
     return NextResponse.json(
       { error: "Failed to check cancel status" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

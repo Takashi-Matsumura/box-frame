@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     if (!periodId) {
       return NextResponse.json(
         { error: "periodId is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     if (!period) {
       return NextResponse.json(
         { error: "Evaluation period not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
         error: "Failed to initialize criteria1 data",
         details: message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

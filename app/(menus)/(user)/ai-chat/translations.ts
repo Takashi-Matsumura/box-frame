@@ -52,7 +52,8 @@ export const aiChatTranslations = {
     emptyState: "AIとの会話を始めましょう",
     emptyStateHint: "下のテキストボックスにメッセージを入力してください",
     errorTitle: "エラー",
-    errorMessage: "AIからの応答を取得できませんでした。もう一度お試しください。",
+    errorMessage:
+      "AIからの応答を取得できませんでした。もう一度お試しください。",
     aiDisabled: "AIが有効になっていません",
     aiDisabledHint: "システム環境 > AI設定でAIを有効にしてください",
     you: "あなた",

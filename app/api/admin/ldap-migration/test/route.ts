@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     if (!service) {
       return NextResponse.json(
         { success: false, error: "Legacy LDAP is not configured or disabled" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
         if (!username) {
           return NextResponse.json(
             { success: false, error: "Username is required for search test" },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
               success: false,
               error: "Username and password are required for auth test",
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
@@ -106,7 +106,7 @@ export async function POST(request: Request) {
             success: false,
             error: "Invalid test type. Use: connection, search, or auth",
           },
-          { status: 400 }
+          { status: 400 },
         );
     }
   } catch (error) {
@@ -116,7 +116,7 @@ export async function POST(request: Request) {
         success: false,
         error: error instanceof Error ? error.message : "Test failed",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

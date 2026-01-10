@@ -42,21 +42,21 @@ export async function POST(request: Request) {
     if (!text || typeof text !== "string") {
       return NextResponse.json(
         { error: "text is required and must be a string" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (length !== undefined && !["short", "medium", "long"].includes(length)) {
       return NextResponse.json(
         { error: "length must be 'short', 'medium', or 'long'" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (language !== undefined && !["ja", "en"].includes(language)) {
       return NextResponse.json(
         { error: "language must be 'ja' or 'en'" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -69,7 +69,8 @@ export async function POST(request: Request) {
     return NextResponse.json(response);
   } catch (error) {
     console.error("Error in AI summarize:", error);
-    const message = error instanceof Error ? error.message : "Failed to summarize text";
+    const message =
+      error instanceof Error ? error.message : "Failed to summarize text";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

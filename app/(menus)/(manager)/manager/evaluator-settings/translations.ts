@@ -51,7 +51,8 @@ export const evaluatorSettingsTranslations = {
       PROBATION: "Probation Period",
       OTHER: "Other",
     },
-    confirmExclusion: "Are you sure you want to exclude this employee from evaluation?",
+    confirmExclusion:
+      "Are you sure you want to exclude this employee from evaluation?",
     confirmRemoveExclusion: "Are you sure you want to remove the exclusion?",
     exclusionSuccess: "Exclusion setting saved",
     exclusionError: "Failed to save exclusion setting",

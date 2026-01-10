@@ -1,7 +1,24 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { Plus, Trash2, UserCheck } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -10,23 +27,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Plus, Trash2, UserCheck } from "lucide-react";
 import { evaluationMasterTranslations } from "../translations";
 
 interface Employee {
@@ -62,7 +62,9 @@ export default function CustomEvaluatorsSection({
   selectedPeriodId,
 }: CustomEvaluatorsSectionProps) {
   const t = evaluationMasterTranslations[language];
-  const [customEvaluators, setCustomEvaluators] = useState<CustomEvaluator[]>([]);
+  const [customEvaluators, setCustomEvaluators] = useState<CustomEvaluator[]>(
+    [],
+  );
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [periods, setPeriods] = useState<Period[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,7 +132,11 @@ export default function CustomEvaluatorsSection({
     if (!formData.employeeId || !formData.evaluatorId) return;
 
     if (formData.employeeId === formData.evaluatorId) {
-      alert(language === "ja" ? "被評価者と評価者は同一人物にできません" : "Employee and evaluator cannot be the same person");
+      alert(
+        language === "ja"
+          ? "被評価者と評価者は同一人物にできません"
+          : "Employee and evaluator cannot be the same person",
+      );
       return;
     }
 
@@ -141,7 +147,8 @@ export default function CustomEvaluatorsSection({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          periodId: formData.periodId === "__all__" ? null : formData.periodId || null,
+          periodId:
+            formData.periodId === "__all__" ? null : formData.periodId || null,
           effectiveFrom: formData.effectiveFrom || null,
           effectiveTo: formData.effectiveTo || null,
         }),
@@ -200,7 +207,9 @@ export default function CustomEvaluatorsSection({
   });
 
   if (loading) {
-    return <div className="text-center py-8 text-muted-foreground">{t.loading}</div>;
+    return (
+      <div className="text-center py-8 text-muted-foreground">{t.loading}</div>
+    );
   }
 
   return (
@@ -309,7 +318,10 @@ export default function CustomEvaluatorsSection({
                     type="date"
                     value={formData.effectiveFrom}
                     onChange={(e) =>
-                      setFormData({ ...formData, effectiveFrom: e.target.value })
+                      setFormData({
+                        ...formData,
+                        effectiveFrom: e.target.value,
+                      })
                     }
                   />
                 </div>
@@ -366,7 +378,9 @@ export default function CustomEvaluatorsSection({
               <TableRow key={ce.id}>
                 <TableCell>
                   <div>
-                    <div className="font-medium">{getEmployeeName(ce.employee)}</div>
+                    <div className="font-medium">
+                      {getEmployeeName(ce.employee)}
+                    </div>
                     <div className="text-xs text-muted-foreground">
                       {ce.employee.employeeId}
                     </div>
@@ -374,7 +388,9 @@ export default function CustomEvaluatorsSection({
                 </TableCell>
                 <TableCell>
                   <div>
-                    <div className="font-medium">{getEmployeeName(ce.evaluator)}</div>
+                    <div className="font-medium">
+                      {getEmployeeName(ce.evaluator)}
+                    </div>
                     <div className="text-xs text-muted-foreground">
                       {ce.evaluator.employeeId}
                     </div>

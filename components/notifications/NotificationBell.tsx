@@ -2,8 +2,8 @@
 
 import { Bell } from "lucide-react";
 import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,7 +55,11 @@ export function NotificationBell({ language }: NotificationBellProps) {
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 sm:w-96 p-0" sideOffset={8}>
+      <DropdownMenuContent
+        align="end"
+        className="w-80 sm:w-96 p-0"
+        sideOffset={8}
+      >
         <NotificationDropdown language={language} />
       </DropdownMenuContent>
     </DropdownMenu>

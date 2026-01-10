@@ -4,9 +4,9 @@
  * 組織構成（本部・部・課）と社員データを管理するモジュール
  */
 
-import type { AppModule, AppTab } from "@/types/module";
-import { getModuleIcon, getMenuIcon } from "@/lib/modules/icons";
 import { FaHistory, FaSitemap, FaUpload, FaUsers } from "react-icons/fa";
+import { getMenuIcon, getModuleIcon } from "@/lib/modules/icons";
+import type { AppModule, AppTab } from "@/types/module";
 
 /**
  * 組織データ管理タブ定義

@@ -1,5 +1,5 @@
-import { create } from "zustand";
 import { toast } from "sonner";
+import { create } from "zustand";
 
 export interface Notification {
   id: string;
@@ -71,7 +71,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
 
     try {
       const res = await fetch(
-        `/api/notifications?page=${currentPage}&pageSize=20`
+        `/api/notifications?page=${currentPage}&pageSize=20`,
       );
       if (!res.ok) throw new Error("Failed to fetch");
 
@@ -115,7 +115,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
 
       set((state) => ({
         notifications: state.notifications.map((n) =>
-          n.id === id ? { ...n, isRead: true } : n
+          n.id === id ? { ...n, isRead: true } : n,
         ),
         unreadCount: Math.max(0, state.unreadCount - 1),
       }));

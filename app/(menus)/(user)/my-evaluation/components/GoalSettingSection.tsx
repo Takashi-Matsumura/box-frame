@@ -1,10 +1,22 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Bot,
+  Calendar,
+  Check,
+  ChevronLeft,
+  Loader2,
+  Plus,
+  Target,
+  Trash2,
+  TrendingUp,
+  Users,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -13,8 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar, Target, TrendingUp, Plus, Trash2, Check, Loader2, Bot, ChevronLeft, Users } from "lucide-react";
-import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
 import { GoalAIAssistant } from "./GoalAIAssistant";
 
 interface ProcessGoal {
@@ -72,18 +83,23 @@ const translations = {
     defaultProcess: "Regular Work",
     processName: "Process Name",
     processGoalText: "Goal Description",
-    processGoalPlaceholder: "Describe what you want to achieve in this process...",
+    processGoalPlaceholder:
+      "Describe what you want to achieve in this process...",
     addProcess: "Add Process",
     growthGoals: "Growth Goals",
-    growthGoalsDescription: "Select a growth category and set your development goal",
+    growthGoalsDescription:
+      "Select a growth category and set your development goal",
     selectCategory: "Select Category",
     growthGoalText: "Growth Goal",
     growthGoalPlaceholder: "Describe your growth goal for this category...",
     selfReflection: "Self Reflection",
-    selfReflectionDescription: "Optional: Write your thoughts or notes about your goals",
-    selfReflectionPlaceholder: "Write any reflections or notes about your goals...",
+    selfReflectionDescription:
+      "Optional: Write your thoughts or notes about your goals",
+    selfReflectionPlaceholder:
+      "Write any reflections or notes about your goals...",
     interviewDates: "Interview Dates",
-    interviewDatesDescription: "Record your meetings with your evaluator (progress check, results discussion, goal setting)",
+    interviewDatesDescription:
+      "Record your meetings with your evaluator (progress check, results discussion, goal setting)",
     addInterviewDate: "Add Interview Date",
     interviewNote: "Note (optional)",
     interviewNotePlaceholder: "e.g., Progress check, Goal setting...",
@@ -95,7 +111,8 @@ const translations = {
     loading: "Loading...",
     cannotDelete: "Default process cannot be deleted",
     process: "Process",
-    noCategories: "No growth categories available. Please contact the administrator.",
+    noCategories:
+      "No growth categories available. Please contact the administrator.",
     aiAssistant: "AI Assistant",
   },
   ja: {
@@ -116,9 +133,11 @@ const translations = {
     growthGoalPlaceholder: "このカテゴリでの成長目標を記述してください...",
     selfReflection: "自己ふり返り",
     selfReflectionDescription: "任意: 目標に対する考えやメモを記録",
-    selfReflectionPlaceholder: "目標に対するふり返りやメモを記入してください...",
+    selfReflectionPlaceholder:
+      "目標に対するふり返りやメモを記入してください...",
     interviewDates: "面談実施日",
-    interviewDatesDescription: "評価者との面談日を記録（進捗確認、結果面談、目標設定など）",
+    interviewDatesDescription:
+      "評価者との面談日を記録（進捗確認、結果面談、目標設定など）",
     addInterviewDate: "面談日を追加",
     interviewNote: "メモ（任意）",
     interviewNotePlaceholder: "例：進捗確認、目標設定...",
@@ -142,7 +161,9 @@ export default function GoalSettingSection({
   const t = translations[language];
 
   const [loading, setLoading] = useState(true);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
+    "idle",
+  );
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState<Period | null>(null);
   const [goals, setGoals] = useState<GoalsData>({
@@ -160,7 +181,9 @@ export default function GoalSettingSection({
   const [selfReflection, setSelfReflection] = useState("");
   const [interviewDates, setInterviewDates] = useState<InterviewDate[]>([]);
   const [evaluator, setEvaluator] = useState<{ name: string } | null>(null);
-  const [growthCategories, setGrowthCategories] = useState<GrowthCategory[]>([]);
+  const [growthCategories, setGrowthCategories] = useState<GrowthCategory[]>(
+    [],
+  );
   const [showAIAssistant, setShowAIAssistant] = useState(false);
 
   // Auto-save refs
@@ -176,7 +199,9 @@ export default function GoalSettingSection({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/evaluation/my-evaluation/goals?periodId=${periodId}`);
+      const res = await fetch(
+        `/api/evaluation/my-evaluation/goals?periodId=${periodId}`,
+      );
       if (res.ok) {
         const data = await res.json();
         if (data.processGoals) {
@@ -301,11 +326,15 @@ export default function GoalSettingSection({
     });
   };
 
-  const updateProcessGoal = (id: string, field: "name" | "goalText", value: string) => {
+  const updateProcessGoal = (
+    id: string,
+    field: "name" | "goalText",
+    value: string,
+  ) => {
     setGoals({
       ...goals,
       processGoals: goals.processGoals.map((p) =>
-        p.id === id ? { ...p, [field]: value } : p
+        p.id === id ? { ...p, [field]: value } : p,
       ),
     });
   };
@@ -356,9 +385,13 @@ export default function GoalSettingSection({
     setInterviewDates(interviewDates.filter((d) => d.id !== id));
   };
 
-  const updateInterviewDate = (id: string, field: "date" | "note", value: string) => {
+  const updateInterviewDate = (
+    id: string,
+    field: "date" | "note",
+    value: string,
+  ) => {
     setInterviewDates(
-      interviewDates.map((d) => (d.id === id ? { ...d, [field]: value } : d))
+      interviewDates.map((d) => (d.id === id ? { ...d, [field]: value } : d)),
     );
   };
 
@@ -373,7 +406,9 @@ export default function GoalSettingSection({
     });
 
     if (goals.growthGoal?.goalText) {
-      parts.push(`成長目標（${goals.growthGoal.categoryName}）: ${goals.growthGoal.goalText}`);
+      parts.push(
+        `成長目標（${goals.growthGoal.categoryName}）: ${goals.growthGoal.goalText}`,
+      );
     }
 
     if (selfReflection) {
@@ -386,15 +421,16 @@ export default function GoalSettingSection({
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto">
-        <div className="text-center py-8 text-muted-foreground">{t.loading}</div>
+        <div className="text-center py-8 text-muted-foreground">
+          {t.loading}
+        </div>
       </div>
     );
   }
 
   if (error) {
-    const errorMessage = error === "No evaluation period available"
-      ? t.noPeriod
-      : error;
+    const errorMessage =
+      error === "No evaluation period available" ? t.noPeriod : error;
     return (
       <div className="max-w-4xl mx-auto">
         <Card className="border-destructive">
@@ -419,7 +455,8 @@ export default function GoalSettingSection({
                 <Calendar className="w-4 h-4" />
                 <span className="font-medium">{period.name}</span>
                 <span>
-                  ({new Date(period.startDate).toLocaleDateString(language)} - {new Date(period.endDate).toLocaleDateString(language)})
+                  ({new Date(period.startDate).toLocaleDateString(language)} -{" "}
+                  {new Date(period.endDate).toLocaleDateString(language)})
                 </span>
               </div>
             )}
@@ -448,22 +485,35 @@ export default function GoalSettingSection({
                 <Target className="w-5 h-5 text-green-500" />
                 {t.processGoals}
               </CardTitle>
-              <p className="text-sm text-muted-foreground">{t.processGoalsDescription}</p>
+              <p className="text-sm text-muted-foreground">
+                {t.processGoalsDescription}
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
               {goals.processGoals.map((process, index) => (
-                <div key={process.id} className="p-4 border rounded-lg space-y-3">
+                <div
+                  key={process.id}
+                  className="p-4 border rounded-lg space-y-3"
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-1">
                       <span className="text-sm font-medium text-muted-foreground w-20">
                         {t.process} {index + 1}
                       </span>
                       {process.isDefault ? (
-                        <span className="text-sm font-medium">{t.defaultProcess}</span>
+                        <span className="text-sm font-medium">
+                          {t.defaultProcess}
+                        </span>
                       ) : (
                         <Input
                           value={process.name}
-                          onChange={(e) => updateProcessGoal(process.id, "name", e.target.value)}
+                          onChange={(e) =>
+                            updateProcessGoal(
+                              process.id,
+                              "name",
+                              e.target.value,
+                            )
+                          }
                           placeholder={t.processName}
                           className="max-w-xs"
                         />
@@ -481,10 +531,18 @@ export default function GoalSettingSection({
                     )}
                   </div>
                   <div>
-                    <Label className="text-sm text-muted-foreground">{t.processGoalText}</Label>
+                    <Label className="text-sm text-muted-foreground">
+                      {t.processGoalText}
+                    </Label>
                     <Textarea
                       value={process.goalText}
-                      onChange={(e) => updateProcessGoal(process.id, "goalText", e.target.value)}
+                      onChange={(e) =>
+                        updateProcessGoal(
+                          process.id,
+                          "goalText",
+                          e.target.value,
+                        )
+                      }
                       placeholder={t.processGoalPlaceholder}
                       rows={3}
                       className="mt-1"
@@ -493,7 +551,11 @@ export default function GoalSettingSection({
                 </div>
               ))}
 
-              <Button variant="outline" onClick={addProcessGoal} className="w-full">
+              <Button
+                variant="outline"
+                onClick={addProcessGoal}
+                className="w-full"
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 {t.addProcess}
               </Button>
@@ -507,11 +569,15 @@ export default function GoalSettingSection({
                 <TrendingUp className="w-5 h-5 text-purple-500" />
                 {t.growthGoals}
               </CardTitle>
-              <p className="text-sm text-muted-foreground">{t.growthGoalsDescription}</p>
+              <p className="text-sm text-muted-foreground">
+                {t.growthGoalsDescription}
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
               {growthCategories.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t.noCategories}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t.noCategories}
+                </p>
               ) : (
                 <>
                   <div>
@@ -554,7 +620,9 @@ export default function GoalSettingSection({
           <Card>
             <CardHeader>
               <CardTitle>{t.selfReflection}</CardTitle>
-              <p className="text-sm text-muted-foreground">{t.selfReflectionDescription}</p>
+              <p className="text-sm text-muted-foreground">
+                {t.selfReflectionDescription}
+              </p>
             </CardHeader>
             <CardContent>
               <Textarea
@@ -573,7 +641,9 @@ export default function GoalSettingSection({
                 <Users className="w-5 h-5 text-blue-500" />
                 {t.interviewDates}
               </CardTitle>
-              <p className="text-sm text-muted-foreground">{t.interviewDatesDescription}</p>
+              <p className="text-sm text-muted-foreground">
+                {t.interviewDatesDescription}
+              </p>
               <div className="flex items-center gap-2 mt-2 text-sm">
                 <span className="text-muted-foreground">{t.evaluator}:</span>
                 <span className="font-medium">
@@ -583,18 +653,33 @@ export default function GoalSettingSection({
             </CardHeader>
             <CardContent className="space-y-3">
               {interviewDates.map((interview) => (
-                <div key={interview.id} className="flex items-start gap-3 p-3 border rounded-lg">
+                <div
+                  key={interview.id}
+                  className="flex items-start gap-3 p-3 border rounded-lg"
+                >
                   <div className="flex-1 space-y-2">
                     <Input
                       type="date"
                       value={interview.date}
-                      onChange={(e) => updateInterviewDate(interview.id, "date", e.target.value)}
+                      onChange={(e) =>
+                        updateInterviewDate(
+                          interview.id,
+                          "date",
+                          e.target.value,
+                        )
+                      }
                       className="max-w-xs"
                     />
                     <Input
                       type="text"
                       value={interview.note || ""}
-                      onChange={(e) => updateInterviewDate(interview.id, "note", e.target.value)}
+                      onChange={(e) =>
+                        updateInterviewDate(
+                          interview.id,
+                          "note",
+                          e.target.value,
+                        )
+                      }
                       placeholder={t.interviewNotePlaceholder}
                       className="text-sm"
                     />
@@ -610,7 +695,11 @@ export default function GoalSettingSection({
                 </div>
               ))}
 
-              <Button variant="outline" onClick={addInterviewDate} className="w-full">
+              <Button
+                variant="outline"
+                onClick={addInterviewDate}
+                className="w-full"
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 {t.addInterviewDate}
               </Button>
@@ -643,7 +732,9 @@ export default function GoalSettingSection({
             size="icon"
             onClick={() => setShowAIAssistant(true)}
             className="h-12 w-12 rounded-full shadow-lg bg-card hover:bg-accent"
-            title={language === "ja" ? "AIアシスタントを開く" : "Open AI Assistant"}
+            title={
+              language === "ja" ? "AIアシスタントを開く" : "Open AI Assistant"
+            }
           >
             <div className="flex items-center gap-1">
               <ChevronLeft className="h-4 w-4" />

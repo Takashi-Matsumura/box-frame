@@ -46,7 +46,7 @@ export abstract class BaseImporter<TRow = any, TProcessed = any> {
   async parseFile(file: File): Promise<TRow[]> {
     if (file.size > this.config.maxFileSize) {
       throw new Error(
-        `ファイルサイズが大きすぎます（最大: ${this.config.maxFileSize / 1024 / 1024}MB）`
+        `ファイルサイズが大きすぎます（最大: ${this.config.maxFileSize / 1024 / 1024}MB）`,
       );
     }
 
@@ -61,7 +61,7 @@ export abstract class BaseImporter<TRow = any, TProcessed = any> {
     }
 
     throw new Error(
-      `サポートされていないファイル形式です（対応形式: ${this.config.fileTypes.join(", ")}）`
+      `サポートされていないファイル形式です（対応形式: ${this.config.fileTypes.join(", ")}）`,
     );
   }
 
@@ -79,11 +79,11 @@ export abstract class BaseImporter<TRow = any, TProcessed = any> {
 
     if (this.config.requiredColumns) {
       const missingColumns = this.config.requiredColumns.filter(
-        (col) => !headers.includes(col)
+        (col) => !headers.includes(col),
       );
       if (missingColumns.length > 0) {
         throw new Error(
-          `必須カラムが見つかりません: ${missingColumns.join(", ")}`
+          `必須カラムが見つかりません: ${missingColumns.join(", ")}`,
         );
       }
     }
@@ -128,11 +128,11 @@ export abstract class BaseImporter<TRow = any, TProcessed = any> {
       if (this.config.requiredColumns && jsonData.length > 0) {
         const headers = Object.keys(jsonData[0] as object);
         const missingColumns = this.config.requiredColumns.filter(
-          (col) => !headers.includes(col)
+          (col) => !headers.includes(col),
         );
         if (missingColumns.length > 0) {
           throw new Error(
-            `必須カラムが見つかりません: ${missingColumns.join(", ")}`
+            `必須カラムが見つかりません: ${missingColumns.join(", ")}`,
           );
         }
       }
@@ -141,7 +141,7 @@ export abstract class BaseImporter<TRow = any, TProcessed = any> {
     } catch (error) {
       console.error("XLSX parse error:", error);
       throw new Error(
-        `XLSXファイルの解析に失敗しました: ${error instanceof Error ? error.message : "Unknown error"}`
+        `XLSXファイルの解析に失敗しました: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   }
@@ -187,7 +187,7 @@ export abstract class BaseImporter<TRow = any, TProcessed = any> {
       return new Date(
         parseInt(year, 10),
         parseInt(month, 10) - 1,
-        parseInt(day, 10)
+        parseInt(day, 10),
       );
     }
 

@@ -5,8 +5,16 @@
  */
 
 import { prisma } from "@/lib/prisma";
-import type { BatchGenerationResult, EvaluationProgress, EmployeeWithOrg, PeriodStatus } from "../types";
-import { DEFAULT_PROCESS_CATEGORIES, DEFAULT_GROWTH_CATEGORIES } from "../constants";
+import {
+  DEFAULT_GROWTH_CATEGORIES,
+  DEFAULT_PROCESS_CATEGORIES,
+} from "../constants";
+import type {
+  BatchGenerationResult,
+  EmployeeWithOrg,
+  EvaluationProgress,
+  PeriodStatus,
+} from "../types";
 import { determineEvaluator } from "./evaluator-resolver";
 import { initializeDefaultWeights } from "./weight-service";
 
@@ -15,7 +23,7 @@ import { initializeDefaultWeights } from "./weight-service";
  */
 export async function generateEvaluationsForPeriod(
   periodId: string,
-  organizationId?: string
+  organizationId?: string,
 ): Promise<BatchGenerationResult> {
   const result: BatchGenerationResult = {
     totalEmployees: 0,
@@ -62,7 +70,9 @@ export async function generateEvaluationsForPeriod(
     where: { periodId },
     select: { employeeId: true },
   });
-  const existingEmployeeIds = new Set(existingEvaluations.map((e) => e.employeeId));
+  const existingEmployeeIds = new Set(
+    existingEvaluations.map((e) => e.employeeId),
+  );
 
   // 各社員の評価レコードを生成
   for (const employee of employees) {
@@ -76,7 +86,7 @@ export async function generateEvaluationsForPeriod(
       // 評価者を決定
       const evaluator = await determineEvaluator(
         employee as EmployeeWithOrg,
-        periodId
+        periodId,
       );
 
       // 評価レコードを作成
@@ -113,7 +123,7 @@ export async function generateEvaluationsForPeriod(
  */
 export async function updatePeriodStatus(
   periodId: string,
-  status: PeriodStatus
+  status: PeriodStatus,
 ): Promise<void> {
   await prisma.evaluationPeriod.update({
     where: { id: periodId },
@@ -166,7 +176,9 @@ export async function initializeMasterData(): Promise<void> {
 /**
  * 評価期間の評価データを削除（リセット）
  */
-export async function resetEvaluationsForPeriod(periodId: string): Promise<number> {
+export async function resetEvaluationsForPeriod(
+  periodId: string,
+): Promise<number> {
   const result = await prisma.evaluation.deleteMany({
     where: { periodId },
   });
@@ -177,7 +189,9 @@ export async function resetEvaluationsForPeriod(periodId: string): Promise<numbe
 /**
  * 評価進捗を取得
  */
-export async function getEvaluationProgress(periodId: string): Promise<EvaluationProgress> {
+export async function getEvaluationProgress(
+  periodId: string,
+): Promise<EvaluationProgress> {
   const [total, pending, inProgress, completed, confirmed] = await Promise.all([
     prisma.evaluation.count({ where: { periodId } }),
     prisma.evaluation.count({ where: { periodId, status: "PENDING" } }),

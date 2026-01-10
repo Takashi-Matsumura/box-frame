@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  GripVertical,
+  Languages,
+  Loader2,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -19,9 +19,16 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2, GripVertical, Languages, Loader2 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import { evaluationMasterTranslations } from "../translations";
 
 interface GrowthCategory {
@@ -51,7 +58,9 @@ export default function GrowthCategoriesSection({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [translating, setTranslating] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<GrowthCategory | null>(null);
+  const [editingCategory, setEditingCategory] = useState<GrowthCategory | null>(
+    null,
+  );
 
   const [formData, setFormData] = useState({
     name: "",
@@ -198,11 +207,14 @@ export default function GrowthCategoriesSection({
 
   const handleToggleActive = async (category: GrowthCategory) => {
     try {
-      const res = await fetch(`/api/evaluation/growth-categories/${category.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive: !category.isActive }),
-      });
+      const res = await fetch(
+        `/api/evaluation/growth-categories/${category.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isActive: !category.isActive }),
+        },
+      );
 
       if (res.ok) {
         fetchCategories();
@@ -213,7 +225,9 @@ export default function GrowthCategoriesSection({
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-muted-foreground">{t.loading}</div>;
+    return (
+      <div className="text-center py-8 text-muted-foreground">{t.loading}</div>
+    );
   }
 
   return (
@@ -292,7 +306,9 @@ export default function GrowthCategoriesSection({
               {/* 係数（難易度調整） */}
               <div className="space-y-2">
                 <Label>
-                  {language === "ja" ? "係数（難易度調整）" : "Coefficient (Difficulty Adjustment)"}
+                  {language === "ja"
+                    ? "係数（難易度調整）"
+                    : "Coefficient (Difficulty Adjustment)"}
                 </Label>
                 <p className="text-xs text-muted-foreground">
                   {language === "ja"
@@ -442,7 +458,9 @@ export default function GrowthCategoriesSection({
 
       <div className="flex-1 overflow-y-auto">
         {categories.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">{t.noData}</div>
+          <div className="text-center py-12 text-muted-foreground">
+            {t.noData}
+          </div>
         ) : (
           <Table>
             <TableHeader>
@@ -450,7 +468,9 @@ export default function GrowthCategoriesSection({
                 <TableHead className="w-12"></TableHead>
                 <TableHead>{t.sortOrder}</TableHead>
                 <TableHead>{t.categoryName}</TableHead>
-                <TableHead className="text-center">{language === "ja" ? "係数" : "Coef."}</TableHead>
+                <TableHead className="text-center">
+                  {language === "ja" ? "係数" : "Coef."}
+                </TableHead>
                 <TableHead className="text-center">{t.scoreT4}</TableHead>
                 <TableHead className="text-center">{t.scoreT3}</TableHead>
                 <TableHead className="text-center bg-blue-50 dark:bg-blue-900/20">
@@ -479,10 +499,14 @@ export default function GrowthCategoriesSection({
                     </span>
                   </TableCell>
                   <TableCell className="text-center">
-                    <span className="font-mono text-sm">{(category.scoreT4 ?? 115).toFixed(0)}</span>
+                    <span className="font-mono text-sm">
+                      {(category.scoreT4 ?? 115).toFixed(0)}
+                    </span>
                   </TableCell>
                   <TableCell className="text-center">
-                    <span className="font-mono text-sm">{(category.scoreT3 ?? 100).toFixed(0)}</span>
+                    <span className="font-mono text-sm">
+                      {(category.scoreT3 ?? 100).toFixed(0)}
+                    </span>
                   </TableCell>
                   <TableCell className="text-center bg-blue-50 dark:bg-blue-900/20">
                     <span className="font-mono text-sm font-semibold text-blue-700 dark:text-blue-300">
@@ -490,7 +514,9 @@ export default function GrowthCategoriesSection({
                     </span>
                   </TableCell>
                   <TableCell className="text-center">
-                    <span className="font-mono text-sm">{(category.scoreT1 ?? 50).toFixed(0)}</span>
+                    <span className="font-mono text-sm">
+                      {(category.scoreT1 ?? 50).toFixed(0)}
+                    </span>
                   </TableCell>
                   <TableCell className="max-w-xs truncate text-muted-foreground">
                     {category.description || "-"}

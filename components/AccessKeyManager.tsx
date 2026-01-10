@@ -1,15 +1,32 @@
 "use client";
 
 import type { AccessKey } from "@prisma/client";
+import { Copy, Plus, Power, PowerOff, Trash2 } from "lucide-react";
 import { useState } from "react";
-import type { AppMenu, AppModule } from "@/types/module";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   PermissionTreeSelector,
   type SelectedPermission,
 } from "@/components/PermissionTreeSelector";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -24,24 +41,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Copy, Power, PowerOff, Trash2, Plus } from "lucide-react";
+import type { AppMenu, AppModule } from "@/types/module";
 
 type AccessKeyWithTargetUser = AccessKey & {
   targetUser: {
@@ -101,7 +101,11 @@ export function AccessKeyManager({
     const hasPermissions = formData.permissions.length > 0;
     const hasMenuPaths = formData.menuPaths.length > 0;
 
-    if (!formData.name || !formData.targetUserId || (!hasPermissions && !hasMenuPaths)) {
+    if (
+      !formData.name ||
+      !formData.targetUserId ||
+      (!hasPermissions && !hasMenuPaths)
+    ) {
       alert(
         t(
           "Please enter a name, select a target user, and select at least one permission",
@@ -119,7 +123,9 @@ export function AccessKeyManager({
 
       const requestBody = {
         ...formData,
-        menuPaths: hasPermissions ? menuPathsFromPermissions : formData.menuPaths,
+        menuPaths: hasPermissions
+          ? menuPathsFromPermissions
+          : formData.menuPaths,
         permissions: formData.permissions.map((p) => ({
           granularity: p.granularity,
           moduleId: p.moduleId,
@@ -278,140 +284,175 @@ export function AccessKeyManager({
               <div className="flex items-center justify-between mb-4">
                 <p className="text-sm text-muted-foreground">
                   {t("Total", "合計")}:{" "}
-                  <span className="font-medium text-foreground">{accessKeys.length}</span>
+                  <span className="font-medium text-foreground">
+                    {accessKeys.length}
+                  </span>
                 </p>
               </div>
               <div className="rounded-lg border overflow-hidden">
                 <Table>
-                <TableHeader className="bg-muted/50">
-                  <TableRow>
-                    <TableHead>{t("Access Key Information", "アクセスキー情報")}</TableHead>
-                    <TableHead>{t("Status", "ステータス")}</TableHead>
-                    <TableHead>{t("Menus", "メニュー")}</TableHead>
-                    <TableHead>{t("Expires", "有効期限")}</TableHead>
-                    <TableHead className="text-right">{t("Actions", "操作")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {accessKeys.map((accessKey) => {
-                    const menuPaths = JSON.parse(accessKey.menuPaths) as string[];
-                    return (
-                      <TableRow key={accessKey.id}>
-                        <TableCell>
-                          <div className="space-y-2">
-                            <div className="font-medium">{accessKey.name}</div>
-                            {accessKey.targetUser ? (
-                              <div className="text-sm text-muted-foreground">
-                                {accessKey.targetUser.name} ({accessKey.targetUser.email})
+                  <TableHeader className="bg-muted/50">
+                    <TableRow>
+                      <TableHead>
+                        {t("Access Key Information", "アクセスキー情報")}
+                      </TableHead>
+                      <TableHead>{t("Status", "ステータス")}</TableHead>
+                      <TableHead>{t("Menus", "メニュー")}</TableHead>
+                      <TableHead>{t("Expires", "有効期限")}</TableHead>
+                      <TableHead className="text-right">
+                        {t("Actions", "操作")}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {accessKeys.map((accessKey) => {
+                      const menuPaths = JSON.parse(
+                        accessKey.menuPaths,
+                      ) as string[];
+                      return (
+                        <TableRow key={accessKey.id}>
+                          <TableCell>
+                            <div className="space-y-2">
+                              <div className="font-medium">
+                                {accessKey.name}
                               </div>
+                              {accessKey.targetUser ? (
+                                <div className="text-sm text-muted-foreground">
+                                  {accessKey.targetUser.name} (
+                                  {accessKey.targetUser.email})
+                                </div>
+                              ) : (
+                                <div className="text-sm text-muted-foreground">
+                                  {t("No target user", "対象ユーザなし")}
+                                </div>
+                              )}
+                              <div className="flex items-center gap-2 bg-muted p-2 rounded">
+                                <code className="flex-1 font-mono text-xs text-muted-foreground truncate">
+                                  {accessKey.key}
+                                </code>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6"
+                                        onClick={() =>
+                                          handleCopyKey(accessKey.key)
+                                        }
+                                      >
+                                        <Copy className="h-3 w-3" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>
+                                        {t(
+                                          "Copy to clipboard",
+                                          "クリップボードにコピー",
+                                        )}
+                                      </p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {accessKey.isActive ? (
+                              <Badge
+                                variant="outline"
+                                className="bg-green-50 text-green-700 border-green-200"
+                              >
+                                {t("Active", "有効")}
+                              </Badge>
                             ) : (
-                              <div className="text-sm text-muted-foreground">
-                                {t("No target user", "対象ユーザなし")}
-                              </div>
+                              <Badge
+                                variant="outline"
+                                className="bg-muted text-muted-foreground"
+                              >
+                                {t("Inactive", "無効")}
+                              </Badge>
                             )}
-                            <div className="flex items-center gap-2 bg-muted p-2 rounded">
-                              <code className="flex-1 font-mono text-xs text-muted-foreground truncate">
-                                {accessKey.key}
-                              </code>
-                              <TooltipProvider>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              {menuPaths.map((path) => {
+                                const menu = menus.find((m) => m.path === path);
+                                return (
+                                  <div
+                                    key={path}
+                                    className="text-sm text-muted-foreground"
+                                  >
+                                    •{" "}
+                                    {menu
+                                      ? language === "ja"
+                                        ? menu.nameJa
+                                        : menu.name
+                                      : path}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {new Date(accessKey.expiresAt).toLocaleDateString(
+                              language === "ja" ? "ja-JP" : "en-US",
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <TooltipProvider>
+                              <div className="flex gap-1 justify-end">
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-6 w-6"
-                                      onClick={() => handleCopyKey(accessKey.key)}
+                                      className="h-8 w-8"
+                                      onClick={() =>
+                                        handleToggleActive(
+                                          accessKey.id,
+                                          accessKey.isActive,
+                                        )
+                                      }
                                     >
-                                      <Copy className="h-3 w-3" />
+                                      {accessKey.isActive ? (
+                                        <PowerOff className="h-4 w-4" />
+                                      ) : (
+                                        <Power className="h-4 w-4" />
+                                      )}
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>{t("Copy to clipboard", "クリップボードにコピー")}</p>
+                                    <p>
+                                      {accessKey.isActive
+                                        ? t("Deactivate", "無効化")
+                                        : t("Activate", "有効化")}
+                                    </p>
                                   </TooltipContent>
                                 </Tooltip>
-                              </TooltipProvider>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {accessKey.isActive ? (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                              {t("Active", "有効")}
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-muted text-muted-foreground">
-                              {t("Inactive", "無効")}
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            {menuPaths.map((path) => {
-                              const menu = menus.find((m) => m.path === path);
-                              return (
-                                <div key={path} className="text-sm text-muted-foreground">
-                                  • {menu ? (language === "ja" ? menu.nameJa : menu.name) : path}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {new Date(accessKey.expiresAt).toLocaleDateString(
-                            language === "ja" ? "ja-JP" : "en-US",
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <TooltipProvider>
-                            <div className="flex gap-1 justify-end">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() =>
-                                      handleToggleActive(accessKey.id, accessKey.isActive)
-                                    }
-                                  >
-                                    {accessKey.isActive ? (
-                                      <PowerOff className="h-4 w-4" />
-                                    ) : (
-                                      <Power className="h-4 w-4" />
-                                    )}
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>
-                                    {accessKey.isActive
-                                      ? t("Deactivate", "無効化")
-                                      : t("Activate", "有効化")}
-                                  </p>
-                                </TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    onClick={() => handleDelete(accessKey.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>{t("Delete", "削除")}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-                          </TooltipProvider>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                      onClick={() => handleDelete(accessKey.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{t("Delete", "削除")}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </TooltipProvider>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               </div>
             </>
           )}
@@ -422,11 +463,13 @@ export function AccessKeyManager({
       <Dialog open={isCreating} onOpenChange={handleCloseModal}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{t("Create New Access Key", "新しいアクセスキーを作成")}</DialogTitle>
+            <DialogTitle>
+              {t("Create New Access Key", "新しいアクセスキーを作成")}
+            </DialogTitle>
             <DialogDescription>
               {t(
                 "Create an access key for a user to grant specific menu access.",
-                "ユーザに特定のメニューへのアクセスを許可するアクセスキーを作成します。"
+                "ユーザに特定のメニューへのアクセスを許可するアクセスキーを作成します。",
               )}
             </DialogDescription>
           </DialogHeader>
@@ -455,7 +498,9 @@ export function AccessKeyManager({
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={t("-- Select a user --", "-- ユーザを選択 --")} />
+                  <SelectValue
+                    placeholder={t("-- Select a user --", "-- ユーザを選択 --")}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {users.map((user) => (
@@ -484,10 +529,7 @@ export function AccessKeyManager({
 
             <div className="space-y-2">
               <Label>
-                {t(
-                  "Select Permissions to Grant",
-                  "付与する権限を選択",
-                )}
+                {t("Select Permissions to Grant", "付与する権限を選択")}
               </Label>
               <PermissionTreeSelector
                 modules={modules}

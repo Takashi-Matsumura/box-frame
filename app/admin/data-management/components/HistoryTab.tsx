@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { FaHistory, FaFilter } from "react-icons/fa";
-import type { DataManagementTranslation } from "../translations";
 import type { ChangeType } from "@prisma/client";
+import { useCallback, useEffect, useState } from "react";
+import { FaFilter, FaHistory } from "react-icons/fa";
+import type { DataManagementTranslation } from "../translations";
 
 interface ChangeLog {
   id: string;
@@ -113,7 +113,9 @@ export function HistoryTab({ organizationId, language, t }: HistoryTabProps) {
     <div>
       <div className="flex items-center gap-3 mb-6">
         <FaHistory className="w-6 h-6 text-purple-600" />
-        <h2 className="text-xl font-semibold text-foreground">{t.historyTitle}</h2>
+        <h2 className="text-xl font-semibold text-foreground">
+          {t.historyTitle}
+        </h2>
       </div>
 
       {/* Filters */}
@@ -128,7 +130,9 @@ export function HistoryTab({ organizationId, language, t }: HistoryTabProps) {
           onChange={(e) => setChangeTypeFilter(e.target.value)}
           className="px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="">{t.changeType}: {t.all}</option>
+          <option value="">
+            {t.changeType}: {t.all}
+          </option>
           <option value="CREATE">{getChangeTypeLabel("CREATE")}</option>
           <option value="UPDATE">{getChangeTypeLabel("UPDATE")}</option>
           <option value="DELETE">{getChangeTypeLabel("DELETE")}</option>
@@ -148,7 +152,9 @@ export function HistoryTab({ organizationId, language, t }: HistoryTabProps) {
           <option value="Department">{getEntityTypeLabel("Department")}</option>
           <option value="Section">{getEntityTypeLabel("Section")}</option>
           <option value="Course">{getEntityTypeLabel("Course")}</option>
-          <option value="Organization">{getEntityTypeLabel("Organization")}</option>
+          <option value="Organization">
+            {getEntityTypeLabel("Organization")}
+          </option>
         </select>
       </div>
 
@@ -209,10 +215,14 @@ export function HistoryTab({ organizationId, language, t }: HistoryTabProps) {
                   </td>
                   <td className="px-4 py-3 text-foreground">
                     {log.changeDescription ? (
-                      <p className="max-w-[300px] truncate">{log.changeDescription}</p>
+                      <p className="max-w-[300px] truncate">
+                        {log.changeDescription}
+                      </p>
                     ) : log.fieldName ? (
                       <div className="text-xs">
-                        <span className="text-muted-foreground">{log.fieldName}: </span>
+                        <span className="text-muted-foreground">
+                          {log.fieldName}:{" "}
+                        </span>
                         <span className="line-through text-red-500">
                           {log.oldValue || "(なし)"}
                         </span>{" "}

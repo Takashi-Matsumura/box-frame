@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     if (!periodId) {
       return NextResponse.json(
         { error: "periodId is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     console.error("Error fetching position groups:", error);
     return NextResponse.json(
       { error: "Failed to fetch position groups" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -56,14 +56,23 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { action, periodId, id, name, nameEn, displayOrder, positionCodes, groups } = body;
+    const {
+      action,
+      periodId,
+      id,
+      name,
+      nameEn,
+      displayOrder,
+      positionCodes,
+      groups,
+    } = body;
 
     // 一括更新（順序変更時）
     if (action === "reorder") {
       if (!periodId || !groups || !Array.isArray(groups)) {
         return NextResponse.json(
           { error: "periodId and groups array are required" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -73,8 +82,8 @@ export async function POST(request: Request) {
           prisma.positionGroup.update({
             where: { id: g.id },
             data: { displayOrder: g.displayOrder },
-          })
-        )
+          }),
+        ),
       );
 
       return NextResponse.json({ success: true });
@@ -85,7 +94,7 @@ export async function POST(request: Request) {
       if (!periodId || !groups || !Array.isArray(groups)) {
         return NextResponse.json(
           { error: "periodId and groups array are required" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -135,7 +144,7 @@ export async function POST(request: Request) {
       if (!periodId || !groups || !Array.isArray(groups)) {
         return NextResponse.json(
           { error: "periodId and groups array are required" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -146,12 +155,14 @@ export async function POST(request: Request) {
 
       // 新しいグループを作成
       await prisma.positionGroup.createMany({
-        data: groups.map((g: { name: string; positionCodes: string[] }, index: number) => ({
-          periodId,
-          name: g.name,
-          displayOrder: index,
-          positionCodes: g.positionCodes,
-        })),
+        data: groups.map(
+          (g: { name: string; positionCodes: string[] }, index: number) => ({
+            periodId,
+            name: g.name,
+            displayOrder: index,
+            positionCodes: g.positionCodes,
+          }),
+        ),
       });
 
       return NextResponse.json({ success: true });
@@ -162,10 +173,15 @@ export async function POST(request: Request) {
       console.log("[merge] Received positionCodes:", positionCodes);
       console.log("[merge] Received name:", name);
 
-      if (!periodId || !positionCodes || !Array.isArray(positionCodes) || positionCodes.length < 2) {
+      if (
+        !periodId ||
+        !positionCodes ||
+        !Array.isArray(positionCodes) ||
+        positionCodes.length < 2
+      ) {
         return NextResponse.json(
           { error: "periodId and at least 2 positionCodes are required" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -225,7 +241,10 @@ export async function POST(request: Request) {
         }
       } else {
         // 対象グループがない場合は新規作成
-        const maxOrder = Math.max(...existingGroups.map((g) => g.displayOrder), -1);
+        const maxOrder = Math.max(
+          ...existingGroups.map((g) => g.displayOrder),
+          -1,
+        );
         await prisma.positionGroup.create({
           data: {
             periodId,
@@ -244,7 +263,7 @@ export async function POST(request: Request) {
       if (!id || !positionCodes || !Array.isArray(positionCodes)) {
         return NextResponse.json(
           { error: "id and positionCodes are required" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -253,14 +272,13 @@ export async function POST(request: Request) {
       });
 
       if (!group) {
-        return NextResponse.json(
-          { error: "Group not found" },
-          { status: 404 }
-        );
+        return NextResponse.json({ error: "Group not found" }, { status: 404 });
       }
 
       const currentCodes = group.positionCodes as string[];
-      const remainingCodes = currentCodes.filter((c) => !positionCodes.includes(c));
+      const remainingCodes = currentCodes.filter(
+        (c) => !positionCodes.includes(c),
+      );
 
       // 最大のdisplayOrderを取得
       const maxOrder = await prisma.positionGroup.aggregate({
@@ -314,7 +332,7 @@ export async function POST(request: Request) {
       if (!periodId || !name || !positionCodes) {
         return NextResponse.json(
           { error: "periodId, name, and positionCodes are required" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -339,7 +357,7 @@ export async function POST(request: Request) {
     console.error("Error updating position group:", error);
     return NextResponse.json(
       { error: "Failed to update position group" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -364,10 +382,7 @@ export async function DELETE(request: Request) {
     const id = url.searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json(
-        { error: "id is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "id is required" }, { status: 400 });
     }
 
     await prisma.positionGroup.delete({
@@ -379,7 +394,7 @@ export async function DELETE(request: Request) {
     console.error("Error deleting position group:", error);
     return NextResponse.json(
       { error: "Failed to delete position group" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

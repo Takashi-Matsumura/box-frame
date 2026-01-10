@@ -79,6 +79,5 @@ export const notificationTranslations = {
   },
 } as const;
 
-export type NotificationTranslations =
-  (typeof notificationTranslations)["en"];
+export type NotificationTranslations = (typeof notificationTranslations)["en"];
 export type Language = keyof typeof notificationTranslations;

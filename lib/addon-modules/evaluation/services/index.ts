@@ -4,45 +4,42 @@
  * 全サービスを再エクスポート
  */
 
-// 重み設定サービス
+// 一括生成サービス
 export {
-  getWeightsForPositionGrade,
-  getWeightsForGrade,
-  getAllWeightsForPeriod,
-  upsertWeight,
-  initializeDefaultWeights,
-  deleteWeight,
-} from "./weight-service";
-
-// スコア計算サービス
-export {
-  getEvaluationScoreRange,
-  determineGradeWithRange,
-  calculateResultsScore,
-  calculateResultsScoreAsync,
-  calculateProcessScore,
-  calculateGrowthScore,
-  calculateGrowthScoreSync,
-  calculateFinalScore,
-  recalculateEvaluationScore,
-  syncResultsScoreFromCriteria1,
-  syncResultsScoreFromOrganizationGoal,
-} from "./score-calculator";
-
+  generateEvaluationsForPeriod,
+  getEvaluationProgress,
+  initializeGrowthCategories,
+  initializeMasterData,
+  initializeProcessCategories,
+  resetEvaluationsForPeriod,
+  updatePeriodStatus,
+} from "./batch-generator";
 // 評価者決定サービス
 export {
   determineEvaluator,
   getEvaluatees,
   getEvaluatorInfo,
 } from "./evaluator-resolver";
-
-// 一括生成サービス
+// スコア計算サービス
 export {
-  generateEvaluationsForPeriod,
-  updatePeriodStatus,
-  initializeProcessCategories,
-  initializeGrowthCategories,
-  initializeMasterData,
-  resetEvaluationsForPeriod,
-  getEvaluationProgress,
-} from "./batch-generator";
+  calculateFinalScore,
+  calculateGrowthScore,
+  calculateGrowthScoreSync,
+  calculateProcessScore,
+  calculateResultsScore,
+  calculateResultsScoreAsync,
+  determineGradeWithRange,
+  getEvaluationScoreRange,
+  recalculateEvaluationScore,
+  syncResultsScoreFromCriteria1,
+  syncResultsScoreFromOrganizationGoal,
+} from "./score-calculator";
+// 重み設定サービス
+export {
+  deleteWeight,
+  getAllWeightsForPeriod,
+  getWeightsForGrade,
+  getWeightsForPositionGrade,
+  initializeDefaultWeights,
+  upsertWeight,
+} from "./weight-service";

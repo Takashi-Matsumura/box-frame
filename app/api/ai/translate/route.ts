@@ -20,14 +20,17 @@ export async function POST(request: Request) {
     if (!text || !sourceLanguage || !targetLanguage) {
       return NextResponse.json(
         { error: "text, sourceLanguage, and targetLanguage are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    if (!["ja", "en"].includes(sourceLanguage) || !["ja", "en"].includes(targetLanguage)) {
+    if (
+      !["ja", "en"].includes(sourceLanguage) ||
+      !["ja", "en"].includes(targetLanguage)
+    ) {
       return NextResponse.json(
         { error: "sourceLanguage and targetLanguage must be 'ja' or 'en'" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -48,7 +51,8 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("Error translating:", error);
-    const message = error instanceof Error ? error.message : "Translation failed";
+    const message =
+      error instanceof Error ? error.message : "Translation failed";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

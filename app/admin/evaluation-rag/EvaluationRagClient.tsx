@@ -1,36 +1,36 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import {
-  Database,
-  FileText,
-  Trash2,
-  Upload,
-  Plus,
-  Loader2,
   AlertCircle,
+  Bot,
   CheckCircle2,
-  RefreshCw,
   ChevronDown,
   ChevronRight,
-  File,
-  Eye,
   Code,
-  Bot,
-  Save,
-  RotateCcw,
+  Database,
+  Eye,
+  File,
+  FileText,
+  Loader2,
   Pencil,
+  Plus,
+  RefreshCw,
+  RotateCcw,
+  Save,
+  Trash2,
+  Upload,
   X,
 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 interface DocumentInfo {
   filename: string;
@@ -88,7 +88,8 @@ const translations = {
     documentCategory: "カテゴリ",
     documentCategoryPlaceholder: "evaluation",
     documentContent: "内容",
-    documentContentPlaceholder: "ナレッジベースに登録する内容を入力してください...",
+    documentContentPlaceholder:
+      "ナレッジベースに登録する内容を入力してください...",
     register: "登録",
     registering: "登録中...",
     registeredDocuments: "登録済みドキュメント",
@@ -118,7 +119,8 @@ const translations = {
     updateError: "ドキュメントの更新に失敗しました",
     // System Prompt
     systemPromptTitle: "AIアシスタントのシステムプロンプト",
-    systemPromptDescription: "AIアシスタントの動作や回答スタイルを定義するプロンプトです",
+    systemPromptDescription:
+      "AIアシスタントの動作や回答スタイルを定義するプロンプトです",
     systemPromptJa: "日本語プロンプト",
     systemPromptEn: "英語プロンプト",
     save: "保存",
@@ -142,7 +144,8 @@ const translations = {
     documentCategory: "Category",
     documentCategoryPlaceholder: "evaluation",
     documentContent: "Content",
-    documentContentPlaceholder: "Enter the content to register in the knowledge base...",
+    documentContentPlaceholder:
+      "Enter the content to register in the knowledge base...",
     register: "Register",
     registering: "Registering...",
     registeredDocuments: "Registered Documents",
@@ -172,7 +175,8 @@ const translations = {
     updateError: "Failed to update document",
     // System Prompt
     systemPromptTitle: "AI Assistant System Prompt",
-    systemPromptDescription: "Define the behavior and response style of the AI assistant",
+    systemPromptDescription:
+      "Define the behavior and response style of the AI assistant",
     systemPromptJa: "Japanese Prompt",
     systemPromptEn: "English Prompt",
     save: "Save",
@@ -184,19 +188,26 @@ const translations = {
   },
 };
 
-export default function EvaluationRagClient({ language }: EvaluationRagClientProps) {
+export default function EvaluationRagClient({
+  language,
+}: EvaluationRagClientProps) {
   const t = translations[language];
   const searchParams = useSearchParams();
   const activeTab = searchParams.get("tab") || "knowledge-base";
 
   // Knowledge Base state
-  const [backendStatus, setBackendStatus] = useState<"unknown" | "healthy" | "unhealthy">("unknown");
+  const [backendStatus, setBackendStatus] = useState<
+    "unknown" | "healthy" | "unhealthy"
+  >("unknown");
   const [totalChunks, setTotalChunks] = useState(0);
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [deletingFilename, setDeletingFilename] = useState<string | null>(null);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
   const [docContent, setDocContent] = useState<DocumentContent | null>(null);
   const [loadingContent, setLoadingContent] = useState(false);
@@ -209,10 +220,17 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
   const [content, setContent] = useState("");
 
   // System Prompt state
-  const [systemPromptJa, setSystemPromptJa] = useState(DEFAULT_SYSTEM_PROMPT.ja);
-  const [systemPromptEn, setSystemPromptEn] = useState(DEFAULT_SYSTEM_PROMPT.en);
+  const [systemPromptJa, setSystemPromptJa] = useState(
+    DEFAULT_SYSTEM_PROMPT.ja,
+  );
+  const [systemPromptEn, setSystemPromptEn] = useState(
+    DEFAULT_SYSTEM_PROMPT.en,
+  );
   const [isSavingPrompt, setIsSavingPrompt] = useState(false);
-  const [promptMessage, setPromptMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [promptMessage, setPromptMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   // Load system prompt from localStorage
   useEffect(() => {
@@ -283,7 +301,9 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
     setViewMode("preview");
 
     try {
-      const res = await fetch(`/api/rag-backend/documents/content/${encodeURIComponent(filename)}`);
+      const res = await fetch(
+        `/api/rag-backend/documents/content/${encodeURIComponent(filename)}`,
+      );
       if (res.ok) {
         const data = await res.json();
         setDocContent(data);
@@ -341,9 +361,12 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
     setMessage(null);
 
     try {
-      const res = await fetch(`/api/rag-backend/documents/${encodeURIComponent(filename)}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `/api/rag-backend/documents/${encodeURIComponent(filename)}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (res.ok) {
         setMessage({ type: "success", text: t.deleteSuccess });
@@ -375,7 +398,8 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
   const handleStartEdit = () => {
     if (!docContent) return;
     // Use original_content if available (preserves formatting)
-    const fullContent = docContent.original_content ||
+    const fullContent =
+      docContent.original_content ||
       docContent.chunks
         .sort((a, b) => a.chunk_index - b.chunk_index)
         .map((chunk) => chunk.content)
@@ -404,9 +428,12 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
       const docTitle = getDisplayName(expandedDoc);
 
       // First, delete the old document
-      const deleteRes = await fetch(`/api/rag-backend/documents/${encodeURIComponent(expandedDoc)}`, {
-        method: "DELETE",
-      });
+      const deleteRes = await fetch(
+        `/api/rag-backend/documents/${encodeURIComponent(expandedDoc)}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (!deleteRes.ok) {
         throw new Error("Failed to delete old document");
@@ -414,7 +441,9 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
 
       // Determine category based on document title
       // 目標設定関連のドキュメントは "goalsetting"、それ以外は "evaluation"
-      const docCategory = docTitle.includes("目標設定") ? "goalsetting" : "evaluation";
+      const docCategory = docTitle.includes("目標設定")
+        ? "goalsetting"
+        : "evaluation";
 
       // Then, create new document with edited content
       const createRes = await fetch("/api/rag-backend/documents", {
@@ -457,10 +486,13 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
     setPromptMessage(null);
 
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        ja: systemPromptJa,
-        en: systemPromptEn,
-      }));
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          ja: systemPromptJa,
+          en: systemPromptEn,
+        }),
+      );
       setPromptMessage({ type: "success", text: t.saved });
     } catch {
       setPromptMessage({ type: "error", text: t.error });
@@ -483,7 +515,9 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
   const formatTimestamp = (timestamp: string) => {
     if (!timestamp) return "-";
     try {
-      return new Date(timestamp).toLocaleString(language === "ja" ? "ja-JP" : "en-US");
+      return new Date(timestamp).toLocaleString(
+        language === "ja" ? "ja-JP" : "en-US",
+      );
     } catch {
       return timestamp;
     }
@@ -506,9 +540,15 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Database className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-sm font-medium">{t.backendStatus}</span>
+                    <span className="text-sm font-medium">
+                      {t.backendStatus}
+                    </span>
                   </div>
-                  <Badge variant={backendStatus === "healthy" ? "default" : "destructive"}>
+                  <Badge
+                    variant={
+                      backendStatus === "healthy" ? "default" : "destructive"
+                    }
+                  >
                     {backendStatus === "healthy" ? (
                       <>
                         <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -530,7 +570,9 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <FileText className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-sm font-medium">{t.documentCount}</span>
+                    <span className="text-sm font-medium">
+                      {t.documentCount}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline">
@@ -613,7 +655,11 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
               <div className="flex justify-end">
                 <Button
                   onClick={handleRegister}
-                  disabled={backendStatus !== "healthy" || isRegistering || !content.trim()}
+                  disabled={
+                    backendStatus !== "healthy" ||
+                    isRegistering ||
+                    !content.trim()
+                  }
                 >
                   {isRegistering ? (
                     <>
@@ -639,8 +685,15 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
                   <FileText className="h-5 w-5" />
                   {t.registeredDocuments}
                 </CardTitle>
-                <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
-                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefresh}
+                  disabled={isLoading}
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
+                  />
                   {t.refresh}
                 </Button>
               </div>
@@ -658,7 +711,10 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
               ) : (
                 <div className="space-y-2">
                   {documents.map((doc) => (
-                    <div key={doc.filename} className="rounded-lg border bg-card overflow-hidden">
+                    <div
+                      key={doc.filename}
+                      className="rounded-lg border bg-card overflow-hidden"
+                    >
                       <div className="p-4 flex items-center justify-between gap-4">
                         <button
                           onClick={() => fetchDocumentContent(doc.filename)}
@@ -673,12 +729,21 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
                           </div>
                           <File className="h-5 w-5 text-primary shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">{getDisplayName(doc.filename)}</p>
+                            <p className="font-medium truncate">
+                              {getDisplayName(doc.filename)}
+                            </p>
                             <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                              <span>{doc.chunk_count} {t.chunkInfo}</span>
-                              <span>{doc.total_chars.toLocaleString()} {t.totalChars}</span>
+                              <span>
+                                {doc.chunk_count} {t.chunkInfo}
+                              </span>
+                              <span>
+                                {doc.total_chars.toLocaleString()}{" "}
+                                {t.totalChars}
+                              </span>
                               {doc.upload_timestamp && (
-                                <span>{formatTimestamp(doc.upload_timestamp)}</span>
+                                <span>
+                                  {formatTimestamp(doc.upload_timestamp)}
+                                </span>
                               )}
                             </div>
                           </div>
@@ -703,16 +768,25 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
                           {loadingContent ? (
                             <div className="flex items-center justify-center py-8">
                               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                              <span className="ml-2 text-sm text-muted-foreground">{t.loading}</span>
+                              <span className="ml-2 text-sm text-muted-foreground">
+                                {t.loading}
+                              </span>
                             </div>
                           ) : docContent ? (
                             <div>
                               <div className="flex items-center justify-between p-3 border-b bg-muted/50">
                                 <div className="flex items-center gap-2">
                                   <Button
-                                    variant={viewMode === "preview" && !isEditing ? "default" : "ghost"}
+                                    variant={
+                                      viewMode === "preview" && !isEditing
+                                        ? "default"
+                                        : "ghost"
+                                    }
                                     size="sm"
-                                    onClick={() => { setViewMode("preview"); setIsEditing(false); }}
+                                    onClick={() => {
+                                      setViewMode("preview");
+                                      setIsEditing(false);
+                                    }}
                                     className="h-7 text-xs"
                                     disabled={isEditing && isSavingEdit}
                                   >
@@ -720,9 +794,16 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
                                     {t.preview}
                                   </Button>
                                   <Button
-                                    variant={viewMode === "source" && !isEditing ? "default" : "ghost"}
+                                    variant={
+                                      viewMode === "source" && !isEditing
+                                        ? "default"
+                                        : "ghost"
+                                    }
                                     size="sm"
-                                    onClick={() => { setViewMode("source"); setIsEditing(false); }}
+                                    onClick={() => {
+                                      setViewMode("source");
+                                      setIsEditing(false);
+                                    }}
                                     className="h-7 text-xs"
                                     disabled={isEditing && isSavingEdit}
                                   >
@@ -741,7 +822,10 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
                                     </Button>
                                   )}
                                   {isEditing && (
-                                    <Badge variant="secondary" className="text-xs">
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-xs"
+                                    >
                                       <Pencil className="h-3 w-3 mr-1" />
                                       {t.editing}
                                     </Badge>
@@ -763,7 +847,9 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
                                       variant="default"
                                       size="sm"
                                       onClick={handleSaveEdit}
-                                      disabled={isSavingEdit || !editedContent.trim()}
+                                      disabled={
+                                        isSavingEdit || !editedContent.trim()
+                                      }
                                       className="h-7 text-xs"
                                     >
                                       {isSavingEdit ? (
@@ -785,9 +871,12 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
                               <div className="p-4 max-h-[500px] overflow-y-auto">
                                 {(() => {
                                   // Use original_content if available (preserves formatting)
-                                  const fullContent = docContent.original_content ||
+                                  const fullContent =
+                                    docContent.original_content ||
                                     docContent.chunks
-                                      .sort((a, b) => a.chunk_index - b.chunk_index)
+                                      .sort(
+                                        (a, b) => a.chunk_index - b.chunk_index,
+                                      )
                                       .map((chunk) => chunk.content)
                                       .join("\n");
 
@@ -796,11 +885,16 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
                                     return (
                                       <div className="space-y-2">
                                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                          <span>{editedContent.length} {t.characters}</span>
+                                          <span>
+                                            {editedContent.length}{" "}
+                                            {t.characters}
+                                          </span>
                                         </div>
                                         <Textarea
                                           value={editedContent}
-                                          onChange={(e) => setEditedContent(e.target.value)}
+                                          onChange={(e) =>
+                                            setEditedContent(e.target.value)
+                                          }
                                           className="font-mono text-xs leading-relaxed min-h-[400px] resize-y"
                                           disabled={isSavingEdit}
                                         />
@@ -822,27 +916,114 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
                                         <ReactMarkdown
                                           remarkPlugins={[remarkGfm]}
                                           components={{
-                                            p: ({ children }) => <p className="my-2 leading-relaxed text-sm">{children}</p>,
-                                            ul: ({ children }) => <ul className="my-2 ml-4 list-disc space-y-1 text-sm">{children}</ul>,
-                                            ol: ({ children }) => <ol className="my-2 ml-4 list-decimal space-y-1 text-sm">{children}</ol>,
-                                            li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-                                            h1: ({ children }) => <h1 className="text-xl font-bold my-4 pb-2 border-b">{children}</h1>,
-                                            h2: ({ children }) => <h2 className="text-lg font-bold my-3 pb-1 border-b">{children}</h2>,
-                                            h3: ({ children }) => <h3 className="text-base font-bold my-2">{children}</h3>,
-                                            h4: ({ children }) => <h4 className="text-sm font-bold my-2">{children}</h4>,
-                                            strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                                            em: ({ children }) => <em className="italic">{children}</em>,
-                                            code: ({ children }) => <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>,
-                                            pre: ({ children }) => <pre className="bg-muted p-3 rounded my-3 overflow-x-auto text-xs">{children}</pre>,
-                                            blockquote: ({ children }) => <blockquote className="border-l-4 border-primary/50 pl-4 my-3 italic text-muted-foreground">{children}</blockquote>,
-                                            hr: () => <hr className="my-4 border-border" />,
-                                            a: ({ href, children }) => <a href={href} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">{children}</a>,
-                                            table: ({ children }) => <div className="my-3 overflow-x-auto"><table className="min-w-full border-collapse border border-border text-sm">{children}</table></div>,
-                                            thead: ({ children }) => <thead className="bg-muted/50">{children}</thead>,
-                                            tbody: ({ children }) => <tbody>{children}</tbody>,
-                                            tr: ({ children }) => <tr className="border-b border-border">{children}</tr>,
-                                            th: ({ children }) => <th className="border border-border bg-muted px-3 py-2 text-left font-semibold">{children}</th>,
-                                            td: ({ children }) => <td className="border border-border px-3 py-2">{children}</td>,
+                                            p: ({ children }) => (
+                                              <p className="my-2 leading-relaxed text-sm">
+                                                {children}
+                                              </p>
+                                            ),
+                                            ul: ({ children }) => (
+                                              <ul className="my-2 ml-4 list-disc space-y-1 text-sm">
+                                                {children}
+                                              </ul>
+                                            ),
+                                            ol: ({ children }) => (
+                                              <ol className="my-2 ml-4 list-decimal space-y-1 text-sm">
+                                                {children}
+                                              </ol>
+                                            ),
+                                            li: ({ children }) => (
+                                              <li className="leading-relaxed">
+                                                {children}
+                                              </li>
+                                            ),
+                                            h1: ({ children }) => (
+                                              <h1 className="text-xl font-bold my-4 pb-2 border-b">
+                                                {children}
+                                              </h1>
+                                            ),
+                                            h2: ({ children }) => (
+                                              <h2 className="text-lg font-bold my-3 pb-1 border-b">
+                                                {children}
+                                              </h2>
+                                            ),
+                                            h3: ({ children }) => (
+                                              <h3 className="text-base font-bold my-2">
+                                                {children}
+                                              </h3>
+                                            ),
+                                            h4: ({ children }) => (
+                                              <h4 className="text-sm font-bold my-2">
+                                                {children}
+                                              </h4>
+                                            ),
+                                            strong: ({ children }) => (
+                                              <strong className="font-semibold">
+                                                {children}
+                                              </strong>
+                                            ),
+                                            em: ({ children }) => (
+                                              <em className="italic">
+                                                {children}
+                                              </em>
+                                            ),
+                                            code: ({ children }) => (
+                                              <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">
+                                                {children}
+                                              </code>
+                                            ),
+                                            pre: ({ children }) => (
+                                              <pre className="bg-muted p-3 rounded my-3 overflow-x-auto text-xs">
+                                                {children}
+                                              </pre>
+                                            ),
+                                            blockquote: ({ children }) => (
+                                              <blockquote className="border-l-4 border-primary/50 pl-4 my-3 italic text-muted-foreground">
+                                                {children}
+                                              </blockquote>
+                                            ),
+                                            hr: () => (
+                                              <hr className="my-4 border-border" />
+                                            ),
+                                            a: ({ href, children }) => (
+                                              <a
+                                                href={href}
+                                                className="text-primary hover:underline"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                              >
+                                                {children}
+                                              </a>
+                                            ),
+                                            table: ({ children }) => (
+                                              <div className="my-3 overflow-x-auto">
+                                                <table className="min-w-full border-collapse border border-border text-sm">
+                                                  {children}
+                                                </table>
+                                              </div>
+                                            ),
+                                            thead: ({ children }) => (
+                                              <thead className="bg-muted/50">
+                                                {children}
+                                              </thead>
+                                            ),
+                                            tbody: ({ children }) => (
+                                              <tbody>{children}</tbody>
+                                            ),
+                                            tr: ({ children }) => (
+                                              <tr className="border-b border-border">
+                                                {children}
+                                              </tr>
+                                            ),
+                                            th: ({ children }) => (
+                                              <th className="border border-border bg-muted px-3 py-2 text-left font-semibold">
+                                                {children}
+                                              </th>
+                                            ),
+                                            td: ({ children }) => (
+                                              <td className="border border-border px-3 py-2">
+                                                {children}
+                                              </td>
+                                            ),
                                           }}
                                         >
                                           {fullContent}
@@ -892,7 +1073,9 @@ export default function EvaluationRagClient({ language }: EvaluationRagClientPro
                 <Bot className="h-5 w-5" />
                 {t.systemPromptTitle}
               </CardTitle>
-              <p className="text-sm text-muted-foreground">{t.systemPromptDescription}</p>
+              <p className="text-sm text-muted-foreground">
+                {t.systemPromptDescription}
+              </p>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Japanese Prompt */}

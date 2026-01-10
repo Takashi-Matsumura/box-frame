@@ -23,7 +23,7 @@ export async function GET() {
     console.error("Error fetching process categories:", error);
     return NextResponse.json(
       { error: "Failed to fetch process categories" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -45,17 +45,23 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, nameEn, categoryCode, description, minItemCount, scores, sortOrder } = body;
+    const {
+      name,
+      nameEn,
+      categoryCode,
+      description,
+      minItemCount,
+      scores,
+      sortOrder,
+    } = body;
 
     if (!name) {
-      return NextResponse.json(
-        { error: "Name is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
     // scoresがオブジェクトの場合はJSON文字列に変換
-    const scoresJson = typeof scores === "object" ? JSON.stringify(scores) : scores || "{}";
+    const scoresJson =
+      typeof scores === "object" ? JSON.stringify(scores) : scores || "{}";
 
     const category = await prisma.processCategory.create({
       data: {
@@ -74,7 +80,7 @@ export async function POST(request: Request) {
     console.error("Error creating process category:", error);
     return NextResponse.json(
       { error: "Failed to create process category" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { OpenLdapService } from "@/lib/ldap/openldap-service";
 import { moduleRegistry } from "@/lib/modules/registry";
 import { prisma } from "@/lib/prisma";
-import { NotificationService } from "@/lib/services/notification-service";
 import { AuditService } from "@/lib/services/audit-service";
-import { OpenLdapService } from "@/lib/ldap/openldap-service";
+import { NotificationService } from "@/lib/services/notification-service";
 
 export async function GET() {
   try {
@@ -61,13 +61,16 @@ export async function GET() {
     }
 
     // コンテナステータスをチェックする関数
-    const checkContainerStatus = async (containerId: string): Promise<boolean> => {
+    const checkContainerStatus = async (
+      containerId: string,
+    ): Promise<boolean> => {
       try {
         // コンテナIDに基づいて適切なヘルスチェックを実行
         switch (containerId) {
           case "openldap": {
             // OpenLDAPはサービスを直接使用してチェック
-            const openLdapService = await OpenLdapService.createWithDatabaseConfig();
+            const openLdapService =
+              await OpenLdapService.createWithDatabaseConfig();
             return await openLdapService.isAvailable();
           }
           case "postgres":
@@ -102,7 +105,7 @@ export async function GET() {
                 description: container.description,
                 descriptionJa: container.descriptionJa,
                 isRunning: await checkContainerStatus(container.id),
-              }))
+              })),
             )
           : [];
 
@@ -117,27 +120,33 @@ export async function GET() {
           descriptionJa: module.descriptionJa,
           enabled: isEnabled,
           type: isCore ? ("core" as const) : ("addon" as const),
-          menuCount: module.menus.filter((m) => menuEnabledOverrides[m.id] ?? m.enabled).length,
+          menuCount: module.menus.filter(
+            (m) => menuEnabledOverrides[m.id] ?? m.enabled,
+          ).length,
           menus: module.menus.map((menu) => {
             // メニューのallowAccessKey: DB値 → モジュール定義 → デフォルトtrue
             const menuAllowAccessKeyDefault = menu.allowAccessKey ?? true;
-            const menuAllowAccessKey = menuAllowAccessKeyOverrides[menu.id] ?? menuAllowAccessKeyDefault;
+            const menuAllowAccessKey =
+              menuAllowAccessKeyOverrides[menu.id] ?? menuAllowAccessKeyDefault;
 
             // タブ情報を構築
-            const tabs = menu.tabs?.map((tab) => {
-              const tabKey = `${menu.id}_${tab.id}`;
-              const tabAllowAccessKeyDefault = tab.allowAccessKey ?? true;
-              const tabAllowAccessKey = tabAllowAccessKeyOverrides[tabKey] ?? tabAllowAccessKeyDefault;
-              return {
-                id: tab.id,
-                name: tab.name,
-                nameJa: tab.nameJa,
-                order: tab.order,
-                enabled: tab.enabled ?? true,
-                allowAccessKey: tabAllowAccessKey,
-                allowAccessKeyDefault: tabAllowAccessKeyDefault,
-              };
-            }) || [];
+            const tabs =
+              menu.tabs?.map((tab) => {
+                const tabKey = `${menu.id}_${tab.id}`;
+                const tabAllowAccessKeyDefault = tab.allowAccessKey ?? true;
+                const tabAllowAccessKey =
+                  tabAllowAccessKeyOverrides[tabKey] ??
+                  tabAllowAccessKeyDefault;
+                return {
+                  id: tab.id,
+                  name: tab.name,
+                  nameJa: tab.nameJa,
+                  order: tab.order,
+                  enabled: tab.enabled ?? true,
+                  allowAccessKey: tabAllowAccessKey,
+                  allowAccessKeyDefault: tabAllowAccessKeyDefault,
+                };
+              }) || [];
 
             return {
               id: menu.id,
@@ -168,7 +177,7 @@ export async function GET() {
               }
             : null,
         };
-      })
+      }),
     );
 
     // 統計情報を計算
@@ -206,25 +215,25 @@ export async function PATCH(request: Request) {
     if (!moduleId || typeof enabled !== "boolean") {
       return NextResponse.json(
         { error: "Module ID and enabled status are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // モジュールが存在するか確認
     const module = moduleRegistry[moduleId];
     if (!module) {
-      return NextResponse.json(
-        { error: "Module not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Module not found" }, { status: 404 });
     }
 
     // コアモジュールは無効化できない
     const isCore = !module.dependencies || module.dependencies.length === 0;
     if (isCore && !enabled) {
       return NextResponse.json(
-        { error: "Core modules cannot be disabled", errorJa: "コアモジュールは無効化できません" },
-        { status: 400 }
+        {
+          error: "Core modules cannot be disabled",
+          errorJa: "コアモジュールは無効化できません",
+        },
+        { status: 400 },
       );
     }
 
@@ -259,7 +268,9 @@ export async function PATCH(request: Request) {
       type: "SYSTEM",
       priority: "NORMAL",
       title: enabled ? "Module enabled" : "Module disabled",
-      titleJa: enabled ? "モジュールが有効になりました" : "モジュールが無効になりました",
+      titleJa: enabled
+        ? "モジュールが有効になりました"
+        : "モジュールが無効になりました",
       message: `Module "${module.name}" has been ${enabled ? "enabled" : "disabled"}.`,
       messageJa: `モジュール「${module.nameJa || module.name}」が${enabled ? "有効" : "無効"}になりました。`,
       source: "MODULE",
@@ -276,7 +287,7 @@ export async function PATCH(request: Request) {
     console.error("Error updating module:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -294,7 +305,7 @@ export async function POST(request: Request) {
     if (!menuId || typeof enabled !== "boolean") {
       return NextResponse.json(
         { error: "Menu ID and enabled status are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -313,10 +324,7 @@ export async function POST(request: Request) {
     }
 
     if (!menuFound || !foundModule || !foundMenu) {
-      return NextResponse.json(
-        { error: "Menu not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Menu not found" }, { status: 404 });
     }
 
     // SystemSettingに保存
@@ -352,7 +360,7 @@ export async function POST(request: Request) {
     console.error("Error updating menu:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -370,7 +378,7 @@ export async function PUT(request: Request) {
     if (!menuId || typeof order !== "number") {
       return NextResponse.json(
         { error: "Menu ID and order are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -387,10 +395,7 @@ export async function PUT(request: Request) {
     }
 
     if (!menuFound) {
-      return NextResponse.json(
-        { error: "Menu not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Menu not found" }, { status: 404 });
     }
 
     // SystemSettingに保存
@@ -410,7 +415,7 @@ export async function PUT(request: Request) {
     console.error("Error updating menu order:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

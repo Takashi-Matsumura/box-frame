@@ -1,10 +1,10 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import type { Translations, Language } from "../translations";
+import type { Language, Translations } from "../translations";
 
 interface Employee {
   id: string;
@@ -51,12 +51,17 @@ function getInitials(name: string): string {
   return name.slice(0, 2);
 }
 
-export function MemberCard({ employee, onClick, t, language }: MemberCardProps) {
+export function MemberCard({
+  employee,
+  onClick,
+  t,
+  language,
+}: MemberCardProps) {
   return (
     <Card
       className={cn(
         "cursor-pointer transition-all hover:shadow-md hover:scale-[1.02]",
-        !employee.isActive && "opacity-60"
+        !employee.isActive && "opacity-60",
       )}
       onClick={onClick}
     >
@@ -92,7 +97,10 @@ export function MemberCard({ employee, onClick, t, language }: MemberCardProps) 
 
             {/* 役職 */}
             <Badge
-              className={cn("mt-1 text-xs", getPositionColor(employee.position))}
+              className={cn(
+                "mt-1 text-xs",
+                getPositionColor(employee.position),
+              )}
             >
               {employee.position}
             </Badge>

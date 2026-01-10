@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     if (!periodId) {
       return NextResponse.json(
         { error: "periodId is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -244,7 +244,7 @@ export async function GET(request: NextRequest) {
           sectionCode,
           courseCode,
         };
-      })
+      }),
     );
 
     // 本部コード→部コード→課コードの順でソート
@@ -266,7 +266,7 @@ export async function GET(request: NextRequest) {
     console.error("Failed to fetch criteria1 results:", error);
     return NextResponse.json(
       { error: "Failed to fetch criteria1 results" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -369,7 +369,7 @@ export async function POST(request: NextRequest) {
         error: "Failed to save criteria1 result",
         details: message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -409,7 +409,7 @@ export async function DELETE(request: NextRequest) {
     console.error("Failed to delete criteria1 result:", error);
     return NextResponse.json(
       { error: "Failed to delete criteria1 result" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

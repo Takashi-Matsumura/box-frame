@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getLanguage } from "@/lib/i18n/get-language";
-import { VerifyTotpClient } from "./VerifyTotpClient";
 import { verifyTotpTranslations } from "./translations";
+import { VerifyTotpClient } from "./VerifyTotpClient";
 
 export async function generateMetadata(): Promise<Metadata> {
   const language = await getLanguage();

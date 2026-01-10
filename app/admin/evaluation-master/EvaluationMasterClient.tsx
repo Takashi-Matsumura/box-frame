@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import PeriodsSection from "./components/PeriodsSection";
-import WeightsSection from "./components/WeightsSection";
 import Criteria1Section from "./components/Criteria1Section";
-import ProcessCategoriesSection from "./components/ProcessCategoriesSection";
 import GrowthCategoriesSection from "./components/GrowthCategoriesSection";
+import PeriodsSection from "./components/PeriodsSection";
+import ProcessCategoriesSection from "./components/ProcessCategoriesSection";
+import WeightsSection from "./components/WeightsSection";
 
 interface EvaluationMasterClientProps {
   language: "en" | "ja";

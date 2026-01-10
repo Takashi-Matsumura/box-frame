@@ -1,11 +1,11 @@
+import type { Role } from "@prisma/client";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "@/auth.config";
-import { prisma } from "@/lib/prisma";
-import { NotificationService } from "@/lib/services/notification-service";
-import { AuditService } from "@/lib/services/audit-service";
 import type { OpenLdapService } from "@/lib/ldap/openldap-service";
-import type { Role } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { AuditService } from "@/lib/services/audit-service";
+import { NotificationService } from "@/lib/services/notification-service";
 
 /**
  * Lazy Migration: レガシーLDAPからOpenLDAPへの移行を試行
@@ -50,7 +50,10 @@ async function tryLegacyLdapMigration(
 
     // 3. レガシーLDAPで認証を試行
     console.log(`[Auth] Trying legacy LDAP authentication for: ${username}`);
-    const legacyAuthResult = await legacyService.authenticate(username, password);
+    const legacyAuthResult = await legacyService.authenticate(
+      username,
+      password,
+    );
 
     if (!legacyAuthResult.success) {
       console.log(
@@ -162,7 +165,9 @@ async function tryLegacyLdapMigration(
           lastLoginAt: new Date(),
         },
       });
-      console.log(`[Auth] Created LDAP mapping with migration flag: ${username}`);
+      console.log(
+        `[Auth] Created LDAP mapping with migration flag: ${username}`,
+      );
     } else {
       // 既存のマッピングがある場合は移行フラグを更新
       await prisma.ldapUserMapping.update({
@@ -180,7 +185,8 @@ async function tryLegacyLdapMigration(
     await NotificationService.securityNotify(user.id, {
       title: "Account migrated and logged in",
       titleJa: "アカウントが移行されログインしました",
-      message: "Your account has been migrated from the legacy LDAP server to OpenLDAP.",
+      message:
+        "Your account has been migrated from the legacy LDAP server to OpenLDAP.",
       messageJa: "アカウントがレガシーLDAPサーバからOpenLDAPに移行されました。",
     }).catch((err) => {
       console.error("[Auth] Failed to create migration notification:", err);

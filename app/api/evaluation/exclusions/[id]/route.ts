@@ -34,7 +34,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     if (!existing) {
       return NextResponse.json(
         { error: "Exclusion not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -48,7 +48,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     console.error("Error deleting exclusion:", error);
     return NextResponse.json(
       { error: "Failed to delete exclusion" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

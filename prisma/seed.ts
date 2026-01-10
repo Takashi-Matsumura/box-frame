@@ -79,10 +79,10 @@ async function main() {
       nameEn: "Leadership",
       description: "チームリーダーとしての成長（難易度高）",
       coefficient: 1.3,
-      scoreT4: 100,  // ×1.3 = 130
-      scoreT3: 85,   // ×1.3 ≈ 110
-      scoreT2: 70,   // ×1.3 ≈ 91
-      scoreT1: 46,   // ×1.3 ≈ 60
+      scoreT4: 100, // ×1.3 = 130
+      scoreT3: 85, // ×1.3 ≈ 110
+      scoreT2: 70, // ×1.3 ≈ 91
+      scoreT1: 46, // ×1.3 ≈ 60
       sortOrder: 3,
       isActive: true,
     },
@@ -91,10 +91,10 @@ async function main() {
       nameEn: "Project Contribution",
       description: "重要プロジェクトへの貢献度（難易度高）",
       coefficient: 1.3,
-      scoreT4: 100,  // ×1.3 = 130
-      scoreT3: 85,   // ×1.3 ≈ 110
-      scoreT2: 70,   // ×1.3 ≈ 91
-      scoreT1: 46,   // ×1.3 ≈ 60
+      scoreT4: 100, // ×1.3 = 130
+      scoreT3: 85, // ×1.3 ≈ 110
+      scoreT2: 70, // ×1.3 ≈ 91
+      scoreT1: 46, // ×1.3 ≈ 60
       sortOrder: 4,
       isActive: true,
     },

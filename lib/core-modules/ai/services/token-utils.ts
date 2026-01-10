@@ -9,8 +9,8 @@
  * - 日本語: 1トークン ≈ 1-2文字（ひらがな/カタカナは1文字≈1トークン、漢字は1文字≈1-2トークン）
  */
 
+import { CONTEXT_WINDOW_SIZES, TOKEN_ESTIMATION } from "../constants";
 import type { ContextUsage } from "../types";
-import { TOKEN_ESTIMATION, CONTEXT_WINDOW_SIZES } from "../constants";
 
 /**
  * テキストからトークン数を推定
@@ -29,10 +29,10 @@ export function estimateTokens(text: string): number {
   // 日本語: 約1.5文字で1トークン（平均）
   // 英語/数字/記号: 約4文字で1トークン
   const japaneseTokens = Math.ceil(
-    japaneseChars / TOKEN_ESTIMATION.japaneseCharsPerToken
+    japaneseChars / TOKEN_ESTIMATION.japaneseCharsPerToken,
   );
   const englishTokens = Math.ceil(
-    nonJapaneseLength / TOKEN_ESTIMATION.englishCharsPerToken
+    nonJapaneseLength / TOKEN_ESTIMATION.englishCharsPerToken,
   );
 
   return japaneseTokens + englishTokens;
@@ -42,7 +42,7 @@ export function estimateTokens(text: string): number {
  * メッセージ配列の総トークン数を推定
  */
 export function estimateMessagesTokens(
-  messages: { role: string; content: string }[]
+  messages: { role: string; content: string }[],
 ): number {
   let total = 0;
 
@@ -63,7 +63,8 @@ export function getContextWindowSize(provider: string, model: string): number {
   // OpenAI models
   if (provider === "openai" || provider === "OpenAI") {
     if (model.includes("gpt-4o")) return CONTEXT_WINDOW_SIZES["gpt-4o"];
-    if (model.includes("gpt-4-turbo")) return CONTEXT_WINDOW_SIZES["gpt-4-turbo"];
+    if (model.includes("gpt-4-turbo"))
+      return CONTEXT_WINDOW_SIZES["gpt-4-turbo"];
     if (model.includes("gpt-4-32k")) return CONTEXT_WINDOW_SIZES["gpt-4-32k"];
     if (model.includes("gpt-4")) return CONTEXT_WINDOW_SIZES["gpt-4"];
     if (model.includes("gpt-3.5-turbo-16k"))
@@ -109,7 +110,7 @@ export function getContextWindowSize(provider: string, model: string): number {
 export function calculateContextUsage(
   inputTokens: number,
   outputTokens: number,
-  contextWindow: number
+  contextWindow: number,
 ): ContextUsage {
   const used = inputTokens + outputTokens;
   const percentage = Math.min((used / contextWindow) * 100, 100);

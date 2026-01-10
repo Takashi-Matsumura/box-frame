@@ -47,7 +47,7 @@ export async function GET() {
     console.error("Error checking AI availability:", error);
     return NextResponse.json(
       { error: "Failed to check AI availability" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json(
         { error: "Messages are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -79,13 +79,13 @@ export async function POST(request: Request) {
       if (!msg.role || !msg.content) {
         return NextResponse.json(
           { error: "Invalid message format" },
-          { status: 400 }
+          { status: 400 },
         );
       }
       if (!["user", "assistant", "system"].includes(msg.role)) {
         return NextResponse.json(
           { error: "Invalid message role" },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -98,7 +98,8 @@ export async function POST(request: Request) {
     return NextResponse.json(response);
   } catch (error) {
     console.error("Error in AI chat:", error);
-    const message = error instanceof Error ? error.message : "Failed to get AI response";
+    const message =
+      error instanceof Error ? error.message : "Failed to get AI response";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

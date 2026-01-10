@@ -69,7 +69,8 @@ export const dashboardTranslations = {
     alertSuccessDesc: "操作が正常に完了しました。",
     cardTitle: "サンプルカード",
     cardDescription: "カードには任意のコンテンツを含められます。",
-    cardContent: "これはshadcn/ui Cardコンポーネントを使用したサンプルカードです。",
+    cardContent:
+      "これはshadcn/ui Cardコンポーネントを使用したサンプルカードです。",
   },
 } as const;
 

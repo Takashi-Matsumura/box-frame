@@ -56,7 +56,8 @@ export const translations = {
     selectOrganization: "Select Organization",
     // Display mode
     exclusiveMode: "Exclusive",
-    exclusiveModeTooltip: "Show employees only at their direct level (no duplicates)",
+    exclusiveModeTooltip:
+      "Show employees only at their direct level (no duplicates)",
   },
   ja: {
     title: "組織図",

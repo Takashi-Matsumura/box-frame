@@ -3,11 +3,11 @@
  * 変更履歴をデータベースに記録
  */
 
-import { prisma } from "@/lib/prisma";
 import type { ChangeType, Prisma } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import type {
-  EntityType,
   ChangeLogEntry,
+  EntityType,
   FieldChange,
   RecordHistoryOptions,
 } from "./types";
@@ -19,9 +19,7 @@ export class HistoryRecorder {
   /**
    * 変更ログを記録
    */
-  static async recordChangeLog(
-    entry: ChangeLogEntry
-  ): Promise<void> {
+  static async recordChangeLog(entry: ChangeLogEntry): Promise<void> {
     await prisma.changeLog.create({
       data: {
         entityType: entry.entityType,
@@ -40,9 +38,7 @@ export class HistoryRecorder {
   /**
    * 複数の変更ログを一括記録
    */
-  static async recordChangeLogs(
-    entries: ChangeLogEntry[]
-  ): Promise<void> {
+  static async recordChangeLogs(entries: ChangeLogEntry[]): Promise<void> {
     if (entries.length === 0) return;
 
     await prisma.changeLog.createMany({
@@ -68,7 +64,7 @@ export class HistoryRecorder {
     entityId: string,
     changes: FieldChange[],
     changeType: ChangeType,
-    options: RecordHistoryOptions
+    options: RecordHistoryOptions,
   ): ChangeLogEntry[] {
     return changes.map((change) => ({
       entityType,
@@ -108,7 +104,7 @@ export class HistoryRecorder {
   static async getEntityHistory(
     entityType: EntityType,
     entityId: string,
-    limit = 50
+    limit = 50,
   ) {
     return prisma.changeLog.findMany({
       where: {
@@ -123,10 +119,7 @@ export class HistoryRecorder {
   /**
    * 社員の所属履歴を取得
    */
-  static async getEmployeeHistories(
-    employeeId: string,
-    limit = 50
-  ) {
+  static async getEmployeeHistories(employeeId: string, limit = 50) {
     return prisma.employeeHistory.findMany({
       where: { employeeId },
       orderBy: { validFrom: "desc" },
@@ -137,10 +130,7 @@ export class HistoryRecorder {
   /**
    * 組織の履歴を取得
    */
-  static async getOrganizationHistories(
-    organizationId: string,
-    limit = 50
-  ) {
+  static async getOrganizationHistories(organizationId: string, limit = 50) {
     return prisma.organizationHistory.findMany({
       where: { organizationId },
       orderBy: { validFrom: "desc" },
@@ -154,7 +144,7 @@ export class HistoryRecorder {
   static async getChangeLogsByDateRange(
     startDate: Date,
     endDate: Date,
-    entityType?: EntityType
+    entityType?: EntityType,
   ) {
     return prisma.changeLog.findMany({
       where: {
@@ -171,10 +161,7 @@ export class HistoryRecorder {
   /**
    * 変更タイプ別に変更ログを取得
    */
-  static async getChangeLogsByType(
-    changeType: ChangeType,
-    limit = 100
-  ) {
+  static async getChangeLogsByType(changeType: ChangeType, limit = 100) {
     return prisma.changeLog.findMany({
       where: { changeType },
       orderBy: { changedAt: "desc" },
@@ -203,11 +190,7 @@ export class HistoryRecorder {
       if (endDate) where.changedAt.lte = endDate;
     }
 
-    const [
-      totalChanges,
-      changesByType,
-      changesByEntity,
-    ] = await Promise.all([
+    const [totalChanges, changesByType, changesByEntity] = await Promise.all([
       prisma.changeLog.count({ where }),
       prisma.changeLog.groupBy({
         by: ["changeType"],
@@ -228,14 +211,14 @@ export class HistoryRecorder {
           acc[item.changeType] = item._count;
           return acc;
         },
-        {} as Record<ChangeType, number>
+        {} as Record<ChangeType, number>,
       ),
       changesByEntity: changesByEntity.reduce(
         (acc, item) => {
           acc[item.entityType] = item._count;
           return acc;
         },
-        {} as Record<string, number>
+        {} as Record<string, number>,
       ),
     };
   }
