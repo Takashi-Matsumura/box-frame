@@ -3,7 +3,7 @@
  * 汎用的なファイルインポート機能を提供
  */
 
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 /**
  * インポーター設定
@@ -57,7 +57,7 @@ export abstract class BaseImporter<TRow = any, TProcessed = any> {
       return this.parseCSV(text);
     } else if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
       const buffer = await file.arrayBuffer();
-      return this.parseXLSX(buffer);
+      return await this.parseXLSX(buffer);
     }
 
     throw new Error(
@@ -105,20 +105,39 @@ export abstract class BaseImporter<TRow = any, TProcessed = any> {
   /**
    * XLSXファイル（ArrayBuffer）をパース
    */
-  protected parseXLSX(buffer: ArrayBuffer): TRow[] {
+  protected async parseXLSX(buffer: ArrayBuffer): Promise<TRow[]> {
     try {
-      const workbook = XLSX.read(buffer, { type: "array" });
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.load(buffer);
 
-      const firstSheetName = workbook.SheetNames[0];
-      if (!firstSheetName) {
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet) {
         throw new Error("XLSXファイルにシートが見つかりません");
       }
 
-      const worksheet = workbook.Sheets[firstSheetName];
+      const jsonData: TRow[] = [];
+      const headers: string[] = [];
 
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-        defval: "",
-        raw: false,
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber === 1) {
+          // ヘッダー行
+          row.eachCell((cell) => {
+            headers.push(String(cell.value ?? ""));
+          });
+        } else {
+          // データ行
+          const rowData: Record<string, string> = {};
+          row.eachCell((cell, colNumber) => {
+            const header = headers[colNumber - 1];
+            if (header) {
+              rowData[header] = String(cell.value ?? "");
+            }
+          });
+          // 空行をスキップ
+          if (Object.values(rowData).some((v) => v !== "")) {
+            jsonData.push(rowData as TRow);
+          }
+        }
       });
 
       if (jsonData.length === 0) {
@@ -126,7 +145,6 @@ export abstract class BaseImporter<TRow = any, TProcessed = any> {
       }
 
       if (this.config.requiredColumns && jsonData.length > 0) {
-        const headers = Object.keys(jsonData[0] as object);
         const missingColumns = this.config.requiredColumns.filter(
           (col) => !headers.includes(col),
         );
@@ -137,7 +155,7 @@ export abstract class BaseImporter<TRow = any, TProcessed = any> {
         }
       }
 
-      return jsonData as TRow[];
+      return jsonData;
     } catch (error) {
       console.error("XLSX parse error:", error);
       throw new Error(

@@ -8,7 +8,7 @@ import {
   FaTimes,
   FaUpload,
 } from "react-icons/fa";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import type {
   CSVEmployeeRow,
   PreviewResult,
@@ -44,7 +44,7 @@ export function ImportTab({ organizationId, language, t }: ImportTabProps) {
       return parseCSV(text);
     } else if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
       const buffer = await file.arrayBuffer();
-      return parseXLSX(buffer);
+      return await parseXLSX(buffer);
     } else {
       throw new Error(`Unsupported file format: ${file.name}`);
     }
@@ -99,14 +99,38 @@ export function ImportTab({ organizationId, language, t }: ImportTabProps) {
     });
   };
 
-  const parseXLSX = (buffer: ArrayBuffer): CSVEmployeeRow[] => {
-    const workbook = XLSX.read(buffer, { type: "array" });
-    const firstSheetName = workbook.SheetNames[0];
-    if (!firstSheetName) {
+  const parseXLSX = async (buffer: ArrayBuffer): Promise<CSVEmployeeRow[]> => {
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer);
+
+    const worksheet = workbook.worksheets[0];
+    if (!worksheet) {
       throw new Error("XLSX file has no sheets");
     }
-    const worksheet = workbook.Sheets[firstSheetName];
-    return XLSX.utils.sheet_to_json(worksheet, { defval: "", raw: false });
+
+    const data: CSVEmployeeRow[] = [];
+    const headers: string[] = [];
+
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) {
+        row.eachCell((cell) => {
+          headers.push(String(cell.value ?? ""));
+        });
+      } else {
+        const rowData: Record<string, string> = {};
+        row.eachCell((cell, colNumber) => {
+          const header = headers[colNumber - 1];
+          if (header) {
+            rowData[header] = String(cell.value ?? "");
+          }
+        });
+        if (Object.values(rowData).some((v) => v !== "")) {
+          data.push(rowData as CSVEmployeeRow);
+        }
+      }
+    });
+
+    return data;
   };
 
   // 全ファイルからのデータを結合

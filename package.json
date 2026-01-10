@@ -37,6 +37,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "exceljs": "^4.4.0",
     "ldapts": "^8.0.25",
     "lucide-react": "^0.562.0",
     "next": "^15.5.9",
@@ -54,7 +55,6 @@
     "tailwind-merge": "^3.4.0",
     "tsx": "^4.20.6",
     "uuid": "^13.0.0",
-    "xlsx": "^0.18.5",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
@@ -63,6 +63,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
+    "@types/exceljs": "^0.5.3",
     "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/qrcode": "^1.5.6",
