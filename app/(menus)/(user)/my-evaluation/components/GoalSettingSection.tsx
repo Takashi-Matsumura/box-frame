@@ -3,8 +3,9 @@
 import {
   Bot,
   Calendar,
-  Check,
   ChevronLeft,
+  Cloud,
+  CloudOff,
   Loader2,
   Plus,
   Target,
@@ -110,6 +111,7 @@ const translations = {
     saving: "Saving...",
     saved: "Saved",
     saveError: "Failed to save goals",
+    autoSave: "Auto-save",
     loading: "Loading...",
     cannotDelete: "Default process cannot be deleted",
     process: "Process",
@@ -141,8 +143,9 @@ const translations = {
     growthGoalText: "成長目標",
     growthGoalPlaceholder: "このカテゴリでの成長目標を記述してください...",
     saving: "保存中...",
-    saved: "保存済み",
-    saveError: "目標の保存に失敗しました",
+    saved: "保存しました",
+    saveError: "保存に失敗しました",
+    autoSave: "自動保存",
     loading: "読み込み中...",
     cannotDelete: "デフォルトのプロセスは削除できません",
     process: "プロセス",
@@ -165,7 +168,7 @@ export default function GoalSettingSection({
   const t = translations[language];
 
   const [loading, setLoading] = useState(true);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">(
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">(
     "idle",
   );
   const [error, setError] = useState<string | null>(null);
@@ -304,11 +307,13 @@ export default function GoalSettingSection({
         setTimeout(() => setSaveStatus("idle"), 3000);
       } else {
         toast.error(t.saveError);
-        setSaveStatus("idle");
+        setSaveStatus("error");
+        setTimeout(() => setSaveStatus("idle"), 5000);
       }
     } catch {
       toast.error(t.saveError);
-      setSaveStatus("idle");
+      setSaveStatus("error");
+      setTimeout(() => setSaveStatus("idle"), 5000);
     }
   }, [periodId, goals, interviewDates, selfProcessScores, selfProcessComments, selfGrowthCategoryId, selfGrowthLevel, selfGrowthComment, t.saveError]);
 
@@ -504,36 +509,17 @@ export default function GoalSettingSection({
       {/* Main Content */}
       <div className="h-full overflow-y-auto p-6">
         <div className="max-w-4xl mx-auto space-y-6">
-          {/* Header with Save Status */}
-          <div className="flex items-center justify-between">
-            {/* Period Info */}
-            {period && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="w-4 h-4" />
-                <span className="font-medium">{period.name}</span>
-                <span>
-                  ({new Date(period.startDate).toLocaleDateString(language)} -{" "}
-                  {new Date(period.endDate).toLocaleDateString(language)})
-                </span>
-              </div>
-            )}
-
-            {/* Save Status */}
-            <div className="flex items-center gap-2 text-sm">
-              {saveStatus === "saving" && (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                  <span className="text-muted-foreground">{t.saving}</span>
-                </>
-              )}
-              {saveStatus === "saved" && (
-                <>
-                  <Check className="w-4 h-4 text-green-500" />
-                  <span className="text-green-500">{t.saved}</span>
-                </>
-              )}
+          {/* Period Info */}
+          {period && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Calendar className="w-4 h-4" />
+              <span className="font-medium">{period.name}</span>
+              <span>
+                ({new Date(period.startDate).toLocaleDateString(language)} -{" "}
+                {new Date(period.endDate).toLocaleDateString(language)})
+              </span>
             </div>
-          </div>
+          )}
 
           {/* Process Goals */}
           <Card>
@@ -760,6 +746,36 @@ export default function GoalSettingSection({
               canEdit={canEditSelfEvaluation}
             />
           )}
+
+          {/* Auto-save Status */}
+          <div className="flex justify-end items-center gap-2 pb-8 text-sm text-muted-foreground">
+            {saveStatus === "saving" && (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>{t.saving}</span>
+              </>
+            )}
+            {saveStatus === "saved" && (
+              <>
+                <Cloud className="w-4 h-4 text-green-500" />
+                <span className="text-green-600 dark:text-green-400">
+                  {t.saved}
+                </span>
+              </>
+            )}
+            {saveStatus === "error" && (
+              <>
+                <CloudOff className="w-4 h-4 text-destructive" />
+                <span className="text-destructive">{t.saveError}</span>
+              </>
+            )}
+            {saveStatus === "idle" && (
+              <>
+                <Cloud className="w-4 h-4" />
+                <span>{t.autoSave}</span>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
