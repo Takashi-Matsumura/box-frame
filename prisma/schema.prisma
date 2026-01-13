@@ -924,6 +924,19 @@ model PersonalGoal {
   // 面談情報（JSON配列: [{date: "2024-01-10", note: "進捗確認"}, ...]）
   interviewDates    Json             @default("[]")
 
+  // 自己評価（プロセス評価: {"processId": level(1-5), ...}）
+  selfProcessScores       Json?
+  // 自己評価コメント（プロセス評価: {"processId": "コメント", ...}）
+  selfProcessComments     Json?
+  // 自己評価（成長評価）
+  selfGrowthCategoryId    String?
+  selfGrowthLevel         Int?
+  // 自己評価コメント（成長評価）
+  selfGrowthComment       String?
+  // 自己評価ステータス
+  selfEvaluationStatus    String?          @default("DRAFT")
+  selfEvaluationSubmittedAt DateTime?
+
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 

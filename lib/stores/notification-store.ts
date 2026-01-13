@@ -87,6 +87,11 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
         isLoading: false,
       }));
     } catch (error) {
+      // ネットワークエラーは静かに無視（スリープ復帰時など）
+      if (error instanceof TypeError && error.message === "Failed to fetch") {
+        set({ isLoading: false });
+        return;
+      }
       console.error("Failed to fetch notifications:", error);
       set({ isLoading: false });
     }
@@ -100,6 +105,10 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
       const data = await res.json();
       set({ unreadCount: data.count });
     } catch (error) {
+      // ネットワークエラーは静かに無視（スリープ復帰時など）
+      if (error instanceof TypeError && error.message === "Failed to fetch") {
+        return;
+      }
       console.error("Failed to fetch unread count:", error);
     }
   },

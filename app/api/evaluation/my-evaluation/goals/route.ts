@@ -144,6 +144,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // 自己評価の編集可能判定
+    // ACTIVE期間中かつ未提出の場合のみ編集可能
+    const canEditSelfEvaluation =
+      period.status === "ACTIVE" &&
+      (!personalGoal ||
+        personalGoal.selfEvaluationStatus !== "SUBMITTED");
+
     // 目標データがない場合はデフォルト値を返す
     if (!personalGoal) {
       const defaultProcessGoals: ProcessGoal[] = [
@@ -167,8 +174,22 @@ export async function GET(request: NextRequest) {
         period,
         processCategories,
         growthCategories,
+        // 自己評価データ
+        selfEvaluation: null,
+        canEditSelfEvaluation,
       });
     }
+
+    // 自己評価データの構築
+    const selfEvaluation = {
+      processScores: (personalGoal.selfProcessScores as Record<string, number>) || {},
+      processComments: (personalGoal.selfProcessComments as Record<string, string>) || {},
+      growthCategoryId: personalGoal.selfGrowthCategoryId,
+      growthLevel: personalGoal.selfGrowthLevel,
+      growthComment: personalGoal.selfGrowthComment || "",
+      status: (personalGoal.selfEvaluationStatus as "DRAFT" | "SUBMITTED") || "DRAFT",
+      submittedAt: personalGoal.selfEvaluationSubmittedAt,
+    };
 
     return NextResponse.json({
       id: personalGoal.id,
@@ -182,6 +203,9 @@ export async function GET(request: NextRequest) {
       period,
       processCategories,
       growthCategories,
+      // 自己評価データ
+      selfEvaluation,
+      canEditSelfEvaluation,
     });
   } catch (error) {
     console.error("Error fetching goals:", error);
@@ -213,12 +237,24 @@ export async function POST(request: NextRequest) {
       growthGoal,
       selfReflection,
       interviewDates,
+      // 自己評価データ
+      selfProcessScores,
+      selfProcessComments,
+      selfGrowthCategoryId,
+      selfGrowthLevel,
+      selfGrowthComment,
     } = body as {
       periodId: string;
       processGoals: ProcessGoal[];
       growthGoal: GrowthGoal | null;
       selfReflection?: string;
       interviewDates?: InterviewDate[];
+      // 自己評価データ
+      selfProcessScores?: Record<string, number>;
+      selfProcessComments?: Record<string, string>;
+      selfGrowthCategoryId?: string;
+      selfGrowthLevel?: number;
+      selfGrowthComment?: string;
     };
 
     if (!periodId || !processGoals) {
@@ -257,6 +293,14 @@ export async function POST(request: NextRequest) {
     const interviewDatesJson = (interviewDates ||
       []) as unknown as Prisma.InputJsonValue;
 
+    // 自己評価データの準備（undefinedの場合は更新しない）
+    const selfProcessScoresJson = selfProcessScores !== undefined
+      ? (selfProcessScores as unknown as Prisma.InputJsonValue)
+      : undefined;
+    const selfProcessCommentsJson = selfProcessComments !== undefined
+      ? (selfProcessComments as unknown as Prisma.InputJsonValue)
+      : undefined;
+
     const personalGoal = await prisma.personalGoal.upsert({
       where: {
         periodId_userId: {
@@ -272,6 +316,22 @@ export async function POST(request: NextRequest) {
         selfReflection: selfReflection || null,
         interviewDates: interviewDatesJson,
         employeeId, // Employeeが見つかれば紐付け
+        // 自己評価データ（undefinedでない場合のみ更新）
+        ...(selfProcessScoresJson !== undefined && {
+          selfProcessScores: selfProcessScoresJson,
+        }),
+        ...(selfProcessCommentsJson !== undefined && {
+          selfProcessComments: selfProcessCommentsJson,
+        }),
+        ...(selfGrowthCategoryId !== undefined && {
+          selfGrowthCategoryId: selfGrowthCategoryId || null,
+        }),
+        ...(selfGrowthLevel !== undefined && {
+          selfGrowthLevel: selfGrowthLevel || null,
+        }),
+        ...(selfGrowthComment !== undefined && {
+          selfGrowthComment: selfGrowthComment || null,
+        }),
       },
       create: {
         periodId,
@@ -283,6 +343,12 @@ export async function POST(request: NextRequest) {
           : Prisma.JsonNull,
         selfReflection: selfReflection || null,
         interviewDates: interviewDatesJson,
+        // 自己評価データ
+        selfProcessScores: selfProcessScoresJson ?? Prisma.JsonNull,
+        selfProcessComments: selfProcessCommentsJson ?? Prisma.JsonNull,
+        selfGrowthCategoryId: selfGrowthCategoryId || null,
+        selfGrowthLevel: selfGrowthLevel || null,
+        selfGrowthComment: selfGrowthComment || null,
       },
     });
 

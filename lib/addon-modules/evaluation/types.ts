@@ -165,3 +165,61 @@ export type PeriodStatus = "DRAFT" | "ACTIVE" | "REVIEW" | "CLOSED";
  * 組織階層レベル
  */
 export type OrganizationLevel = "DEPARTMENT" | "SECTION" | "COURSE";
+
+// ============================================
+// 自己評価の型
+// ============================================
+
+/**
+ * 自己評価ステータス
+ */
+export type SelfEvaluationStatus = "DRAFT" | "SUBMITTED";
+
+/**
+ * 自己評価データ
+ */
+export interface SelfEvaluation {
+  /** プロセス評価の自己評価（カテゴリID → レベル(1-4)） */
+  processScores: Record<string, number>;
+  /** 成長評価の自己評価カテゴリID */
+  growthCategoryId: string | null;
+  /** 成長評価の自己評価レベル（1-4） */
+  growthLevel: number | null;
+  /** 自己評価ステータス */
+  status: SelfEvaluationStatus;
+  /** 提出日時 */
+  submittedAt: Date | null;
+}
+
+/**
+ * プロセス評価の比較項目
+ */
+export interface ProcessComparisonItem {
+  categoryId: string;
+  categoryName: string;
+  selfLevel: number | null;
+  supervisorLevel: number | null;
+  difference: number | null;
+}
+
+/**
+ * 成長評価の比較
+ */
+export interface GrowthComparison {
+  selfCategoryId: string | null;
+  selfCategoryName: string | null;
+  selfLevel: number | null;
+  supervisorCategoryId: string | null;
+  supervisorCategoryName: string | null;
+  supervisorLevel: number | null;
+}
+
+/**
+ * 自己評価と上司評価の比較結果
+ */
+export interface EvaluationComparison {
+  /** プロセス評価の比較 */
+  process: ProcessComparisonItem[];
+  /** 成長評価の比較 */
+  growth: GrowthComparison;
+}

@@ -10,7 +10,6 @@ import {
   Target,
   Trash2,
   TrendingUp,
-  Users,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -26,7 +25,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { EvaluationCalendar } from "./EvaluationCalendar";
 import { GoalAIAssistant } from "./GoalAIAssistant";
+import { StarRating } from "./StarRating";
 
 interface ProcessGoal {
   id: string;
@@ -58,6 +59,20 @@ interface GrowthCategory {
   name: string;
   nameEn: string | null;
   coefficient: number;
+}
+
+interface ProcessCategory {
+  id: string;
+  name: string;
+  nameEn: string | null;
+}
+
+interface SelfEvaluation {
+  processScores: Record<string, number>;
+  growthCategoryId: string | null;
+  growthLevel: number | null;
+  status: "DRAFT" | "SUBMITTED";
+  submittedAt: Date | null;
 }
 
 interface Period {
@@ -92,19 +107,6 @@ const translations = {
     selectCategory: "Select Category",
     growthGoalText: "Growth Goal",
     growthGoalPlaceholder: "Describe your growth goal for this category...",
-    selfReflection: "Self Reflection",
-    selfReflectionDescription:
-      "Optional: Write your thoughts or notes about your goals",
-    selfReflectionPlaceholder:
-      "Write any reflections or notes about your goals...",
-    interviewDates: "Interview Dates",
-    interviewDatesDescription:
-      "Record your meetings with your evaluator (progress check, results discussion, goal setting)",
-    addInterviewDate: "Add Interview Date",
-    interviewNote: "Note (optional)",
-    interviewNotePlaceholder: "e.g., Progress check, Goal setting...",
-    evaluator: "Evaluator",
-    evaluatorNotSet: "Not set",
     saving: "Saving...",
     saved: "Saved",
     saveError: "Failed to save goals",
@@ -114,6 +116,13 @@ const translations = {
     noCategories:
       "No growth categories available. Please contact the administrator.",
     aiAssistant: "AI Assistant",
+    // Self Evaluation
+    selfEvaluationLabel: "How well did you achieve this goal?",
+    selfEvaluationCommentPlaceholder: "Describe the reasons or evidence for your evaluation...",
+    submitConfirm:
+      "Once submitted, you cannot edit your self evaluation. Are you sure?",
+    submitSuccess: "Self evaluation submitted successfully",
+    submitError: "Failed to submit self evaluation",
   },
   ja: {
     title: "目標設定",
@@ -131,18 +140,6 @@ const translations = {
     selectCategory: "カテゴリを選択",
     growthGoalText: "成長目標",
     growthGoalPlaceholder: "このカテゴリでの成長目標を記述してください...",
-    selfReflection: "自己ふり返り",
-    selfReflectionDescription: "任意: 目標に対する考えやメモを記録",
-    selfReflectionPlaceholder:
-      "目標に対するふり返りやメモを記入してください...",
-    interviewDates: "面談実施日",
-    interviewDatesDescription:
-      "評価者との面談日を記録（進捗確認、結果面談、目標設定など）",
-    addInterviewDate: "面談日を追加",
-    interviewNote: "メモ（任意）",
-    interviewNotePlaceholder: "例：進捗確認、目標設定...",
-    evaluator: "評価者",
-    evaluatorNotSet: "未設定",
     saving: "保存中...",
     saved: "保存済み",
     saveError: "目標の保存に失敗しました",
@@ -151,6 +148,13 @@ const translations = {
     process: "プロセス",
     noCategories: "成長カテゴリがありません。管理者にお問い合わせください。",
     aiAssistant: "AIアシスタント",
+    // Self Evaluation
+    selfEvaluationLabel: "この目標をどの程度達成できましたか？",
+    selfEvaluationCommentPlaceholder: "評価の理由や根拠を記入してください...",
+    submitConfirm:
+      "提出すると自己評価は編集できなくなります。よろしいですか？",
+    submitSuccess: "自己評価を提出しました",
+    submitError: "自己評価の提出に失敗しました",
   },
 };
 
@@ -178,13 +182,24 @@ export default function GoalSettingSection({
     ],
     growthGoal: null,
   });
-  const [selfReflection, setSelfReflection] = useState("");
   const [interviewDates, setInterviewDates] = useState<InterviewDate[]>([]);
-  const [evaluator, setEvaluator] = useState<{ name: string } | null>(null);
   const [growthCategories, setGrowthCategories] = useState<GrowthCategory[]>(
     [],
   );
+  const [processCategories, setProcessCategories] = useState<ProcessCategory[]>(
+    [],
+  );
   const [showAIAssistant, setShowAIAssistant] = useState(false);
+
+  // Self evaluation state
+  const [selfProcessScores, setSelfProcessScores] = useState<Record<string, number>>({});
+  const [selfProcessComments, setSelfProcessComments] = useState<Record<string, string>>({});
+  const [selfGrowthCategoryId, setSelfGrowthCategoryId] = useState<string | null>(null);
+  const [selfGrowthLevel, setSelfGrowthLevel] = useState<number | null>(null);
+  const [selfGrowthComment, setSelfGrowthComment] = useState<string>("");
+  const [selfEvaluationStatus, setSelfEvaluationStatus] = useState<"DRAFT" | "SUBMITTED">("DRAFT");
+  const [selfEvaluationSubmittedAt, setSelfEvaluationSubmittedAt] = useState<Date | null>(null);
+  const [canEditSelfEvaluation, setCanEditSelfEvaluation] = useState(true);
 
   // Auto-save refs
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -210,25 +225,39 @@ export default function GoalSettingSection({
             growthGoal: data.growthGoal || null,
           });
         }
-        if (data.selfReflection) {
-          setSelfReflection(data.selfReflection);
-        }
         if (data.interviewDates) {
           setInterviewDates(data.interviewDates);
         } else {
           setInterviewDates([]);
         }
-        if (data.evaluator) {
-          setEvaluator(data.evaluator);
-        } else {
-          setEvaluator(null);
-        }
         if (data.growthCategories) {
           setGrowthCategories(data.growthCategories);
+        }
+        if (data.processCategories) {
+          setProcessCategories(data.processCategories);
         }
         if (data.period) {
           setPeriod(data.period);
         }
+        // Self evaluation data
+        if (data.selfEvaluation) {
+          setSelfProcessScores(data.selfEvaluation.processScores || {});
+          setSelfProcessComments(data.selfEvaluation.processComments || {});
+          setSelfGrowthCategoryId(data.selfEvaluation.growthCategoryId);
+          setSelfGrowthLevel(data.selfEvaluation.growthLevel);
+          setSelfGrowthComment(data.selfEvaluation.growthComment || "");
+          setSelfEvaluationStatus(data.selfEvaluation.status || "DRAFT");
+          setSelfEvaluationSubmittedAt(data.selfEvaluation.submittedAt ? new Date(data.selfEvaluation.submittedAt) : null);
+        } else {
+          setSelfProcessScores({});
+          setSelfProcessComments({});
+          setSelfGrowthCategoryId(null);
+          setSelfGrowthLevel(null);
+          setSelfGrowthComment("");
+          setSelfEvaluationStatus("DRAFT");
+          setSelfEvaluationSubmittedAt(null);
+        }
+        setCanEditSelfEvaluation(data.canEditSelfEvaluation ?? true);
       } else {
         const errorData = await res.json();
         setError(errorData.error || "Failed to fetch goals");
@@ -259,8 +288,13 @@ export default function GoalSettingSection({
           periodId,
           processGoals: goals.processGoals,
           growthGoal: goals.growthGoal,
-          selfReflection: selfReflection || null,
           interviewDates: interviewDates,
+          // Self evaluation data
+          selfProcessScores: Object.keys(selfProcessScores).length > 0 ? selfProcessScores : undefined,
+          selfProcessComments: Object.keys(selfProcessComments).length > 0 ? selfProcessComments : undefined,
+          selfGrowthCategoryId: selfGrowthCategoryId,
+          selfGrowthLevel: selfGrowthLevel,
+          selfGrowthComment: selfGrowthComment || undefined,
         }),
       });
 
@@ -276,11 +310,13 @@ export default function GoalSettingSection({
       toast.error(t.saveError);
       setSaveStatus("idle");
     }
-  }, [periodId, goals, selfReflection, interviewDates, t.saveError]);
+  }, [periodId, goals, interviewDates, selfProcessScores, selfProcessComments, selfGrowthCategoryId, selfGrowthLevel, selfGrowthComment, t.saveError]);
 
   // Debounced auto-save effect
   useEffect(() => {
     if (isInitialLoadRef.current || loading) return;
+    // 自己評価が編集不可の場合は自動保存しない
+    if (!canEditSelfEvaluation && selfEvaluationStatus === "SUBMITTED") return;
 
     // 既存のタイマーをクリア
     if (saveTimeoutRef.current) {
@@ -297,7 +333,7 @@ export default function GoalSettingSection({
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [goals, selfReflection, interviewDates, saveGoals, loading]);
+  }, [goals, interviewDates, selfProcessScores, selfProcessComments, selfGrowthCategoryId, selfGrowthLevel, selfGrowthComment, saveGoals, loading, canEditSelfEvaluation, selfEvaluationStatus]);
 
   const addProcessGoal = () => {
     const newOrder = goals.processGoals.length + 1;
@@ -372,29 +408,6 @@ export default function GoalSettingSection({
     }
   };
 
-  const addInterviewDate = () => {
-    const newDate: InterviewDate = {
-      id: `interview-${Date.now()}`,
-      date: new Date().toISOString().split("T")[0],
-      note: "",
-    };
-    setInterviewDates([...interviewDates, newDate]);
-  };
-
-  const removeInterviewDate = (id: string) => {
-    setInterviewDates(interviewDates.filter((d) => d.id !== id));
-  };
-
-  const updateInterviewDate = (
-    id: string,
-    field: "date" | "note",
-    value: string,
-  ) => {
-    setInterviewDates(
-      interviewDates.map((d) => (d.id === id ? { ...d, [field]: value } : d)),
-    );
-  };
-
   // 目標情報をAIアシスタントに渡すための文字列を生成
   const getGoalsInfo = () => {
     const parts: string[] = [];
@@ -411,11 +424,55 @@ export default function GoalSettingSection({
       );
     }
 
-    if (selfReflection) {
-      parts.push(`自己ふり返り: ${selfReflection}`);
-    }
-
     return parts.join("\n");
+  };
+
+  // 自己評価を提出できるかどうかの判定
+  const canSubmitSelfEvaluation = () => {
+    // 全てのプロセス目標に星評価が入力されているか
+    const allProcessScoresEntered = goals.processGoals.every(
+      (process) => selfProcessScores[process.id] !== undefined
+    );
+    // 成長目標があれば、星評価が入力されているか
+    const growthEvaluationEntered =
+      !goals.growthGoal || selfGrowthLevel !== null;
+
+    return allProcessScoresEntered && growthEvaluationEntered;
+  };
+
+  // 自己評価の提出処理
+  const handleSubmitSelfEvaluation = async () => {
+    if (!canSubmitSelfEvaluation()) return;
+    if (!confirm(t.submitConfirm)) return;
+
+    setSaveStatus("saving");
+    try {
+      const res = await fetch("/api/evaluation/my-evaluation/goals/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          periodId,
+          selfProcessScores,
+          selfGrowthCategoryId,
+          selfGrowthLevel,
+        }),
+      });
+
+      if (res.ok) {
+        setSelfEvaluationStatus("SUBMITTED");
+        setSelfEvaluationSubmittedAt(new Date());
+        setCanEditSelfEvaluation(false);
+        toast.success(t.submitSuccess);
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus("idle"), 3000);
+      } else {
+        toast.error(t.submitError);
+        setSaveStatus("idle");
+      }
+    } catch {
+      toast.error(t.submitError);
+      setSaveStatus("idle");
+    }
   };
 
   if (loading) {
@@ -548,6 +605,42 @@ export default function GoalSettingSection({
                       className="mt-1"
                     />
                   </div>
+                  {/* Self Evaluation for this process */}
+                  <div className="pt-3 border-t">
+                    <Label className="text-sm text-muted-foreground">
+                      {t.selfEvaluationLabel}
+                    </Label>
+                    <div className="mt-1">
+                      <StarRating
+                        value={selfProcessScores[process.id] || null}
+                        onChange={(value) => {
+                          if (!canEditSelfEvaluation) return;
+                          setSelfProcessScores((prev) => ({
+                            ...prev,
+                            [process.id]: value,
+                          }));
+                        }}
+                        disabled={!canEditSelfEvaluation}
+                        language={language}
+                      />
+                    </div>
+                    {selfProcessScores[process.id] && (
+                      <Textarea
+                        value={selfProcessComments[process.id] || ""}
+                        onChange={(e) => {
+                          if (!canEditSelfEvaluation) return;
+                          setSelfProcessComments((prev) => ({
+                            ...prev,
+                            [process.id]: e.target.value,
+                          }));
+                        }}
+                        placeholder={t.selfEvaluationCommentPlaceholder}
+                        rows={2}
+                        disabled={!canEditSelfEvaluation}
+                        className="mt-2"
+                      />
+                    )}
+                  </div>
                 </div>
               ))}
 
@@ -600,111 +693,73 @@ export default function GoalSettingSection({
                   </div>
 
                   {goals.growthGoal && (
-                    <div>
-                      <Label>{t.growthGoalText}</Label>
-                      <Textarea
-                        value={goals.growthGoal.goalText}
-                        onChange={(e) => updateGrowthGoalText(e.target.value)}
-                        placeholder={t.growthGoalPlaceholder}
-                        rows={3}
-                        className="mt-1"
-                      />
-                    </div>
+                    <>
+                      <div>
+                        <Label>{t.growthGoalText}</Label>
+                        <Textarea
+                          value={goals.growthGoal.goalText}
+                          onChange={(e) => updateGrowthGoalText(e.target.value)}
+                          placeholder={t.growthGoalPlaceholder}
+                          rows={3}
+                          className="mt-1"
+                        />
+                      </div>
+                      {/* Self Evaluation for growth goal */}
+                      <div className="pt-3 border-t">
+                        <Label className="text-sm text-muted-foreground">
+                          {t.selfEvaluationLabel}
+                        </Label>
+                        <div className="mt-1">
+                          <StarRating
+                            value={selfGrowthLevel}
+                            onChange={(value) => {
+                              if (!canEditSelfEvaluation) return;
+                              setSelfGrowthLevel(value);
+                              // 成長目標のカテゴリIDも同期
+                              if (goals.growthGoal?.categoryId) {
+                                setSelfGrowthCategoryId(goals.growthGoal.categoryId);
+                              }
+                            }}
+                            disabled={!canEditSelfEvaluation}
+                            language={language}
+                          />
+                        </div>
+                        {selfGrowthLevel && (
+                          <Textarea
+                            value={selfGrowthComment}
+                            onChange={(e) => {
+                              if (!canEditSelfEvaluation) return;
+                              setSelfGrowthComment(e.target.value);
+                            }}
+                            placeholder={t.selfEvaluationCommentPlaceholder}
+                            rows={2}
+                            disabled={!canEditSelfEvaluation}
+                            className="mt-2"
+                          />
+                        )}
+                      </div>
+                    </>
                   )}
                 </>
               )}
             </CardContent>
           </Card>
 
-          {/* Self Reflection */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t.selfReflection}</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {t.selfReflectionDescription}
-              </p>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                value={selfReflection}
-                onChange={(e) => setSelfReflection(e.target.value)}
-                placeholder={t.selfReflectionPlaceholder}
-                rows={4}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Interview Dates */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-blue-500" />
-                {t.interviewDates}
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {t.interviewDatesDescription}
-              </p>
-              <div className="flex items-center gap-2 mt-2 text-sm">
-                <span className="text-muted-foreground">{t.evaluator}:</span>
-                <span className="font-medium">
-                  {evaluator?.name || t.evaluatorNotSet}
-                </span>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {interviewDates.map((interview) => (
-                <div
-                  key={interview.id}
-                  className="flex items-start gap-3 p-3 border rounded-lg"
-                >
-                  <div className="flex-1 space-y-2">
-                    <Input
-                      type="date"
-                      value={interview.date}
-                      onChange={(e) =>
-                        updateInterviewDate(
-                          interview.id,
-                          "date",
-                          e.target.value,
-                        )
-                      }
-                      className="max-w-xs"
-                    />
-                    <Input
-                      type="text"
-                      value={interview.note || ""}
-                      onChange={(e) =>
-                        updateInterviewDate(
-                          interview.id,
-                          "note",
-                          e.target.value,
-                        )
-                      }
-                      placeholder={t.interviewNotePlaceholder}
-                      className="text-sm"
-                    />
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeInterviewDate(interview.id)}
-                    className="text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
-
-              <Button
-                variant="outline"
-                onClick={addInterviewDate}
-                className="w-full"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                {t.addInterviewDate}
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Calendar */}
+          {period && (
+            <EvaluationCalendar
+              language={language}
+              periodStartDate={period.startDate.split("T")[0]}
+              periodEndDate={period.endDate.split("T")[0]}
+              interviewDates={interviewDates}
+              onInterviewDatesChange={setInterviewDates}
+              selfEvaluationSubmittedAt={selfEvaluationSubmittedAt}
+              selfEvaluationStatus={selfEvaluationStatus}
+              canSubmitSelfEvaluation={canSubmitSelfEvaluation()}
+              onSubmitSelfEvaluation={handleSubmitSelfEvaluation}
+              canEdit={canEditSelfEvaluation}
+            />
+          )}
         </div>
       </div>
 
