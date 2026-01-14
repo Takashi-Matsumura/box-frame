@@ -1,9 +1,9 @@
-import { prisma } from "@/lib/prisma";
 import type {
-  NotificationType,
   NotificationPriority,
+  NotificationType,
   Role,
 } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
 interface CreateNotificationInput {
   userId: string;
@@ -48,7 +48,9 @@ export class NotificationService {
         actionLabelJa: input.actionLabelJa,
         source: input.source,
         sourceId: input.sourceId,
-        metadata: input.metadata ? JSON.parse(JSON.stringify(input.metadata)) : undefined,
+        metadata: input.metadata
+          ? JSON.parse(JSON.stringify(input.metadata))
+          : undefined,
         expiresAt: input.expiresAt,
       },
     });
@@ -91,7 +93,9 @@ export class NotificationService {
         actionLabelJa: input.actionLabelJa,
         source: input.source,
         sourceId: input.sourceId,
-        metadata: input.metadata ? JSON.parse(JSON.stringify(input.metadata)) : undefined,
+        metadata: input.metadata
+          ? JSON.parse(JSON.stringify(input.metadata))
+          : undefined,
         expiresAt: input.expiresAt,
       })),
     });
@@ -112,7 +116,7 @@ export class NotificationService {
     actionLabel?: string;
     actionLabelJa?: string;
   }) {
-    return this.broadcast({
+    return NotificationService.broadcast({
       ...options,
       type: "SYSTEM",
       broadcast: true,
@@ -131,9 +135,9 @@ export class NotificationService {
       message: string;
       messageJa?: string;
       metadata?: Record<string, unknown>;
-    }
+    },
   ) {
-    return this.create({
+    return NotificationService.create({
       ...options,
       userId,
       type: "SECURITY",
@@ -157,9 +161,9 @@ export class NotificationService {
       actionLabelJa?: string;
       source?: string;
       sourceId?: string;
-    }
+    },
   ) {
-    return this.create({
+    return NotificationService.create({
       ...options,
       userId,
       type: "ACTION",
