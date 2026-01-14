@@ -9,6 +9,9 @@
  * - 日本語: 1トークン ≈ 1-2文字（ひらがな/カタカナは1文字≈1トークン、漢字は1文字≈1-2トークン）
  */
 
+import { CONTEXT_WINDOW_SIZES, TOKEN_ESTIMATION } from "../constants";
+import type { ContextUsage } from "../types";
+
 /**
  * テキストからトークン数を推定
  * 日本語と英語の混在を考慮
@@ -25,8 +28,12 @@ export function estimateTokens(text: string): number {
 
   // 日本語: 約1.5文字で1トークン（平均）
   // 英語/数字/記号: 約4文字で1トークン
-  const japaneseTokens = Math.ceil(japaneseChars / 1.5);
-  const englishTokens = Math.ceil(nonJapaneseLength / 4);
+  const japaneseTokens = Math.ceil(
+    japaneseChars / TOKEN_ESTIMATION.japaneseCharsPerToken,
+  );
+  const englishTokens = Math.ceil(
+    nonJapaneseLength / TOKEN_ESTIMATION.englishCharsPerToken,
+  );
 
   return japaneseTokens + englishTokens;
 }
@@ -40,13 +47,11 @@ export function estimateMessagesTokens(
   let total = 0;
 
   for (const msg of messages) {
-    // メッセージのオーバーヘッド（role, 区切り等）: 約4トークン
-    total += 4;
+    total += TOKEN_ESTIMATION.messageOverhead;
     total += estimateTokens(msg.content);
   }
 
-  // 全体のオーバーヘッド（開始/終了トークン等）: 約3トークン
-  total += 3;
+  total += TOKEN_ESTIMATION.totalOverhead;
 
   return total;
 }
@@ -57,49 +62,46 @@ export function estimateMessagesTokens(
 export function getContextWindowSize(provider: string, model: string): number {
   // OpenAI models
   if (provider === "openai" || provider === "OpenAI") {
-    if (model.includes("gpt-4o")) return 128000;
-    if (model.includes("gpt-4-turbo")) return 128000;
-    if (model.includes("gpt-4-32k")) return 32768;
-    if (model.includes("gpt-4")) return 8192;
-    if (model.includes("gpt-3.5-turbo-16k")) return 16384;
-    if (model.includes("gpt-3.5")) return 4096;
-    return 4096;
+    if (model.includes("gpt-4o")) return CONTEXT_WINDOW_SIZES["gpt-4o"];
+    if (model.includes("gpt-4-turbo"))
+      return CONTEXT_WINDOW_SIZES["gpt-4-turbo"];
+    if (model.includes("gpt-4-32k")) return CONTEXT_WINDOW_SIZES["gpt-4-32k"];
+    if (model.includes("gpt-4")) return CONTEXT_WINDOW_SIZES["gpt-4"];
+    if (model.includes("gpt-3.5-turbo-16k"))
+      return CONTEXT_WINDOW_SIZES["gpt-3.5-turbo-16k"];
+    if (model.includes("gpt-3.5")) return CONTEXT_WINDOW_SIZES["gpt-3.5-turbo"];
+    return CONTEXT_WINDOW_SIZES.default;
   }
 
   // Anthropic models
   if (provider === "anthropic" || provider === "Anthropic") {
-    if (model.includes("claude-3")) return 200000;
-    if (model.includes("claude-2")) return 100000;
-    return 100000;
+    if (model.includes("claude-3")) return CONTEXT_WINDOW_SIZES["claude-3"];
+    if (model.includes("claude-2")) return CONTEXT_WINDOW_SIZES["claude-2"];
+    return CONTEXT_WINDOW_SIZES["claude-2"];
   }
 
-  // Local LLMs - common context sizes
+  // Local LLMs
   if (
     provider === "ollama" ||
     provider === "llama.cpp" ||
     provider === "lm-studio"
   ) {
-    // Gemma models
     if (model.toLowerCase().includes("gemma")) {
-      if (model.includes("3n") || model.includes("2b")) return 8192;
-      return 8192;
+      return CONTEXT_WINDOW_SIZES.gemma;
     }
-    // Llama models
     if (model.toLowerCase().includes("llama")) {
-      if (model.includes("3.2") || model.includes("3.1")) return 128000;
-      if (model.includes("3")) return 8192;
-      return 4096;
+      if (model.includes("3.2") || model.includes("3.1"))
+        return CONTEXT_WINDOW_SIZES["llama-3.2"];
+      if (model.includes("3")) return CONTEXT_WINDOW_SIZES["llama-3"];
+      return CONTEXT_WINDOW_SIZES.llama;
     }
-    // Mistral models
-    if (model.toLowerCase().includes("mistral")) return 32768;
-    // Phi models
-    if (model.toLowerCase().includes("phi")) return 4096;
-    // Default for unknown local models
-    return 4096;
+    if (model.toLowerCase().includes("mistral"))
+      return CONTEXT_WINDOW_SIZES.mistral;
+    if (model.toLowerCase().includes("phi")) return CONTEXT_WINDOW_SIZES.phi;
+    return CONTEXT_WINDOW_SIZES.default;
   }
 
-  // Default
-  return 4096;
+  return CONTEXT_WINDOW_SIZES.default;
 }
 
 /**
@@ -109,12 +111,7 @@ export function calculateContextUsage(
   inputTokens: number,
   outputTokens: number,
   contextWindow: number,
-): {
-  used: number;
-  total: number;
-  percentage: number;
-  remaining: number;
-} {
+): ContextUsage {
   const used = inputTokens + outputTokens;
   const percentage = Math.min((used / contextWindow) * 100, 100);
   const remaining = Math.max(contextWindow - used, 0);
