@@ -20,7 +20,7 @@ import { AIService } from "@/lib/core-modules/ai";
 
 // モック
 jest.mock("@/auth");
-jest.mock("@/lib/core-modules/ai/ai-service");
+jest.mock("@/lib/core-modules/ai");
 
 const mockAuth = auth as jest.MockedFunction<typeof auth>;
 const mockSummarize = AIService.summarize as jest.MockedFunction<

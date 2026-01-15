@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
  * 社員詳細を取得
  */
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {

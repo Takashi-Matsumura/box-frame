@@ -222,7 +222,7 @@ export function AccessKeyManager({
     }
   };
 
-  const toggleMenu = (menuPath: string) => {
+  const _toggleMenu = (menuPath: string) => {
     setFormData((prev) => ({
       ...prev,
       menuPaths: prev.menuPaths.includes(menuPath)

@@ -23,7 +23,7 @@ import { AIService } from "@/lib/core-modules/ai";
 
 // モック
 jest.mock("@/auth");
-jest.mock("@/lib/core-modules/ai/ai-service");
+jest.mock("@/lib/core-modules/ai");
 
 const mockAuth = auth as jest.MockedFunction<typeof auth>;
 const mockIsAvailable = AIService.isAvailable as jest.MockedFunction<
@@ -40,7 +40,7 @@ const mockSession = {
 };
 
 // リクエスト作成ヘルパー
-const createGetRequest = () =>
+const _createGetRequest = () =>
   new Request("http://localhost:3000/api/ai/translate", { method: "GET" });
 
 const createPostRequest = (body: unknown) =>

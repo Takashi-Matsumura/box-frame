@@ -548,7 +548,7 @@ export function EmployeeDetailDialog({
                         <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
 
                         <div className="space-y-4">
-                          {histories.map((history, index) => (
+                          {histories.map((history, _index) => (
                             <div key={history.id} className="relative pl-10">
                               {/* タイムラインドット */}
                               <div className="absolute left-2 top-1 w-5 h-5 rounded-full bg-background border-2 border-primary flex items-center justify-center">

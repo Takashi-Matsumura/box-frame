@@ -21,7 +21,7 @@ export async function GET() {
     return NextResponse.json({
       config: {
         ...config,
-        apiKey: config.apiKey ? "***" + config.apiKey.slice(-4) : null,
+        apiKey: config.apiKey ? `***${config.apiKey.slice(-4)}` : null,
         hasApiKey: !!config.apiKey,
       },
       localLLMDefaults: LOCAL_LLM_DEFAULTS,
@@ -90,7 +90,7 @@ export async function PATCH(request: Request) {
       success: true,
       config: {
         ...config,
-        apiKey: config.apiKey ? "***" + config.apiKey.slice(-4) : null,
+        apiKey: config.apiKey ? `***${config.apiKey.slice(-4)}` : null,
         hasApiKey: !!config.apiKey,
       },
     });

@@ -11,7 +11,6 @@ import {
 } from "@/lib/access-keys";
 import { appConfig } from "@/lib/config/app";
 import {
-  canAccessMenuGroup,
   getAccessibleMenus,
   groupMenusByMenuGroup,
 } from "@/lib/modules/access-control";

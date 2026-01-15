@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let logs;
+    let logs: Awaited<ReturnType<typeof HistoryRecorder.getRecentChangeLogs>>;
 
     if (batchId) {
       // バッチIDで検索

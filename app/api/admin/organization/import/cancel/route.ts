@@ -10,7 +10,7 @@ import { prisma } from "@/lib/prisma";
  * - batchIdを使って変更をロールバック
  * - EmployeeHistoryとChangeLogの該当レコードを削除
  */
-export async function POST(request: Request) {
+export async function POST(_request: Request) {
   try {
     const session = await auth();
 
@@ -151,17 +151,17 @@ export async function POST(request: Request) {
 
               // 社員データを直前の状態に戻す
               // 部門・セクション・コースのIDを取得
-              const department = previousHistory.departmentId
+              const _department = previousHistory.departmentId
                 ? await tx.department.findUnique({
                     where: { id: previousHistory.departmentId },
                   })
                 : null;
-              const section = previousHistory.sectionId
+              const _section = previousHistory.sectionId
                 ? await tx.section.findUnique({
                     where: { id: previousHistory.sectionId },
                   })
                 : null;
-              const course = previousHistory.courseId
+              const _course = previousHistory.courseId
                 ? await tx.course.findUnique({
                     where: { id: previousHistory.courseId },
                   })
@@ -260,7 +260,7 @@ export async function POST(request: Request) {
  *
  * キャンセル可能なインポートがあるか確認
  */
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   try {
     const session = await auth();
 

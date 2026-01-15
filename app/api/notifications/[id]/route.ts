@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
  * 通知の詳細を取得
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
@@ -118,7 +118,7 @@ export async function PATCH(
  * 通知を削除
  */
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();

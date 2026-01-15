@@ -184,7 +184,7 @@ export class LegacyLdapService {
           email,
           displayName,
         };
-      } catch (authError) {
+      } catch (_authError) {
         console.log(
           `[LegacyLdapService] Authentication failed (invalid password): ${username}`,
         );
@@ -234,9 +234,7 @@ export class LegacyLdapService {
   /**
    * ユーザー検索（テスト用）
    */
-  async testSearchUser(
-    username: string,
-  ): Promise<{
+  async testSearchUser(username: string): Promise<{
     success: boolean;
     userDN?: string;
     email?: string;

@@ -211,7 +211,6 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
           ...options,
         });
         break;
-      case "info":
       default:
         toast.info(toastData.title, {
           description: toastData.message,

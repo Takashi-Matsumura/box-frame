@@ -532,7 +532,7 @@ export function LdapMigrationClient({
                   onChange={(e) =>
                     setLegacyConfig({
                       ...legacyConfig,
-                      timeout: parseInt(e.target.value) || 10000,
+                      timeout: parseInt(e.target.value, 10) || 10000,
                     })
                   }
                 />

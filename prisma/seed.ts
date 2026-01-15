@@ -32,7 +32,7 @@ async function main() {
   });
 
   // Create OpenLDAP configuration
-  const openLdapConfig = await prisma.openLdapConfig.upsert({
+  const _openLdapConfig = await prisma.openLdapConfig.upsert({
     where: { id: "default" },
     update: {},
     create: {

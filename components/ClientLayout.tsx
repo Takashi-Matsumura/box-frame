@@ -7,7 +7,6 @@ import {
   SidebarProvider,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { useIsTabletOrMobile } from "@/hooks/use-mobile";
 import { useSidebarStore } from "@/lib/stores/sidebar-store";
 import type { AppMenu } from "@/types/module";
 import { AppSidebar } from "./AppSidebar";
