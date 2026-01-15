@@ -345,6 +345,7 @@ export function processEmployeeData(
         : row.コース?.trim() || affiliation.course;
 
       return {
+        // フィルタで社員番号と氏名が存在することを確認済み
         employeeId: row.社員番号!.trim(),
         name: row.氏名!.trim(),
         nameKana: convertToZenkana(row["氏名(フリガナ)"]?.trim()),

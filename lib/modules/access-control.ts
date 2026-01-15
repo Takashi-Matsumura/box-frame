@@ -324,7 +324,7 @@ export function canAccessTab(
 
   // ロールベースでメニューにアクセス可能な場合、タブにもアクセス可能
   // （タブ固有のロール制限がない場合）
-  if (menu.requiredRoles && menu.requiredRoles.includes(userRole)) {
+  if (menu.requiredRoles?.includes(userRole)) {
     return true;
   }
 

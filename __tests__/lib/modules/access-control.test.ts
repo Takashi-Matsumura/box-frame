@@ -5,12 +5,10 @@
  * GUEST → USER → MANAGER → EXECUTIVE → ADMIN
  */
 
-import type { Role } from "@prisma/client";
 import {
   canAccessMenu,
   canAccessMenuGroup,
   canAccessModule,
-  getAccessibleMenuGroups,
   getAccessibleMenus,
   groupMenusByMenuGroup,
 } from "@/lib/modules/access-control";

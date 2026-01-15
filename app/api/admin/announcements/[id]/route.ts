@@ -8,7 +8,7 @@ import { AuditService } from "@/lib/services/audit-service";
  * 特定のアナウンスを取得（管理者のみ）
  */
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -117,7 +117,7 @@ export async function PATCH(
  * アナウンスを削除（管理者のみ）
  */
 export async function DELETE(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {

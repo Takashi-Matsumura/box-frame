@@ -230,7 +230,7 @@ export class OrganizationImporter extends BaseImporter<
       section: { name: string } | null;
       course: { name: string } | null;
     },
-    newData: ProcessedEmployee,
+    _newData: ProcessedEmployee,
     changes: FieldChange[],
   ): ChangeType {
     // 退職からの復職
@@ -542,13 +542,13 @@ export class OrganizationImporter extends BaseImporter<
             : undefined;
 
           // 部門名を取得
-          const dept = await tx.department.findUnique({
+          const _dept = await tx.department.findUnique({
             where: { id: deptId },
           });
-          const section = sectionId
+          const _section = sectionId
             ? await tx.section.findUnique({ where: { id: sectionId } })
             : null;
-          const course = courseId
+          const _course = courseId
             ? await tx.course.findUnique({ where: { id: courseId } })
             : null;
 

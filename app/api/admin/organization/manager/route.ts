@@ -38,7 +38,11 @@ export async function PATCH(request: Request) {
     }
 
     // Update the manager based on type
-    let result;
+    let result:
+      | {
+          manager: { id: string; name: string; position: string | null } | null;
+        }
+      | undefined;
 
     if (type === "department") {
       result = await prisma.department.update({

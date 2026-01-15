@@ -40,7 +40,7 @@ const mockSession = {
 };
 
 // リクエスト作成ヘルパー
-const createGetRequest = () =>
+const _createGetRequest = () =>
   new Request("http://localhost:3000/api/ai/translate", { method: "GET" });
 
 const createPostRequest = (body: unknown) =>

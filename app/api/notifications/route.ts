@@ -30,9 +30,9 @@ export async function GET(request: NextRequest) {
   }
 
   const searchParams = request.nextUrl.searchParams;
-  const page = parseInt(searchParams.get("page") || "1");
+  const page = parseInt(searchParams.get("page") || "1", 10);
   const pageSize = Math.min(
-    parseInt(searchParams.get("pageSize") || "20"),
+    parseInt(searchParams.get("pageSize") || "20", 10),
     100,
   );
   const type = searchParams.get("type") as NotificationType | null;

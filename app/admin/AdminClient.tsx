@@ -8,7 +8,6 @@ import {
   Plus,
   Search,
   Trash2,
-  X,
 } from "lucide-react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
@@ -1214,7 +1213,7 @@ export function AdminClient({
   };
 
   // ページサイズ変更ハンドラ
-  const handlePageSizeChange = (newSize: number) => {
+  const _handlePageSizeChange = (newSize: number) => {
     setPageSize(newSize);
     setPage(1);
   };
@@ -2941,7 +2940,8 @@ export function AdminClient({
                                       ? {
                                           ...prev,
                                           timeout:
-                                            parseInt(e.target.value) || 10000,
+                                            parseInt(e.target.value, 10) ||
+                                            10000,
                                         }
                                       : prev,
                                   )
@@ -3366,7 +3366,7 @@ export function AdminClient({
                                         e.target.value,
                                         10,
                                       );
-                                      if (!isNaN(newOrder)) {
+                                      if (!Number.isNaN(newOrder)) {
                                         handleUpdateMenuOrder(
                                           menu.id,
                                           newOrder,
