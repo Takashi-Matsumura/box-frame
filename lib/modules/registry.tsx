@@ -1,7 +1,6 @@
 // コアモジュール（静的インポート）
 
 // アドオンモジュール
-import { evaluationModule } from "@/lib/addon-modules/evaluation/module";
 import { ldapMigrationModule } from "@/lib/addon-modules/ldap-migration";
 import { openldapModule } from "@/lib/addon-modules/openldap";
 import { organizationModule } from "@/lib/addon-modules/organization";
@@ -110,7 +109,6 @@ export const moduleRegistry: ModuleRegistry = {
   system: systemModule,
 
   // アドオンモジュール
-  evaluation: evaluationModule,
   "ldap-migration": ldapMigrationModule,
   openldap: openldapModule,
   organization: organizationModule,
