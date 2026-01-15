@@ -25,27 +25,32 @@ export async function PATCH(request: Request) {
     if (!type || !menuId || typeof allowAccessKey !== "boolean") {
       return NextResponse.json(
         { error: "type, menuId, and allowAccessKey are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (type !== "menu" && type !== "tab") {
       return NextResponse.json(
         { error: "type must be 'menu' or 'tab'" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (type === "tab" && !tabId) {
       return NextResponse.json(
         { error: "tabId is required for tab type" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // メニューの存在確認
     let foundModule: (typeof moduleRegistry)[string] | null = null;
-    let foundMenu: { id: string; name: string; nameJa?: string; tabs?: unknown[] } | null = null;
+    let foundMenu: {
+      id: string;
+      name: string;
+      nameJa?: string;
+      tabs?: unknown[];
+    } | null = null;
     let foundTab: { id: string; name: string; nameJa?: string } | null = null;
 
     for (const module of Object.values(moduleRegistry)) {
@@ -64,17 +69,11 @@ export async function PATCH(request: Request) {
     }
 
     if (!foundMenu || !foundModule) {
-      return NextResponse.json(
-        { error: "Menu not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Menu not found" }, { status: 404 });
     }
 
     if (type === "tab" && !foundTab) {
-      return NextResponse.json(
-        { error: "Tab not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Tab not found" }, { status: 404 });
     }
 
     // SystemSettingに保存
@@ -123,7 +122,7 @@ export async function PATCH(request: Request) {
     console.error("Error updating allowAccessKey setting:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -147,14 +146,14 @@ export async function DELETE(request: Request) {
     if (!type || !menuId) {
       return NextResponse.json(
         { error: "type and menuId are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (type === "tab" && !tabId) {
       return NextResponse.json(
         { error: "tabId is required for tab type" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -181,7 +180,7 @@ export async function DELETE(request: Request) {
     console.error("Error resetting allowAccessKey setting:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

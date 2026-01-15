@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { RiCheckLine, RiEyeLine, RiEyeOffLine, RiInformationLine } from "react-icons/ri";
+import {
+  RiCheckLine,
+  RiEyeLine,
+  RiEyeOffLine,
+  RiInformationLine,
+} from "react-icons/ri";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -162,7 +167,11 @@ export function BraveApiKeySection({
       {message && (
         <Alert
           variant={message.type === "error" ? "destructive" : "default"}
-          className={message.type === "success" ? "mb-4 border-green-200 bg-green-50 text-green-800" : "mb-4"}
+          className={
+            message.type === "success"
+              ? "mb-4 border-green-200 bg-green-50 text-green-800"
+              : "mb-4"
+          }
         >
           <AlertDescription>{message.text}</AlertDescription>
         </Alert>

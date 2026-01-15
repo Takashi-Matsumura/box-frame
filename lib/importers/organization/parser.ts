@@ -21,7 +21,8 @@ function excelSerialToDate(serial: number): Date {
  * 日付文字列をパース（和暦対応・Excelシリアル対応）
  */
 function parseDate(dateStr: string | number | undefined): Date | undefined {
-  if (dateStr === undefined || dateStr === null || dateStr === "") return undefined;
+  if (dateStr === undefined || dateStr === null || dateStr === "")
+    return undefined;
 
   // 数値の場合はExcelシリアル日付として処理
   if (typeof dateStr === "number") {
@@ -80,19 +81,19 @@ function parseDate(dateStr: string | number | undefined): Date | undefined {
     return new Date(
       parseInt(year, 10),
       parseInt(month, 10) - 1,
-      parseInt(day, 10)
+      parseInt(day, 10),
     );
   }
 
   // 西暦パターン: 2023/4/1, 2023-04-01
-  const slashPattern = /^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/;
+  const slashPattern = /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/;
   const slashMatch = cleanedStr.match(slashPattern);
   if (slashMatch) {
     const [, year, month, day] = slashMatch;
     return new Date(
       parseInt(year, 10),
       parseInt(month, 10) - 1,
-      parseInt(day, 10)
+      parseInt(day, 10),
     );
   }
 
@@ -227,13 +228,15 @@ const EXECUTIVE_DEPARTMENT_CODE_PREFIX = "999999";
  * 例: "0401000" → { department: "04", section: "01", course: "000" }
  */
 export interface ParsedAffiliationCode {
-  departmentCode: string;   // 本部コード（1-2桁目）
-  sectionCode: string;      // 部コード（3-4桁目）
-  courseCode: string;       // 課コード（5-7桁目）
-  fullCode: string;         // 元の7桁コード
+  departmentCode: string; // 本部コード（1-2桁目）
+  sectionCode: string; // 部コード（3-4桁目）
+  courseCode: string; // 課コード（5-7桁目）
+  fullCode: string; // 元の7桁コード
 }
 
-export function parseAffiliationCode(code: string | undefined): ParsedAffiliationCode | undefined {
+export function parseAffiliationCode(
+  code: string | undefined,
+): ParsedAffiliationCode | undefined {
   if (!code) return undefined;
 
   // 数値のみを抽出して正規化
@@ -246,9 +249,9 @@ export function parseAffiliationCode(code: string | undefined): ParsedAffiliatio
   const sevenDigit = padded.substring(0, 7);
 
   return {
-    departmentCode: sevenDigit.substring(0, 2),  // 1-2桁目: 本部コード
-    sectionCode: sevenDigit.substring(2, 4),     // 3-4桁目: 部コード
-    courseCode: sevenDigit.substring(4, 7),      // 5-7桁目: 課コード
+    departmentCode: sevenDigit.substring(0, 2), // 1-2桁目: 本部コード
+    sectionCode: sevenDigit.substring(2, 4), // 3-4桁目: 部コード
+    courseCode: sevenDigit.substring(4, 7), // 5-7桁目: 課コード
     fullCode: sevenDigit,
   };
 }
@@ -262,7 +265,9 @@ export const EXECUTIVES_DEPARTMENT_NAME = "役員・顧問";
  * 所属コードが役員・顧問を示すコードかどうかを判定
  * 所属コードが「999999」で始まる場合は役員・顧問として扱う
  */
-export function isExecutiveDepartmentCode(departmentCode: string | undefined): boolean {
+export function isExecutiveDepartmentCode(
+  departmentCode: string | undefined,
+): boolean {
   if (!departmentCode) return false;
   return departmentCode.startsWith(EXECUTIVE_DEPARTMENT_CODE_PREFIX);
 }
@@ -274,7 +279,7 @@ export function isExecutiveDepartmentCode(departmentCode: string | undefined): b
  */
 function parseAffiliation(
   affiliation: string,
-  departmentCode?: string
+  departmentCode?: string,
 ): {
   department: string;
   section?: string;
@@ -305,7 +310,9 @@ function parseAffiliation(
 /**
  * CSVデータを処理済み社員データに変換
  */
-export function processEmployeeData(rows: CSVEmployeeRow[]): ProcessedEmployee[] {
+export function processEmployeeData(
+  rows: CSVEmployeeRow[],
+): ProcessedEmployee[] {
   return rows
     .filter((row) => {
       // 社員番号と氏名は必須
@@ -343,12 +350,12 @@ export function processEmployeeData(rows: CSVEmployeeRow[]): ProcessedEmployee[]
         nameKana: convertToZenkana(row["氏名(フリガナ)"]?.trim()),
         email: row["社用e-Mail１"]?.trim() || "",
         department: affiliation.department,
-        departmentCode: isExec ? "99" : parsedCode?.departmentCode,   // 本部コード（1-2桁目）
+        departmentCode: isExec ? "99" : parsedCode?.departmentCode, // 本部コード（1-2桁目）
         section,
-        sectionCode: isExec ? undefined : parsedCode?.sectionCode,    // 部コード（3-4桁目）
+        sectionCode: isExec ? undefined : parsedCode?.sectionCode, // 部コード（3-4桁目）
         course,
-        courseCode: isExec ? undefined : parsedCode?.courseCode,      // 課コード（5-7桁目）
-        affiliationCode: isExec ? "9999999" : parsedCode?.fullCode,   // 元の7桁コード
+        courseCode: isExec ? undefined : parsedCode?.courseCode, // 課コード（5-7桁目）
+        affiliationCode: isExec ? "9999999" : parsedCode?.fullCode, // 元の7桁コード
         position,
         positionCode: row.役職コード?.trim(),
         phone: row.電話番号?.trim(),
@@ -384,17 +391,17 @@ export interface ProcessedDataWithDuplicates {
  * 同一氏名の役員・顧問がいる場合、社員番号が若いものを残す
  */
 export function processEmployeeDataWithDeduplication(
-  rows: CSVEmployeeRow[]
+  rows: CSVEmployeeRow[],
 ): ProcessedDataWithDuplicates {
   const processed = processEmployeeData(rows);
   const excludedDuplicates: ExcludedDuplicate[] = [];
 
   // 役員・顧問とそれ以外を分離
   const executives = processed.filter(
-    (e) => e.department === EXECUTIVES_DEPARTMENT_NAME
+    (e) => e.department === EXECUTIVES_DEPARTMENT_NAME,
   );
   const nonExecutives = processed.filter(
-    (e) => e.department !== EXECUTIVES_DEPARTMENT_NAME
+    (e) => e.department !== EXECUTIVES_DEPARTMENT_NAME,
   );
 
   // 役員・顧問の重複を検出（氏名でグループ化）

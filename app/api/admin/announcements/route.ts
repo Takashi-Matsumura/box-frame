@@ -33,7 +33,7 @@ export async function GET() {
     console.error("Error fetching announcements:", error);
     return NextResponse.json(
       { error: "Failed to fetch announcements" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     if (!titleJa || !messageJa) {
       return NextResponse.json(
         { error: "Title and message (Japanese) are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
     console.error("Error creating announcement:", error);
     return NextResponse.json(
       { error: "Failed to create announcement" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

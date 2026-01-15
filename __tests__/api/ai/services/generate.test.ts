@@ -16,15 +16,17 @@
  */
 
 import { POST } from "@/app/api/ai/services/generate/route";
-import { AIService } from "@/lib/core-modules/ai";
 import { auth } from "@/auth";
+import { AIService } from "@/lib/core-modules/ai";
 
 // モック
 jest.mock("@/auth");
 jest.mock("@/lib/core-modules/ai");
 
 const mockAuth = auth as jest.MockedFunction<typeof auth>;
-const mockGenerate = AIService.generate as jest.MockedFunction<typeof AIService.generate>;
+const mockGenerate = AIService.generate as jest.MockedFunction<
+  typeof AIService.generate
+>;
 
 // モックセッション
 const mockSession = {
@@ -51,7 +53,7 @@ describe("POST /api/ai/services/generate", () => {
       mockAuth.mockResolvedValue(null as never);
 
       const response = await POST(
-        createRequest({ input: "test", systemPrompt: "test" })
+        createRequest({ input: "test", systemPrompt: "test" }),
       );
 
       expect(response.status).toBe(401);
@@ -62,9 +64,7 @@ describe("POST /api/ai/services/generate", () => {
 
   describe("バリデーション", () => {
     it("input が未指定の場合 400 エラー", async () => {
-      const response = await POST(
-        createRequest({ systemPrompt: "test" })
-      );
+      const response = await POST(createRequest({ systemPrompt: "test" }));
 
       expect(response.status).toBe(400);
       const json = await response.json();
@@ -72,9 +72,7 @@ describe("POST /api/ai/services/generate", () => {
     });
 
     it("systemPrompt が未指定の場合 400 エラー", async () => {
-      const response = await POST(
-        createRequest({ input: "test" })
-      );
+      const response = await POST(createRequest({ input: "test" }));
 
       expect(response.status).toBe(400);
       const json = await response.json();
@@ -83,7 +81,7 @@ describe("POST /api/ai/services/generate", () => {
 
     it("temperature が範囲外の場合 400 エラー", async () => {
       const response = await POST(
-        createRequest({ input: "test", systemPrompt: "test", temperature: 3 })
+        createRequest({ input: "test", systemPrompt: "test", temperature: 3 }),
       );
 
       expect(response.status).toBe(400);
@@ -93,7 +91,11 @@ describe("POST /api/ai/services/generate", () => {
 
     it("maxTokens が範囲外の場合 400 エラー", async () => {
       const response = await POST(
-        createRequest({ input: "test", systemPrompt: "test", maxTokens: 99999 })
+        createRequest({
+          input: "test",
+          systemPrompt: "test",
+          maxTokens: 99999,
+        }),
       );
 
       expect(response.status).toBe(400);
@@ -111,7 +113,7 @@ describe("POST /api/ai/services/generate", () => {
       });
 
       const response = await POST(
-        createRequest({ input: "test input", systemPrompt: "test prompt" })
+        createRequest({ input: "test input", systemPrompt: "test prompt" }),
       );
 
       expect(response.status).toBe(200);
@@ -135,7 +137,7 @@ describe("POST /api/ai/services/generate", () => {
           systemPrompt: "test",
           temperature: 0.5,
           maxTokens: 500,
-        })
+        }),
       );
 
       expect(mockGenerate).toHaveBeenCalledWith({
@@ -152,7 +154,7 @@ describe("POST /api/ai/services/generate", () => {
       mockGenerate.mockRejectedValue(new Error("AI service error"));
 
       const response = await POST(
-        createRequest({ input: "test", systemPrompt: "test" })
+        createRequest({ input: "test", systemPrompt: "test" }),
       );
 
       expect(response.status).toBe(500);

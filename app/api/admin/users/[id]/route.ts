@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { NotificationService } from "@/lib/services/notification-service";
 import { AuditService } from "@/lib/services/audit-service";
+import { NotificationService } from "@/lib/services/notification-service";
 
 /**
  * DELETE /api/admin/users/[id]

@@ -57,10 +57,10 @@ export function LanguageSwitcher({
 
   return (
     <div>
-      <h2 className="text-xl font-semibold mb-2">
-        {translations.title}
-      </h2>
-      <p className="text-sm text-muted-foreground mb-4">{translations.description}</p>
+      <h2 className="text-xl font-semibold mb-2">{translations.title}</h2>
+      <p className="text-sm text-muted-foreground mb-4">
+        {translations.description}
+      </p>
 
       <div className="space-y-4">
         <div>
@@ -107,7 +107,11 @@ export function LanguageSwitcher({
         {message && (
           <Alert
             variant={message.includes("Failed") ? "destructive" : "default"}
-            className={message.includes("Failed") ? "" : "border-green-200 bg-green-50 text-green-800"}
+            className={
+              message.includes("Failed")
+                ? ""
+                : "border-green-200 bg-green-50 text-green-800"
+            }
           >
             <AlertDescription>{message}</AlertDescription>
           </Alert>

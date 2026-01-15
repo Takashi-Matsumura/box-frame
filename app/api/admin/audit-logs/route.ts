@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import {
-  AuditService,
-  type AuditCategory,
   type AuditAction,
+  type AuditCategory,
+  AuditService,
 } from "@/lib/services/audit-service";
 
 /**
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     console.error("Error fetching audit logs:", error);
     return NextResponse.json(
       { error: "Failed to fetch audit logs" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

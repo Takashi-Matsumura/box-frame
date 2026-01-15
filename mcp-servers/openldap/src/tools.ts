@@ -1,4 +1,4 @@
-import { type Tool } from "@modelcontextprotocol/sdk/types.js";
+import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 
 /**
  * MCPツール定義（読み取り専用）
@@ -35,8 +35,7 @@ export const tools: Tool[] = [
   },
   {
     name: "ldap_get_user",
-    description:
-      "指定したユーザーID（uid）のユーザー詳細情報を取得します。",
+    description: "指定したユーザーID（uid）のユーザー詳細情報を取得します。",
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -65,8 +64,7 @@ export const tools: Tool[] = [
   },
   {
     name: "ldap_user_exists",
-    description:
-      "指定したユーザーID（uid）のユーザーが存在するか確認します。",
+    description: "指定したユーザーID（uid）のユーザーが存在するか確認します。",
     inputSchema: {
       type: "object" as const,
       properties: {

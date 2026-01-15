@@ -22,7 +22,7 @@ export async function GET() {
     console.error("Error fetching GitHub OAuth setting:", error);
     return NextResponse.json(
       { error: "Failed to fetch setting" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     if (typeof enabled !== "boolean") {
       return NextResponse.json(
         { error: "Invalid request body" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     console.error("Error updating GitHub OAuth setting:", error);
     return NextResponse.json(
       { error: "Failed to update setting" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

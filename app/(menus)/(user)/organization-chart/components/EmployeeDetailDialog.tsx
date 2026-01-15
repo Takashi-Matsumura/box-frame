@@ -1,20 +1,20 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import type { Translations, Language } from "../translations";
+import type { Language, Translations } from "../translations";
 
 interface Manager {
   id: string;
@@ -36,9 +36,24 @@ interface EmployeeDetail {
   employmentType: string | null;
   employmentTypeCode: string | null;
   organization: { id: string; name: string } | null;
-  department: { id: string; name: string; code: string | null; manager: Manager | null } | null;
-  section: { id: string; name: string; code: string | null; manager: Manager | null } | null;
-  course: { id: string; name: string; code: string | null; manager: Manager | null } | null;
+  department: {
+    id: string;
+    name: string;
+    code: string | null;
+    manager: Manager | null;
+  } | null;
+  section: {
+    id: string;
+    name: string;
+    code: string | null;
+    manager: Manager | null;
+  } | null;
+  course: {
+    id: string;
+    name: string;
+    code: string | null;
+    manager: Manager | null;
+  } | null;
   joinDate: string | null;
   birthDate: string | null;
   isActive: boolean;
@@ -192,7 +207,9 @@ export function EmployeeDetailDialog({
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch(`/api/organization/employees/${employeeId}`);
+        const response = await fetch(
+          `/api/organization/employees/${employeeId}`,
+        );
         if (!response.ok) throw new Error("Failed to fetch employee");
         const data = await response.json();
         setEmployee(data.employee);
@@ -213,7 +230,9 @@ export function EmployeeDetailDialog({
 
     try {
       setHistoryLoading(true);
-      const response = await fetch(`/api/organization/employees/${employeeId}/history`);
+      const response = await fetch(
+        `/api/organization/employees/${employeeId}/history`,
+      );
       if (!response.ok) throw new Error("Failed to fetch history");
       const data = await response.json();
       setHistories(data.histories || []);
@@ -270,7 +289,10 @@ export function EmployeeDetailDialog({
                 )}
                 <div className="flex items-center gap-2 mt-1">
                   <Badge
-                    className={cn("text-xs", getPositionColor(employee.position))}
+                    className={cn(
+                      "text-xs",
+                      getPositionColor(employee.position),
+                    )}
                   >
                     {employee.position}
                   </Badge>
@@ -285,7 +307,11 @@ export function EmployeeDetailDialog({
             </div>
 
             {/* タブ */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="flex-1 flex flex-col min-h-0"
+            >
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="basic">
                   {language === "ja" ? "基本情報" : "Basic Info"}
@@ -305,20 +331,32 @@ export function EmployeeDetailDialog({
                         {t.basicInfo}
                       </h3>
                       <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                        <dt className="text-muted-foreground">{t.employeeId}</dt>
-                        <dd className="text-foreground">{employee.employeeId}</dd>
+                        <dt className="text-muted-foreground">
+                          {t.employeeId}
+                        </dt>
+                        <dd className="text-foreground">
+                          {employee.employeeId}
+                        </dd>
 
                         {employee.qualificationGrade && (
                           <>
-                            <dt className="text-muted-foreground">{t.qualificationGrade}</dt>
-                            <dd className="text-foreground">{employee.qualificationGrade}</dd>
+                            <dt className="text-muted-foreground">
+                              {t.qualificationGrade}
+                            </dt>
+                            <dd className="text-foreground">
+                              {employee.qualificationGrade}
+                            </dd>
                           </>
                         )}
 
                         {employee.employmentType && (
                           <>
-                            <dt className="text-muted-foreground">{t.employmentType}</dt>
-                            <dd className="text-foreground">{employee.employmentType}</dd>
+                            <dt className="text-muted-foreground">
+                              {t.employmentType}
+                            </dt>
+                            <dd className="text-foreground">
+                              {employee.employmentType}
+                            </dd>
                           </>
                         )}
                       </dl>
@@ -334,16 +372,30 @@ export function EmployeeDetailDialog({
                       <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                         {employee.department && (
                           <>
-                            <dt className="text-muted-foreground">{t.department}</dt>
+                            <dt className="text-muted-foreground">
+                              {t.department}
+                            </dt>
                             <dd className="text-foreground">
                               <div>{employee.department.name}</div>
                               {employee.department.manager && (
                                 <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                  <svg
+                                    className="w-3 h-3"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                    />
                                   </svg>
                                   {employee.department.manager.name}
-                                  <span className="opacity-70">({employee.department.manager.position})</span>
+                                  <span className="opacity-70">
+                                    ({employee.department.manager.position})
+                                  </span>
                                 </div>
                               )}
                             </dd>
@@ -352,16 +404,30 @@ export function EmployeeDetailDialog({
 
                         {employee.section && (
                           <>
-                            <dt className="text-muted-foreground">{t.section}</dt>
+                            <dt className="text-muted-foreground">
+                              {t.section}
+                            </dt>
                             <dd className="text-foreground">
                               <div>{employee.section.name}</div>
                               {employee.section.manager && (
                                 <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                  <svg
+                                    className="w-3 h-3"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                    />
                                   </svg>
                                   {employee.section.manager.name}
-                                  <span className="opacity-70">({employee.section.manager.position})</span>
+                                  <span className="opacity-70">
+                                    ({employee.section.manager.position})
+                                  </span>
                                 </div>
                               )}
                             </dd>
@@ -370,16 +436,30 @@ export function EmployeeDetailDialog({
 
                         {employee.course && (
                           <>
-                            <dt className="text-muted-foreground">{t.course}</dt>
+                            <dt className="text-muted-foreground">
+                              {t.course}
+                            </dt>
                             <dd className="text-foreground">
                               <div>{employee.course.name}</div>
                               {employee.course.manager && (
                                 <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                  <svg
+                                    className="w-3 h-3"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                    />
                                   </svg>
                                   {employee.course.manager.name}
-                                  <span className="opacity-70">({employee.course.manager.position})</span>
+                                  <span className="opacity-70">
+                                    ({employee.course.manager.position})
+                                  </span>
                                 </div>
                               )}
                             </dd>
@@ -456,7 +536,9 @@ export function EmployeeDetailDialog({
 
                     {!historyLoading && histories.length === 0 && (
                       <div className="text-center py-8 text-muted-foreground">
-                        {language === "ja" ? "履歴データがありません" : "No history data"}
+                        {language === "ja"
+                          ? "履歴データがありません"
+                          : "No history data"}
                       </div>
                     )}
 
@@ -489,11 +571,19 @@ export function EmployeeDetailDialog({
                               <div className="bg-muted/50 rounded-lg p-4 border">
                                 {/* ヘッダー */}
                                 <div className="flex items-center justify-between mb-2">
-                                  <Badge className={cn("text-xs", getChangeTypeColor(history.changeType))}>
+                                  <Badge
+                                    className={cn(
+                                      "text-xs",
+                                      getChangeTypeColor(history.changeType),
+                                    )}
+                                  >
                                     {history.changeTypeJa}
                                   </Badge>
                                   <span className="text-xs text-muted-foreground">
-                                    {formatShortDate(history.validFrom, language)}
+                                    {formatShortDate(
+                                      history.validFrom,
+                                      language,
+                                    )}
                                   </span>
                                 </div>
 
@@ -501,35 +591,54 @@ export function EmployeeDetailDialog({
                                 <div className="space-y-2 text-sm">
                                   {/* 所属情報 */}
                                   <div className="text-foreground">
-                                    <span className="font-medium">{history.department}</span>
+                                    <span className="font-medium">
+                                      {history.department}
+                                    </span>
                                     {history.section && (
-                                      <span className="text-muted-foreground"> / {history.section}</span>
+                                      <span className="text-muted-foreground">
+                                        {" "}
+                                        / {history.section}
+                                      </span>
                                     )}
                                     {history.course && (
-                                      <span className="text-muted-foreground"> / {history.course}</span>
+                                      <span className="text-muted-foreground">
+                                        {" "}
+                                        / {history.course}
+                                      </span>
                                     )}
                                   </div>
 
                                   {/* 役職 */}
                                   <div className="text-muted-foreground">
-                                    {language === "ja" ? "役職" : "Position"}: {history.position}
+                                    {language === "ja" ? "役職" : "Position"}:{" "}
+                                    {history.position}
                                   </div>
 
                                   {/* 変更詳細 */}
                                   {history.changes.length > 0 && (
                                     <div className="mt-2 pt-2 border-t border-border">
                                       <p className="text-xs text-muted-foreground mb-1">
-                                        {language === "ja" ? "変更内容:" : "Changes:"}
+                                        {language === "ja"
+                                          ? "変更内容:"
+                                          : "Changes:"}
                                       </p>
                                       <ul className="space-y-1">
-                                        {history.changes.slice(0, 3).map((change, i) => (
-                                          <li key={i} className="text-xs text-muted-foreground">
-                                            {change.description}
-                                          </li>
-                                        ))}
+                                        {history.changes
+                                          .slice(0, 3)
+                                          .map((change, i) => (
+                                            <li
+                                              key={i}
+                                              className="text-xs text-muted-foreground"
+                                            >
+                                              {change.description}
+                                            </li>
+                                          ))}
                                         {history.changes.length > 3 && (
                                           <li className="text-xs text-muted-foreground">
-                                            ...{language === "ja" ? `他${history.changes.length - 3}件` : `and ${history.changes.length - 3} more`}
+                                            ...
+                                            {language === "ja"
+                                              ? `他${history.changes.length - 3}件`
+                                              : `and ${history.changes.length - 3} more`}
                                           </li>
                                         )}
                                       </ul>

@@ -6,7 +6,6 @@
  */
 
 import type { Role } from "@prisma/client";
-import type { AppMenu, AppModule } from "@/types/module";
 import {
   canAccessMenu,
   canAccessMenuGroup,
@@ -15,6 +14,7 @@ import {
   getAccessibleMenus,
   groupMenusByMenuGroup,
 } from "@/lib/modules/access-control";
+import type { AppMenu, AppModule } from "@/types/module";
 
 // テスト用のモックメニュー
 const createMockMenu = (overrides: Partial<AppMenu> = {}): AppMenu => ({
@@ -154,8 +154,14 @@ describe("access-control", () => {
           requiredRoles: ["USER"],
           requiredAccessKey: "special_access",
         });
-        expect(canAccessMenu(menu, "USER", [], undefined, undefined, [])).toBe(false);
-        expect(canAccessMenu(menu, "USER", [], undefined, undefined, ["special_access"])).toBe(true);
+        expect(canAccessMenu(menu, "USER", [], undefined, undefined, [])).toBe(
+          false,
+        );
+        expect(
+          canAccessMenu(menu, "USER", [], undefined, undefined, [
+            "special_access",
+          ]),
+        ).toBe(true);
       });
 
       it("ADMIN はアクセスキーチェックをスキップ", () => {
@@ -163,7 +169,9 @@ describe("access-control", () => {
           requiredRoles: ["ADMIN"],
           requiredAccessKey: "special_access",
         });
-        expect(canAccessMenu(menu, "ADMIN", [], undefined, undefined, [])).toBe(true);
+        expect(canAccessMenu(menu, "ADMIN", [], undefined, undefined, [])).toBe(
+          true,
+        );
       });
     });
   });
@@ -242,7 +250,11 @@ describe("access-control", () => {
       ];
 
       const grouped = groupMenusByMenuGroup(menus);
-      expect(grouped.user.map((m) => m.id)).toEqual(["menu2", "menu3", "menu1"]);
+      expect(grouped.user.map((m) => m.id)).toEqual([
+        "menu2",
+        "menu3",
+        "menu1",
+      ]);
     });
   });
 });

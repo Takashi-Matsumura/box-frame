@@ -1,8 +1,18 @@
 "use client";
 
+import {
+  ChevronLeft,
+  ChevronRight,
+  KeyRound,
+  Pencil,
+  Search,
+  Trash2,
+  UserPlus,
+  X,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, KeyRound, Pencil, Search, Trash2, UserPlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -11,11 +21,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSidebar } from "@/components/ui/sidebar";
-import { useSidebarStore } from "@/lib/stores/sidebar-store";
 import {
   Table,
   TableBody,
@@ -30,6 +38,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useSidebarStore } from "@/lib/stores/sidebar-store";
 
 interface LdapUser {
   uid: string;
@@ -1293,7 +1302,10 @@ export function OpenLdapManagementClient({
               <CardContent className="p-6">
                 {/* ツールバー：検索と新規作成 */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                  <form onSubmit={handleSearch} className="flex gap-2 w-full sm:w-auto">
+                  <form
+                    onSubmit={handleSearch}
+                    className="flex gap-2 w-full sm:w-auto"
+                  >
                     <div className="relative flex-1 sm:flex-none">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -1333,7 +1345,10 @@ export function OpenLdapManagementClient({
                     {/* ページネーション（テーブル上部） */}
                     <div className="flex items-center justify-between mb-4">
                       <p className="text-sm text-muted-foreground">
-                        {t.total}: <span className="font-medium text-foreground">{total}</span>
+                        {t.total}:{" "}
+                        <span className="font-medium text-foreground">
+                          {total}
+                        </span>
                       </p>
                       <div className="flex items-center gap-2">
                         <Button
@@ -1348,13 +1363,19 @@ export function OpenLdapManagementClient({
                         </Button>
                         <div className="flex items-center gap-1 px-2">
                           <span className="text-sm font-medium">{page}</span>
-                          <span className="text-sm text-muted-foreground">/</span>
-                          <span className="text-sm text-muted-foreground">{totalPages || 1}</span>
+                          <span className="text-sm text-muted-foreground">
+                            /
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {totalPages || 1}
+                          </span>
                         </div>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                          onClick={() =>
+                            setPage((p) => Math.min(totalPages, p + 1))
+                          }
                           disabled={page >= totalPages}
                           className="gap-1"
                         >
@@ -1368,18 +1389,32 @@ export function OpenLdapManagementClient({
                       <Table>
                         <TableHeader>
                           <TableRow className="bg-muted/50">
-                            <TableHead className="font-semibold">{t.userId}</TableHead>
-                            <TableHead className="font-semibold">{t.displayName}</TableHead>
-                            <TableHead className="font-semibold">{t.email}</TableHead>
-                            <TableHead className="text-right font-semibold">{t.actions}</TableHead>
+                            <TableHead className="font-semibold">
+                              {t.userId}
+                            </TableHead>
+                            <TableHead className="font-semibold">
+                              {t.displayName}
+                            </TableHead>
+                            <TableHead className="font-semibold">
+                              {t.email}
+                            </TableHead>
+                            <TableHead className="text-right font-semibold">
+                              {t.actions}
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {users.map((user) => (
                             <TableRow key={user.uid}>
-                              <TableCell className="font-medium">{user.uid}</TableCell>
-                              <TableCell>{user.displayName || user.cn}</TableCell>
-                              <TableCell className="text-muted-foreground">{user.mail || "-"}</TableCell>
+                              <TableCell className="font-medium">
+                                {user.uid}
+                              </TableCell>
+                              <TableCell>
+                                {user.displayName || user.cn}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {user.mail || "-"}
+                              </TableCell>
                               <TableCell className="text-right">
                                 <TooltipProvider>
                                   <div className="flex justify-end gap-1">
@@ -1404,7 +1439,9 @@ export function OpenLdapManagementClient({
                                           variant="ghost"
                                           size="icon"
                                           className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                                          onClick={() => openResetPasswordModal(user)}
+                                          onClick={() =>
+                                            openResetPasswordModal(user)
+                                          }
                                         >
                                           <KeyRound className="h-4 w-4" />
                                         </Button>
@@ -1450,10 +1487,7 @@ export function OpenLdapManagementClient({
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                   <div className="flex-1" />
                   <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => openTestModal()}
-                    >
+                    <Button variant="outline" onClick={() => openTestModal()}>
                       {t.test}
                     </Button>
                     <Button onClick={openAccessKeyModal}>
@@ -1475,7 +1509,10 @@ export function OpenLdapManagementClient({
                     {/* 合計表示 */}
                     <div className="flex items-center justify-between mb-4">
                       <p className="text-sm text-muted-foreground">
-                        {t.total}: <span className="font-medium text-foreground">{accessKeys.length}</span>
+                        {t.total}:{" "}
+                        <span className="font-medium text-foreground">
+                          {accessKeys.length}
+                        </span>
                       </p>
                     </div>
 
@@ -1489,15 +1526,20 @@ export function OpenLdapManagementClient({
                             <TableHead>{t.createdAt}</TableHead>
                             <TableHead>{t.lastUsedAt}</TableHead>
                             <TableHead>{t.expiresAt}</TableHead>
-                            <TableHead className="text-right">{t.actions}</TableHead>
+                            <TableHead className="text-right">
+                              {t.actions}
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {accessKeys.map((key) => (
                             <TableRow key={key.id}>
-                              <TableCell className="font-medium">{key.name}</TableCell>
+                              <TableCell className="font-medium">
+                                {key.name}
+                              </TableCell>
                               <TableCell className="font-mono text-muted-foreground">
-                                {key.key.substring(0, 8)}...{key.key.substring(key.key.length - 4)}
+                                {key.key.substring(0, 8)}...
+                                {key.key.substring(key.key.length - 4)}
                               </TableCell>
                               <TableCell>
                                 <span
@@ -1507,7 +1549,9 @@ export function OpenLdapManagementClient({
                                       : "bg-blue-100 text-blue-800"
                                   }`}
                                 >
-                                  {key.permission === "FULL_ACCESS" ? t.fullAccess : t.readOnly}
+                                  {key.permission === "FULL_ACCESS"
+                                    ? t.fullAccess
+                                    : t.readOnly}
                                 </span>
                               </TableCell>
                               <TableCell className="text-muted-foreground">
@@ -1553,442 +1597,463 @@ export function OpenLdapManagementClient({
           {tab === "migration" && (
             <Card>
               <CardContent className="p-6 space-y-6">
-          {/* タイトル */}
-          <div>
-            <h2 className="text-lg font-medium text-foreground mb-2">
-              {t.migrationTitle}
-            </h2>
-            <p className="text-muted-foreground">{t.migrationDesc}</p>
-          </div>
-
-          {migrationLoading ? (
-            <div className="text-center py-8 text-muted-foreground">{t.loading}</div>
-          ) : (
-            <>
-              {/* 移行統計 */}
-              <div className="bg-card rounded-lg border p-6">
-                <h3 className="text-md font-medium text-foreground mb-4">
-                  {t.migrationStats}
-                </h3>
-                <div className="grid grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-muted rounded-lg">
-                    <p className="text-2xl font-bold text-foreground">
-                      {migrationStats.totalUsers}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{t.totalUsers}</p>
-                  </div>
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <p className="text-2xl font-bold text-green-600">
-                      {migrationStats.migratedUsers}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{t.migratedUsers}</p>
-                  </div>
-                  <div className="text-center p-4 bg-amber-50 rounded-lg">
-                    <p className="text-2xl font-bold text-amber-600">
-                      {migrationStats.pendingUsers}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{t.pendingUsers}</p>
-                  </div>
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <p className="text-2xl font-bold text-blue-600">
-                      {migrationStats.migrationPercentage}%
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {t.migrationProgress}
-                    </p>
-                  </div>
-                </div>
-                {/* プログレスバー */}
-                <div className="mt-4">
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div
-                      className="bg-green-500 h-2 rounded-full transition-all"
-                      style={{
-                        width: `${migrationStats.migrationPercentage}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* 移行期間設定 */}
-              <div className="bg-card rounded-lg border p-6">
-                <h3 className="text-md font-medium text-foreground mb-2">
-                  {t.migrationPeriod}
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {t.migrationPeriodDesc}
-                </p>
-
-                <div className="space-y-4">
-                  {/* 有効/無効トグル */}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-foreground">
-                        {t.migrationEnabled}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {t.migrationEnabledDesc}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setMigrationConfig({
-                          ...migrationConfig,
-                          enabled: !migrationConfig.enabled,
-                        })
-                      }
-                      className="flex items-center gap-3"
-                    >
-                      <div
-                        className={`relative w-14 h-8 rounded-full transition-colors duration-300 ${
-                          migrationConfig.enabled
-                            ? "bg-teal-600"
-                            : "bg-muted-foreground/30"
-                        }`}
-                      >
-                        <div
-                          className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 ${
-                            migrationConfig.enabled
-                              ? "translate-x-7"
-                              : "translate-x-1"
-                          }`}
-                        />
-                      </div>
-                      <span
-                        className={`text-sm font-medium ${
-                          migrationConfig.enabled
-                            ? "text-teal-600"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        {migrationConfig.enabled ? "ON" : "OFF"}
-                      </span>
-                    </button>
-                  </div>
-
-                  {/* 期間設定 */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">
-                        {t.startDate}
-                      </label>
-                      <input
-                        type="date"
-                        value={migrationConfig.startDate}
-                        onChange={(e) =>
-                          setMigrationConfig({
-                            ...migrationConfig,
-                            startDate: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-input rounded-md"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">
-                        {t.endDate}
-                      </label>
-                      <input
-                        type="date"
-                        value={migrationConfig.endDate}
-                        onChange={(e) =>
-                          setMigrationConfig({
-                            ...migrationConfig,
-                            endDate: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-input rounded-md"
-                      />
-                    </div>
-                  </div>
-
-                  {/* 期間状態表示 */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">
-                      {t.periodStatus}:
-                    </span>
-                    <span
-                      className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                        periodStatus === "active"
-                          ? "bg-green-100 text-green-800"
-                          : periodStatus === "before"
-                            ? "bg-blue-100 text-blue-800"
-                            : periodStatus === "after"
-                              ? "bg-muted text-muted-foreground"
-                              : "bg-amber-100 text-amber-800"
-                      }`}
-                    >
-                      {periodStatus === "active"
-                        ? t.statusActive
-                        : periodStatus === "before"
-                          ? t.statusBefore
-                          : periodStatus === "after"
-                            ? t.statusAfter
-                            : t.statusNotConfigured}
-                    </span>
-                  </div>
-
-                  {/* 保存ボタン */}
-                  <div className="flex justify-end pt-4">
-                    <Button
-                      variant="primary"
-                      onClick={handleSaveMigrationConfig}
-                      disabled={migrationSaving}
-                    >
-                      {migrationSaving ? t.loading : t.saveSettings}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              {/* 旧LDAP設定（編集可能） */}
-              <div className="bg-card rounded-lg border p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-md font-medium text-foreground">
-                    {t.legacyLdapSettings}
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setLegacyLdapForm({
-                        ...legacyLdapForm,
-                        isEnabled: !legacyLdapForm.isEnabled,
-                      })
-                    }
-                    className="flex items-center gap-3"
-                  >
-                    <div
-                      className={`relative w-14 h-8 rounded-full transition-colors duration-300 ${
-                        legacyLdapForm.isEnabled ? "bg-teal-600" : "bg-muted-foreground/30"
-                      }`}
-                    >
-                      <div
-                        className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 ${
-                          legacyLdapForm.isEnabled
-                            ? "translate-x-7"
-                            : "translate-x-1"
-                        }`}
-                      />
-                    </div>
-                    <span
-                      className={`text-sm font-medium ${
-                        legacyLdapForm.isEnabled
-                          ? "text-teal-600"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      {legacyLdapForm.isEnabled ? "ON" : "OFF"}
-                    </span>
-                  </button>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4">{t.legacyLdapDesc}</p>
-
-                <div className="space-y-4">
-                  {/* サーバURL と ベースDN */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">
-                        {t.serverUrl} *
-                      </label>
-                      <input
-                        type="text"
-                        value={legacyLdapForm.serverUrl}
-                        onChange={(e) =>
-                          setLegacyLdapForm({
-                            ...legacyLdapForm,
-                            serverUrl: e.target.value,
-                          })
-                        }
-                        placeholder="ldap://ldap.example.com:389"
-                        className="w-full px-3 py-2 border border-input rounded-md"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">
-                        {t.baseDN} *
-                      </label>
-                      <input
-                        type="text"
-                        value={legacyLdapForm.baseDN}
-                        onChange={(e) =>
-                          setLegacyLdapForm({
-                            ...legacyLdapForm,
-                            baseDN: e.target.value,
-                          })
-                        }
-                        placeholder="ou=Users,dc=example,dc=com"
-                        className="w-full px-3 py-2 border border-input rounded-md"
-                      />
-                    </div>
-                  </div>
-
-                  {/* バインドDN と バインドパスワード */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">
-                        {t.bindDN}
-                      </label>
-                      <input
-                        type="text"
-                        value={legacyLdapForm.bindDN}
-                        onChange={(e) =>
-                          setLegacyLdapForm({
-                            ...legacyLdapForm,
-                            bindDN: e.target.value,
-                          })
-                        }
-                        placeholder="cn=admin,dc=example,dc=com"
-                        className="w-full px-3 py-2 border border-input rounded-md"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">
-                        {t.bindPassword}
-                      </label>
-                      <input
-                        type="password"
-                        value={legacyLdapForm.bindPassword}
-                        onChange={(e) =>
-                          setLegacyLdapForm({
-                            ...legacyLdapForm,
-                            bindPassword: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-input rounded-md"
-                      />
-                    </div>
-                  </div>
-
-                  {/* 検索フィルタ と タイムアウト */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">
-                        {t.searchFilter}
-                      </label>
-                      <input
-                        type="text"
-                        value={legacyLdapForm.searchFilter}
-                        onChange={(e) =>
-                          setLegacyLdapForm({
-                            ...legacyLdapForm,
-                            searchFilter: e.target.value,
-                          })
-                        }
-                        placeholder="(uid={username})"
-                        className="w-full px-3 py-2 border border-input rounded-md"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">
-                        {t.timeout}
-                      </label>
-                      <input
-                        type="number"
-                        value={legacyLdapForm.timeout}
-                        onChange={(e) =>
-                          setLegacyLdapForm({
-                            ...legacyLdapForm,
-                            timeout: parseInt(e.target.value, 10) || 10000,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-input rounded-md"
-                      />
-                    </div>
-                  </div>
-
-                  {/* 保存ボタン */}
-                  <div className="flex justify-end pt-2">
-                    <Button
-                      variant="primary"
-                      onClick={handleSaveLegacyLdapConfig}
-                      disabled={legacyLdapSaving}
-                    >
-                      {legacyLdapSaving ? t.loading : t.saveSettings}
-                    </Button>
-                  </div>
+                {/* タイトル */}
+                <div>
+                  <h2 className="text-lg font-medium text-foreground mb-2">
+                    {t.migrationTitle}
+                  </h2>
+                  <p className="text-muted-foreground">{t.migrationDesc}</p>
                 </div>
 
-                {/* 接続テスト */}
-                <div className="mt-6 pt-6 border-t border">
-                  <h4 className="text-sm font-medium text-foreground mb-2">
-                    {t.testUser}
-                  </h4>
-                  <p className="text-sm text-muted-foreground mb-4">{t.testUserDesc}</p>
-
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">
-                        {t.testUsername}
-                      </label>
-                      <input
-                        type="text"
-                        value={legacyTestUsername}
-                        onChange={(e) => setLegacyTestUsername(e.target.value)}
-                        className="w-full px-3 py-2 border border-input rounded-md"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-1">
-                        {t.testPasswordLabel}
-                      </label>
-                      <input
-                        type="password"
-                        value={legacyTestPassword}
-                        onChange={(e) => setLegacyTestPassword(e.target.value)}
-                        className="w-full px-3 py-2 border border-input rounded-md"
-                      />
-                    </div>
+                {migrationLoading ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {t.loading}
                   </div>
-
-                  <Button
-                    variant="secondary"
-                    onClick={handleTestLegacyLdap}
-                    disabled={legacyLdapTesting || !legacyLdapForm.serverUrl}
-                  >
-                    {legacyLdapTesting ? t.loading : t.runTest}
-                  </Button>
-
-                  {/* テスト結果 */}
-                  {legacyLdapTestResult && (
-                    <div
-                      className={`mt-4 p-4 rounded-lg ${
-                        legacyLdapTestResult.success
-                          ? "bg-green-50 border border-green-200"
-                          : "bg-red-50 border border-red-200"
-                      }`}
-                    >
-                      <p
-                        className={`font-medium ${
-                          legacyLdapTestResult.success
-                            ? "text-green-800"
-                            : "text-red-800"
-                        }`}
-                      >
-                        {legacyLdapTestResult.success ? "✓ " : "✗ "}
-                        {legacyLdapTestResult.message}
-                      </p>
-                      {legacyLdapTestResult.attributes && (
-                        <div className="mt-2">
-                          <p className="text-sm font-medium text-foreground mb-1">
-                            {t.ldapAttributes}:
+                ) : (
+                  <>
+                    {/* 移行統計 */}
+                    <div className="bg-card rounded-lg border p-6">
+                      <h3 className="text-md font-medium text-foreground mb-4">
+                        {t.migrationStats}
+                      </h3>
+                      <div className="grid grid-cols-4 gap-4">
+                        <div className="text-center p-4 bg-muted rounded-lg">
+                          <p className="text-2xl font-bold text-foreground">
+                            {migrationStats.totalUsers}
                           </p>
-                          <pre className="text-xs bg-muted p-2 rounded border overflow-auto max-h-32">
-                            {JSON.stringify(
-                              legacyLdapTestResult.attributes,
-                              null,
-                              2,
-                            )}
-                          </pre>
+                          <p className="text-sm text-muted-foreground">
+                            {t.totalUsers}
+                          </p>
                         </div>
-                      )}
+                        <div className="text-center p-4 bg-green-50 rounded-lg">
+                          <p className="text-2xl font-bold text-green-600">
+                            {migrationStats.migratedUsers}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {t.migratedUsers}
+                          </p>
+                        </div>
+                        <div className="text-center p-4 bg-amber-50 rounded-lg">
+                          <p className="text-2xl font-bold text-amber-600">
+                            {migrationStats.pendingUsers}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {t.pendingUsers}
+                          </p>
+                        </div>
+                        <div className="text-center p-4 bg-blue-50 rounded-lg">
+                          <p className="text-2xl font-bold text-blue-600">
+                            {migrationStats.migrationPercentage}%
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {t.migrationProgress}
+                          </p>
+                        </div>
+                      </div>
+                      {/* プログレスバー */}
+                      <div className="mt-4">
+                        <div className="w-full bg-muted rounded-full h-2">
+                          <div
+                            className="bg-green-500 h-2 rounded-full transition-all"
+                            style={{
+                              width: `${migrationStats.migrationPercentage}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
+
+                    {/* 移行期間設定 */}
+                    <div className="bg-card rounded-lg border p-6">
+                      <h3 className="text-md font-medium text-foreground mb-2">
+                        {t.migrationPeriod}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {t.migrationPeriodDesc}
+                      </p>
+
+                      <div className="space-y-4">
+                        {/* 有効/無効トグル */}
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-foreground">
+                              {t.migrationEnabled}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {t.migrationEnabledDesc}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setMigrationConfig({
+                                ...migrationConfig,
+                                enabled: !migrationConfig.enabled,
+                              })
+                            }
+                            className="flex items-center gap-3"
+                          >
+                            <div
+                              className={`relative w-14 h-8 rounded-full transition-colors duration-300 ${
+                                migrationConfig.enabled
+                                  ? "bg-teal-600"
+                                  : "bg-muted-foreground/30"
+                              }`}
+                            >
+                              <div
+                                className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 ${
+                                  migrationConfig.enabled
+                                    ? "translate-x-7"
+                                    : "translate-x-1"
+                                }`}
+                              />
+                            </div>
+                            <span
+                              className={`text-sm font-medium ${
+                                migrationConfig.enabled
+                                  ? "text-teal-600"
+                                  : "text-muted-foreground"
+                              }`}
+                            >
+                              {migrationConfig.enabled ? "ON" : "OFF"}
+                            </span>
+                          </button>
+                        </div>
+
+                        {/* 期間設定 */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-1">
+                              {t.startDate}
+                            </label>
+                            <input
+                              type="date"
+                              value={migrationConfig.startDate}
+                              onChange={(e) =>
+                                setMigrationConfig({
+                                  ...migrationConfig,
+                                  startDate: e.target.value,
+                                })
+                              }
+                              className="w-full px-3 py-2 border border-input rounded-md"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-1">
+                              {t.endDate}
+                            </label>
+                            <input
+                              type="date"
+                              value={migrationConfig.endDate}
+                              onChange={(e) =>
+                                setMigrationConfig({
+                                  ...migrationConfig,
+                                  endDate: e.target.value,
+                                })
+                              }
+                              className="w-full px-3 py-2 border border-input rounded-md"
+                            />
+                          </div>
+                        </div>
+
+                        {/* 期間状態表示 */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">
+                            {t.periodStatus}:
+                          </span>
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                              periodStatus === "active"
+                                ? "bg-green-100 text-green-800"
+                                : periodStatus === "before"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : periodStatus === "after"
+                                    ? "bg-muted text-muted-foreground"
+                                    : "bg-amber-100 text-amber-800"
+                            }`}
+                          >
+                            {periodStatus === "active"
+                              ? t.statusActive
+                              : periodStatus === "before"
+                                ? t.statusBefore
+                                : periodStatus === "after"
+                                  ? t.statusAfter
+                                  : t.statusNotConfigured}
+                          </span>
+                        </div>
+
+                        {/* 保存ボタン */}
+                        <div className="flex justify-end pt-4">
+                          <Button
+                            variant="primary"
+                            onClick={handleSaveMigrationConfig}
+                            disabled={migrationSaving}
+                          >
+                            {migrationSaving ? t.loading : t.saveSettings}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 旧LDAP設定（編集可能） */}
+                    <div className="bg-card rounded-lg border p-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-md font-medium text-foreground">
+                          {t.legacyLdapSettings}
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setLegacyLdapForm({
+                              ...legacyLdapForm,
+                              isEnabled: !legacyLdapForm.isEnabled,
+                            })
+                          }
+                          className="flex items-center gap-3"
+                        >
+                          <div
+                            className={`relative w-14 h-8 rounded-full transition-colors duration-300 ${
+                              legacyLdapForm.isEnabled
+                                ? "bg-teal-600"
+                                : "bg-muted-foreground/30"
+                            }`}
+                          >
+                            <div
+                              className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 ${
+                                legacyLdapForm.isEnabled
+                                  ? "translate-x-7"
+                                  : "translate-x-1"
+                              }`}
+                            />
+                          </div>
+                          <span
+                            className={`text-sm font-medium ${
+                              legacyLdapForm.isEnabled
+                                ? "text-teal-600"
+                                : "text-muted-foreground"
+                            }`}
+                          >
+                            {legacyLdapForm.isEnabled ? "ON" : "OFF"}
+                          </span>
+                        </button>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {t.legacyLdapDesc}
+                      </p>
+
+                      <div className="space-y-4">
+                        {/* サーバURL と ベースDN */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-1">
+                              {t.serverUrl} *
+                            </label>
+                            <input
+                              type="text"
+                              value={legacyLdapForm.serverUrl}
+                              onChange={(e) =>
+                                setLegacyLdapForm({
+                                  ...legacyLdapForm,
+                                  serverUrl: e.target.value,
+                                })
+                              }
+                              placeholder="ldap://ldap.example.com:389"
+                              className="w-full px-3 py-2 border border-input rounded-md"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-1">
+                              {t.baseDN} *
+                            </label>
+                            <input
+                              type="text"
+                              value={legacyLdapForm.baseDN}
+                              onChange={(e) =>
+                                setLegacyLdapForm({
+                                  ...legacyLdapForm,
+                                  baseDN: e.target.value,
+                                })
+                              }
+                              placeholder="ou=Users,dc=example,dc=com"
+                              className="w-full px-3 py-2 border border-input rounded-md"
+                            />
+                          </div>
+                        </div>
+
+                        {/* バインドDN と バインドパスワード */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-1">
+                              {t.bindDN}
+                            </label>
+                            <input
+                              type="text"
+                              value={legacyLdapForm.bindDN}
+                              onChange={(e) =>
+                                setLegacyLdapForm({
+                                  ...legacyLdapForm,
+                                  bindDN: e.target.value,
+                                })
+                              }
+                              placeholder="cn=admin,dc=example,dc=com"
+                              className="w-full px-3 py-2 border border-input rounded-md"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-1">
+                              {t.bindPassword}
+                            </label>
+                            <input
+                              type="password"
+                              value={legacyLdapForm.bindPassword}
+                              onChange={(e) =>
+                                setLegacyLdapForm({
+                                  ...legacyLdapForm,
+                                  bindPassword: e.target.value,
+                                })
+                              }
+                              className="w-full px-3 py-2 border border-input rounded-md"
+                            />
+                          </div>
+                        </div>
+
+                        {/* 検索フィルタ と タイムアウト */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-1">
+                              {t.searchFilter}
+                            </label>
+                            <input
+                              type="text"
+                              value={legacyLdapForm.searchFilter}
+                              onChange={(e) =>
+                                setLegacyLdapForm({
+                                  ...legacyLdapForm,
+                                  searchFilter: e.target.value,
+                                })
+                              }
+                              placeholder="(uid={username})"
+                              className="w-full px-3 py-2 border border-input rounded-md"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-1">
+                              {t.timeout}
+                            </label>
+                            <input
+                              type="number"
+                              value={legacyLdapForm.timeout}
+                              onChange={(e) =>
+                                setLegacyLdapForm({
+                                  ...legacyLdapForm,
+                                  timeout:
+                                    parseInt(e.target.value, 10) || 10000,
+                                })
+                              }
+                              className="w-full px-3 py-2 border border-input rounded-md"
+                            />
+                          </div>
+                        </div>
+
+                        {/* 保存ボタン */}
+                        <div className="flex justify-end pt-2">
+                          <Button
+                            variant="primary"
+                            onClick={handleSaveLegacyLdapConfig}
+                            disabled={legacyLdapSaving}
+                          >
+                            {legacyLdapSaving ? t.loading : t.saveSettings}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* 接続テスト */}
+                      <div className="mt-6 pt-6 border-t border">
+                        <h4 className="text-sm font-medium text-foreground mb-2">
+                          {t.testUser}
+                        </h4>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          {t.testUserDesc}
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-1">
+                              {t.testUsername}
+                            </label>
+                            <input
+                              type="text"
+                              value={legacyTestUsername}
+                              onChange={(e) =>
+                                setLegacyTestUsername(e.target.value)
+                              }
+                              className="w-full px-3 py-2 border border-input rounded-md"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-1">
+                              {t.testPasswordLabel}
+                            </label>
+                            <input
+                              type="password"
+                              value={legacyTestPassword}
+                              onChange={(e) =>
+                                setLegacyTestPassword(e.target.value)
+                              }
+                              className="w-full px-3 py-2 border border-input rounded-md"
+                            />
+                          </div>
+                        </div>
+
+                        <Button
+                          variant="secondary"
+                          onClick={handleTestLegacyLdap}
+                          disabled={
+                            legacyLdapTesting || !legacyLdapForm.serverUrl
+                          }
+                        >
+                          {legacyLdapTesting ? t.loading : t.runTest}
+                        </Button>
+
+                        {/* テスト結果 */}
+                        {legacyLdapTestResult && (
+                          <div
+                            className={`mt-4 p-4 rounded-lg ${
+                              legacyLdapTestResult.success
+                                ? "bg-green-50 border border-green-200"
+                                : "bg-red-50 border border-red-200"
+                            }`}
+                          >
+                            <p
+                              className={`font-medium ${
+                                legacyLdapTestResult.success
+                                  ? "text-green-800"
+                                  : "text-red-800"
+                              }`}
+                            >
+                              {legacyLdapTestResult.success ? "✓ " : "✗ "}
+                              {legacyLdapTestResult.message}
+                            </p>
+                            {legacyLdapTestResult.attributes && (
+                              <div className="mt-2">
+                                <p className="text-sm font-medium text-foreground mb-1">
+                                  {t.ldapAttributes}:
+                                </p>
+                                <pre className="text-xs bg-muted p-2 rounded border overflow-auto max-h-32">
+                                  {JSON.stringify(
+                                    legacyLdapTestResult.attributes,
+                                    null,
+                                    2,
+                                  )}
+                                </pre>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           )}
@@ -1997,234 +2062,238 @@ export function OpenLdapManagementClient({
           {tab === "settings" && (
             <Card>
               <CardContent className="p-6 space-y-6">
-          {/* タイトル */}
-          <div>
-            <h2 className="text-lg font-medium text-foreground mb-2">
-              {t.openLdapSettingsTitle}
-            </h2>
-            <p className="text-muted-foreground">{t.openLdapSettingsDesc}</p>
-          </div>
-
-          {openLdapSettingsLoading ? (
-            <div className="text-center py-8 text-muted-foreground">{t.loading}</div>
-          ) : (
-            <div className="bg-card rounded-lg border p-6">
-              <div className="space-y-4">
-                {/* 有効/無効トグル */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-foreground">
-                      {t.openLdapEnabled}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setOpenLdapSettingsForm({
-                        ...openLdapSettingsForm,
-                        isEnabled: !openLdapSettingsForm.isEnabled,
-                      })
-                    }
-                    className="flex items-center gap-3"
-                    aria-label={
-                      openLdapSettingsForm.isEnabled
-                        ? "OpenLDAPを無効化"
-                        : "OpenLDAPを有効化"
-                    }
-                  >
-                    {/* トグルスイッチ */}
-                    <div
-                      className={`relative w-14 h-8 rounded-full transition-colors duration-300 ${
-                        openLdapSettingsForm.isEnabled
-                          ? "bg-teal-600"
-                          : "bg-muted-foreground/30"
-                      }`}
-                    >
-                      <div
-                        className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 ${
-                          openLdapSettingsForm.isEnabled
-                            ? "translate-x-7"
-                            : "translate-x-1"
-                        }`}
-                      />
-                    </div>
-                    {/* ON/OFFラベル */}
-                    <span
-                      className={`text-sm font-medium ${
-                        openLdapSettingsForm.isEnabled
-                          ? "text-teal-600"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      {openLdapSettingsForm.isEnabled ? "ON" : "OFF"}
-                    </span>
-                  </button>
-                </div>
-
-                {/* サーバURL */}
+                {/* タイトル */}
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">
-                    {t.openLdapServerUrl}
-                  </label>
-                  <input
-                    type="text"
-                    value={openLdapSettingsForm.serverUrl}
-                    onChange={(e) =>
-                      setOpenLdapSettingsForm({
-                        ...openLdapSettingsForm,
-                        serverUrl: e.target.value,
-                      })
-                    }
-                    placeholder="ldap://openldap:389"
-                    className="w-full px-3 py-2 border border-input rounded-md"
-                  />
+                  <h2 className="text-lg font-medium text-foreground mb-2">
+                    {t.openLdapSettingsTitle}
+                  </h2>
+                  <p className="text-muted-foreground">
+                    {t.openLdapSettingsDesc}
+                  </p>
                 </div>
 
-                {/* 管理者DN と パスワード */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">
-                      {t.openLdapAdminDN}
-                    </label>
-                    <input
-                      type="text"
-                      value={openLdapSettingsForm.adminDN}
-                      onChange={(e) =>
-                        setOpenLdapSettingsForm({
-                          ...openLdapSettingsForm,
-                          adminDN: e.target.value,
-                        })
-                      }
-                      placeholder="cn=admin,dc=occ,dc=co,dc=jp"
-                      className="w-full px-3 py-2 border border-input rounded-md"
-                    />
+                {openLdapSettingsLoading ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {t.loading}
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">
-                      {t.openLdapAdminPassword}
-                      {openLdapHasPassword && (
-                        <span className="text-muted-foreground text-xs ml-2">
-                          (●●●●●●)
-                        </span>
+                ) : (
+                  <div className="bg-card rounded-lg border p-6">
+                    <div className="space-y-4">
+                      {/* 有効/無効トグル */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-foreground">
+                            {t.openLdapEnabled}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setOpenLdapSettingsForm({
+                              ...openLdapSettingsForm,
+                              isEnabled: !openLdapSettingsForm.isEnabled,
+                            })
+                          }
+                          className="flex items-center gap-3"
+                          aria-label={
+                            openLdapSettingsForm.isEnabled
+                              ? "OpenLDAPを無効化"
+                              : "OpenLDAPを有効化"
+                          }
+                        >
+                          {/* トグルスイッチ */}
+                          <div
+                            className={`relative w-14 h-8 rounded-full transition-colors duration-300 ${
+                              openLdapSettingsForm.isEnabled
+                                ? "bg-teal-600"
+                                : "bg-muted-foreground/30"
+                            }`}
+                          >
+                            <div
+                              className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 ${
+                                openLdapSettingsForm.isEnabled
+                                  ? "translate-x-7"
+                                  : "translate-x-1"
+                              }`}
+                            />
+                          </div>
+                          {/* ON/OFFラベル */}
+                          <span
+                            className={`text-sm font-medium ${
+                              openLdapSettingsForm.isEnabled
+                                ? "text-teal-600"
+                                : "text-muted-foreground"
+                            }`}
+                          >
+                            {openLdapSettingsForm.isEnabled ? "ON" : "OFF"}
+                          </span>
+                        </button>
+                      </div>
+
+                      {/* サーバURL */}
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-1">
+                          {t.openLdapServerUrl}
+                        </label>
+                        <input
+                          type="text"
+                          value={openLdapSettingsForm.serverUrl}
+                          onChange={(e) =>
+                            setOpenLdapSettingsForm({
+                              ...openLdapSettingsForm,
+                              serverUrl: e.target.value,
+                            })
+                          }
+                          placeholder="ldap://openldap:389"
+                          className="w-full px-3 py-2 border border-input rounded-md"
+                        />
+                      </div>
+
+                      {/* 管理者DN と パスワード */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-1">
+                            {t.openLdapAdminDN}
+                          </label>
+                          <input
+                            type="text"
+                            value={openLdapSettingsForm.adminDN}
+                            onChange={(e) =>
+                              setOpenLdapSettingsForm({
+                                ...openLdapSettingsForm,
+                                adminDN: e.target.value,
+                              })
+                            }
+                            placeholder="cn=admin,dc=occ,dc=co,dc=jp"
+                            className="w-full px-3 py-2 border border-input rounded-md"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-1">
+                            {t.openLdapAdminPassword}
+                            {openLdapHasPassword && (
+                              <span className="text-muted-foreground text-xs ml-2">
+                                (●●●●●●)
+                              </span>
+                            )}
+                          </label>
+                          <input
+                            type="password"
+                            value={openLdapSettingsForm.adminPassword}
+                            onChange={(e) =>
+                              setOpenLdapSettingsForm({
+                                ...openLdapSettingsForm,
+                                adminPassword: e.target.value,
+                              })
+                            }
+                            placeholder={t.openLdapPasswordPlaceholder}
+                            className="w-full px-3 py-2 border border-input rounded-md"
+                          />
+                        </div>
+                      </div>
+
+                      {/* ベースDN と ユーザOU */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-1">
+                            {t.openLdapBaseDN}
+                          </label>
+                          <input
+                            type="text"
+                            value={openLdapSettingsForm.baseDN}
+                            onChange={(e) =>
+                              setOpenLdapSettingsForm({
+                                ...openLdapSettingsForm,
+                                baseDN: e.target.value,
+                              })
+                            }
+                            placeholder="dc=occ,dc=co,dc=jp"
+                            className="w-full px-3 py-2 border border-input rounded-md"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-foreground mb-1">
+                            {t.openLdapUsersOU}
+                          </label>
+                          <input
+                            type="text"
+                            value={openLdapSettingsForm.usersOU}
+                            onChange={(e) =>
+                              setOpenLdapSettingsForm({
+                                ...openLdapSettingsForm,
+                                usersOU: e.target.value,
+                              })
+                            }
+                            placeholder="ou=Users,dc=occ,dc=co,dc=jp"
+                            className="w-full px-3 py-2 border border-input rounded-md"
+                          />
+                        </div>
+                      </div>
+
+                      {/* タイムアウト */}
+                      <div className="w-1/2">
+                        <label className="block text-sm font-medium text-foreground mb-1">
+                          {t.openLdapTimeout}
+                        </label>
+                        <input
+                          type="number"
+                          value={openLdapSettingsForm.timeout}
+                          onChange={(e) =>
+                            setOpenLdapSettingsForm({
+                              ...openLdapSettingsForm,
+                              timeout: parseInt(e.target.value, 10) || 10000,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-input rounded-md"
+                        />
+                      </div>
+
+                      {/* ボタン */}
+                      <div className="flex justify-end gap-2 pt-4">
+                        <Button
+                          variant="secondary"
+                          onClick={handleTestOpenLdapConnection}
+                          disabled={openLdapSettingsTesting}
+                        >
+                          {openLdapSettingsTesting
+                            ? t.loading
+                            : t.openLdapTestConnection}
+                        </Button>
+                        <Button
+                          variant="primary"
+                          onClick={handleSaveOpenLdapSettings}
+                          disabled={openLdapSettingsSaving}
+                        >
+                          {openLdapSettingsSaving
+                            ? t.loading
+                            : t.openLdapSaveSettings}
+                        </Button>
+                      </div>
+
+                      {/* テスト結果 */}
+                      {openLdapSettingsTestResult && (
+                        <div
+                          className={`p-4 rounded-lg ${
+                            openLdapSettingsTestResult.success
+                              ? "bg-green-50 border border-green-200"
+                              : "bg-red-50 border border-red-200"
+                          }`}
+                        >
+                          <p
+                            className={`text-sm ${
+                              openLdapSettingsTestResult.success
+                                ? "text-green-800"
+                                : "text-red-800"
+                            }`}
+                          >
+                            {openLdapSettingsTestResult.success ? "✓ " : "✗ "}
+                            {openLdapSettingsTestResult.message}
+                          </p>
+                        </div>
                       )}
-                    </label>
-                    <input
-                      type="password"
-                      value={openLdapSettingsForm.adminPassword}
-                      onChange={(e) =>
-                        setOpenLdapSettingsForm({
-                          ...openLdapSettingsForm,
-                          adminPassword: e.target.value,
-                        })
-                      }
-                      placeholder={t.openLdapPasswordPlaceholder}
-                      className="w-full px-3 py-2 border border-input rounded-md"
-                    />
-                  </div>
-                </div>
-
-                {/* ベースDN と ユーザOU */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">
-                      {t.openLdapBaseDN}
-                    </label>
-                    <input
-                      type="text"
-                      value={openLdapSettingsForm.baseDN}
-                      onChange={(e) =>
-                        setOpenLdapSettingsForm({
-                          ...openLdapSettingsForm,
-                          baseDN: e.target.value,
-                        })
-                      }
-                      placeholder="dc=occ,dc=co,dc=jp"
-                      className="w-full px-3 py-2 border border-input rounded-md"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-1">
-                      {t.openLdapUsersOU}
-                    </label>
-                    <input
-                      type="text"
-                      value={openLdapSettingsForm.usersOU}
-                      onChange={(e) =>
-                        setOpenLdapSettingsForm({
-                          ...openLdapSettingsForm,
-                          usersOU: e.target.value,
-                        })
-                      }
-                      placeholder="ou=Users,dc=occ,dc=co,dc=jp"
-                      className="w-full px-3 py-2 border border-input rounded-md"
-                    />
-                  </div>
-                </div>
-
-                {/* タイムアウト */}
-                <div className="w-1/2">
-                  <label className="block text-sm font-medium text-foreground mb-1">
-                    {t.openLdapTimeout}
-                  </label>
-                  <input
-                    type="number"
-                    value={openLdapSettingsForm.timeout}
-                    onChange={(e) =>
-                      setOpenLdapSettingsForm({
-                        ...openLdapSettingsForm,
-                        timeout: parseInt(e.target.value, 10) || 10000,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-input rounded-md"
-                  />
-                </div>
-
-                {/* ボタン */}
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button
-                    variant="secondary"
-                    onClick={handleTestOpenLdapConnection}
-                    disabled={openLdapSettingsTesting}
-                  >
-                    {openLdapSettingsTesting
-                      ? t.loading
-                      : t.openLdapTestConnection}
-                  </Button>
-                  <Button
-                    variant="primary"
-                    onClick={handleSaveOpenLdapSettings}
-                    disabled={openLdapSettingsSaving}
-                  >
-                    {openLdapSettingsSaving
-                      ? t.loading
-                      : t.openLdapSaveSettings}
-                  </Button>
-                </div>
-
-                {/* テスト結果 */}
-                {openLdapSettingsTestResult && (
-                  <div
-                    className={`p-4 rounded-lg ${
-                      openLdapSettingsTestResult.success
-                        ? "bg-green-50 border border-green-200"
-                        : "bg-red-50 border border-red-200"
-                    }`}
-                  >
-                    <p
-                      className={`text-sm ${
-                        openLdapSettingsTestResult.success
-                          ? "text-green-800"
-                          : "text-red-800"
-                      }`}
-                    >
-                      {openLdapSettingsTestResult.success ? "✓ " : "✗ "}
-                      {openLdapSettingsTestResult.message}
-                    </p>
+                    </div>
                   </div>
                 )}
-              </div>
-            </div>
-          )}
               </CardContent>
             </Card>
           )}
@@ -2235,7 +2304,9 @@ export function OpenLdapManagementClient({
       <Dialog open={showUserModal} onOpenChange={setShowUserModal}>
         <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
           <DialogHeader>
-            <DialogTitle>{selectedUser ? t.editUser : t.createUser}</DialogTitle>
+            <DialogTitle>
+              {selectedUser ? t.editUser : t.createUser}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -2322,7 +2393,10 @@ export function OpenLdapManagementClient({
       </Dialog>
 
       {/* パスワードリセットモーダル */}
-      <Dialog open={showResetPasswordModal} onOpenChange={setShowResetPasswordModal}>
+      <Dialog
+        open={showResetPasswordModal}
+        onOpenChange={setShowResetPasswordModal}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t.resetPasswordTitle}</DialogTitle>
@@ -2331,7 +2405,8 @@ export function OpenLdapManagementClient({
                 {t.resetPasswordMessage}
                 <br />
                 <span className="font-medium text-foreground">
-                  {selectedUser.uid} ({selectedUser.displayName || selectedUser.cn})
+                  {selectedUser.uid} (
+                  {selectedUser.displayName || selectedUser.cn})
                 </span>
               </DialogDescription>
             )}
@@ -2379,7 +2454,10 @@ export function OpenLdapManagementClient({
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setShowResetPasswordModal(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowResetPasswordModal(false)}
+                >
                   {t.cancel}
                 </Button>
                 <Button
@@ -2508,7 +2586,10 @@ export function OpenLdapManagementClient({
                 </select>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setShowAccessKeyModal(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAccessKeyModal(false)}
+                >
                   {t.cancel}
                 </Button>
                 <Button
@@ -2531,7 +2612,9 @@ export function OpenLdapManagementClient({
             <DialogDescription>{t.revokeMessage}</DialogDescription>
           </DialogHeader>
           {selectedAccessKey && (
-            <p className="font-medium text-foreground">{selectedAccessKey.name}</p>
+            <p className="font-medium text-foreground">
+              {selectedAccessKey.name}
+            </p>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowRevokeModal(false)}>
@@ -2692,7 +2775,9 @@ export function OpenLdapManagementClient({
                   {t.parameters}: {selectedTestTool.name}
                 </Label>
                 {selectedTestTool.parameters.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">{t.noParameters}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {t.noParameters}
+                  </p>
                 ) : (
                   <div className="space-y-3">
                     {selectedTestTool.parameters.map((param) => (

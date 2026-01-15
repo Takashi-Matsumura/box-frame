@@ -73,10 +73,7 @@ export async function GET() {
     // 本部・部・課: 所属コード順（昇順）でソート
     const departments = await prisma.department.findMany({
       where: { organizationId: organization.id },
-      orderBy: [
-        { code: { sort: "asc", nulls: "last" } },
-        { name: "asc" },
-      ],
+      orderBy: [{ code: { sort: "asc", nulls: "last" } }, { name: "asc" }],
       include: {
         _count: {
           select: { employees: { where: { isActive: true } } },
@@ -85,10 +82,7 @@ export async function GET() {
           select: { id: true, name: true, position: true },
         },
         sections: {
-          orderBy: [
-            { code: { sort: "asc", nulls: "last" } },
-            { name: "asc" },
-          ],
+          orderBy: [{ code: { sort: "asc", nulls: "last" } }, { name: "asc" }],
           include: {
             _count: {
               select: { employees: { where: { isActive: true } } },
@@ -158,7 +152,7 @@ export async function GET() {
     console.error("Error fetching organization structure:", error);
     return NextResponse.json(
       { error: "Failed to fetch organization structure" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

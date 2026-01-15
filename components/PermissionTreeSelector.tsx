@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import type { AppModule, AppMenu, AppTab } from "@/types/module";
-import type { PermissionGranularity } from "@/lib/modules/access-control";
-import { ChevronRight, ChevronDown, Lock } from "lucide-react";
+import { ChevronDown, ChevronRight, Lock } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Tooltip,
@@ -11,7 +9,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { PermissionGranularity } from "@/lib/modules/access-control";
 import { cn } from "@/lib/utils";
+import type { AppMenu, AppModule, AppTab } from "@/types/module";
 
 /**
  * 選択された権限の情報
@@ -43,7 +43,7 @@ export function PermissionTreeSelector({
   language = "en",
 }: PermissionTreeSelectorProps) {
   const [expandedModules, setExpandedModules] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
 
@@ -80,14 +80,14 @@ export function PermissionTreeSelector({
     granularity: PermissionGranularity,
     moduleId: string,
     menuPath?: string,
-    tabId?: string
+    tabId?: string,
   ): boolean => {
     return selectedPermissions.some(
       (p) =>
         p.granularity === granularity &&
         p.moduleId === moduleId &&
         p.menuPath === menuPath &&
-        p.tabId === tabId
+        p.tabId === tabId,
     );
   };
 
@@ -95,12 +95,12 @@ export function PermissionTreeSelector({
   const isImplicitlySelected = (
     moduleId: string,
     menuPath?: string,
-    tabId?: string
+    tabId?: string,
   ): boolean => {
     // モジュールレベルで選択されている場合
     if (
       selectedPermissions.some(
-        (p) => p.granularity === "module" && p.moduleId === moduleId
+        (p) => p.granularity === "module" && p.moduleId === moduleId,
       )
     ) {
       return true;
@@ -114,7 +114,7 @@ export function PermissionTreeSelector({
         (p) =>
           p.granularity === "menu" &&
           p.moduleId === moduleId &&
-          p.menuPath === menuPath
+          p.menuPath === menuPath,
       )
     ) {
       return true;
@@ -130,7 +130,7 @@ export function PermissionTreeSelector({
     displayName: string,
     displayNameJa: string,
     menuPath?: string,
-    tabId?: string
+    tabId?: string,
   ) => {
     const permission: SelectedPermission = {
       granularity,
@@ -151,8 +151,8 @@ export function PermissionTreeSelector({
               p.moduleId === moduleId &&
               p.menuPath === menuPath &&
               p.tabId === tabId
-            )
-        )
+            ),
+        ),
       );
     } else {
       // 選択
@@ -165,24 +165,24 @@ export function PermissionTreeSelector({
       } else if (granularity === "menu") {
         // メニュー選択時：同メニューのタブ選択を削除、モジュール選択があれば何もしない
         const hasModuleSelection = selectedPermissions.some(
-          (p) => p.granularity === "module" && p.moduleId === moduleId
+          (p) => p.granularity === "module" && p.moduleId === moduleId,
         );
         if (hasModuleSelection) {
           return; // モジュールが選択されている場合は追加しない
         }
         filtered = selectedPermissions.filter(
-          (p) => !(p.moduleId === moduleId && p.menuPath === menuPath)
+          (p) => !(p.moduleId === moduleId && p.menuPath === menuPath),
         );
       } else if (granularity === "tab") {
         // タブ選択時：上位が選択されている場合は追加しない
         const hasModuleSelection = selectedPermissions.some(
-          (p) => p.granularity === "module" && p.moduleId === moduleId
+          (p) => p.granularity === "module" && p.moduleId === moduleId,
         );
         const hasMenuSelection = selectedPermissions.some(
           (p) =>
             p.granularity === "menu" &&
             p.moduleId === moduleId &&
-            p.menuPath === menuPath
+            p.menuPath === menuPath,
         );
         if (hasModuleSelection || hasMenuSelection) {
           return;
@@ -196,7 +196,7 @@ export function PermissionTreeSelector({
   // タブがあるメニューのみをフィルタリング
   const modulesWithTabs = useMemo(() => {
     return modules.filter((module) =>
-      module.menus.some((menu) => menu.tabs && menu.tabs.length > 0)
+      module.menus.some((menu) => menu.tabs && menu.tabs.length > 0),
     );
   }, [modules]);
 
@@ -209,7 +209,7 @@ export function PermissionTreeSelector({
         <p className="text-xs text-muted-foreground mt-1">
           {t(
             "Select modules, menus, or specific tabs to grant access",
-            "アクセスを許可するモジュール、メニュー、または特定のタブを選択"
+            "アクセスを許可するモジュール、メニュー、または特定のタブを選択",
           )}
         </p>
       </div>
@@ -219,7 +219,7 @@ export function PermissionTreeSelector({
           <div className="text-center py-8 text-muted-foreground text-sm">
             {t(
               "No modules with tabs available",
-              "タブを持つモジュールがありません"
+              "タブを持つモジュールがありません",
             )}
           </div>
         ) : (
@@ -291,12 +291,12 @@ function ModuleNode({
     granularity: PermissionGranularity,
     moduleId: string,
     menuPath?: string,
-    tabId?: string
+    tabId?: string,
   ) => boolean;
   isImplicitlySelected: (
     moduleId: string,
     menuPath?: string,
-    tabId?: string
+    tabId?: string,
   ) => boolean;
   onSelect: (
     granularity: PermissionGranularity,
@@ -304,12 +304,12 @@ function ModuleNode({
     displayName: string,
     displayNameJa: string,
     menuPath?: string,
-    tabId?: string
+    tabId?: string,
   ) => void;
   t: (en: string, ja: string) => string;
 }) {
   const menusWithTabs = module.menus.filter(
-    (menu) => menu.tabs && menu.tabs.length > 0
+    (menu) => menu.tabs && menu.tabs.length > 0,
   );
 
   const moduleSelected = isSelected("module", module.id);
@@ -339,7 +339,7 @@ function ModuleNode({
               "module",
               module.id,
               moduleDisplayName,
-              moduleDisplayNameJa
+              moduleDisplayNameJa,
             )
           }
           className="data-[state=checked]:bg-primary"
@@ -408,12 +408,12 @@ function MenuNode({
     granularity: PermissionGranularity,
     moduleId: string,
     menuPath?: string,
-    tabId?: string
+    tabId?: string,
   ) => boolean;
   isImplicitlySelected: (
     moduleId: string,
     menuPath?: string,
-    tabId?: string
+    tabId?: string,
   ) => boolean;
   moduleSelected: boolean;
   onSelect: (
@@ -422,7 +422,7 @@ function MenuNode({
     displayName: string,
     displayNameJa: string,
     menuPath?: string,
-    tabId?: string
+    tabId?: string,
   ) => void;
   t: (en: string, ja: string) => string;
 }) {
@@ -458,12 +458,12 @@ function MenuNode({
               moduleId,
               menuDisplayName,
               menuDisplayNameJa,
-              menu.path
+              menu.path,
             )
           }
           className={cn(
             "data-[state=checked]:bg-primary",
-            implicitlySelected && "opacity-50"
+            implicitlySelected && "opacity-50",
           )}
         />
 
@@ -530,12 +530,12 @@ function TabNode({
     granularity: PermissionGranularity,
     moduleId: string,
     menuPath?: string,
-    tabId?: string
+    tabId?: string,
   ) => boolean;
   isImplicitlySelected: (
     moduleId: string,
     menuPath?: string,
-    tabId?: string
+    tabId?: string,
   ) => boolean;
   menuSelected: boolean;
   moduleSelected: boolean;
@@ -545,7 +545,7 @@ function TabNode({
     displayName: string,
     displayNameJa: string,
     menuPath?: string,
-    tabId?: string
+    tabId?: string,
   ) => void;
   t: (en: string, ja: string) => string;
 }) {
@@ -565,7 +565,7 @@ function TabNode({
               "flex items-center gap-2 p-2 rounded transition-colors",
               isLocked
                 ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-muted/50 cursor-pointer"
+                : "hover:bg-muted/50 cursor-pointer",
             )}
           >
             <Checkbox
@@ -579,12 +579,12 @@ function TabNode({
                   tabDisplayName,
                   tabDisplayNameJa,
                   menuPath,
-                  tab.id
+                  tab.id,
                 )
               }
               className={cn(
                 "data-[state=checked]:bg-primary",
-                (isLocked || implicitlySelected) && "opacity-50"
+                (isLocked || implicitlySelected) && "opacity-50",
               )}
             />
 
@@ -606,7 +606,7 @@ function TabNode({
             <p>
               {t(
                 "This tab cannot be delegated via access key",
-                "このタブはアクセスキーで委譲できません"
+                "このタブはアクセスキーで委譲できません",
               )}
             </p>
           </TooltipContent>

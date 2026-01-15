@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useRef } from "react";
 import { Check } from "lucide-react";
+import { useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { useNotificationStore } from "@/lib/stores/notification-store";
-import { NotificationItem } from "./NotificationItem";
-import { NotificationEmptyState } from "./NotificationEmptyState";
 import { notificationTranslations } from "@/lib/i18n/notifications";
+import { useNotificationStore } from "@/lib/stores/notification-store";
+import { NotificationEmptyState } from "./NotificationEmptyState";
+import { NotificationItem } from "./NotificationItem";
 
 interface NotificationDropdownProps {
   language: "en" | "ja";

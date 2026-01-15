@@ -1,7 +1,7 @@
 "use client";
 
+import type { Language, Translations } from "../translations";
 import { MemberCard } from "./MemberCard";
-import type { Translations, Language } from "../translations";
 
 interface Employee {
   id: string;
@@ -38,10 +38,7 @@ export function MemberGrid({
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {[...Array(8)].map((_, i) => (
-          <div
-            key={i}
-            className="bg-muted animate-pulse rounded-lg h-32"
-          />
+          <div key={i} className="bg-muted animate-pulse rounded-lg h-32" />
         ))}
       </div>
     );

@@ -42,7 +42,7 @@ export async function loadLegacyLdapConfigFromDatabase(): Promise<LegacyLdapConf
   } catch (error) {
     console.warn(
       "[LegacyLdapService] Failed to load config from database:",
-      error
+      error,
     );
     return null;
   }
@@ -64,7 +64,7 @@ export async function isLdapMigrationEnabled(): Promise<boolean> {
   } catch (error) {
     console.warn(
       "[LegacyLdapService] Failed to check migration enabled status:",
-      error
+      error,
     );
     return false;
   }
@@ -125,7 +125,7 @@ export class LegacyLdapService {
    */
   async authenticate(
     username: string,
-    password: string
+    password: string,
   ): Promise<LegacyLdapAuthResult> {
     const searchClient = this.createClient();
 
@@ -135,21 +135,24 @@ export class LegacyLdapService {
         await this.bind(
           searchClient,
           this.config.bindDN,
-          this.config.bindPassword
+          this.config.bindPassword,
         );
       } else {
         await this.anonymousBind(searchClient);
       }
 
       // 検索フィルタを構築（{username}をユーザー名で置換）
-      const filter = this.config.searchFilter.replace("{username}", this.escapeLdapFilter(username));
+      const filter = this.config.searchFilter.replace(
+        "{username}",
+        this.escapeLdapFilter(username),
+      );
 
       // ユーザーを検索
       const userEntry = await this.searchUser(searchClient, filter);
 
       if (!userEntry) {
         console.log(
-          `[LegacyLdapService] User not found in legacy LDAP: ${username}`
+          `[LegacyLdapService] User not found in legacy LDAP: ${username}`,
         );
         return {
           success: false,
@@ -171,7 +174,7 @@ export class LegacyLdapService {
         await this.bind(authClient, userDN, password);
 
         console.log(
-          `[LegacyLdapService] Authentication successful: ${username}`
+          `[LegacyLdapService] Authentication successful: ${username}`,
         );
 
         return {
@@ -183,7 +186,7 @@ export class LegacyLdapService {
         };
       } catch (authError) {
         console.log(
-          `[LegacyLdapService] Authentication failed (invalid password): ${username}`
+          `[LegacyLdapService] Authentication failed (invalid password): ${username}`,
         );
         return {
           success: false,
@@ -195,7 +198,7 @@ export class LegacyLdapService {
     } catch (error) {
       console.error(
         `[LegacyLdapService] Authentication error: ${username}`,
-        error
+        error,
       );
       return {
         success: false,
@@ -232,8 +235,14 @@ export class LegacyLdapService {
    * ユーザー検索（テスト用）
    */
   async testSearchUser(
-    username: string
-  ): Promise<{ success: boolean; userDN?: string; email?: string; displayName?: string; error?: string }> {
+    username: string,
+  ): Promise<{
+    success: boolean;
+    userDN?: string;
+    email?: string;
+    displayName?: string;
+    error?: string;
+  }> {
     const client = this.createClient();
     try {
       if (this.config.bindDN && this.config.bindPassword) {
@@ -244,7 +253,7 @@ export class LegacyLdapService {
 
       const filter = this.config.searchFilter.replace(
         "{username}",
-        this.escapeLdapFilter(username)
+        this.escapeLdapFilter(username),
       );
 
       const userEntry = await this.searchUser(client, filter);
@@ -279,8 +288,14 @@ export class LegacyLdapService {
    */
   async testAuthentication(
     username: string,
-    password: string
-  ): Promise<{ success: boolean; userDN?: string; email?: string; displayName?: string; error?: string }> {
+    password: string,
+  ): Promise<{
+    success: boolean;
+    userDN?: string;
+    email?: string;
+    displayName?: string;
+    error?: string;
+  }> {
     const result = await this.authenticate(username, password);
     return {
       success: result.success,
@@ -296,7 +311,7 @@ export class LegacyLdapService {
    */
   private async searchUser(
     client: Client,
-    filter: string
+    filter: string,
   ): Promise<Record<string, unknown> | null> {
     const opts: SearchOptions = {
       filter,
@@ -324,7 +339,7 @@ export class LegacyLdapService {
    */
   private getAttributeValue(
     entry: Record<string, unknown>,
-    attr: string
+    attr: string,
   ): string | undefined {
     const value = entry[attr];
     if (Array.isArray(value)) return value[0]?.toString();
@@ -360,7 +375,7 @@ export class LegacyLdapService {
   private async bind(
     client: Client,
     dn: string,
-    password: string
+    password: string,
   ): Promise<void> {
     await client.bind(dn, password);
   }

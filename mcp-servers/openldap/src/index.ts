@@ -29,7 +29,7 @@ class OpenLdapMcpServer {
         capabilities: {
           tools: {},
         },
-      }
+      },
     );
 
     // 環境変数からLDAPクライアントを初期化
@@ -54,7 +54,9 @@ class OpenLdapMcpServer {
             return await this.handleCheckStatus();
 
           case "ldap_list_users":
-            return await this.handleListUsers(args as { limit?: number; offset?: number });
+            return await this.handleListUsers(
+              args as { limit?: number; offset?: number },
+            );
 
           case "ldap_get_user":
             return await this.handleGetUser(args as { uid: string });
@@ -69,12 +71,17 @@ class OpenLdapMcpServer {
             throw new Error(`Unknown tool: ${name}`);
         }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         return {
           content: [
             {
               type: "text" as const,
-              text: JSON.stringify({ success: false, error: errorMessage }, null, 2),
+              text: JSON.stringify(
+                { success: false, error: errorMessage },
+                null,
+                2,
+              ),
             },
           ],
         };
@@ -100,7 +107,7 @@ class OpenLdapMcpServer {
                 : "OpenLDAP server is not available",
             },
             null,
-            2
+            2,
           ),
         },
       ],
@@ -175,7 +182,7 @@ class OpenLdapMcpServer {
               exists,
             },
             null,
-            2
+            2,
           ),
         },
       ],

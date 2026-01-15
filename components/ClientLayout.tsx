@@ -2,11 +2,15 @@
 
 import type { Session } from "next-auth";
 import { useEffect, useRef } from "react";
-import type { AppMenu } from "@/types/module";
-import { SidebarInset, SidebarProvider, useSidebar } from "@/components/ui/sidebar";
-import { AppSidebar } from "./AppSidebar";
-import { useSidebarStore } from "@/lib/stores/sidebar-store";
+import {
+  SidebarInset,
+  SidebarProvider,
+  useSidebar,
+} from "@/components/ui/sidebar";
 import { useIsTabletOrMobile } from "@/hooks/use-mobile";
+import { useSidebarStore } from "@/lib/stores/sidebar-store";
+import type { AppMenu } from "@/types/module";
+import { AppSidebar } from "./AppSidebar";
 
 interface ClientLayoutProps {
   session: Session | null;

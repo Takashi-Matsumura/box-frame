@@ -1,14 +1,14 @@
 "use client";
 
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
 import { FaPlus, FaUsers } from "react-icons/fa";
-import { dataManagementTranslations } from "./translations";
-import { ImportTab } from "./components/ImportTab";
+import { Card, CardContent } from "@/components/ui/card";
 import { EmployeesTab } from "./components/EmployeesTab";
 import { HistoryTab } from "./components/HistoryTab";
+import { ImportTab } from "./components/ImportTab";
 import { OrganizeTab } from "./components/OrganizeTab";
-import { Card, CardContent } from "@/components/ui/card";
+import { dataManagementTranslations } from "./translations";
 
 interface Organization {
   id: string;
@@ -33,7 +33,7 @@ export function DataManagementClient({
   const t = dataManagementTranslations[language];
 
   const [selectedOrgId, setSelectedOrgId] = useState<string>(
-    organizations[0]?.id || ""
+    organizations[0]?.id || "",
   );
   const [showCreateOrg, setShowCreateOrg] = useState(false);
   const [newOrgName, setNewOrgName] = useState("");

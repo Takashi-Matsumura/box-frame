@@ -199,7 +199,9 @@ export function TwoFactorSection({
           )}
 
           <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-2">{t.manualEntry}</p>
+            <p className="text-sm text-muted-foreground mb-2">
+              {t.manualEntry}
+            </p>
             <code className="px-3 py-2 bg-background rounded text-sm font-mono select-all border">
               {secret}
             </code>
@@ -209,9 +211,7 @@ export function TwoFactorSection({
             <Button variant="outline" onClick={cancel}>
               {t.cancel}
             </Button>
-            <Button onClick={() => setStep("verify")}>
-              次へ
-            </Button>
+            <Button onClick={() => setStep("verify")}>次へ</Button>
           </div>
         </div>
       )}
@@ -248,7 +248,9 @@ export function TwoFactorSection({
       {step === "disable" && (
         <div className="space-y-4 p-4 bg-muted rounded-lg">
           <h4 className="font-semibold">{t.disableTitle}</h4>
-          <p className="text-sm text-muted-foreground">{t.disableDescription}</p>
+          <p className="text-sm text-muted-foreground">
+            {t.disableDescription}
+          </p>
 
           <Input
             type="text"

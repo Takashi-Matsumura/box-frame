@@ -1,16 +1,16 @@
 "use client";
 
 import { formatDistanceToNow } from "date-fns";
-import { ja, enUS } from "date-fns/locale";
+import { enUS, ja } from "date-fns/locale";
 import { X } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
-  useNotificationStore,
   type Notification,
+  useNotificationStore,
 } from "@/lib/stores/notification-store";
-import { NotificationTypeIcon } from "./NotificationTypeIcon";
 import { cn } from "@/lib/utils";
+import { NotificationTypeIcon } from "./NotificationTypeIcon";
 
 interface NotificationItemProps {
   notification: Notification;
@@ -56,7 +56,7 @@ export function NotificationItem({
     <div
       className={cn(
         "relative flex gap-3 px-4 py-3 hover:bg-accent/50 transition-colors group",
-        !notification.isRead && "bg-accent/30"
+        !notification.isRead && "bg-accent/30",
       )}
     >
       {/* Unread indicator */}

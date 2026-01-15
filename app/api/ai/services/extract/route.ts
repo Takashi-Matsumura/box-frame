@@ -53,14 +53,14 @@ export async function POST(request: Request) {
     if (!text || typeof text !== "string") {
       return NextResponse.json(
         { error: "text is required and must be a string" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!schema || !Array.isArray(schema) || schema.length === 0) {
       return NextResponse.json(
         { error: "schema is required and must be a non-empty array" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -70,19 +70,21 @@ export async function POST(request: Request) {
       if (!field.name || typeof field.name !== "string") {
         return NextResponse.json(
           { error: "Each schema field must have a 'name' string" },
-          { status: 400 }
+          { status: 400 },
         );
       }
       if (!field.description || typeof field.description !== "string") {
         return NextResponse.json(
           { error: "Each schema field must have a 'description' string" },
-          { status: 400 }
+          { status: 400 },
         );
       }
       if (!field.type || !validTypes.includes(field.type)) {
         return NextResponse.json(
-          { error: `Each schema field must have a 'type' of: ${validTypes.join(", ")}` },
-          { status: 400 }
+          {
+            error: `Each schema field must have a 'type' of: ${validTypes.join(", ")}`,
+          },
+          { status: 400 },
         );
       }
     }
@@ -90,7 +92,7 @@ export async function POST(request: Request) {
     if (language !== undefined && !["ja", "en"].includes(language)) {
       return NextResponse.json(
         { error: "language must be 'ja' or 'en'" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -103,7 +105,8 @@ export async function POST(request: Request) {
     return NextResponse.json(response);
   } catch (error) {
     console.error("Error in AI extract:", error);
-    const message = error instanceof Error ? error.message : "Failed to extract data";
+    const message =
+      error instanceof Error ? error.message : "Failed to extract data";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

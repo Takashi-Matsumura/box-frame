@@ -4,11 +4,11 @@
  * 履歴記録機能を統合
  */
 
-import { prisma } from "@/lib/prisma";
 import type { ChangeType, Employee, Prisma } from "@prisma/client";
+import { HistoryRecorder } from "@/lib/history/history-recorder";
+import { prisma } from "@/lib/prisma";
 import { BaseImporter, type ImportResult } from "../base-importer";
 import { processEmployeeData } from "./parser";
-import { HistoryRecorder } from "@/lib/history/history-recorder";
 import type {
   CSVEmployeeRow,
   FieldChange,
@@ -91,8 +91,7 @@ export class OrganizationImporter extends BaseImporter<
       } catch (error) {
         errors.push({
           row: i + 2, // 1-indexed + header row
-          message:
-            error instanceof Error ? error.message : "Unknown error",
+          message: error instanceof Error ? error.message : "Unknown error",
         });
       }
     }
@@ -128,7 +127,7 @@ export class OrganizationImporter extends BaseImporter<
    */
   private detectFieldChanges(
     existing: any,
-    newData: ProcessedEmployee
+    newData: ProcessedEmployee,
   ): FieldChange[] {
     const changes: FieldChange[] = [];
 
@@ -232,7 +231,7 @@ export class OrganizationImporter extends BaseImporter<
       course: { name: string } | null;
     },
     newData: ProcessedEmployee,
-    changes: FieldChange[]
+    changes: FieldChange[],
   ): ChangeType {
     // 退職からの復職
     if (!existing.isActive) {
@@ -244,7 +243,7 @@ export class OrganizationImporter extends BaseImporter<
       (c) =>
         c.fieldName === "department" ||
         c.fieldName === "section" ||
-        c.fieldName === "course"
+        c.fieldName === "course",
     );
     if (hasDepartmentChange) {
       return "TRANSFER";
@@ -252,7 +251,7 @@ export class OrganizationImporter extends BaseImporter<
 
     // 役職変更（昇進/降格）
     const hasPositionChange = changes.some(
-      (c) => c.fieldName === "position" || c.fieldName === "positionCode"
+      (c) => c.fieldName === "position" || c.fieldName === "positionCode",
     );
     if (hasPositionChange) {
       return "PROMOTION";
@@ -275,7 +274,7 @@ export class OrganizationImporter extends BaseImporter<
     changeType: ChangeType,
     changeReason: string | null,
     changedBy: string,
-    effectiveDate: Date
+    effectiveDate: Date,
   ): Promise<void> {
     // 既存の履歴の validTo を更新
     await tx.employeeHistory.updateMany({
@@ -328,10 +327,10 @@ export class OrganizationImporter extends BaseImporter<
    */
   async importToDatabase(
     employees: ProcessedEmployee[],
-    changedBy = "admin"
+    changedBy = "admin",
   ): Promise<ImportResult> {
     console.log(
-      `Starting database import for ${employees.length} employees...`
+      `Starting database import for ${employees.length} employees...`,
     );
 
     // バッチIDを生成
@@ -406,7 +405,7 @@ export class OrganizationImporter extends BaseImporter<
           .map((e) => ({
             department: e.department,
             section: e.section!,
-            sectionCode: e.sectionCode,  // 部コード（3-4桁目）
+            sectionCode: e.sectionCode, // 部コード（3-4桁目）
           }));
 
         const processedSections = new Set<string>();
@@ -426,11 +425,13 @@ export class OrganizationImporter extends BaseImporter<
               sec = await tx.section.create({
                 data: {
                   name: section,
-                  code: sectionCode,  // 部コード（3-4桁目）
+                  code: sectionCode, // 部コード（3-4桁目）
                   departmentId: deptId,
                 },
               });
-              console.log(`Created section: ${department}/${section} (code: ${sectionCode})`);
+              console.log(
+                `Created section: ${department}/${section} (code: ${sectionCode})`,
+              );
             } else if (sectionCode && sec.code !== sectionCode) {
               // 既存のセクションのコードを更新
               await tx.section.update({
@@ -451,7 +452,7 @@ export class OrganizationImporter extends BaseImporter<
             department: e.department,
             section: e.section!,
             course: e.course!,
-            courseCode: e.courseCode,  // 課コード（5-7桁目）
+            courseCode: e.courseCode, // 課コード（5-7桁目）
           }));
 
         const processedCourses = new Set<string>();
@@ -476,11 +477,13 @@ export class OrganizationImporter extends BaseImporter<
               crs = await tx.course.create({
                 data: {
                   name: course,
-                  code: courseCode,  // 課コード（5-7桁目）
+                  code: courseCode, // 課コード（5-7桁目）
                   sectionId,
                 },
               });
-              console.log(`Created course: ${department}/${section}/${course} (code: ${courseCode})`);
+              console.log(
+                `Created course: ${department}/${section}/${course} (code: ${courseCode})`,
+              );
             } else if (courseCode && crs.code !== courseCode) {
               // 既存のコースのコードを更新
               await tx.course.update({
@@ -558,7 +561,7 @@ export class OrganizationImporter extends BaseImporter<
               const changeType = this.determineChangeType(
                 existing,
                 emp,
-                changes
+                changes,
               );
 
               // 社員データを更新
@@ -575,7 +578,7 @@ export class OrganizationImporter extends BaseImporter<
                   qualificationGradeCode: emp.qualificationGradeCode,
                   employmentType: emp.employmentType,
                   employmentTypeCode: emp.employmentTypeCode,
-                  departmentCode: emp.affiliationCode,  // 7桁の所属コードを保存
+                  departmentCode: emp.affiliationCode, // 7桁の所属コードを保存
                   joinDate: emp.joinDate,
                   birthDate: emp.birthDate,
                   isActive: true,
@@ -598,7 +601,7 @@ export class OrganizationImporter extends BaseImporter<
                 changeType,
                 `インポートによる${changeType === "TRANSFER" ? "異動" : changeType === "PROMOTION" ? "昇進" : "更新"}`,
                 changedBy,
-                effectiveDate
+                effectiveDate,
               );
 
               // 変更ログエントリを追加
@@ -645,7 +648,7 @@ export class OrganizationImporter extends BaseImporter<
                 qualificationGradeCode: emp.qualificationGradeCode,
                 employmentType: emp.employmentType,
                 employmentTypeCode: emp.employmentTypeCode,
-                departmentCode: emp.affiliationCode,  // 7桁の所属コードを保存
+                departmentCode: emp.affiliationCode, // 7桁の所属コードを保存
                 joinDate: emp.joinDate,
                 birthDate: emp.birthDate,
                 isActive: true,
@@ -668,7 +671,7 @@ export class OrganizationImporter extends BaseImporter<
               "CREATE",
               "インポートによる新規登録",
               changedBy,
-              effectiveDate
+              effectiveDate,
             );
 
             // 変更ログエントリを追加
@@ -715,7 +718,7 @@ export class OrganizationImporter extends BaseImporter<
             "RETIREMENT",
             "インポートデータに存在しないため退職扱い",
             changedBy,
-            effectiveDate
+            effectiveDate,
           );
 
           // 変更ログエントリを追加
@@ -733,7 +736,7 @@ export class OrganizationImporter extends BaseImporter<
         }
 
         console.log(
-          `Marked ${retiredEmployees.length} employees as inactive (retired)`
+          `Marked ${retiredEmployees.length} employees as inactive (retired)`,
         );
 
         // 変更ログを一括記録
@@ -794,8 +797,15 @@ export class OrganizationImporter extends BaseImporter<
       if (result.employeesPromoted > 0) {
         messageParts.push(`昇進: ${result.employeesPromoted}名`);
       }
-      if (result.employeesUpdated - result.employeesTransferred - result.employeesPromoted > 0) {
-        messageParts.push(`更新: ${result.employeesUpdated - result.employeesTransferred - result.employeesPromoted}名`);
+      if (
+        result.employeesUpdated -
+          result.employeesTransferred -
+          result.employeesPromoted >
+        0
+      ) {
+        messageParts.push(
+          `更新: ${result.employeesUpdated - result.employeesTransferred - result.employeesPromoted}名`,
+        );
       }
       if (result.employeesRetired > 0) {
         messageParts.push(`退職: ${result.employeesRetired}名`);
@@ -834,7 +844,7 @@ export class OrganizationImporter extends BaseImporter<
     tx: any,
     departmentMap: Map<string, string>,
     sectionMap: Map<string, string>,
-    courseMap: Map<string, string>
+    courseMap: Map<string, string>,
   ): Promise<void> {
     console.log("Assigning managers based on positions...");
 
@@ -852,8 +862,8 @@ export class OrganizationImporter extends BaseImporter<
 
       const manager = deptEmployees.find((emp: any) =>
         managerPositionKeywords.department.some((keyword) =>
-          emp.position?.includes(keyword)
-        )
+          emp.position?.includes(keyword),
+        ),
       );
 
       if (manager) {
@@ -882,8 +892,8 @@ export class OrganizationImporter extends BaseImporter<
 
       const manager = sectionEmployees.find((emp: any) =>
         managerPositionKeywords.section.some((keyword) =>
-          emp.position?.includes(keyword)
-        )
+          emp.position?.includes(keyword),
+        ),
       );
 
       if (manager) {
@@ -913,8 +923,8 @@ export class OrganizationImporter extends BaseImporter<
 
       const manager = courseEmployees.find((emp: any) =>
         managerPositionKeywords.course.some((keyword) =>
-          emp.position?.includes(keyword)
-        )
+          emp.position?.includes(keyword),
+        ),
       );
 
       if (manager) {

@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     if (!organizationId) {
       return NextResponse.json(
         { error: "Organization ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
     if (!organization) {
       return NextResponse.json(
         { error: "Organization not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -52,7 +52,7 @@ export async function GET(request: Request) {
     console.error("Error fetching organization publish settings:", error);
     return NextResponse.json(
       { error: "Failed to fetch publish settings" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -85,14 +85,17 @@ export async function PATCH(request: Request) {
     if (!organizationId || !action) {
       return NextResponse.json(
         { error: "Organization ID and action are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!["publish", "schedule", "cancel", "archive"].includes(action)) {
       return NextResponse.json(
-        { error: "Invalid action. Must be publish, schedule, cancel, or archive" },
-        { status: 400 }
+        {
+          error:
+            "Invalid action. Must be publish, schedule, cancel, or archive",
+        },
+        { status: 400 },
       );
     }
 
@@ -104,7 +107,7 @@ export async function PATCH(request: Request) {
     if (!organization) {
       return NextResponse.json(
         { error: "Organization not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -135,11 +138,11 @@ export async function PATCH(request: Request) {
         };
         break;
 
-      case "schedule":
+      case "schedule": {
         if (!publishAt) {
           return NextResponse.json(
             { error: "Publish date is required for scheduling" },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
@@ -147,7 +150,7 @@ export async function PATCH(request: Request) {
         if (scheduledDate <= new Date()) {
           return NextResponse.json(
             { error: "Publish date must be in the future" },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
@@ -157,6 +160,7 @@ export async function PATCH(request: Request) {
           publishedAt: null,
         };
         break;
+      }
 
       case "cancel":
         // Cancel scheduled publish, revert to draft
@@ -175,10 +179,7 @@ export async function PATCH(request: Request) {
         break;
 
       default:
-        return NextResponse.json(
-          { error: "Invalid action" },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
 
     const updatedOrganization = await prisma.organization.update({
@@ -201,7 +202,7 @@ export async function PATCH(request: Request) {
     console.error("Error updating organization publish settings:", error);
     return NextResponse.json(
       { error: "Failed to update publish settings" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

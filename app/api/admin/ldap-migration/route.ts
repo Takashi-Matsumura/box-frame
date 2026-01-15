@@ -103,7 +103,7 @@ export async function GET() {
     console.error("Failed to get migration config:", error);
     return NextResponse.json(
       { error: "Failed to get migration config" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -159,7 +159,7 @@ export async function POST(request: Request) {
     console.error("Failed to save migration config:", error);
     return NextResponse.json(
       { error: "Failed to save migration config" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -252,7 +252,7 @@ export async function PUT(request: Request) {
     console.error("Failed to save legacy LDAP config:", error);
     return NextResponse.json(
       { error: "Failed to save legacy LDAP config" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -8,13 +8,13 @@ import { prisma } from "@/lib/prisma";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
   if (!session?.user?.email) {
     return NextResponse.json(
       { error: "Unauthorized", errorJa: "認証が必要です" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -26,7 +26,7 @@ export async function GET(
   if (!user) {
     return NextResponse.json(
       { error: "User not found", errorJa: "ユーザーが見つかりません" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -39,7 +39,7 @@ export async function GET(
   if (!notification) {
     return NextResponse.json(
       { error: "Notification not found", errorJa: "通知が見つかりません" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -52,13 +52,13 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
   if (!session?.user?.email) {
     return NextResponse.json(
       { error: "Unauthorized", errorJa: "認証が必要です" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -70,7 +70,7 @@ export async function PATCH(
   if (!user) {
     return NextResponse.json(
       { error: "User not found", errorJa: "ユーザーが見つかりません" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -84,7 +84,7 @@ export async function PATCH(
   if (!existing) {
     return NextResponse.json(
       { error: "Notification not found", errorJa: "通知が見つかりません" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -108,7 +108,7 @@ export async function PATCH(
         error: "Failed to update notification",
         errorJa: "通知の更新に失敗しました",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -119,13 +119,13 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
   if (!session?.user?.email) {
     return NextResponse.json(
       { error: "Unauthorized", errorJa: "認証が必要です" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -137,7 +137,7 @@ export async function DELETE(
   if (!user) {
     return NextResponse.json(
       { error: "User not found", errorJa: "ユーザーが見つかりません" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -151,7 +151,7 @@ export async function DELETE(
   if (!existing) {
     return NextResponse.json(
       { error: "Notification not found", errorJa: "通知が見つかりません" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -165,7 +165,7 @@ export async function DELETE(
         error: "Failed to delete notification",
         errorJa: "通知の削除に失敗しました",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NotificationPriority, NotificationType } from "@prisma/client";
+import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { NotificationService } from "@/lib/services/notification-service";
-import type { NotificationType, NotificationPriority } from "@prisma/client";
 
 /**
  * GET /api/notifications
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   if (!session?.user?.email) {
     return NextResponse.json(
       { error: "Unauthorized", errorJa: "認証が必要です" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -25,16 +25,20 @@ export async function GET(request: NextRequest) {
   if (!user) {
     return NextResponse.json(
       { error: "User not found", errorJa: "ユーザーが見つかりません" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
   const searchParams = request.nextUrl.searchParams;
   const page = parseInt(searchParams.get("page") || "1");
-  const pageSize = Math.min(parseInt(searchParams.get("pageSize") || "20"), 100);
+  const pageSize = Math.min(
+    parseInt(searchParams.get("pageSize") || "20"),
+    100,
+  );
   const type = searchParams.get("type") as NotificationType | null;
   const isReadParam = searchParams.get("isRead");
-  const isRead = isReadParam === "true" ? true : isReadParam === "false" ? false : undefined;
+  const isRead =
+    isReadParam === "true" ? true : isReadParam === "false" ? false : undefined;
 
   const where = {
     userId: user.id,
@@ -74,7 +78,7 @@ export async function POST(request: NextRequest) {
   if (!session?.user?.email) {
     return NextResponse.json(
       { error: "Unauthorized", errorJa: "認証が必要です" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -86,7 +90,7 @@ export async function POST(request: NextRequest) {
   if (!currentUser || currentUser.role !== "ADMIN") {
     return NextResponse.json(
       { error: "Admin access required", errorJa: "管理者権限が必要です" },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
@@ -118,7 +122,7 @@ export async function POST(request: NextRequest) {
           error: "title, message, and type are required",
           errorJa: "title、message、typeは必須です",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -176,7 +180,7 @@ export async function POST(request: NextRequest) {
         error: "Failed to create notification",
         errorJa: "通知の作成に失敗しました",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

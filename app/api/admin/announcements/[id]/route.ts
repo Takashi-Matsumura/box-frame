@@ -9,7 +9,7 @@ import { AuditService } from "@/lib/services/audit-service";
  */
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await auth();
@@ -36,7 +36,7 @@ export async function GET(
     if (!announcement) {
       return NextResponse.json(
         { error: "Announcement not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -45,7 +45,7 @@ export async function GET(
     console.error("Error fetching announcement:", error);
     return NextResponse.json(
       { error: "Failed to fetch announcement" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -56,7 +56,7 @@ export async function GET(
  */
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await auth();
@@ -67,8 +67,16 @@ export async function PATCH(
 
     const { id } = await params;
     const body = await request.json();
-    const { title, titleJa, message, messageJa, level, isActive, startAt, endAt } =
-      body;
+    const {
+      title,
+      titleJa,
+      message,
+      messageJa,
+      level,
+      isActive,
+      startAt,
+      endAt,
+    } = body;
 
     const announcement = await prisma.announcement.update({
       where: { id },
@@ -99,7 +107,7 @@ export async function PATCH(
     console.error("Error updating announcement:", error);
     return NextResponse.json(
       { error: "Failed to update announcement" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -110,7 +118,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await auth();
@@ -128,7 +136,7 @@ export async function DELETE(
     if (!announcement) {
       return NextResponse.json(
         { error: "Announcement not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -151,7 +159,7 @@ export async function DELETE(
     console.error("Error deleting announcement:", error);
     return NextResponse.json(
       { error: "Failed to delete announcement" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

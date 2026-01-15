@@ -27,14 +27,14 @@ export { HistoryRecorder } from "./history-recorder";
 export { SnapshotManager } from "./snapshot-manager";
 
 export type {
-  EntityType,
-  FieldChange,
+  BatchImportResult,
   ChangeDetectionResult,
   ChangeLogEntry,
   EmployeeSnapshot,
+  EntityType,
+  FieldChange,
   OrganizationSnapshot,
   RecordHistoryOptions,
-  BatchImportResult,
 } from "./types";
 
-export { fieldNameMapping, changeTypeMapping } from "./types";
+export { changeTypeMapping, fieldNameMapping } from "./types";

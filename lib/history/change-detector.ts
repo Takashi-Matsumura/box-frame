@@ -3,11 +3,11 @@
  * 既存データと新規データの差分を検出
  */
 
-import type { Employee, ChangeType } from "@prisma/client";
+import type { ChangeType, Employee } from "@prisma/client";
 import type {
   ChangeDetectionResult,
-  FieldChange,
   EmployeeSnapshot,
+  FieldChange,
 } from "./types";
 import { fieldNameMapping } from "./types";
 
@@ -30,11 +30,7 @@ const COMPARABLE_FIELDS = [
 /**
  * 所属関連フィールド（異動判定用）
  */
-const DEPARTMENT_FIELDS = [
-  "departmentId",
-  "sectionId",
-  "courseId",
-] as const;
+const DEPARTMENT_FIELDS = ["departmentId", "sectionId", "courseId"] as const;
 
 /**
  * 役職関連フィールド（昇進判定用）
@@ -50,14 +46,14 @@ export class ChangeDetector {
    */
   static detectEmployeeChanges(
     existing: Employee,
-    updated: Partial<EmployeeSnapshot>
+    updated: Partial<EmployeeSnapshot>,
   ): ChangeDetectionResult {
     const changes: FieldChange[] = [];
 
     // 通常フィールドの変更検出
     for (const field of COMPARABLE_FIELDS) {
-      const oldValue = this.normalizeValue(existing[field]);
-      const newValue = this.normalizeValue(updated[field]);
+      const oldValue = ChangeDetector.normalizeValue(existing[field]);
+      const newValue = ChangeDetector.normalizeValue(updated[field]);
 
       if (oldValue !== newValue) {
         changes.push({
@@ -70,19 +66,22 @@ export class ChangeDetector {
     }
 
     // 所属変更の検出
-    const departmentChanges = this.detectDepartmentChanges(existing, updated);
+    const departmentChanges = ChangeDetector.detectDepartmentChanges(
+      existing,
+      updated,
+    );
     changes.push(...departmentChanges);
 
     // 変更タイプの判定
-    const changeType = this.determineChangeType(
+    const changeType = ChangeDetector.determineChangeType(
       existing,
       updated,
       changes,
-      departmentChanges.length > 0
+      departmentChanges.length > 0,
     );
 
     // 変更サマリーの生成
-    const summary = this.generateSummary(changes, changeType);
+    const summary = ChangeDetector.generateSummary(changes, changeType);
 
     return {
       hasChanges: changes.length > 0,
@@ -97,7 +96,7 @@ export class ChangeDetector {
    */
   private static detectDepartmentChanges(
     existing: Employee,
-    updated: Partial<EmployeeSnapshot>
+    updated: Partial<EmployeeSnapshot>,
   ): FieldChange[] {
     const changes: FieldChange[] = [];
 
@@ -105,7 +104,10 @@ export class ChangeDetector {
       const oldValue = existing[field] as string | null | undefined;
       const newValue = updated[field] as string | null | undefined;
 
-      if (this.normalizeValue(oldValue) !== this.normalizeValue(newValue)) {
+      if (
+        ChangeDetector.normalizeValue(oldValue) !==
+        ChangeDetector.normalizeValue(newValue)
+      ) {
         changes.push({
           fieldName: field,
           fieldNameJa: fieldNameMapping[field] || field,
@@ -125,7 +127,7 @@ export class ChangeDetector {
     existing: Employee,
     updated: Partial<EmployeeSnapshot>,
     changes: FieldChange[],
-    hasDepartmentChange: boolean
+    hasDepartmentChange: boolean,
   ): ChangeType {
     // 退職判定
     if (existing.isActive && updated.isActive === false) {
@@ -144,7 +146,7 @@ export class ChangeDetector {
 
     // 昇進判定（役職変更）
     const hasPositionChange = changes.some((c) =>
-      POSITION_FIELDS.includes(c.fieldName as typeof POSITION_FIELDS[number])
+      POSITION_FIELDS.includes(c.fieldName as (typeof POSITION_FIELDS)[number]),
     );
     if (hasPositionChange) {
       return "PROMOTION";
@@ -158,7 +160,7 @@ export class ChangeDetector {
    * 値の正規化
    */
   private static normalizeValue(
-    value: string | number | boolean | Date | null | undefined
+    value: string | number | boolean | Date | null | undefined,
   ): string | null {
     if (value === null || value === undefined || value === "") {
       return null;
@@ -177,13 +179,13 @@ export class ChangeDetector {
    */
   private static generateSummary(
     changes: FieldChange[],
-    changeType: ChangeType
+    changeType: ChangeType,
   ): string {
     if (changes.length === 0) {
       return "変更なし";
     }
 
-    const typeLabel = this.getChangeTypeLabel(changeType);
+    const typeLabel = ChangeDetector.getChangeTypeLabel(changeType);
     const fieldLabels = changes.map((c) => c.fieldNameJa).join("、");
 
     return `${typeLabel}: ${fieldLabels}`;
@@ -221,10 +223,10 @@ export class ChangeDetector {
    */
   static detectRetiredEmployees(
     existingEmployees: Employee[],
-    importedEmployeeIds: Set<string>
+    importedEmployeeIds: Set<string>,
   ): Employee[] {
     return existingEmployees.filter(
-      (emp) => emp.isActive && !importedEmployeeIds.has(emp.employeeId)
+      (emp) => emp.isActive && !importedEmployeeIds.has(emp.employeeId),
     );
   }
 
@@ -233,14 +235,14 @@ export class ChangeDetector {
    */
   static detectBulkChanges(
     existingEmployees: Map<string, Employee>,
-    updatedEmployees: EmployeeSnapshot[]
+    updatedEmployees: EmployeeSnapshot[],
   ): Map<string, ChangeDetectionResult> {
     const results = new Map<string, ChangeDetectionResult>();
 
     for (const updated of updatedEmployees) {
       const existing = existingEmployees.get(updated.employeeId);
       if (existing) {
-        const result = this.detectEmployeeChanges(existing, updated);
+        const result = ChangeDetector.detectEmployeeChanges(existing, updated);
         if (result.hasChanges) {
           results.set(updated.employeeId, result);
         }

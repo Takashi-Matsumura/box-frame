@@ -30,7 +30,7 @@ export async function GET() {
     console.error("Error fetching AI config:", error);
     return NextResponse.json(
       { error: "Failed to fetch AI config" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -48,7 +48,15 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { enabled, provider, apiKey, model, localProvider, localEndpoint, localModel } = body;
+    const {
+      enabled,
+      provider,
+      apiKey,
+      model,
+      localProvider,
+      localEndpoint,
+      localModel,
+    } = body;
 
     await AIService.updateConfig({
       ...(enabled !== undefined && { enabled }),
@@ -90,7 +98,7 @@ export async function PATCH(request: Request) {
     console.error("Error updating AI config:", error);
     return NextResponse.json(
       { error: "Failed to update AI config" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -120,7 +128,7 @@ export async function POST(request: Request) {
     console.error("Error testing AI connection:", error);
     return NextResponse.json(
       { error: "Failed to test connection" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,13 +1,24 @@
 "use client";
 
 import type { AccessKey, Role } from "@prisma/client";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Edit3,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { FaBullhorn, FaClipboardList } from "react-icons/fa";
 import { AccessKeyManager } from "@/components/AccessKeyManager";
-import { useSidebar } from "@/components/ui/sidebar";
-import { useIsTabletOrMobile } from "@/hooks/use-mobile";
+import { UserRoleChanger } from "@/components/UserRoleChanger";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -16,11 +27,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useSidebarStore } from "@/lib/stores/sidebar-store";
-import { UserRoleChanger } from "@/components/UserRoleChanger";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -30,6 +36,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useSidebar } from "@/components/ui/sidebar";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -44,9 +52,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Switch } from "@/components/ui/switch";
-import { ChevronLeft, ChevronRight, Edit3, Plus, Search, Trash2, X } from "lucide-react";
+import { useIsTabletOrMobile } from "@/hooks/use-mobile";
 import { getModuleIcon } from "@/lib/modules/icons";
+import { useSidebarStore } from "@/lib/stores/sidebar-store";
 import type { AppMenu, AppModule } from "@/types/module";
 
 interface User {
@@ -97,7 +105,13 @@ interface AdminClientProps {
   modules: AppModule[];
 }
 
-type TabType = "system" | "users" | "access-keys" | "modules" | "audit-logs" | "announcements";
+type TabType =
+  | "system"
+  | "users"
+  | "access-keys"
+  | "modules"
+  | "audit-logs"
+  | "announcements";
 
 interface ContainerStatus {
   id: string;
@@ -263,8 +277,10 @@ export function AdminClient({
   const [auditLogsTotal, setAuditLogsTotal] = useState(0);
   const [auditLogsPage, setAuditLogsPage] = useState(1);
   const [auditLogsTotalPages, setAuditLogsTotalPages] = useState(1);
-  const [auditLogsCategoryFilter, setAuditLogsCategoryFilter] = useState<string>("ALL");
-  const [auditLogsActionFilter, setAuditLogsActionFilter] = useState<string>("ALL");
+  const [auditLogsCategoryFilter, setAuditLogsCategoryFilter] =
+    useState<string>("ALL");
+  const [auditLogsActionFilter, setAuditLogsActionFilter] =
+    useState<string>("ALL");
 
   // アナウンスの状態
   interface Announcement {
@@ -288,7 +304,8 @@ export function AdminClient({
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [announcementsLoading, setAnnouncementsLoading] = useState(false);
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
-  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+  const [editingAnnouncement, setEditingAnnouncement] =
+    useState<Announcement | null>(null);
   const [announcementForm, setAnnouncementForm] = useState({
     title: "",
     titleJa: "",
@@ -299,8 +316,10 @@ export function AdminClient({
     endAt: "",
   });
   const [announcementSaving, setAnnouncementSaving] = useState(false);
-  const [showAnnouncementDeleteModal, setShowAnnouncementDeleteModal] = useState(false);
-  const [announcementToDelete, setAnnouncementToDelete] = useState<Announcement | null>(null);
+  const [showAnnouncementDeleteModal, setShowAnnouncementDeleteModal] =
+    useState(false);
+  const [announcementToDelete, setAnnouncementToDelete] =
+    useState<Announcement | null>(null);
   const [announcementDeleting, setAnnouncementDeleting] = useState(false);
 
   // AI設定の状態
@@ -323,9 +342,13 @@ export function AdminClient({
   const [aiConfig, setAiConfig] = useState<AIConfig | null>(null);
   const [aiConfigLoading, setAiConfigLoading] = useState(false);
   const [aiApiKeyInput, setAiApiKeyInput] = useState("");
-  const [localLLMDefaults, setLocalLLMDefaults] = useState<LocalLLMDefaults | null>(null);
+  const [localLLMDefaults, setLocalLLMDefaults] =
+    useState<LocalLLMDefaults | null>(null);
   const [testingConnection, setTestingConnection] = useState(false);
-  const [connectionTestResult, setConnectionTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [connectionTestResult, setConnectionTestResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
   const [aiSaving, setAiSaving] = useState(false);
 
   // アナウンス用AI翻訳
@@ -345,10 +368,13 @@ export function AdminClient({
     timeout: number;
   }
 
-  const [legacyLdapConfig, setLegacyLdapConfig] = useState<LegacyLdapConfig | null>(null);
+  const [legacyLdapConfig, setLegacyLdapConfig] =
+    useState<LegacyLdapConfig | null>(null);
   const [legacyLdapConfigLoading, setLegacyLdapConfigLoading] = useState(false);
   const [legacyLdapConfigSaving, setLegacyLdapConfigSaving] = useState(false);
-  const [legacyLdapTestType, setLegacyLdapTestType] = useState<"connection" | "search" | "auth">("connection");
+  const [legacyLdapTestType, setLegacyLdapTestType] = useState<
+    "connection" | "search" | "auth"
+  >("connection");
   const [legacyLdapTestUsername, setLegacyLdapTestUsername] = useState("");
   const [legacyLdapTestPassword, setLegacyLdapTestPassword] = useState("");
   const [legacyLdapTestLoading, setLegacyLdapTestLoading] = useState(false);
@@ -564,8 +590,12 @@ export function AdminClient({
       const params = new URLSearchParams({
         page: auditLogsPage.toString(),
         limit: "25",
-        ...(auditLogsCategoryFilter !== "ALL" && { category: auditLogsCategoryFilter }),
-        ...(auditLogsActionFilter !== "ALL" && { action: auditLogsActionFilter }),
+        ...(auditLogsCategoryFilter !== "ALL" && {
+          category: auditLogsCategoryFilter,
+        }),
+        ...(auditLogsActionFilter !== "ALL" && {
+          action: auditLogsActionFilter,
+        }),
       });
 
       const response = await fetch(`/api/admin/audit-logs?${params}`);
@@ -582,7 +612,12 @@ export function AdminClient({
     } finally {
       setAuditLogsLoading(false);
     }
-  }, [activeTab, auditLogsPage, auditLogsCategoryFilter, auditLogsActionFilter]);
+  }, [
+    activeTab,
+    auditLogsPage,
+    auditLogsCategoryFilter,
+    auditLogsActionFilter,
+  ]);
 
   useEffect(() => {
     fetchAuditLogs();
@@ -652,7 +687,9 @@ export function AdminClient({
       messageJa: announcement.messageJa || "",
       level: announcement.level,
       startAt: formatLocalDateTime(new Date(announcement.startAt)),
-      endAt: announcement.endAt ? formatLocalDateTime(new Date(announcement.endAt)) : "",
+      endAt: announcement.endAt
+        ? formatLocalDateTime(new Date(announcement.endAt))
+        : "",
     });
     setUseAiTranslation(false);
     setShowAnnouncementModal(true);
@@ -672,7 +709,9 @@ export function AdminClient({
   // アナウンスを保存
   const handleSaveAnnouncement = async () => {
     if (!announcementForm.titleJa || !announcementForm.messageJa) {
-      alert(t("Title and message are required", "タイトルとメッセージは必須です"));
+      alert(
+        t("Title and message are required", "タイトルとメッセージは必須です"),
+      );
       return;
     }
 
@@ -775,11 +814,13 @@ export function AdminClient({
       }
 
       setAnnouncements((prev) =>
-        prev.map((a) => (a.id === id ? { ...a, isActive } : a))
+        prev.map((a) => (a.id === id ? { ...a, isActive } : a)),
       );
     } catch (error) {
       console.error("Error toggling announcement:", error);
-      alert(t("Failed to update announcement", "アナウンスの更新に失敗しました"));
+      alert(
+        t("Failed to update announcement", "アナウンスの更新に失敗しました"),
+      );
     }
   };
 
@@ -789,9 +830,12 @@ export function AdminClient({
 
     try {
       setAnnouncementDeleting(true);
-      const response = await fetch(`/api/admin/announcements/${announcementToDelete.id}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `/api/admin/announcements/${announcementToDelete.id}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (!response.ok) {
         throw new Error("Failed to delete announcement");
@@ -802,7 +846,9 @@ export function AdminClient({
       await fetchAnnouncements();
     } catch (error) {
       console.error("Error deleting announcement:", error);
-      alert(t("Failed to delete announcement", "アナウンスの削除に失敗しました"));
+      alert(
+        t("Failed to delete announcement", "アナウンスの削除に失敗しました"),
+      );
     } finally {
       setAnnouncementDeleting(false);
     }
@@ -836,7 +882,9 @@ export function AdminClient({
   }, [fetchAiConfig]);
 
   // AI設定を更新
-  const handleUpdateAiConfig = async (updates: Partial<AIConfig & { apiKey?: string }>) => {
+  const handleUpdateAiConfig = async (
+    updates: Partial<AIConfig & { apiKey?: string }>,
+  ) => {
     try {
       setAiSaving(true);
       const response = await fetch("/api/admin/ai", {
@@ -918,152 +966,169 @@ export function AdminClient({
   }, [testAuthUsername, testAuthPassword]);
 
   // メニュー順序を更新
-  const handleUpdateMenuOrder = useCallback(async (menuId: string, order: number) => {
-    try {
-      const response = await fetch("/api/admin/modules", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ menuId, order }),
-      });
+  const handleUpdateMenuOrder = useCallback(
+    async (menuId: string, order: number) => {
+      try {
+        const response = await fetch("/api/admin/modules", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ menuId, order }),
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to update menu order");
-      }
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Failed to update menu order");
+        }
 
-      // ローカルの状態を更新
-      setModulesData((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          modules: prev.modules.map((m) => ({
-            ...m,
-            menus: m.menus.map((menu) =>
-              menu.id === menuId ? { ...menu, order } : menu
+        // ローカルの状態を更新
+        setModulesData((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            modules: prev.modules.map((m) => ({
+              ...m,
+              menus: m.menus.map((menu) =>
+                menu.id === menuId ? { ...menu, order } : menu,
+              ),
+            })),
+          };
+        });
+
+        // 選択中のモジュールも更新
+        setSelectedModule((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            menus: prev.menus.map((menu) =>
+              menu.id === menuId ? { ...menu, order } : menu,
             ),
-          })),
-        };
-      });
-
-      // 選択中のモジュールも更新
-      setSelectedModule((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          menus: prev.menus.map((menu) =>
-            menu.id === menuId ? { ...menu, order } : menu
+          };
+        });
+      } catch (error) {
+        console.error("Error updating menu order:", error);
+        alert(
+          t(
+            error instanceof Error
+              ? error.message
+              : "Failed to update menu order",
+            error instanceof Error
+              ? error.message
+              : "メニュー順序の更新に失敗しました",
           ),
-        };
-      });
-    } catch (error) {
-      console.error("Error updating menu order:", error);
-      alert(
-        t(
-          error instanceof Error ? error.message : "Failed to update menu order",
-          error instanceof Error ? error.message : "メニュー順序の更新に失敗しました"
-        )
-      );
-    }
-  }, [t]);
+        );
+      }
+    },
+    [t],
+  );
 
   // モジュールの有効/無効を切り替え
-  const handleToggleModule = useCallback(async (moduleId: string, enabled: boolean) => {
-    try {
-      const response = await fetch("/api/admin/modules", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ moduleId, enabled }),
-      });
+  const handleToggleModule = useCallback(
+    async (moduleId: string, enabled: boolean) => {
+      try {
+        const response = await fetch("/api/admin/modules", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ moduleId, enabled }),
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to update module");
-      }
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Failed to update module");
+        }
 
-      // ローカルの状態を更新
-      setModulesData((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          modules: prev.modules.map((m) =>
-            m.id === moduleId ? { ...m, enabled } : m
+        // ローカルの状態を更新
+        setModulesData((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            modules: prev.modules.map((m) =>
+              m.id === moduleId ? { ...m, enabled } : m,
+            ),
+            statistics: {
+              ...prev.statistics,
+              enabled: enabled
+                ? prev.statistics.enabled + 1
+                : prev.statistics.enabled - 1,
+              disabled: enabled
+                ? prev.statistics.disabled - 1
+                : prev.statistics.disabled + 1,
+            },
+          };
+        });
+      } catch (error) {
+        console.error("Error toggling module:", error);
+        alert(
+          t(
+            error instanceof Error ? error.message : "Failed to update module",
+            error instanceof Error
+              ? error.message
+              : "モジュールの更新に失敗しました",
           ),
-          statistics: {
-            ...prev.statistics,
-            enabled: enabled
-              ? prev.statistics.enabled + 1
-              : prev.statistics.enabled - 1,
-            disabled: enabled
-              ? prev.statistics.disabled - 1
-              : prev.statistics.disabled + 1,
-          },
-        };
-      });
-    } catch (error) {
-      console.error("Error toggling module:", error);
-      alert(
-        t(
-          error instanceof Error ? error.message : "Failed to update module",
-          error instanceof Error ? error.message : "モジュールの更新に失敗しました"
-        )
-      );
-    }
-  }, [t]);
+        );
+      }
+    },
+    [t],
+  );
 
   // メニューの有効/無効を切り替え
-  const handleToggleMenu = useCallback(async (menuId: string, enabled: boolean) => {
-    try {
-      const response = await fetch("/api/admin/modules", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ menuId, enabled }),
-      });
+  const handleToggleMenu = useCallback(
+    async (menuId: string, enabled: boolean) => {
+      try {
+        const response = await fetch("/api/admin/modules", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ menuId, enabled }),
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to update menu");
-      }
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Failed to update menu");
+        }
 
-      // ローカルの状態を更新
-      setModulesData((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          modules: prev.modules.map((m) => ({
-            ...m,
-            menus: m.menus.map((menu) =>
-              menu.id === menuId ? { ...menu, enabled } : menu
+        // ローカルの状態を更新
+        setModulesData((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            modules: prev.modules.map((m) => ({
+              ...m,
+              menus: m.menus.map((menu) =>
+                menu.id === menuId ? { ...menu, enabled } : menu,
+              ),
+              menuCount: m.menus.filter((menu) =>
+                menu.id === menuId ? enabled : menu.enabled,
+              ).length,
+            })),
+          };
+        });
+
+        // 選択中のモジュールも更新
+        setSelectedModule((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            menus: prev.menus.map((menu) =>
+              menu.id === menuId ? { ...menu, enabled } : menu,
             ),
-            menuCount: m.menus.filter((menu) =>
-              menu.id === menuId ? enabled : menu.enabled
+            menuCount: prev.menus.filter((menu) =>
+              menu.id === menuId ? enabled : menu.enabled,
             ).length,
-          })),
-        };
-      });
-
-      // 選択中のモジュールも更新
-      setSelectedModule((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          menus: prev.menus.map((menu) =>
-            menu.id === menuId ? { ...menu, enabled } : menu
+          };
+        });
+      } catch (error) {
+        console.error("Error toggling menu:", error);
+        alert(
+          t(
+            error instanceof Error ? error.message : "Failed to update menu",
+            error instanceof Error
+              ? error.message
+              : "メニューの更新に失敗しました",
           ),
-          menuCount: prev.menus.filter((menu) =>
-            menu.id === menuId ? enabled : menu.enabled
-          ).length,
-        };
-      });
-    } catch (error) {
-      console.error("Error toggling menu:", error);
-      alert(
-        t(
-          error instanceof Error ? error.message : "Failed to update menu",
-          error instanceof Error ? error.message : "メニューの更新に失敗しました"
-        )
-      );
-    }
-  }, [t]);
+        );
+      }
+    },
+    [t],
+  );
 
   // モジュールデータを取得
   const fetchModules = useCallback(async () => {
@@ -1190,9 +1255,7 @@ export function AdminClient({
       alert(
         t(
           error instanceof Error ? error.message : "Failed to delete user",
-          error instanceof Error
-            ? error.message
-            : "ユーザの削除に失敗しました",
+          error instanceof Error ? error.message : "ユーザの削除に失敗しました",
         ),
       );
     } finally {
@@ -1223,445 +1286,561 @@ export function AdminClient({
           {activeTab === "system" && (
             <Card>
               <CardContent className="p-8">
-              {/* 統計カード */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-                <Card>
-                  <CardContent className="py-2 px-4 flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">
-                      {t("Total Users", "総ユーザ数")}
-                    </span>
-                    <span className="text-2xl font-bold">
-                      {initialStats.totalUsers}
-                    </span>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="py-2 px-4 flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">
-                      {t("Regular Users", "一般ユーザ")}
-                    </span>
-                    <span className="text-2xl font-bold">
-                      {initialStats.userCount}
-                    </span>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="py-2 px-4 flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">
-                      {t("Administrators", "管理者")}
-                    </span>
-                    <span className="text-2xl font-bold">
-                      {initialStats.adminCount}
-                    </span>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* システム情報 */}
-              <div className="space-y-4">
-                <h2 className="text-2xl font-semibold">
-                  {t("System Information", "システム情報")}
-                </h2>
-
-                <div className="p-6 bg-muted rounded-lg">
-                  <div className="space-y-3 text-muted-foreground">
-                    <div className="flex justify-between items-center py-2 border-b border-border">
-                      <span className="font-medium">{t("Framework", "フレームワーク")}</span>
-                      <span>Next.js 15 (App Router)</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-border">
-                      <span className="font-medium">{t("Database", "データベース")}</span>
-                      <span>PostgreSQL (Prisma ORM)</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-border">
-                      <span className="font-medium">{t("Authentication", "認証")}</span>
-                      <span>Auth.js (NextAuth.js v5)</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-border">
-                      <span className="font-medium">{t("Auth Providers", "認証プロバイダー")}</span>
-                      <span>Google OAuth / OpenLDAP</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-border">
-                      <span className="font-medium">{t("Styling", "スタイリング")}</span>
-                      <span>Tailwind CSS 4</span>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <span className="font-medium">{t("Language", "言語")}</span>
-                      <span>TypeScript</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 認証設定 */}
-              <div className="space-y-4 mt-8">
-                <h2 className="text-2xl font-semibold">
-                  {t("Authentication Settings", "認証設定")}
-                </h2>
-
-                <div className="p-6 bg-muted rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium text-foreground">
-                        Google OAuth
-                      </h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {t(
-                          "Enable Google OAuth login on the login page",
-                          "ログイン画面でGoogle OAuthログインを有効にする"
-                        )}
-                      </p>
-                    </div>
-                    <Switch
-                      checked={googleOAuthEnabled}
-                      onCheckedChange={handleGoogleOAuthToggle}
-                      disabled={googleOAuthLoading}
-                    />
-                  </div>
-                  {!googleOAuthEnabled && (
-                    <p className="text-sm text-amber-600 dark:text-amber-400 mt-3">
-                      {t(
-                        "To enable Google OAuth, configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in the environment variables.",
-                        "Google OAuthを有効にするには、環境変数にGOOGLE_CLIENT_IDとGOOGLE_CLIENT_SECRETを設定してください。"
-                      )}
-                    </p>
-                  )}
+                {/* 統計カード */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+                  <Card>
+                    <CardContent className="py-2 px-4 flex items-center justify-between">
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {t("Total Users", "総ユーザ数")}
+                      </span>
+                      <span className="text-2xl font-bold">
+                        {initialStats.totalUsers}
+                      </span>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="py-2 px-4 flex items-center justify-between">
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {t("Regular Users", "一般ユーザ")}
+                      </span>
+                      <span className="text-2xl font-bold">
+                        {initialStats.userCount}
+                      </span>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="py-2 px-4 flex items-center justify-between">
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {t("Administrators", "管理者")}
+                      </span>
+                      <span className="text-2xl font-bold">
+                        {initialStats.adminCount}
+                      </span>
+                    </CardContent>
+                  </Card>
                 </div>
 
-                {/* GitHub OAuth */}
-                <div className="p-6 bg-muted rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium text-foreground">
-                        GitHub OAuth
-                      </h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {t(
-                          "Enable GitHub OAuth login on the login page",
-                          "ログイン画面でGitHub OAuthログインを有効にする"
-                        )}
-                      </p>
-                    </div>
-                    <Switch
-                      checked={gitHubOAuthEnabled}
-                      onCheckedChange={handleGitHubOAuthToggle}
-                      disabled={gitHubOAuthLoading}
-                    />
-                  </div>
-                  {!gitHubOAuthEnabled && (
-                    <p className="text-sm text-amber-600 dark:text-amber-400 mt-3">
-                      {t(
-                        "To enable GitHub OAuth, configure GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in the environment variables.",
-                        "GitHub OAuthを有効にするには、環境変数にGITHUB_CLIENT_IDとGITHUB_CLIENT_SECRETを設定してください。"
-                      )}
-                    </p>
-                  )}
-                </div>
-              </div>
+                {/* システム情報 */}
+                <div className="space-y-4">
+                  <h2 className="text-2xl font-semibold">
+                    {t("System Information", "システム情報")}
+                  </h2>
 
-              {/* AI設定 */}
-              <div className="space-y-4 mt-8">
-                <h2 className="text-2xl font-semibold">
-                  {t("AI Settings", "AI設定")}
-                </h2>
-
-                {aiConfigLoading && (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {t("Loading...", "読み込み中...")}
-                    </p>
-                  </div>
-                )}
-
-                {!aiConfigLoading && aiConfig && (
-                  <div className="space-y-4">
-                    {/* 有効/無効 */}
-                    <div className="p-6 bg-muted rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-medium text-foreground">
-                            {t("Enable AI Features", "AI機能を有効化")}
-                          </h3>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {t(
-                              "Enable AI-powered features like translation.",
-                              "翻訳などのAI機能を有効にします。"
-                            )}
-                          </p>
-                        </div>
-                        <Switch
-                          checked={aiConfig.enabled}
-                          onCheckedChange={(checked) => handleUpdateAiConfig({ enabled: checked })}
-                          disabled={aiSaving}
-                        />
+                  <div className="p-6 bg-muted rounded-lg">
+                    <div className="space-y-3 text-muted-foreground">
+                      <div className="flex justify-between items-center py-2 border-b border-border">
+                        <span className="font-medium">
+                          {t("Framework", "フレームワーク")}
+                        </span>
+                        <span>Next.js 15 (App Router)</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-border">
+                        <span className="font-medium">
+                          {t("Database", "データベース")}
+                        </span>
+                        <span>PostgreSQL (Prisma ORM)</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-border">
+                        <span className="font-medium">
+                          {t("Authentication", "認証")}
+                        </span>
+                        <span>Auth.js (NextAuth.js v5)</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-border">
+                        <span className="font-medium">
+                          {t("Auth Providers", "認証プロバイダー")}
+                        </span>
+                        <span>Google OAuth / OpenLDAP</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-border">
+                        <span className="font-medium">
+                          {t("Styling", "スタイリング")}
+                        </span>
+                        <span>Tailwind CSS 4</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="font-medium">
+                          {t("Language", "言語")}
+                        </span>
+                        <span>TypeScript</span>
                       </div>
                     </div>
+                  </div>
+                </div>
 
-                    {/* プロバイダ選択 */}
-                    <div className="p-6 bg-muted rounded-lg space-y-4">
-                      <div className="space-y-2">
-                        <Label>{t("AI Provider", "AIプロバイダ")}</Label>
-                        <Select
-                          value={aiConfig.provider}
-                          onValueChange={(value) => handleUpdateAiConfig({ provider: value as "openai" | "anthropic" | "local" })}
-                          disabled={aiSaving}
-                        >
-                          <SelectTrigger className="w-full md:w-[300px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="local">
-                              {t("Local LLM", "ローカルLLM")} ({t("Recommended", "推奨")})
-                            </SelectItem>
-                            <SelectItem value="openai">OpenAI</SelectItem>
-                            <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-muted-foreground">
-                          {aiConfig.provider === "local" && t(
-                            "Uses a local LLM server. No API key required.",
-                            "ローカルLLMサーバを使用します。APIキー不要です。"
-                          )}
-                          {aiConfig.provider === "openai" && t(
-                            "Uses OpenAI GPT models for AI features.",
-                            "OpenAI GPTモデルを使用します。"
-                          )}
-                          {aiConfig.provider === "anthropic" && t(
-                            "Uses Anthropic Claude models for AI features.",
-                            "Anthropic Claudeモデルを使用します。"
+                {/* 認証設定 */}
+                <div className="space-y-4 mt-8">
+                  <h2 className="text-2xl font-semibold">
+                    {t("Authentication Settings", "認証設定")}
+                  </h2>
+
+                  <div className="p-6 bg-muted rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium text-foreground">
+                          Google OAuth
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {t(
+                            "Enable Google OAuth login on the login page",
+                            "ログイン画面でGoogle OAuthログインを有効にする",
                           )}
                         </p>
                       </div>
+                      <Switch
+                        checked={googleOAuthEnabled}
+                        onCheckedChange={handleGoogleOAuthToggle}
+                        disabled={googleOAuthLoading}
+                      />
+                    </div>
+                    {!googleOAuthEnabled && (
+                      <p className="text-sm text-amber-600 dark:text-amber-400 mt-3">
+                        {t(
+                          "To enable Google OAuth, configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in the environment variables.",
+                          "Google OAuthを有効にするには、環境変数にGOOGLE_CLIENT_IDとGOOGLE_CLIENT_SECRETを設定してください。",
+                        )}
+                      </p>
+                    )}
+                  </div>
 
-                      {/* ローカルLLM設定 */}
-                      {aiConfig.provider === "local" && (
-                        <>
-                          {/* ローカルプロバイダ選択 */}
-                          <div className="space-y-2">
-                            <Label>{t("Local LLM Server", "ローカルLLMサーバ")}</Label>
-                            <Select
-                              value={aiConfig.localProvider}
-                              onValueChange={(value) => {
-                                const provider = value as "llama.cpp" | "lm-studio" | "ollama";
-                                const defaults = localLLMDefaults?.[provider];
-                                handleUpdateAiConfig({
-                                  localProvider: provider,
-                                  localEndpoint: defaults?.endpoint || "",
-                                  localModel: defaults?.model || "",
-                                });
-                              }}
-                              disabled={aiSaving}
-                            >
-                              <SelectTrigger className="w-full md:w-[300px]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="llama.cpp">llama.cpp ({t("Default", "デフォルト")})</SelectItem>
-                                <SelectItem value="lm-studio">LM Studio</SelectItem>
-                                <SelectItem value="ollama">Ollama</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                  {/* GitHub OAuth */}
+                  <div className="p-6 bg-muted rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium text-foreground">
+                          GitHub OAuth
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {t(
+                            "Enable GitHub OAuth login on the login page",
+                            "ログイン画面でGitHub OAuthログインを有効にする",
+                          )}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={gitHubOAuthEnabled}
+                        onCheckedChange={handleGitHubOAuthToggle}
+                        disabled={gitHubOAuthLoading}
+                      />
+                    </div>
+                    {!gitHubOAuthEnabled && (
+                      <p className="text-sm text-amber-600 dark:text-amber-400 mt-3">
+                        {t(
+                          "To enable GitHub OAuth, configure GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in the environment variables.",
+                          "GitHub OAuthを有効にするには、環境変数にGITHUB_CLIENT_IDとGITHUB_CLIENT_SECRETを設定してください。",
+                        )}
+                      </p>
+                    )}
+                  </div>
+                </div>
 
-                          {/* エンドポイントURL */}
-                          <div className="space-y-2">
-                            <Label>{t("Endpoint URL", "エンドポイントURL")}</Label>
-                            <Input
-                              value={aiConfig.localEndpoint}
-                              onChange={(e) => handleUpdateAiConfig({ localEndpoint: e.target.value })}
-                              placeholder={localLLMDefaults?.[aiConfig.localProvider]?.endpoint || ""}
-                              className="font-mono"
-                              disabled={aiSaving}
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              {aiConfig.localProvider === "llama.cpp" && t(
-                                "Default: http://localhost:8080/v1/chat/completions",
-                                "デフォルト: http://localhost:8080/v1/chat/completions"
-                              )}
-                              {aiConfig.localProvider === "lm-studio" && t(
-                                "Default: http://localhost:1234/v1/chat/completions",
-                                "デフォルト: http://localhost:1234/v1/chat/completions"
-                              )}
-                              {aiConfig.localProvider === "ollama" && t(
-                                "Default: http://localhost:11434/api/chat",
-                                "デフォルト: http://localhost:11434/api/chat"
+                {/* AI設定 */}
+                <div className="space-y-4 mt-8">
+                  <h2 className="text-2xl font-semibold">
+                    {t("AI Settings", "AI設定")}
+                  </h2>
+
+                  {aiConfigLoading && (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {t("Loading...", "読み込み中...")}
+                      </p>
+                    </div>
+                  )}
+
+                  {!aiConfigLoading && aiConfig && (
+                    <div className="space-y-4">
+                      {/* 有効/無効 */}
+                      <div className="p-6 bg-muted rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-medium text-foreground">
+                              {t("Enable AI Features", "AI機能を有効化")}
+                            </h3>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {t(
+                                "Enable AI-powered features like translation.",
+                                "翻訳などのAI機能を有効にします。",
                               )}
                             </p>
                           </div>
+                          <Switch
+                            checked={aiConfig.enabled}
+                            onCheckedChange={(checked) =>
+                              handleUpdateAiConfig({ enabled: checked })
+                            }
+                            disabled={aiSaving}
+                          />
+                        </div>
+                      </div>
 
-                          {/* モデル名 */}
-                          <div className="space-y-2">
-                            <Label>{t("Model Name", "モデル名")}</Label>
-                            <Input
-                              value={aiConfig.localModel}
-                              onChange={(e) => handleUpdateAiConfig({ localModel: e.target.value })}
-                              placeholder={localLLMDefaults?.[aiConfig.localProvider]?.model || "default"}
-                              disabled={aiSaving}
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              {aiConfig.localProvider === "ollama"
-                                ? t("e.g., llama3.2, gemma2, mistral", "例: llama3.2, gemma2, mistral")
-                                : t("Leave as 'default' to use the loaded model", "ロード済みモデルを使用する場合は 'default' のまま")}
-                            </p>
-                          </div>
+                      {/* プロバイダ選択 */}
+                      <div className="p-6 bg-muted rounded-lg space-y-4">
+                        <div className="space-y-2">
+                          <Label>{t("AI Provider", "AIプロバイダ")}</Label>
+                          <Select
+                            value={aiConfig.provider}
+                            onValueChange={(value) =>
+                              handleUpdateAiConfig({
+                                provider: value as
+                                  | "openai"
+                                  | "anthropic"
+                                  | "local",
+                              })
+                            }
+                            disabled={aiSaving}
+                          >
+                            <SelectTrigger className="w-full md:w-[300px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="local">
+                                {t("Local LLM", "ローカルLLM")} (
+                                {t("Recommended", "推奨")})
+                              </SelectItem>
+                              <SelectItem value="openai">OpenAI</SelectItem>
+                              <SelectItem value="anthropic">
+                                Anthropic (Claude)
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">
+                            {aiConfig.provider === "local" &&
+                              t(
+                                "Uses a local LLM server. No API key required.",
+                                "ローカルLLMサーバを使用します。APIキー不要です。",
+                              )}
+                            {aiConfig.provider === "openai" &&
+                              t(
+                                "Uses OpenAI GPT models for AI features.",
+                                "OpenAI GPTモデルを使用します。",
+                              )}
+                            {aiConfig.provider === "anthropic" &&
+                              t(
+                                "Uses Anthropic Claude models for AI features.",
+                                "Anthropic Claudeモデルを使用します。",
+                              )}
+                          </p>
+                        </div>
 
-                          {/* 接続テスト */}
-                          <div className="flex items-center gap-4">
-                            <Button
-                              variant="outline"
-                              onClick={handleTestLocalConnection}
-                              disabled={testingConnection || aiSaving}
-                            >
-                              {testingConnection
-                                ? t("Testing...", "テスト中...")
-                                : t("Test Connection", "接続テスト")}
-                            </Button>
-                            {connectionTestResult && (
-                              <span className={`text-sm ${connectionTestResult.success ? "text-green-600" : "text-red-600"}`}>
-                                {connectionTestResult.success ? "✓ " : "✗ "}
-                                {connectionTestResult.message}
-                              </span>
-                            )}
-                          </div>
-                        </>
-                      )}
+                        {/* ローカルLLM設定 */}
+                        {aiConfig.provider === "local" && (
+                          <>
+                            {/* ローカルプロバイダ選択 */}
+                            <div className="space-y-2">
+                              <Label>
+                                {t("Local LLM Server", "ローカルLLMサーバ")}
+                              </Label>
+                              <Select
+                                value={aiConfig.localProvider}
+                                onValueChange={(value) => {
+                                  const provider = value as
+                                    | "llama.cpp"
+                                    | "lm-studio"
+                                    | "ollama";
+                                  const defaults = localLLMDefaults?.[provider];
+                                  handleUpdateAiConfig({
+                                    localProvider: provider,
+                                    localEndpoint: defaults?.endpoint || "",
+                                    localModel: defaults?.model || "",
+                                  });
+                                }}
+                                disabled={aiSaving}
+                              >
+                                <SelectTrigger className="w-full md:w-[300px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="llama.cpp">
+                                    llama.cpp ({t("Default", "デフォルト")})
+                                  </SelectItem>
+                                  <SelectItem value="lm-studio">
+                                    LM Studio
+                                  </SelectItem>
+                                  <SelectItem value="ollama">Ollama</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
 
-                      {/* クラウドAPI設定 */}
-                      {aiConfig.provider !== "local" && (
-                        <>
-                          {/* モデル選択 */}
-                          <div className="space-y-2">
-                            <Label>{t("Model", "モデル")}</Label>
-                            <Select
-                              value={aiConfig.model}
-                              onValueChange={(value) => handleUpdateAiConfig({ model: value })}
-                              disabled={aiSaving}
-                            >
-                              <SelectTrigger className="w-full md:w-[300px]">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
+                            {/* エンドポイントURL */}
+                            <div className="space-y-2">
+                              <Label>
+                                {t("Endpoint URL", "エンドポイントURL")}
+                              </Label>
+                              <Input
+                                value={aiConfig.localEndpoint}
+                                onChange={(e) =>
+                                  handleUpdateAiConfig({
+                                    localEndpoint: e.target.value,
+                                  })
+                                }
+                                placeholder={
+                                  localLLMDefaults?.[aiConfig.localProvider]
+                                    ?.endpoint || ""
+                                }
+                                className="font-mono"
+                                disabled={aiSaving}
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                {aiConfig.localProvider === "llama.cpp" &&
+                                  t(
+                                    "Default: http://localhost:8080/v1/chat/completions",
+                                    "デフォルト: http://localhost:8080/v1/chat/completions",
+                                  )}
+                                {aiConfig.localProvider === "lm-studio" &&
+                                  t(
+                                    "Default: http://localhost:1234/v1/chat/completions",
+                                    "デフォルト: http://localhost:1234/v1/chat/completions",
+                                  )}
+                                {aiConfig.localProvider === "ollama" &&
+                                  t(
+                                    "Default: http://localhost:11434/api/chat",
+                                    "デフォルト: http://localhost:11434/api/chat",
+                                  )}
+                              </p>
+                            </div>
+
+                            {/* モデル名 */}
+                            <div className="space-y-2">
+                              <Label>{t("Model Name", "モデル名")}</Label>
+                              <Input
+                                value={aiConfig.localModel}
+                                onChange={(e) =>
+                                  handleUpdateAiConfig({
+                                    localModel: e.target.value,
+                                  })
+                                }
+                                placeholder={
+                                  localLLMDefaults?.[aiConfig.localProvider]
+                                    ?.model || "default"
+                                }
+                                disabled={aiSaving}
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                {aiConfig.localProvider === "ollama"
+                                  ? t(
+                                      "e.g., llama3.2, gemma2, mistral",
+                                      "例: llama3.2, gemma2, mistral",
+                                    )
+                                  : t(
+                                      "Leave as 'default' to use the loaded model",
+                                      "ロード済みモデルを使用する場合は 'default' のまま",
+                                    )}
+                              </p>
+                            </div>
+
+                            {/* 接続テスト */}
+                            <div className="flex items-center gap-4">
+                              <Button
+                                variant="outline"
+                                onClick={handleTestLocalConnection}
+                                disabled={testingConnection || aiSaving}
+                              >
+                                {testingConnection
+                                  ? t("Testing...", "テスト中...")
+                                  : t("Test Connection", "接続テスト")}
+                              </Button>
+                              {connectionTestResult && (
+                                <span
+                                  className={`text-sm ${connectionTestResult.success ? "text-green-600" : "text-red-600"}`}
+                                >
+                                  {connectionTestResult.success ? "✓ " : "✗ "}
+                                  {connectionTestResult.message}
+                                </span>
+                              )}
+                            </div>
+                          </>
+                        )}
+
+                        {/* クラウドAPI設定 */}
+                        {aiConfig.provider !== "local" && (
+                          <>
+                            {/* モデル選択 */}
+                            <div className="space-y-2">
+                              <Label>{t("Model", "モデル")}</Label>
+                              <Select
+                                value={aiConfig.model}
+                                onValueChange={(value) =>
+                                  handleUpdateAiConfig({ model: value })
+                                }
+                                disabled={aiSaving}
+                              >
+                                <SelectTrigger className="w-full md:w-[300px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {aiConfig.provider === "openai" && (
+                                    <>
+                                      <SelectItem value="gpt-4o-mini">
+                                        GPT-4o mini ({t("Recommended", "推奨")})
+                                      </SelectItem>
+                                      <SelectItem value="gpt-4o">
+                                        GPT-4o
+                                      </SelectItem>
+                                      <SelectItem value="gpt-4-turbo">
+                                        GPT-4 Turbo
+                                      </SelectItem>
+                                    </>
+                                  )}
+                                  {aiConfig.provider === "anthropic" && (
+                                    <>
+                                      <SelectItem value="claude-3-haiku-20240307">
+                                        Claude 3 Haiku (
+                                        {t("Recommended", "推奨")})
+                                      </SelectItem>
+                                      <SelectItem value="claude-3-5-sonnet-20241022">
+                                        Claude 3.5 Sonnet
+                                      </SelectItem>
+                                      <SelectItem value="claude-3-opus-20240229">
+                                        Claude 3 Opus
+                                      </SelectItem>
+                                    </>
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* APIキー */}
+                            <div className="space-y-2">
+                              <Label>{t("API Key", "APIキー")}</Label>
+                              {aiConfig.hasApiKey ? (
+                                <div className="flex items-center gap-4">
+                                  <div className="flex-1">
+                                    <Input
+                                      value={aiConfig.apiKey || ""}
+                                      disabled
+                                      className="font-mono"
+                                    />
+                                  </div>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() =>
+                                      handleUpdateAiConfig({ apiKey: "" })
+                                    }
+                                    disabled={aiSaving}
+                                  >
+                                    {t("Remove", "削除")}
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-4">
+                                  <div className="flex-1">
+                                    <Input
+                                      type="password"
+                                      value={aiApiKeyInput}
+                                      onChange={(e) =>
+                                        setAiApiKeyInput(e.target.value)
+                                      }
+                                      placeholder={
+                                        aiConfig.provider === "openai"
+                                          ? "sk-..."
+                                          : aiConfig.provider === "anthropic"
+                                            ? "sk-ant-..."
+                                            : ""
+                                      }
+                                      className="font-mono"
+                                    />
+                                  </div>
+                                  <Button
+                                    onClick={() =>
+                                      handleUpdateAiConfig({
+                                        apiKey: aiApiKeyInput,
+                                      })
+                                    }
+                                    disabled={aiSaving || !aiApiKeyInput}
+                                  >
+                                    {aiSaving
+                                      ? t("Saving...", "保存中...")
+                                      : t("Save", "保存")}
+                                  </Button>
+                                </div>
+                              )}
+                              <p className="text-xs text-muted-foreground">
                                 {aiConfig.provider === "openai" && (
                                   <>
-                                    <SelectItem value="gpt-4o-mini">GPT-4o mini ({t("Recommended", "推奨")})</SelectItem>
-                                    <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                                    <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
+                                    {t("Get your API key from ", "APIキーは ")}
+                                    <a
+                                      href="https://platform.openai.com/api-keys"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-primary hover:underline"
+                                    >
+                                      OpenAI Platform
+                                    </a>
+                                    {t(
+                                      " to use AI features.",
+                                      " から取得できます。",
+                                    )}
                                   </>
                                 )}
                                 {aiConfig.provider === "anthropic" && (
                                   <>
-                                    <SelectItem value="claude-3-haiku-20240307">Claude 3 Haiku ({t("Recommended", "推奨")})</SelectItem>
-                                    <SelectItem value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</SelectItem>
-                                    <SelectItem value="claude-3-opus-20240229">Claude 3 Opus</SelectItem>
+                                    {t("Get your API key from ", "APIキーは ")}
+                                    <a
+                                      href="https://console.anthropic.com/settings/keys"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-primary hover:underline"
+                                    >
+                                      Anthropic Console
+                                    </a>
+                                    {t(
+                                      " to use AI features.",
+                                      " から取得できます。",
+                                    )}
                                   </>
                                 )}
-                              </SelectContent>
-                            </Select>
-                          </div>
+                              </p>
+                            </div>
+                          </>
+                        )}
+                      </div>
 
-                          {/* APIキー */}
-                          <div className="space-y-2">
-                            <Label>{t("API Key", "APIキー")}</Label>
-                            {aiConfig.hasApiKey ? (
-                              <div className="flex items-center gap-4">
-                                <div className="flex-1">
-                                  <Input
-                                    value={aiConfig.apiKey || ""}
-                                    disabled
-                                    className="font-mono"
-                                  />
-                                </div>
-                                <Button
-                                  variant="outline"
-                                  onClick={() => handleUpdateAiConfig({ apiKey: "" })}
-                                  disabled={aiSaving}
-                                >
-                                  {t("Remove", "削除")}
-                                </Button>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-4">
-                                <div className="flex-1">
-                                  <Input
-                                    type="password"
-                                    value={aiApiKeyInput}
-                                    onChange={(e) => setAiApiKeyInput(e.target.value)}
-                                    placeholder={
-                                      aiConfig.provider === "openai"
-                                        ? "sk-..."
-                                        : aiConfig.provider === "anthropic"
-                                          ? "sk-ant-..."
-                                          : ""
-                                    }
-                                    className="font-mono"
-                                  />
-                                </div>
-                                <Button
-                                  onClick={() => handleUpdateAiConfig({ apiKey: aiApiKeyInput })}
-                                  disabled={aiSaving || !aiApiKeyInput}
-                                >
-                                  {aiSaving ? t("Saving...", "保存中...") : t("Save", "保存")}
-                                </Button>
-                              </div>
-                            )}
-                            <p className="text-xs text-muted-foreground">
-                              {aiConfig.provider === "openai" && (
-                                <>
-                                  {t("Get your API key from ", "APIキーは ")}
-                                  <a
-                                    href="https://platform.openai.com/api-keys"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-primary hover:underline"
-                                  >
-                                    OpenAI Platform
-                                  </a>
-                                  {t(" to use AI features.", " から取得できます。")}
-                                </>
-                              )}
-                              {aiConfig.provider === "anthropic" && (
-                                <>
-                                  {t("Get your API key from ", "APIキーは ")}
-                                  <a
-                                    href="https://console.anthropic.com/settings/keys"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-primary hover:underline"
-                                  >
-                                    Anthropic Console
-                                  </a>
-                                  {t(" to use AI features.", " から取得できます。")}
-                                </>
-                              )}
-                            </p>
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    {/* ステータス */}
-                    <div className="p-4 rounded-lg border bg-card">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${
-                          aiConfig.enabled && (aiConfig.provider === "local" ? !!aiConfig.localEndpoint : aiConfig.hasApiKey)
-                            ? "bg-green-500"
-                            : "bg-gray-400"
-                        }`} />
-                        <span className="font-medium">
-                          {aiConfig.enabled && (aiConfig.provider === "local" ? !!aiConfig.localEndpoint : aiConfig.hasApiKey)
-                            ? t("AI features are ready to use", "AI機能が利用可能です")
-                            : !aiConfig.enabled
-                              ? t("AI features are disabled", "AI機能が無効です")
-                              : aiConfig.provider === "local"
-                                ? t("Endpoint is not configured", "エンドポイントが設定されていません")
-                                : t("API key is not configured", "APIキーが設定されていません")}
-                        </span>
+                      {/* ステータス */}
+                      <div className="p-4 rounded-lg border bg-card">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-3 h-3 rounded-full ${
+                              aiConfig.enabled &&
+                              (
+                                aiConfig.provider === "local"
+                                  ? !!aiConfig.localEndpoint
+                                  : aiConfig.hasApiKey
+                              )
+                                ? "bg-green-500"
+                                : "bg-gray-400"
+                            }`}
+                          />
+                          <span className="font-medium">
+                            {aiConfig.enabled &&
+                            (aiConfig.provider === "local"
+                              ? !!aiConfig.localEndpoint
+                              : aiConfig.hasApiKey)
+                              ? t(
+                                  "AI features are ready to use",
+                                  "AI機能が利用可能です",
+                                )
+                              : !aiConfig.enabled
+                                ? t(
+                                    "AI features are disabled",
+                                    "AI機能が無効です",
+                                  )
+                                : aiConfig.provider === "local"
+                                  ? t(
+                                      "Endpoint is not configured",
+                                      "エンドポイントが設定されていません",
+                                    )
+                                  : t(
+                                      "API key is not configured",
+                                      "APIキーが設定されていません",
+                                    )}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           )}
@@ -1670,262 +1849,292 @@ export function AdminClient({
           {activeTab === "users" && (
             <Card>
               <CardContent className="p-6">
-              {/* ツールバー：検索・フィルター */}
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <form onSubmit={handleSearch} className="flex gap-2 w-full sm:w-auto">
-                  <div className="relative flex-1 sm:flex-none">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="text"
-                      placeholder={t(
-                        "Search by name or email...",
-                        "名前またはメールで検索...",
-                      )}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9 w-full sm:w-72"
-                    />
-                  </div>
-                  <Button type="submit" variant="secondary">
-                    {t("Search", "検索")}
-                  </Button>
-                </form>
-                <div className="flex items-center gap-2">
-                  <Select
-                    value={roleFilter}
-                    onValueChange={(value) => {
-                      setRoleFilter(value);
-                      setPage(1);
-                    }}
+                {/* ツールバー：検索・フィルター */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                  <form
+                    onSubmit={handleSearch}
+                    className="flex gap-2 w-full sm:w-auto"
                   >
-                    <SelectTrigger className="w-[150px]">
-                      <SelectValue placeholder={t("All Roles", "すべてのロール")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ALL">{t("All Roles", "すべてのロール")}</SelectItem>
-                      <SelectItem value="ADMIN">{t("Admin", "管理者")}</SelectItem>
-                      <SelectItem value="EXECUTIVE">{t("Executive", "役員")}</SelectItem>
-                      <SelectItem value="MANAGER">{t("Manager", "マネージャー")}</SelectItem>
-                      <SelectItem value="USER">{t("User", "ユーザ")}</SelectItem>
-                      <SelectItem value="GUEST">{t("Guest", "ゲスト")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* ローディング */}
-              {loading && (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-                  <p className="mt-4 text-muted-foreground">
-                    {t("Loading...", "読み込み中...")}
-                  </p>
-                </div>
-              )}
-
-              {/* ユーザテーブル */}
-              {!loading && paginatedUsers.length > 0 && (
-                <>
-                  {/* ページネーション（テーブル上部） */}
-                  <div className="flex items-center justify-between mb-4">
-                    <p className="text-sm text-muted-foreground">
-                      {t("Total", "合計")}: <span className="font-medium text-foreground">{total}</span>
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(page - 1)}
-                        disabled={page === 1}
-                        className="gap-1"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        {t("Previous", "前へ")}
-                      </Button>
-                      <div className="flex items-center gap-1 px-2">
-                        <span className="text-sm font-medium">{page}</span>
-                        <span className="text-sm text-muted-foreground">/</span>
-                        <span className="text-sm text-muted-foreground">{totalPages || 1}</span>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange(page + 1)}
-                        disabled={page >= totalPages}
-                        className="gap-1"
-                      >
-                        {t("Next", "次へ")}
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
+                    <div className="relative flex-1 sm:flex-none">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder={t(
+                          "Search by name or email...",
+                          "名前またはメールで検索...",
+                        )}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 w-full sm:w-72"
+                      />
                     </div>
+                    <Button type="submit" variant="secondary">
+                      {t("Search", "検索")}
+                    </Button>
+                  </form>
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={roleFilter}
+                      onValueChange={(value) => {
+                        setRoleFilter(value);
+                        setPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="w-[150px]">
+                        <SelectValue
+                          placeholder={t("All Roles", "すべてのロール")}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ALL">
+                          {t("All Roles", "すべてのロール")}
+                        </SelectItem>
+                        <SelectItem value="ADMIN">
+                          {t("Admin", "管理者")}
+                        </SelectItem>
+                        <SelectItem value="EXECUTIVE">
+                          {t("Executive", "役員")}
+                        </SelectItem>
+                        <SelectItem value="MANAGER">
+                          {t("Manager", "マネージャー")}
+                        </SelectItem>
+                        <SelectItem value="USER">
+                          {t("User", "ユーザ")}
+                        </SelectItem>
+                        <SelectItem value="GUEST">
+                          {t("Guest", "ゲスト")}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
+                </div>
 
-                  {/* テーブルコンテナ */}
-                  <div className="rounded-lg border overflow-hidden">
-                    <div className="overflow-y-auto max-h-[calc(100vh-32rem)]">
-                      <Table>
-                        <TableHeader className="sticky top-0 bg-muted/50 z-10">
-                          <TableRow>
-                            <TableHead className="w-[250px]">
-                              <button
-                                onClick={() => handleSort("name")}
-                                className="flex items-center gap-2 font-medium hover:text-foreground transition-colors"
-                              >
-                                {t("User", "ユーザ")}
-                                {sortBy === "name" && (
-                                  <span className="text-primary">
-                                    {sortOrder === "asc" ? "↑" : "↓"}
-                                  </span>
-                                )}
-                              </button>
-                            </TableHead>
-                            <TableHead className="w-[150px]">
-                              <button
-                                onClick={() => handleSort("role")}
-                                className="flex items-center gap-2 font-medium hover:text-foreground transition-colors"
-                              >
-                                {t("Role", "ロール")}
-                                {sortBy === "role" && (
-                                  <span className="text-primary">
-                                    {sortOrder === "asc" ? "↑" : "↓"}
-                                  </span>
-                                )}
-                              </button>
-                            </TableHead>
-                            <TableHead className="w-[180px]">
-                              <button
-                                onClick={() => handleSort("createdAt")}
-                                className="flex items-center gap-2 font-medium hover:text-foreground transition-colors"
-                              >
-                                {t("Login / Created", "ログイン / 作成日")}
-                                {sortBy === "createdAt" && (
-                                  <span className="text-primary">
-                                    {sortOrder === "asc" ? "↑" : "↓"}
-                                  </span>
-                                )}
-                              </button>
-                            </TableHead>
-                            <TableHead className="w-[80px] text-right">
-                              {t("Actions", "操作")}
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {paginatedUsers.map((user) => (
-                            <TableRow key={user.id}>
-                              <TableCell>
-                                <div className="flex items-center gap-3">
-                                  {user.image ? (
-                                    <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
-                                      <Image
-                                        src={user.image}
-                                        alt={user.name || "User"}
-                                        fill
-                                        className="object-cover"
-                                      />
-                                    </div>
-                                  ) : (
-                                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                                      <span className="text-muted-foreground text-sm font-semibold">
-                                        {user.name?.[0]?.toUpperCase() || "?"}
+                {/* ローディング */}
+                {loading && (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+                    <p className="mt-4 text-muted-foreground">
+                      {t("Loading...", "読み込み中...")}
+                    </p>
+                  </div>
+                )}
+
+                {/* ユーザテーブル */}
+                {!loading && paginatedUsers.length > 0 && (
+                  <>
+                    {/* ページネーション（テーブル上部） */}
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-sm text-muted-foreground">
+                        {t("Total", "合計")}:{" "}
+                        <span className="font-medium text-foreground">
+                          {total}
+                        </span>
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(page - 1)}
+                          disabled={page === 1}
+                          className="gap-1"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          {t("Previous", "前へ")}
+                        </Button>
+                        <div className="flex items-center gap-1 px-2">
+                          <span className="text-sm font-medium">{page}</span>
+                          <span className="text-sm text-muted-foreground">
+                            /
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {totalPages || 1}
+                          </span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(page + 1)}
+                          disabled={page >= totalPages}
+                          className="gap-1"
+                        >
+                          {t("Next", "次へ")}
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* テーブルコンテナ */}
+                    <div className="rounded-lg border overflow-hidden">
+                      <div className="overflow-y-auto max-h-[calc(100vh-32rem)]">
+                        <Table>
+                          <TableHeader className="sticky top-0 bg-muted/50 z-10">
+                            <TableRow>
+                              <TableHead className="w-[250px]">
+                                <button
+                                  onClick={() => handleSort("name")}
+                                  className="flex items-center gap-2 font-medium hover:text-foreground transition-colors"
+                                >
+                                  {t("User", "ユーザ")}
+                                  {sortBy === "name" && (
+                                    <span className="text-primary">
+                                      {sortOrder === "asc" ? "↑" : "↓"}
+                                    </span>
+                                  )}
+                                </button>
+                              </TableHead>
+                              <TableHead className="w-[150px]">
+                                <button
+                                  onClick={() => handleSort("role")}
+                                  className="flex items-center gap-2 font-medium hover:text-foreground transition-colors"
+                                >
+                                  {t("Role", "ロール")}
+                                  {sortBy === "role" && (
+                                    <span className="text-primary">
+                                      {sortOrder === "asc" ? "↑" : "↓"}
+                                    </span>
+                                  )}
+                                </button>
+                              </TableHead>
+                              <TableHead className="w-[180px]">
+                                <button
+                                  onClick={() => handleSort("createdAt")}
+                                  className="flex items-center gap-2 font-medium hover:text-foreground transition-colors"
+                                >
+                                  {t("Login / Created", "ログイン / 作成日")}
+                                  {sortBy === "createdAt" && (
+                                    <span className="text-primary">
+                                      {sortOrder === "asc" ? "↑" : "↓"}
+                                    </span>
+                                  )}
+                                </button>
+                              </TableHead>
+                              <TableHead className="w-[80px] text-right">
+                                {t("Actions", "操作")}
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {paginatedUsers.map((user) => (
+                              <TableRow key={user.id}>
+                                <TableCell>
+                                  <div className="flex items-center gap-3">
+                                    {user.image ? (
+                                      <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                                        <Image
+                                          src={user.image}
+                                          alt={user.name || "User"}
+                                          fill
+                                          className="object-cover"
+                                        />
+                                      </div>
+                                    ) : (
+                                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                                        <span className="text-muted-foreground text-sm font-semibold">
+                                          {user.name?.[0]?.toUpperCase() || "?"}
+                                        </span>
+                                      </div>
+                                    )}
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">
+                                        {user.name}
+                                      </span>
+                                      <span className="text-sm text-muted-foreground">
+                                        {user.email}
                                       </span>
                                     </div>
-                                  )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <UserRoleChanger
+                                    userId={user.id}
+                                    currentRole={user.role}
+                                    isCurrentUser={user.id === currentUserId}
+                                    language={language}
+                                  />
+                                </TableCell>
+                                <TableCell>
                                   <div className="flex flex-col">
                                     <span className="font-medium">
-                                      {user.name}
+                                      {user.lastSignInAt
+                                        ? new Date(
+                                            user.lastSignInAt,
+                                          ).toLocaleDateString(
+                                            language === "ja"
+                                              ? "ja-JP"
+                                              : "en-US",
+                                            {
+                                              year: "numeric",
+                                              month:
+                                                language === "ja"
+                                                  ? "long"
+                                                  : "short",
+                                              day: "numeric",
+                                            },
+                                          )
+                                        : t("Never", "未ログイン")}
                                     </span>
-                                    <span className="text-sm text-muted-foreground">
-                                      {user.email}
+                                    <span className="text-xs text-muted-foreground">
+                                      {t("Created", "作成")}:{" "}
+                                      {new Date(
+                                        user.createdAt,
+                                      ).toLocaleDateString(
+                                        language === "ja" ? "ja-JP" : "en-US",
+                                        {
+                                          year: "numeric",
+                                          month:
+                                            language === "ja"
+                                              ? "long"
+                                              : "short",
+                                          day: "numeric",
+                                        },
+                                      )}
                                     </span>
                                   </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <UserRoleChanger
-                                  userId={user.id}
-                                  currentRole={user.role}
-                                  isCurrentUser={user.id === currentUserId}
-                                  language={language}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex flex-col">
-                                  <span className="font-medium">
-                                    {user.lastSignInAt
-                                      ? new Date(
-                                          user.lastSignInAt,
-                                        ).toLocaleDateString(
-                                          language === "ja" ? "ja-JP" : "en-US",
-                                          {
-                                            year: "numeric",
-                                            month:
-                                              language === "ja"
-                                                ? "long"
-                                                : "short",
-                                            day: "numeric",
-                                          },
-                                        )
-                                      : t("Never", "未ログイン")}
-                                  </span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {t("Created", "作成")}:{" "}
-                                    {new Date(
-                                      user.createdAt,
-                                    ).toLocaleDateString(
-                                      language === "ja" ? "ja-JP" : "en-US",
-                                      {
-                                        year: "numeric",
-                                        month:
-                                          language === "ja" ? "long" : "short",
-                                        day: "numeric",
-                                      },
-                                    )}
-                                  </span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                {user.id !== currentUserId ? (
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                          onClick={() => openDeleteModal(user)}
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>{t("Delete", "削除")}</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                ) : (
-                                  <span className="text-sm text-muted-foreground">
-                                    {t("(You)", "(自分)")}
-                                  </span>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {user.id !== currentUserId ? (
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                            onClick={() =>
+                                              openDeleteModal(user)
+                                            }
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>{t("Delete", "削除")}</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  ) : (
+                                    <span className="text-sm text-muted-foreground">
+                                      {t("(You)", "(自分)")}
+                                    </span>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
                     </div>
-                  </div>
-                </>
-              )}
+                  </>
+                )}
 
-              {/* データなし */}
-              {!loading && paginatedUsers.length === 0 && (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground">
-                    {t("No users found", "ユーザが見つかりません")}
-                  </p>
-                </div>
-              )}
+                {/* データなし */}
+                {!loading && paginatedUsers.length === 0 && (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground">
+                      {t("No users found", "ユーザが見つかりません")}
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -1954,36 +2163,44 @@ export function AdminClient({
                 <>
                   {/* 固定ヘッダー：統計 */}
                   <div className="p-6 border-b flex-shrink-0">
-                    {modulesData && (() => {
-                      const addons = modulesData.modules.filter(m => m.type === "addon");
-                      const addonsEnabled = addons.filter(m => m.enabled).length;
-                      const addonsDisabled = addons.filter(m => !m.enabled).length;
-                      return (
-                        <div className="grid grid-cols-2 gap-4 max-w-md">
-                          <div className="bg-muted rounded-lg p-4">
-                            <div className="text-sm text-muted-foreground font-medium">
-                              {t("Core", "コア")}
+                    {modulesData &&
+                      (() => {
+                        const addons = modulesData.modules.filter(
+                          (m) => m.type === "addon",
+                        );
+                        const addonsEnabled = addons.filter(
+                          (m) => m.enabled,
+                        ).length;
+                        const addonsDisabled = addons.filter(
+                          (m) => !m.enabled,
+                        ).length;
+                        return (
+                          <div className="grid grid-cols-2 gap-4 max-w-md">
+                            <div className="bg-muted rounded-lg p-4">
+                              <div className="text-sm text-muted-foreground font-medium">
+                                {t("Core", "コア")}
+                              </div>
+                              <div className="text-2xl font-bold">
+                                {modulesData.statistics.core}
+                              </div>
                             </div>
-                            <div className="text-2xl font-bold">
-                              {modulesData.statistics.core}
+                            <div className="bg-muted rounded-lg p-4">
+                              <div className="text-sm text-muted-foreground font-medium">
+                                {t("Addons", "アドオン")}
+                              </div>
+                              <div className="flex items-baseline gap-2">
+                                <span className="text-2xl font-bold">
+                                  {modulesData.statistics.addons}
+                                </span>
+                                <span className="text-sm text-muted-foreground">
+                                  ({t("Enabled", "有効")}: {addonsEnabled} /{" "}
+                                  {t("Disabled", "無効")}: {addonsDisabled})
+                                </span>
+                              </div>
                             </div>
                           </div>
-                          <div className="bg-muted rounded-lg p-4">
-                            <div className="text-sm text-muted-foreground font-medium">
-                              {t("Addons", "アドオン")}
-                            </div>
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-2xl font-bold">
-                                {modulesData.statistics.addons}
-                              </span>
-                              <span className="text-sm text-muted-foreground">
-                                ({t("Enabled", "有効")}: {addonsEnabled} / {t("Disabled", "無効")}: {addonsDisabled})
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })()}
+                        );
+                      })()}
                   </div>
 
                   {/* ローディング */}
@@ -2015,18 +2232,27 @@ export function AdminClient({
                                 <div className="flex items-center gap-2">
                                   <Switch
                                     checked={module.enabled}
-                                    onCheckedChange={(checked) => handleToggleModule(module.id, checked)}
+                                    onCheckedChange={(checked) =>
+                                      handleToggleModule(module.id, checked)
+                                    }
                                     disabled={module.type === "core"}
                                   />
-                                  <span className={`text-sm font-medium ${module.enabled ? "text-green-700" : "text-muted-foreground"}`}>
-                                    {module.enabled ? t("Enabled", "有効") : t("Disabled", "無効")}
+                                  <span
+                                    className={`text-sm font-medium ${module.enabled ? "text-green-700" : "text-muted-foreground"}`}
+                                  >
+                                    {module.enabled
+                                      ? t("Enabled", "有効")
+                                      : t("Disabled", "無効")}
                                   </span>
                                 </div>
-                                <Badge variant="outline" className={
-                                  module.type === "core"
-                                    ? "bg-green-50 text-green-700 border-green-200"
-                                    : "bg-purple-50 text-purple-700 border-purple-200"
-                                }>
+                                <Badge
+                                  variant="outline"
+                                  className={
+                                    module.type === "core"
+                                      ? "bg-green-50 text-green-700 border-green-200"
+                                      : "bg-purple-50 text-purple-700 border-purple-200"
+                                  }
+                                >
                                   {module.type === "core" ? "Core" : "Addon"}
                                 </Badge>
                               </div>
@@ -2042,10 +2268,14 @@ export function AdminClient({
                                   </div>
                                   <div>
                                     <CardTitle className="text-lg">
-                                      {language === "ja" ? module.nameJa : module.name}
+                                      {language === "ja"
+                                        ? module.nameJa
+                                        : module.name}
                                     </CardTitle>
                                     <p className="text-sm text-muted-foreground">
-                                      {language === "ja" ? module.name : module.nameJa}
+                                      {language === "ja"
+                                        ? module.name
+                                        : module.nameJa}
                                     </p>
                                   </div>
                                 </div>
@@ -2057,9 +2287,13 @@ export function AdminClient({
                               onClick={() => setSelectedModule(module)}
                             >
                               {/* モジュール説明 */}
-                              {(language === "ja" ? module.descriptionJa : module.description) && (
+                              {(language === "ja"
+                                ? module.descriptionJa
+                                : module.description) && (
                                 <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                                  {language === "ja" ? module.descriptionJa : module.description}
+                                  {language === "ja"
+                                    ? module.descriptionJa
+                                    : module.description}
                                 </p>
                               )}
 
@@ -2076,36 +2310,78 @@ export function AdminClient({
                               </div>
 
                               {/* コンテナ・MCPサーバステータス（シンプル表示） */}
-                              {(module.containers?.length > 0 || module.mcpServer) && (
+                              {(module.containers?.length > 0 ||
+                                module.mcpServer) && (
                                 <div className="mt-4 pt-4 border-t flex flex-wrap gap-3">
                                   {/* コンテナステータス */}
-                                  {module.containers && module.containers.length > 0 && (() => {
-                                    const allRunning = module.containers.every(c => c.isRunning);
-                                    const hasRequiredStopped = module.containers.some(c => !c.isRunning && c.required);
-                                    return (
-                                      <div className="flex items-center gap-1.5 text-xs">
-                                        <svg className="w-3.5 h-3.5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2" />
-                                        </svg>
-                                        <span className="text-muted-foreground">{t("Container", "コンテナ")}</span>
-                                        <span className={`flex items-center gap-1 ${allRunning ? "text-green-600" : "text-amber-600"}`}>
-                                          <span className={`w-1.5 h-1.5 rounded-full ${allRunning ? "bg-green-500" : "bg-amber-500"}`} />
-                                          {allRunning ? t("Running", "稼働中") : t("Stopped", "停止中")}
-                                          {hasRequiredStopped && <span>⚠️</span>}
-                                        </span>
-                                      </div>
-                                    );
-                                  })()}
+                                  {module.containers &&
+                                    module.containers.length > 0 &&
+                                    (() => {
+                                      const allRunning =
+                                        module.containers.every(
+                                          (c) => c.isRunning,
+                                        );
+                                      const hasRequiredStopped =
+                                        module.containers.some(
+                                          (c) => !c.isRunning && c.required,
+                                        );
+                                      return (
+                                        <div className="flex items-center gap-1.5 text-xs">
+                                          <svg
+                                            className="w-3.5 h-3.5 text-muted-foreground"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                          >
+                                            <path
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              strokeWidth={2}
+                                              d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"
+                                            />
+                                          </svg>
+                                          <span className="text-muted-foreground">
+                                            {t("Container", "コンテナ")}
+                                          </span>
+                                          <span
+                                            className={`flex items-center gap-1 ${allRunning ? "text-green-600" : "text-amber-600"}`}
+                                          >
+                                            <span
+                                              className={`w-1.5 h-1.5 rounded-full ${allRunning ? "bg-green-500" : "bg-amber-500"}`}
+                                            />
+                                            {allRunning
+                                              ? t("Running", "稼働中")
+                                              : t("Stopped", "停止中")}
+                                            {hasRequiredStopped && (
+                                              <span>⚠️</span>
+                                            )}
+                                          </span>
+                                        </div>
+                                      );
+                                    })()}
 
                                   {/* MCPサーバー */}
                                   {module.mcpServer && (
                                     <div className="flex items-center gap-1.5 text-xs">
-                                      <svg className="w-3.5 h-3.5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                      <svg
+                                        className="w-3.5 h-3.5 text-muted-foreground"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                        />
                                       </svg>
-                                      <span className="text-muted-foreground">{t("MCP", "MCP")}</span>
+                                      <span className="text-muted-foreground">
+                                        {t("MCP", "MCP")}
+                                      </span>
                                       <span className="text-blue-600">
-                                        {module.mcpServer.toolCount} {t("tools", "ツール")}
+                                        {module.mcpServer.toolCount}{" "}
+                                        {t("tools", "ツール")}
                                       </span>
                                     </div>
                                   )}
@@ -2155,10 +2431,14 @@ export function AdminClient({
                     </div>
                     <div className="flex-1">
                       <h2 className="text-2xl font-bold">
-                        {language === "ja" ? selectedModule.nameJa : selectedModule.name}
+                        {language === "ja"
+                          ? selectedModule.nameJa
+                          : selectedModule.name}
                       </h2>
                       <p className="text-sm text-muted-foreground mt-1">
-                        {language === "ja" ? selectedModule.name : selectedModule.nameJa}
+                        {language === "ja"
+                          ? selectedModule.name
+                          : selectedModule.nameJa}
                       </p>
                     </div>
                   </div>
@@ -2205,7 +2485,9 @@ export function AdminClient({
                           {t("Description", "説明")}
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                          {(language === "ja" ? selectedModule.descriptionJa : selectedModule.description) || t("None", "なし")}
+                          {(language === "ja"
+                            ? selectedModule.descriptionJa
+                            : selectedModule.description) || t("None", "なし")}
                         </p>
                       </div>
                     </div>
@@ -2546,7 +2828,10 @@ export function AdminClient({
                             </div>
                             <div>
                               <h4 className="text-sm font-semibold">
-                                {t("Legacy LDAP Server Settings", "レガシーLDAPサーバ設定")}
+                                {t(
+                                  "Legacy LDAP Server Settings",
+                                  "レガシーLDAPサーバ設定",
+                                )}
                               </h4>
                               <p className="text-xs text-muted-foreground">
                                 {t(
@@ -2583,7 +2868,9 @@ export function AdminClient({
                                 value={legacyLdapConfig.serverUrl || ""}
                                 onChange={(e) =>
                                   setLegacyLdapConfig((prev) =>
-                                    prev ? { ...prev, serverUrl: e.target.value } : prev
+                                    prev
+                                      ? { ...prev, serverUrl: e.target.value }
+                                      : prev,
                                   )
                                 }
                                 placeholder="ldap://ldap.example.com:389"
@@ -2601,7 +2888,9 @@ export function AdminClient({
                                 value={legacyLdapConfig.baseDN || ""}
                                 onChange={(e) =>
                                   setLegacyLdapConfig((prev) =>
-                                    prev ? { ...prev, baseDN: e.target.value } : prev
+                                    prev
+                                      ? { ...prev, baseDN: e.target.value }
+                                      : prev,
                                   )
                                 }
                                 placeholder="ou=Users,dc=example,dc=com"
@@ -2619,7 +2908,12 @@ export function AdminClient({
                                 value={legacyLdapConfig.searchFilter || ""}
                                 onChange={(e) =>
                                   setLegacyLdapConfig((prev) =>
-                                    prev ? { ...prev, searchFilter: e.target.value } : prev
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          searchFilter: e.target.value,
+                                        }
+                                      : prev,
                                   )
                                 }
                                 placeholder="(uid={username})"
@@ -2643,7 +2937,13 @@ export function AdminClient({
                                 value={legacyLdapConfig.timeout ?? 10000}
                                 onChange={(e) =>
                                   setLegacyLdapConfig((prev) =>
-                                    prev ? { ...prev, timeout: parseInt(e.target.value) || 10000 } : prev
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          timeout:
+                                            parseInt(e.target.value) || 10000,
+                                        }
+                                      : prev,
                                   )
                                 }
                                 min={1000}
@@ -2677,205 +2977,228 @@ export function AdminClient({
                     )}
 
                     {/* Legacy LDAPテスト（ldap-migrationモジュールのみ） */}
-                    {selectedModule.id === "ldap-migration" && legacyLdapConfig && (
-                      <div className="mb-6 p-4 bg-muted border border-border rounded-lg">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="w-10 h-10 bg-amber-600 rounded-lg flex items-center justify-center text-white">
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                              />
-                            </svg>
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-semibold">
-                              {t("Connection Test", "接続テスト")}
-                            </h4>
-                            <p className="text-xs text-muted-foreground">
-                              {t(
-                                "Test connection and authentication to legacy LDAP",
-                                "レガシーLDAPへの接続と認証をテスト",
-                              )}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          {/* テストタイプ選択 */}
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => setLegacyLdapTestType("connection")}
-                              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                                legacyLdapTestType === "connection"
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-card border border-border hover:bg-muted"
-                              }`}
-                            >
-                              {t("Connection", "接続")}
-                            </button>
-                            <button
-                              onClick={() => setLegacyLdapTestType("search")}
-                              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                                legacyLdapTestType === "search"
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-card border border-border hover:bg-muted"
-                              }`}
-                            >
-                              {t("User Search", "ユーザー検索")}
-                            </button>
-                            <button
-                              onClick={() => setLegacyLdapTestType("auth")}
-                              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                                legacyLdapTestType === "auth"
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-card border border-border hover:bg-muted"
-                              }`}
-                            >
-                              {t("Authentication", "認証")}
-                            </button>
-                          </div>
-
-                          {/* ユーザー名/パスワード入力（検索/認証テスト用） */}
-                          {(legacyLdapTestType === "search" || legacyLdapTestType === "auth") && (
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <Label className="block text-sm font-medium text-muted-foreground mb-1">
-                                  {t("Username", "ユーザー名")}
-                                </Label>
-                                <Input
-                                  type="text"
-                                  value={legacyLdapTestUsername}
-                                  onChange={(e) => setLegacyLdapTestUsername(e.target.value)}
-                                  placeholder={t("Enter username", "ユーザー名を入力")}
-                                  disabled={legacyLdapTestLoading}
+                    {selectedModule.id === "ldap-migration" &&
+                      legacyLdapConfig && (
+                        <div className="mb-6 p-4 bg-muted border border-border rounded-lg">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-amber-600 rounded-lg flex items-center justify-center text-white">
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
                                 />
-                              </div>
-                              {legacyLdapTestType === "auth" && (
+                              </svg>
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-semibold">
+                                {t("Connection Test", "接続テスト")}
+                              </h4>
+                              <p className="text-xs text-muted-foreground">
+                                {t(
+                                  "Test connection and authentication to legacy LDAP",
+                                  "レガシーLDAPへの接続と認証をテスト",
+                                )}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-4">
+                            {/* テストタイプ選択 */}
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() =>
+                                  setLegacyLdapTestType("connection")
+                                }
+                                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                  legacyLdapTestType === "connection"
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-card border border-border hover:bg-muted"
+                                }`}
+                              >
+                                {t("Connection", "接続")}
+                              </button>
+                              <button
+                                onClick={() => setLegacyLdapTestType("search")}
+                                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                  legacyLdapTestType === "search"
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-card border border-border hover:bg-muted"
+                                }`}
+                              >
+                                {t("User Search", "ユーザー検索")}
+                              </button>
+                              <button
+                                onClick={() => setLegacyLdapTestType("auth")}
+                                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                  legacyLdapTestType === "auth"
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-card border border-border hover:bg-muted"
+                                }`}
+                              >
+                                {t("Authentication", "認証")}
+                              </button>
+                            </div>
+
+                            {/* ユーザー名/パスワード入力（検索/認証テスト用） */}
+                            {(legacyLdapTestType === "search" ||
+                              legacyLdapTestType === "auth") && (
+                              <div className="grid grid-cols-2 gap-3">
                                 <div>
                                   <Label className="block text-sm font-medium text-muted-foreground mb-1">
-                                    {t("Password", "パスワード")}
+                                    {t("Username", "ユーザー名")}
                                   </Label>
                                   <Input
-                                    type="password"
-                                    value={legacyLdapTestPassword}
-                                    onChange={(e) => setLegacyLdapTestPassword(e.target.value)}
-                                    placeholder={t("Enter password", "パスワードを入力")}
+                                    type="text"
+                                    value={legacyLdapTestUsername}
+                                    onChange={(e) =>
+                                      setLegacyLdapTestUsername(e.target.value)
+                                    }
+                                    placeholder={t(
+                                      "Enter username",
+                                      "ユーザー名を入力",
+                                    )}
                                     disabled={legacyLdapTestLoading}
                                   />
                                 </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* テスト実行ボタン */}
-                          <button
-                            onClick={runLegacyLdapTest}
-                            disabled={
-                              legacyLdapTestLoading ||
-                              (legacyLdapTestType === "search" && !legacyLdapTestUsername) ||
-                              (legacyLdapTestType === "auth" && (!legacyLdapTestUsername || !legacyLdapTestPassword))
-                            }
-                            className="w-full py-2 px-4 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
-                          >
-                            {legacyLdapTestLoading
-                              ? t("Testing...", "テスト中...")
-                              : legacyLdapTestType === "connection"
-                                ? t("Test Connection", "接続テスト")
-                                : legacyLdapTestType === "search"
-                                  ? t("Search User", "ユーザー検索")
-                                  : t("Test Authentication", "認証テスト")}
-                          </button>
-
-                          {/* テスト結果 */}
-                          {legacyLdapTestResult && (
-                            <div
-                              className={`p-3 rounded-lg border ${
-                                legacyLdapTestResult.success
-                                  ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800"
-                                  : "bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800"
-                              }`}
-                            >
-                              <div className="flex items-center gap-2 mb-2">
-                                {legacyLdapTestResult.success ? (
-                                  <svg
-                                    className="w-5 h-5 text-green-600 dark:text-green-400"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                {legacyLdapTestType === "auth" && (
+                                  <div>
+                                    <Label className="block text-sm font-medium text-muted-foreground mb-1">
+                                      {t("Password", "パスワード")}
+                                    </Label>
+                                    <Input
+                                      type="password"
+                                      value={legacyLdapTestPassword}
+                                      onChange={(e) =>
+                                        setLegacyLdapTestPassword(
+                                          e.target.value,
+                                        )
+                                      }
+                                      placeholder={t(
+                                        "Enter password",
+                                        "パスワードを入力",
+                                      )}
+                                      disabled={legacyLdapTestLoading}
                                     />
-                                  </svg>
-                                ) : (
-                                  <svg
-                                    className="w-5 h-5 text-red-600 dark:text-red-400"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                    />
-                                  </svg>
+                                  </div>
                                 )}
-                                <span
-                                  className={`text-sm font-medium ${
-                                    legacyLdapTestResult.success
-                                      ? "text-green-800 dark:text-green-200"
-                                      : "text-red-800 dark:text-red-200"
-                                  }`}
-                                >
-                                  {legacyLdapTestResult.success
-                                    ? language === "ja"
-                                      ? legacyLdapTestResult.messageJa || "成功"
-                                      : legacyLdapTestResult.message || "Success"
-                                    : legacyLdapTestResult.error || t("Test failed", "テスト失敗")}
-                                </span>
                               </div>
-                              {legacyLdapTestResult.success && legacyLdapTestResult.userDN && (
-                                <div className="text-xs text-muted-foreground space-y-1 mt-2 pl-7">
-                                  {legacyLdapTestResult.displayName && (
-                                    <p>
-                                      <span className="font-medium">
-                                        {t("Display Name", "表示名")}:
-                                      </span>{" "}
-                                      {legacyLdapTestResult.displayName}
-                                    </p>
+                            )}
+
+                            {/* テスト実行ボタン */}
+                            <button
+                              onClick={runLegacyLdapTest}
+                              disabled={
+                                legacyLdapTestLoading ||
+                                (legacyLdapTestType === "search" &&
+                                  !legacyLdapTestUsername) ||
+                                (legacyLdapTestType === "auth" &&
+                                  (!legacyLdapTestUsername ||
+                                    !legacyLdapTestPassword))
+                              }
+                              className="w-full py-2 px-4 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+                            >
+                              {legacyLdapTestLoading
+                                ? t("Testing...", "テスト中...")
+                                : legacyLdapTestType === "connection"
+                                  ? t("Test Connection", "接続テスト")
+                                  : legacyLdapTestType === "search"
+                                    ? t("Search User", "ユーザー検索")
+                                    : t("Test Authentication", "認証テスト")}
+                            </button>
+
+                            {/* テスト結果 */}
+                            {legacyLdapTestResult && (
+                              <div
+                                className={`p-3 rounded-lg border ${
+                                  legacyLdapTestResult.success
+                                    ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800"
+                                    : "bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 mb-2">
+                                  {legacyLdapTestResult.success ? (
+                                    <svg
+                                      className="w-5 h-5 text-green-600 dark:text-green-400"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                      />
+                                    </svg>
+                                  ) : (
+                                    <svg
+                                      className="w-5 h-5 text-red-600 dark:text-red-400"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                      />
+                                    </svg>
                                   )}
-                                  {legacyLdapTestResult.email && (
-                                    <p>
-                                      <span className="font-medium">
-                                        {t("Email", "メール")}:
-                                      </span>{" "}
-                                      {legacyLdapTestResult.email}
-                                    </p>
-                                  )}
-                                  <p className="truncate">
-                                    <span className="font-medium">DN:</span>{" "}
-                                    {legacyLdapTestResult.userDN}
-                                  </p>
+                                  <span
+                                    className={`text-sm font-medium ${
+                                      legacyLdapTestResult.success
+                                        ? "text-green-800 dark:text-green-200"
+                                        : "text-red-800 dark:text-red-200"
+                                    }`}
+                                  >
+                                    {legacyLdapTestResult.success
+                                      ? language === "ja"
+                                        ? legacyLdapTestResult.messageJa ||
+                                          "成功"
+                                        : legacyLdapTestResult.message ||
+                                          "Success"
+                                      : legacyLdapTestResult.error ||
+                                        t("Test failed", "テスト失敗")}
+                                  </span>
                                 </div>
-                              )}
-                            </div>
-                          )}
+                                {legacyLdapTestResult.success &&
+                                  legacyLdapTestResult.userDN && (
+                                    <div className="text-xs text-muted-foreground space-y-1 mt-2 pl-7">
+                                      {legacyLdapTestResult.displayName && (
+                                        <p>
+                                          <span className="font-medium">
+                                            {t("Display Name", "表示名")}:
+                                          </span>{" "}
+                                          {legacyLdapTestResult.displayName}
+                                        </p>
+                                      )}
+                                      {legacyLdapTestResult.email && (
+                                        <p>
+                                          <span className="font-medium">
+                                            {t("Email", "メール")}:
+                                          </span>{" "}
+                                          {legacyLdapTestResult.email}
+                                        </p>
+                                      )}
+                                      <p className="truncate">
+                                        <span className="font-medium">DN:</span>{" "}
+                                        {legacyLdapTestResult.userDN}
+                                      </p>
+                                    </div>
+                                  )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
                     {/* MCPサーバー詳細 */}
                     {selectedModule.mcpServer && (
@@ -2931,11 +3254,15 @@ export function AdminClient({
                           {/* ツール一覧 */}
                           <div className="p-3 bg-card rounded-lg border border-border">
                             <p className="text-sm font-medium mb-2">
-                              {t("Tools", "ツール")} ({selectedModule.mcpServer.toolCount})
+                              {t("Tools", "ツール")} (
+                              {selectedModule.mcpServer.toolCount})
                             </p>
                             <div className="space-y-1.5">
                               {selectedModule.mcpServer.tools.map((tool) => (
-                                <div key={tool.name} className="flex items-center gap-2 text-xs">
+                                <div
+                                  key={tool.name}
+                                  className="flex items-center gap-2 text-xs"
+                                >
                                   <code className="text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-mono">
                                     {tool.name}
                                   </code>
@@ -2994,10 +3321,14 @@ export function AdminClient({
                               >
                                 <div className="flex-1">
                                   <p className="text-sm font-medium">
-                                    {language === "ja" ? menu.nameJa : menu.name}
+                                    {language === "ja"
+                                      ? menu.nameJa
+                                      : menu.name}
                                   </p>
                                   <p className="text-xs text-muted-foreground">
-                                    {language === "ja" ? menu.name : menu.nameJa}
+                                    {language === "ja"
+                                      ? menu.name
+                                      : menu.nameJa}
                                   </p>
                                   <p className="text-xs text-muted-foreground/70 mt-1">
                                     {menu.path}
@@ -3031,9 +3362,15 @@ export function AdminClient({
                                     type="number"
                                     value={menu.order}
                                     onChange={(e) => {
-                                      const newOrder = parseInt(e.target.value, 10);
+                                      const newOrder = parseInt(
+                                        e.target.value,
+                                        10,
+                                      );
                                       if (!isNaN(newOrder)) {
-                                        handleUpdateMenuOrder(menu.id, newOrder);
+                                        handleUpdateMenuOrder(
+                                          menu.id,
+                                          newOrder,
+                                        );
                                       }
                                     }}
                                     className="w-16 h-7 text-xs text-center"
@@ -3043,11 +3380,17 @@ export function AdminClient({
                                   <div className="flex items-center gap-1">
                                     <Switch
                                       checked={menu.enabled}
-                                      onCheckedChange={(checked) => handleToggleMenu(menu.id, checked)}
+                                      onCheckedChange={(checked) =>
+                                        handleToggleMenu(menu.id, checked)
+                                      }
                                       className="scale-75"
                                     />
-                                    <span className={`text-xs ${menu.enabled ? "text-green-700" : "text-muted-foreground"}`}>
-                                      {menu.enabled ? t("Enabled", "有効") : t("Disabled", "無効")}
+                                    <span
+                                      className={`text-xs ${menu.enabled ? "text-green-700" : "text-muted-foreground"}`}
+                                    >
+                                      {menu.enabled
+                                        ? t("Enabled", "有効")
+                                        : t("Disabled", "無効")}
                                     </span>
                                   </div>
                                 </div>
@@ -3116,14 +3459,26 @@ export function AdminClient({
                       }}
                     >
                       <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder={t("All Categories", "すべてのカテゴリ")} />
+                        <SelectValue
+                          placeholder={t("All Categories", "すべてのカテゴリ")}
+                        />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ALL">{t("All", "すべて")}</SelectItem>
-                        <SelectItem value="AUTH">{t("Authentication", "認証")}</SelectItem>
-                        <SelectItem value="USER_MANAGEMENT">{t("User Management", "ユーザ管理")}</SelectItem>
-                        <SelectItem value="SYSTEM_SETTING">{t("System Settings", "システム設定")}</SelectItem>
-                        <SelectItem value="MODULE">{t("Module", "モジュール")}</SelectItem>
+                        <SelectItem value="ALL">
+                          {t("All", "すべて")}
+                        </SelectItem>
+                        <SelectItem value="AUTH">
+                          {t("Authentication", "認証")}
+                        </SelectItem>
+                        <SelectItem value="USER_MANAGEMENT">
+                          {t("User Management", "ユーザ管理")}
+                        </SelectItem>
+                        <SelectItem value="SYSTEM_SETTING">
+                          {t("System Settings", "システム設定")}
+                        </SelectItem>
+                        <SelectItem value="MODULE">
+                          {t("Module", "モジュール")}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -3139,21 +3494,47 @@ export function AdminClient({
                       }}
                     >
                       <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder={t("All Actions", "すべてのアクション")} />
+                        <SelectValue
+                          placeholder={t("All Actions", "すべてのアクション")}
+                        />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ALL">{t("All", "すべて")}</SelectItem>
-                        <SelectItem value="LOGIN_SUCCESS">{t("Login Success", "ログイン成功")}</SelectItem>
-                        <SelectItem value="LOGIN_FAILURE">{t("Login Failure", "ログイン失敗")}</SelectItem>
-                        <SelectItem value="LOGOUT">{t("Logout", "ログアウト")}</SelectItem>
-                        <SelectItem value="USER_CREATE">{t("User Create", "ユーザ作成")}</SelectItem>
-                        <SelectItem value="USER_DELETE">{t("User Delete", "ユーザ削除")}</SelectItem>
-                        <SelectItem value="USER_ROLE_CHANGE">{t("Role Change", "ロール変更")}</SelectItem>
-                        <SelectItem value="MODULE_TOGGLE">{t("Module Toggle", "モジュール切替")}</SelectItem>
-                        <SelectItem value="MENU_TOGGLE">{t("Menu Toggle", "メニュー切替")}</SelectItem>
-                        <SelectItem value="ANNOUNCEMENT_CREATE">{t("Announcement Create", "アナウンス作成")}</SelectItem>
-                        <SelectItem value="ANNOUNCEMENT_UPDATE">{t("Announcement Update", "アナウンス更新")}</SelectItem>
-                        <SelectItem value="ANNOUNCEMENT_DELETE">{t("Announcement Delete", "アナウンス削除")}</SelectItem>
+                        <SelectItem value="ALL">
+                          {t("All", "すべて")}
+                        </SelectItem>
+                        <SelectItem value="LOGIN_SUCCESS">
+                          {t("Login Success", "ログイン成功")}
+                        </SelectItem>
+                        <SelectItem value="LOGIN_FAILURE">
+                          {t("Login Failure", "ログイン失敗")}
+                        </SelectItem>
+                        <SelectItem value="LOGOUT">
+                          {t("Logout", "ログアウト")}
+                        </SelectItem>
+                        <SelectItem value="USER_CREATE">
+                          {t("User Create", "ユーザ作成")}
+                        </SelectItem>
+                        <SelectItem value="USER_DELETE">
+                          {t("User Delete", "ユーザ削除")}
+                        </SelectItem>
+                        <SelectItem value="USER_ROLE_CHANGE">
+                          {t("Role Change", "ロール変更")}
+                        </SelectItem>
+                        <SelectItem value="MODULE_TOGGLE">
+                          {t("Module Toggle", "モジュール切替")}
+                        </SelectItem>
+                        <SelectItem value="MENU_TOGGLE">
+                          {t("Menu Toggle", "メニュー切替")}
+                        </SelectItem>
+                        <SelectItem value="ANNOUNCEMENT_CREATE">
+                          {t("Announcement Create", "アナウンス作成")}
+                        </SelectItem>
+                        <SelectItem value="ANNOUNCEMENT_UPDATE">
+                          {t("Announcement Update", "アナウンス更新")}
+                        </SelectItem>
+                        <SelectItem value="ANNOUNCEMENT_DELETE">
+                          {t("Announcement Delete", "アナウンス削除")}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -3175,13 +3556,18 @@ export function AdminClient({
                     {/* ページネーション（上部） */}
                     <div className="flex items-center justify-between mb-4">
                       <p className="text-sm text-muted-foreground">
-                        {t("Total", "合計")}: <span className="font-medium text-foreground">{auditLogsTotal}</span>
+                        {t("Total", "合計")}:{" "}
+                        <span className="font-medium text-foreground">
+                          {auditLogsTotal}
+                        </span>
                       </p>
                       <div className="flex items-center gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setAuditLogsPage((p) => Math.max(1, p - 1))}
+                          onClick={() =>
+                            setAuditLogsPage((p) => Math.max(1, p - 1))
+                          }
                           disabled={auditLogsPage === 1}
                           className="gap-1"
                         >
@@ -3189,14 +3575,24 @@ export function AdminClient({
                           {t("Previous", "前へ")}
                         </Button>
                         <div className="flex items-center gap-1 px-2">
-                          <span className="text-sm font-medium">{auditLogsPage}</span>
-                          <span className="text-sm text-muted-foreground">/</span>
-                          <span className="text-sm text-muted-foreground">{auditLogsTotalPages || 1}</span>
+                          <span className="text-sm font-medium">
+                            {auditLogsPage}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            /
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {auditLogsTotalPages || 1}
+                          </span>
                         </div>
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setAuditLogsPage((p) => Math.min(auditLogsTotalPages, p + 1))}
+                          onClick={() =>
+                            setAuditLogsPage((p) =>
+                              Math.min(auditLogsTotalPages, p + 1),
+                            )
+                          }
                           disabled={auditLogsPage >= auditLogsTotalPages}
                           className="gap-1"
                         >
@@ -3212,18 +3608,32 @@ export function AdminClient({
                         <Table>
                           <TableHeader className="sticky top-0 bg-muted/50 z-10">
                             <TableRow>
-                              <TableHead className="w-[160px]">{t("Date/Time", "日時")}</TableHead>
-                              <TableHead className="w-[140px]">{t("Category", "カテゴリ")}</TableHead>
-                              <TableHead className="w-[160px]">{t("Action", "アクション")}</TableHead>
-                              <TableHead className="w-[180px]">{t("User", "ユーザ")}</TableHead>
+                              <TableHead className="w-[160px]">
+                                {t("Date/Time", "日時")}
+                              </TableHead>
+                              <TableHead className="w-[140px]">
+                                {t("Category", "カテゴリ")}
+                              </TableHead>
+                              <TableHead className="w-[160px]">
+                                {t("Action", "アクション")}
+                              </TableHead>
+                              <TableHead className="w-[180px]">
+                                {t("User", "ユーザ")}
+                              </TableHead>
                               <TableHead>{t("Details", "詳細")}</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {auditLogs.map((log) => {
-                              const details = log.details ? JSON.parse(log.details) : null;
-                              const isSuccess = log.action.includes("SUCCESS") || log.action.includes("CREATE");
-                              const isFailure = log.action.includes("FAILURE") || log.action.includes("DELETE");
+                              const details = log.details
+                                ? JSON.parse(log.details)
+                                : null;
+                              const isSuccess =
+                                log.action.includes("SUCCESS") ||
+                                log.action.includes("CREATE");
+                              const isFailure =
+                                log.action.includes("FAILURE") ||
+                                log.action.includes("DELETE");
 
                               return (
                                 <TableRow key={log.id}>
@@ -3236,66 +3646,100 @@ export function AdminClient({
                                         day: "numeric",
                                         hour: "2-digit",
                                         minute: "2-digit",
-                                      }
+                                      },
                                     )}
                                   </TableCell>
                                   <TableCell>
-                                    <Badge variant="outline" className={
-                                      log.category === "AUTH"
-                                        ? "bg-blue-50 text-blue-700 border-blue-200"
-                                        : log.category === "USER_MANAGEMENT"
-                                          ? "bg-green-50 text-green-700 border-green-200"
-                                          : log.category === "SYSTEM_SETTING"
-                                            ? "bg-purple-50 text-purple-700 border-purple-200"
-                                            : "bg-orange-50 text-orange-700 border-orange-200"
-                                    }>
-                                      {log.category === "AUTH" && t("Auth", "認証")}
-                                      {log.category === "USER_MANAGEMENT" && t("User", "ユーザ")}
-                                      {log.category === "SYSTEM_SETTING" && t("System", "システム")}
-                                      {log.category === "MODULE" && t("Module", "モジュール")}
+                                    <Badge
+                                      variant="outline"
+                                      className={
+                                        log.category === "AUTH"
+                                          ? "bg-blue-50 text-blue-700 border-blue-200"
+                                          : log.category === "USER_MANAGEMENT"
+                                            ? "bg-green-50 text-green-700 border-green-200"
+                                            : log.category === "SYSTEM_SETTING"
+                                              ? "bg-purple-50 text-purple-700 border-purple-200"
+                                              : "bg-orange-50 text-orange-700 border-orange-200"
+                                      }
+                                    >
+                                      {log.category === "AUTH" &&
+                                        t("Auth", "認証")}
+                                      {log.category === "USER_MANAGEMENT" &&
+                                        t("User", "ユーザ")}
+                                      {log.category === "SYSTEM_SETTING" &&
+                                        t("System", "システム")}
+                                      {log.category === "MODULE" &&
+                                        t("Module", "モジュール")}
                                     </Badge>
                                   </TableCell>
                                   <TableCell>
-                                    <Badge variant="outline" className={
-                                      isSuccess
-                                        ? "bg-green-50 text-green-700 border-green-200"
-                                        : isFailure
-                                          ? "bg-red-50 text-red-700 border-red-200"
-                                          : "bg-gray-50 text-gray-700 border-gray-200"
-                                    }>
+                                    <Badge
+                                      variant="outline"
+                                      className={
+                                        isSuccess
+                                          ? "bg-green-50 text-green-700 border-green-200"
+                                          : isFailure
+                                            ? "bg-red-50 text-red-700 border-red-200"
+                                            : "bg-gray-50 text-gray-700 border-gray-200"
+                                      }
+                                    >
                                       {log.action}
                                     </Badge>
                                   </TableCell>
                                   <TableCell>
                                     {log.user ? (
                                       <div className="flex flex-col">
-                                        <span className="text-sm font-medium">{log.user.name || "-"}</span>
-                                        <span className="text-xs text-muted-foreground">{log.user.email}</span>
+                                        <span className="text-sm font-medium">
+                                          {log.user.name || "-"}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">
+                                          {log.user.email}
+                                        </span>
                                       </div>
                                     ) : (
-                                      <span className="text-sm text-muted-foreground">-</span>
+                                      <span className="text-sm text-muted-foreground">
+                                        -
+                                      </span>
                                     )}
                                   </TableCell>
                                   <TableCell>
                                     {details && (
                                       <div className="text-xs text-muted-foreground space-y-0.5">
                                         {details.provider && (
-                                          <p>{t("Provider", "プロバイダ")}: {details.provider}</p>
+                                          <p>
+                                            {t("Provider", "プロバイダ")}:{" "}
+                                            {details.provider}
+                                          </p>
                                         )}
                                         {details.username && (
-                                          <p>{t("Username", "ユーザ名")}: {details.username}</p>
+                                          <p>
+                                            {t("Username", "ユーザ名")}:{" "}
+                                            {details.username}
+                                          </p>
                                         )}
                                         {details.email && !log.user?.email && (
-                                          <p>{t("Email", "メール")}: {details.email}</p>
+                                          <p>
+                                            {t("Email", "メール")}:{" "}
+                                            {details.email}
+                                          </p>
                                         )}
                                         {details.reason && (
-                                          <p className="text-red-600">{t("Reason", "理由")}: {details.reason}</p>
+                                          <p className="text-red-600">
+                                            {t("Reason", "理由")}:{" "}
+                                            {details.reason}
+                                          </p>
                                         )}
                                         {details.title && (
-                                          <p>{t("Title", "タイトル")}: {details.title}</p>
+                                          <p>
+                                            {t("Title", "タイトル")}:{" "}
+                                            {details.title}
+                                          </p>
                                         )}
                                         {details.oldRole && details.newRole && (
-                                          <p>{details.oldRole} → {details.newRole}</p>
+                                          <p>
+                                            {details.oldRole} →{" "}
+                                            {details.newRole}
+                                          </p>
                                         )}
                                       </div>
                                     )}
@@ -3336,7 +3780,7 @@ export function AdminClient({
                     <p className="text-sm text-muted-foreground">
                       {t(
                         "Create and manage system-wide announcements.",
-                        "システム全体のアナウンスを作成・管理できます。"
+                        "システム全体のアナウンスを作成・管理できます。",
                       )}
                     </p>
                   </div>
@@ -3362,10 +3806,13 @@ export function AdminClient({
                     {announcements.map((announcement) => {
                       const now = new Date();
                       const startAt = new Date(announcement.startAt);
-                      const endAt = announcement.endAt ? new Date(announcement.endAt) : null;
+                      const endAt = announcement.endAt
+                        ? new Date(announcement.endAt)
+                        : null;
                       const isScheduled = startAt > now;
                       const isExpired = endAt && endAt < now;
-                      const isLive = announcement.isActive && !isScheduled && !isExpired;
+                      const isLive =
+                        announcement.isActive && !isScheduled && !isExpired;
 
                       return (
                         <div
@@ -3381,16 +3828,22 @@ export function AdminClient({
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2">
-                                <Badge variant="outline" className={
-                                  announcement.level === "critical"
-                                    ? "bg-red-100 text-red-700 border-red-300"
-                                    : announcement.level === "warning"
-                                      ? "bg-amber-100 text-amber-700 border-amber-300"
-                                      : "bg-blue-100 text-blue-700 border-blue-300"
-                                }>
-                                  {announcement.level === "critical" && t("Critical", "重要")}
-                                  {announcement.level === "warning" && t("Warning", "警告")}
-                                  {announcement.level === "info" && t("Info", "お知らせ")}
+                                <Badge
+                                  variant="outline"
+                                  className={
+                                    announcement.level === "critical"
+                                      ? "bg-red-100 text-red-700 border-red-300"
+                                      : announcement.level === "warning"
+                                        ? "bg-amber-100 text-amber-700 border-amber-300"
+                                        : "bg-blue-100 text-blue-700 border-blue-300"
+                                  }
+                                >
+                                  {announcement.level === "critical" &&
+                                    t("Critical", "重要")}
+                                  {announcement.level === "warning" &&
+                                    t("Warning", "警告")}
+                                  {announcement.level === "info" &&
+                                    t("Info", "お知らせ")}
                                 </Badge>
                                 {isLive && (
                                   <Badge className="bg-green-100 text-green-700 border-green-300">
@@ -3398,41 +3851,69 @@ export function AdminClient({
                                   </Badge>
                                 )}
                                 {isScheduled && (
-                                  <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-300">
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-gray-100 text-gray-700 border-gray-300"
+                                  >
                                     {t("Scheduled", "予約済み")}
                                   </Badge>
                                 )}
                                 {isExpired && (
-                                  <Badge variant="outline" className="bg-gray-100 text-gray-500 border-gray-300">
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-gray-100 text-gray-500 border-gray-300"
+                                  >
                                     {t("Expired", "終了")}
                                   </Badge>
                                 )}
                               </div>
 
                               <h4 className="font-semibold text-foreground mb-1">
-                                {language === "ja" && announcement.titleJa ? announcement.titleJa : announcement.title}
+                                {language === "ja" && announcement.titleJa
+                                  ? announcement.titleJa
+                                  : announcement.title}
                               </h4>
                               <p className="text-sm text-muted-foreground mb-2">
-                                {language === "ja" && announcement.messageJa ? announcement.messageJa : announcement.message}
+                                {language === "ja" && announcement.messageJa
+                                  ? announcement.messageJa
+                                  : announcement.message}
                               </p>
 
                               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                                 <span>
-                                  {t("Start", "開始")}: {new Date(announcement.startAt).toLocaleString(
+                                  {t("Start", "開始")}:{" "}
+                                  {new Date(
+                                    announcement.startAt,
+                                  ).toLocaleString(
                                     language === "ja" ? "ja-JP" : "en-US",
-                                    { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }
+                                    {
+                                      month: "short",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    },
                                   )}
                                 </span>
                                 {announcement.endAt && (
                                   <span>
-                                    {t("End", "終了")}: {new Date(announcement.endAt).toLocaleString(
+                                    {t("End", "終了")}:{" "}
+                                    {new Date(
+                                      announcement.endAt,
+                                    ).toLocaleString(
                                       language === "ja" ? "ja-JP" : "en-US",
-                                      { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }
+                                      {
+                                        month: "short",
+                                        day: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      },
                                     )}
                                   </span>
                                 )}
                                 <span>
-                                  {t("By", "作成者")}: {announcement.creator.name || announcement.creator.email}
+                                  {t("By", "作成者")}:{" "}
+                                  {announcement.creator.name ||
+                                    announcement.creator.email}
                                 </span>
                               </div>
                             </div>
@@ -3440,7 +3921,12 @@ export function AdminClient({
                             <div className="flex items-center gap-2">
                               <Switch
                                 checked={announcement.isActive}
-                                onCheckedChange={(checked) => handleToggleAnnouncement(announcement.id, checked)}
+                                onCheckedChange={(checked) =>
+                                  handleToggleAnnouncement(
+                                    announcement.id,
+                                    checked,
+                                  )
+                                }
                               />
                               <TooltipProvider>
                                 <Tooltip>
@@ -3449,7 +3935,9 @@ export function AdminClient({
                                       variant="ghost"
                                       size="icon"
                                       className="h-8 w-8"
-                                      onClick={() => openEditAnnouncementModal(announcement)}
+                                      onClick={() =>
+                                        openEditAnnouncementModal(announcement)
+                                      }
                                     >
                                       <Edit3 className="h-4 w-4" />
                                     </Button>
@@ -3494,7 +3982,11 @@ export function AdminClient({
                     <p className="text-muted-foreground mb-4">
                       {t("No announcements yet", "アナウンスはまだありません")}
                     </p>
-                    <Button onClick={openNewAnnouncementModal} variant="outline" className="gap-2">
+                    <Button
+                      onClick={openNewAnnouncementModal}
+                      variant="outline"
+                      className="gap-2"
+                    >
                       <Plus className="h-4 w-4" />
                       {t("Create First Announcement", "最初のアナウンスを作成")}
                     </Button>
@@ -3507,15 +3999,19 @@ export function AdminClient({
       </div>
 
       {/* 削除確認モーダル */}
-      <Dialog open={showDeleteModal && !!userToDelete} onOpenChange={(open) => !open && closeDeleteModal()}>
+      <Dialog
+        open={showDeleteModal && !!userToDelete}
+        onOpenChange={(open) => !open && closeDeleteModal()}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t("Delete User", "ユーザを削除")}</DialogTitle>
             <DialogDescription>
-              {userToDelete && t(
-                `Are you sure you want to delete "${userToDelete.name}"? This action cannot be undone.`,
-                `「${userToDelete.name}」を削除してもよろしいですか？この操作は取り消せません。`,
-              )}
+              {userToDelete &&
+                t(
+                  `Are you sure you want to delete "${userToDelete.name}"? This action cannot be undone.`,
+                  `「${userToDelete.name}」を削除してもよろしいですか？この操作は取り消せません。`,
+                )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -3538,7 +4034,10 @@ export function AdminClient({
       </Dialog>
 
       {/* アナウンス作成/編集モーダル */}
-      <Dialog open={showAnnouncementModal} onOpenChange={(open) => !open && setShowAnnouncementModal(false)}>
+      <Dialog
+        open={showAnnouncementModal}
+        onOpenChange={(open) => !open && setShowAnnouncementModal(false)}
+      >
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>
@@ -3549,7 +4048,7 @@ export function AdminClient({
             <DialogDescription>
               {t(
                 "Create announcements to notify all users about important information.",
-                "重要な情報を全ユーザに通知するアナウンスを作成します。"
+                "重要な情報を全ユーザに通知するアナウンスを作成します。",
               )}
             </DialogDescription>
           </DialogHeader>
@@ -3557,45 +4056,82 @@ export function AdminClient({
           <div className="space-y-4 py-4">
             {/* タイトル（日本語） */}
             <div className="space-y-2">
-              <Label htmlFor="titleJa">{t("Title (Japanese)", "タイトル（日本語）")} *</Label>
+              <Label htmlFor="titleJa">
+                {t("Title (Japanese)", "タイトル（日本語）")} *
+              </Label>
               <Input
                 id="titleJa"
                 value={announcementForm.titleJa}
-                onChange={(e) => setAnnouncementForm((f) => ({ ...f, titleJa: e.target.value }))}
-                placeholder={t("Enter title in Japanese", "日本語でタイトルを入力")}
+                onChange={(e) =>
+                  setAnnouncementForm((f) => ({
+                    ...f,
+                    titleJa: e.target.value,
+                  }))
+                }
+                placeholder={t(
+                  "Enter title in Japanese",
+                  "日本語でタイトルを入力",
+                )}
               />
             </div>
 
             {/* タイトル（英語） */}
             <div className="space-y-2">
-              <Label htmlFor="title">{t("Title (English)", "タイトル（英語）")}</Label>
+              <Label htmlFor="title">
+                {t("Title (English)", "タイトル（英語）")}
+              </Label>
               <Input
                 id="title"
                 value={announcementForm.title}
-                onChange={(e) => setAnnouncementForm((f) => ({ ...f, title: e.target.value }))}
-                placeholder={t("Enter title in English (optional)", "英語でタイトルを入力（任意）")}
+                onChange={(e) =>
+                  setAnnouncementForm((f) => ({ ...f, title: e.target.value }))
+                }
+                placeholder={t(
+                  "Enter title in English (optional)",
+                  "英語でタイトルを入力（任意）",
+                )}
               />
             </div>
 
             {/* メッセージ（日本語） */}
             <div className="space-y-2">
-              <Label htmlFor="messageJa">{t("Message (Japanese)", "メッセージ（日本語）")} *</Label>
+              <Label htmlFor="messageJa">
+                {t("Message (Japanese)", "メッセージ（日本語）")} *
+              </Label>
               <Input
                 id="messageJa"
                 value={announcementForm.messageJa}
-                onChange={(e) => setAnnouncementForm((f) => ({ ...f, messageJa: e.target.value }))}
-                placeholder={t("Enter message in Japanese", "日本語でメッセージを入力")}
+                onChange={(e) =>
+                  setAnnouncementForm((f) => ({
+                    ...f,
+                    messageJa: e.target.value,
+                  }))
+                }
+                placeholder={t(
+                  "Enter message in Japanese",
+                  "日本語でメッセージを入力",
+                )}
               />
             </div>
 
             {/* メッセージ（英語） */}
             <div className="space-y-2">
-              <Label htmlFor="message">{t("Message (English)", "メッセージ（英語）")}</Label>
+              <Label htmlFor="message">
+                {t("Message (English)", "メッセージ（英語）")}
+              </Label>
               <Input
                 id="message"
                 value={announcementForm.message}
-                onChange={(e) => setAnnouncementForm((f) => ({ ...f, message: e.target.value }))}
-                placeholder={t("Enter message in English (optional)", "英語でメッセージを入力（任意）")}
+                onChange={(e) =>
+                  setAnnouncementForm((f) => ({
+                    ...f,
+                    message: e.target.value,
+                  }))
+                }
+                placeholder={t(
+                  "Enter message in English (optional)",
+                  "英語でメッセージを入力（任意）",
+                )}
               />
             </div>
 
@@ -3604,15 +4140,21 @@ export function AdminClient({
               <Label>{t("Level", "重要度")}</Label>
               <Select
                 value={announcementForm.level}
-                onValueChange={(value) => setAnnouncementForm((f) => ({ ...f, level: value }))}
+                onValueChange={(value) =>
+                  setAnnouncementForm((f) => ({ ...f, level: value }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="info">{t("Info", "お知らせ")}</SelectItem>
-                  <SelectItem value="warning">{t("Warning", "警告")}</SelectItem>
-                  <SelectItem value="critical">{t("Critical", "重要")}</SelectItem>
+                  <SelectItem value="warning">
+                    {t("Warning", "警告")}
+                  </SelectItem>
+                  <SelectItem value="critical">
+                    {t("Critical", "重要")}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -3641,7 +4183,7 @@ export function AdminClient({
                     <p className="text-xs text-blue-600 dark:text-blue-400">
                       {t(
                         "Automatically translate to English if empty",
-                        "英語が空の場合、自動で翻訳します"
+                        "英語が空の場合、自動で翻訳します",
                       )}
                     </p>
                   </div>
@@ -3657,12 +4199,19 @@ export function AdminClient({
             {/* 開始日時・終了日時 */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="startAt">{t("Start Date/Time", "開始日時")}</Label>
+                <Label htmlFor="startAt">
+                  {t("Start Date/Time", "開始日時")}
+                </Label>
                 <Input
                   id="startAt"
                   type="datetime-local"
                   value={announcementForm.startAt}
-                  onChange={(e) => setAnnouncementForm((f) => ({ ...f, startAt: e.target.value }))}
+                  onChange={(e) =>
+                    setAnnouncementForm((f) => ({
+                      ...f,
+                      startAt: e.target.value,
+                    }))
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -3671,7 +4220,12 @@ export function AdminClient({
                   id="endAt"
                   type="datetime-local"
                   value={announcementForm.endAt}
-                  onChange={(e) => setAnnouncementForm((f) => ({ ...f, endAt: e.target.value }))}
+                  onChange={(e) =>
+                    setAnnouncementForm((f) => ({
+                      ...f,
+                      endAt: e.target.value,
+                    }))
+                  }
                 />
                 <p className="text-xs text-muted-foreground">
                   {t("Leave empty for no end date", "空欄の場合は終了日時なし")}
@@ -3690,7 +4244,12 @@ export function AdminClient({
             </Button>
             <Button
               onClick={handleSaveAnnouncement}
-              disabled={announcementSaving || aiTranslating || !announcementForm.titleJa || !announcementForm.messageJa}
+              disabled={
+                announcementSaving ||
+                aiTranslating ||
+                !announcementForm.titleJa ||
+                !announcementForm.messageJa
+              }
             >
               {aiTranslating
                 ? t("Translating...", "翻訳中...")
@@ -3716,12 +4275,15 @@ export function AdminClient({
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("Delete Announcement", "アナウンスを削除")}</DialogTitle>
+            <DialogTitle>
+              {t("Delete Announcement", "アナウンスを削除")}
+            </DialogTitle>
             <DialogDescription>
-              {announcementToDelete && t(
-                `Are you sure you want to delete "${announcementToDelete.title}"? This action cannot be undone.`,
-                `「${announcementToDelete.title}」を削除してもよろしいですか？この操作は取り消せません。`,
-              )}
+              {announcementToDelete &&
+                t(
+                  `Are you sure you want to delete "${announcementToDelete.title}"? This action cannot be undone.`,
+                  `「${announcementToDelete.title}」を削除してもよろしいですか？この操作は取り消せません。`,
+                )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -3740,7 +4302,9 @@ export function AdminClient({
               onClick={handleDeleteAnnouncement}
               disabled={announcementDeleting}
             >
-              {announcementDeleting ? t("Deleting...", "削除中...") : t("Delete", "削除")}
+              {announcementDeleting
+                ? t("Deleting...", "削除中...")
+                : t("Delete", "削除")}
             </Button>
           </DialogFooter>
         </DialogContent>

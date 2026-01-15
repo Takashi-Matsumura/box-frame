@@ -34,12 +34,12 @@ export interface ProcessedEmployee {
   nameKana?: string;
   email: string;
   department: string;
-  departmentCode?: string;    // 本部コード（所属コードの1-2桁目）
+  departmentCode?: string; // 本部コード（所属コードの1-2桁目）
   section?: string;
-  sectionCode?: string;       // 部コード（所属コードの3-4桁目）
+  sectionCode?: string; // 部コード（所属コードの3-4桁目）
   course?: string;
-  courseCode?: string;        // 課コード（所属コードの5-7桁目）
-  affiliationCode?: string;   // 所属コード（元の7桁コード）
+  courseCode?: string; // 課コード（所属コードの5-7桁目）
+  affiliationCode?: string; // 所属コード（元の7桁コード）
   position: string;
   positionCode?: string;
   phone?: string;

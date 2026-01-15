@@ -170,7 +170,9 @@ export async function PATCH(request: Request) {
     if (accessKey.targetUser) {
       await NotificationService.securityNotify(accessKey.targetUser.id, {
         title: isActive ? "Access key activated" : "Access key deactivated",
-        titleJa: isActive ? "アクセスキーが有効になりました" : "アクセスキーが無効になりました",
+        titleJa: isActive
+          ? "アクセスキーが有効になりました"
+          : "アクセスキーが無効になりました",
         message: `Your access key "${accessKey.name}" has been ${isActive ? "activated" : "deactivated"}.`,
         messageJa: `アクセスキー「${accessKey.name}」が${isActive ? "有効" : "無効"}になりました。`,
       }).catch((err) => {

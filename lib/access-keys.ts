@@ -80,7 +80,9 @@ export async function getUserAccessKeyPermissions(
     // Remove duplicates
     result.menuPaths = [...new Set(result.menuPaths)];
     for (const menuPath in result.tabPermissions) {
-      result.tabPermissions[menuPath] = [...new Set(result.tabPermissions[menuPath])];
+      result.tabPermissions[menuPath] = [
+        ...new Set(result.tabPermissions[menuPath]),
+      ];
     }
 
     return result;

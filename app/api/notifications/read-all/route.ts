@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NotificationType } from "@prisma/client";
+import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import type { NotificationType } from "@prisma/client";
 
 /**
  * POST /api/notifications/read-all
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
   if (!session?.user?.email) {
     return NextResponse.json(
       { error: "Unauthorized", errorJa: "認証が必要です" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   if (!user) {
     return NextResponse.json(
       { error: "User not found", errorJa: "ユーザーが見つかりません" },
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         error: "Failed to mark notifications as read",
         errorJa: "通知の既読化に失敗しました",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,10 +1,10 @@
-import type { AppModule, AppTab } from "@/types/module";
 import {
   FaBullhorn,
   FaClipboardList,
   FaInfoCircle,
   FaUsers,
 } from "react-icons/fa";
+import type { AppModule, AppTab } from "@/types/module";
 
 /**
  * 管理画面のタブ定義

@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
 import { processEmployeeDataWithDeduplication } from "@/lib/importers/organization/parser";
-import type { CSVEmployeeRow, PreviewResult, FieldChange, ExcludedDuplicateInfo } from "@/lib/importers/organization/types";
+import type {
+  CSVEmployeeRow,
+  ExcludedDuplicateInfo,
+  FieldChange,
+  PreviewResult,
+} from "@/lib/importers/organization/types";
+import { prisma } from "@/lib/prisma";
 
 /**
  * POST /api/admin/organization/import/preview
@@ -26,14 +31,14 @@ export async function POST(request: Request) {
     if (!data || !Array.isArray(data)) {
       return NextResponse.json(
         { error: "Invalid data format" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!organizationId) {
       return NextResponse.json(
         { error: "Organization ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -45,7 +50,7 @@ export async function POST(request: Request) {
     if (!organization) {
       return NextResponse.json(
         { error: "Organization not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -54,15 +59,14 @@ export async function POST(request: Request) {
       processEmployeeDataWithDeduplication(data);
 
     // 除外された重複社員の情報を変換
-    const excludedDuplicateInfos: ExcludedDuplicateInfo[] = excludedDuplicates.map(
-      (dup) => ({
+    const excludedDuplicateInfos: ExcludedDuplicateInfo[] =
+      excludedDuplicates.map((dup) => ({
         employeeId: dup.employee.employeeId,
         name: dup.employee.name,
         position: dup.employee.position,
         reason: dup.reason,
         keptEmployeeId: dup.keptEmployeeId,
-      })
-    );
+      }));
 
     // 既存社員を取得
     const existingEmployees = await prisma.employee.findMany({
@@ -75,7 +79,7 @@ export async function POST(request: Request) {
     });
 
     const existingMap = new Map(
-      existingEmployees.map((emp) => [emp.employeeId, emp])
+      existingEmployees.map((emp) => [emp.employeeId, emp]),
     );
     const importedIds = new Set(processedData.map((p) => p.employeeId));
 
@@ -107,15 +111,39 @@ export async function POST(request: Request) {
           existingField: keyof typeof existing;
         }[] = [
           { field: "name", fieldJa: "氏名", existingField: "name" },
-          { field: "nameKana", fieldJa: "氏名（フリガナ）", existingField: "nameKana" },
+          {
+            field: "nameKana",
+            fieldJa: "氏名（フリガナ）",
+            existingField: "nameKana",
+          },
           { field: "email", fieldJa: "メールアドレス", existingField: "email" },
           { field: "phone", fieldJa: "電話番号", existingField: "phone" },
           { field: "position", fieldJa: "役職", existingField: "position" },
-          { field: "positionCode", fieldJa: "役職コード", existingField: "positionCode" },
-          { field: "qualificationGrade", fieldJa: "資格等級", existingField: "qualificationGrade" },
-          { field: "qualificationGradeCode", fieldJa: "資格等級コード", existingField: "qualificationGradeCode" },
-          { field: "employmentType", fieldJa: "雇用区分", existingField: "employmentType" },
-          { field: "employmentTypeCode", fieldJa: "雇用区分コード", existingField: "employmentTypeCode" },
+          {
+            field: "positionCode",
+            fieldJa: "役職コード",
+            existingField: "positionCode",
+          },
+          {
+            field: "qualificationGrade",
+            fieldJa: "資格等級",
+            existingField: "qualificationGrade",
+          },
+          {
+            field: "qualificationGradeCode",
+            fieldJa: "資格等級コード",
+            existingField: "qualificationGradeCode",
+          },
+          {
+            field: "employmentType",
+            fieldJa: "雇用区分",
+            existingField: "employmentType",
+          },
+          {
+            field: "employmentTypeCode",
+            fieldJa: "雇用区分コード",
+            existingField: "employmentTypeCode",
+          },
         ];
 
         for (const mapping of fieldMappings) {
@@ -146,15 +174,14 @@ export async function POST(request: Request) {
             oldDepartment,
             newDepartment,
           });
-        } else if (
-          oldSection !== newSection ||
-          oldCourse !== newCourse
-        ) {
+        } else if (oldSection !== newSection || oldCourse !== newCourse) {
           // セクション/コース変更も異動として扱う
           preview.transferredEmployees.push({
             employee: processed,
-            oldDepartment: `${oldDepartment}/${oldSection}/${oldCourse}`.replace(/\/+$/, ""),
-            newDepartment: `${newDepartment}/${newSection}/${newCourse}`.replace(/\/+$/, ""),
+            oldDepartment:
+              `${oldDepartment}/${oldSection}/${oldCourse}`.replace(/\/+$/, ""),
+            newDepartment:
+              `${newDepartment}/${newSection}/${newCourse}`.replace(/\/+$/, ""),
           });
         }
 
@@ -193,7 +220,7 @@ export async function POST(request: Request) {
     console.error("Error generating preview:", error);
     return NextResponse.json(
       { error: "Failed to generate preview" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -11,17 +13,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { useIsTabletOrMobile } from "@/hooks/use-mobile";
-import { translations, type Language, type Translations } from "./translations";
-import { OrgTreeView } from "./components/OrgTreeView";
+import { EXECUTIVES_DEPARTMENT_NAME } from "@/lib/importers/organization/parser";
+import { EmployeeDetailDialog } from "./components/EmployeeDetailDialog";
 import { MemberGrid } from "./components/MemberGrid";
 import { OrgBreadcrumb } from "./components/OrgBreadcrumb";
-import { EmployeeDetailDialog } from "./components/EmployeeDetailDialog";
-import { EXECUTIVES_DEPARTMENT_NAME } from "@/lib/importers/organization/parser";
+import { OrgTreeView } from "./components/OrgTreeView";
+import { type Language, type Translations, translations } from "./translations";
 
 // 型定義
 interface Manager {
@@ -142,7 +148,7 @@ export function OrganizationChartClient({
 
   // 社員詳細ダイアログ
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(
-    null
+    null,
   );
 
   // モバイルメニュー
@@ -242,7 +248,7 @@ export function OrganizationChartClient({
     (
       type: "organization" | "department" | "section" | "course",
       id: string | null,
-      name: string | null
+      name: string | null,
     ) => {
       setPage(1);
 
@@ -289,7 +295,7 @@ export function OrganizationChartClient({
         setMobileMenuOpen(false);
       }
     },
-    [isTabletOrMobile]
+    [isTabletOrMobile],
   );
 
   // ページ変更ハンドラ
@@ -356,7 +362,9 @@ export function OrganizationChartClient({
                   <SheetHeader className="p-4 pb-0">
                     <SheetTitle>{t.selectOrganization}</SheetTitle>
                   </SheetHeader>
-                  <ScrollArea className="h-[calc(100%-60px)] p-4">{treeView}</ScrollArea>
+                  <ScrollArea className="h-[calc(100%-60px)] p-4">
+                    {treeView}
+                  </ScrollArea>
                 </SheetContent>
               </Sheet>
             )}

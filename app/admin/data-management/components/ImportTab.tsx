@@ -1,11 +1,20 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { FaUpload, FaFileExcel, FaCheckCircle, FaExclamationTriangle, FaTimes } from "react-icons/fa";
+import { useCallback, useState } from "react";
+import {
+  FaCheckCircle,
+  FaExclamationTriangle,
+  FaFileExcel,
+  FaTimes,
+  FaUpload,
+} from "react-icons/fa";
 import * as XLSX from "xlsx";
+import type {
+  CSVEmployeeRow,
+  PreviewResult,
+} from "@/lib/importers/organization/types";
 import type { DataManagementTranslation } from "../translations";
 import { PreviewDialog } from "./PreviewDialog";
-import type { CSVEmployeeRow, PreviewResult } from "@/lib/importers/organization/types";
 
 interface ImportTabProps {
   organizationId: string;
@@ -41,32 +50,37 @@ export function ImportTab({ organizationId, language, t }: ImportTabProps) {
     }
   };
 
-  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const handleFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
 
-    setError(null);
-    setSuccess(null);
-    setPreview(null);
+      setError(null);
+      setSuccess(null);
+      setPreview(null);
 
-    const newParsedFiles: ParsedFile[] = [];
-    const errors: string[] = [];
+      const newParsedFiles: ParsedFile[] = [];
+      const errors: string[] = [];
 
-    for (const file of Array.from(files)) {
-      try {
-        const data = await parseFile(file);
-        newParsedFiles.push({ file, data });
-      } catch (err) {
-        errors.push(err instanceof Error ? err.message : `Failed to parse ${file.name}`);
+      for (const file of Array.from(files)) {
+        try {
+          const data = await parseFile(file);
+          newParsedFiles.push({ file, data });
+        } catch (err) {
+          errors.push(
+            err instanceof Error ? err.message : `Failed to parse ${file.name}`,
+          );
+        }
       }
-    }
 
-    setParsedFiles((prev) => [...prev, ...newParsedFiles]);
+      setParsedFiles((prev) => [...prev, ...newParsedFiles]);
 
-    if (errors.length > 0) {
-      setError(errors.join(", "));
-    }
-  }, []);
+      if (errors.length > 0) {
+        setError(errors.join(", "));
+      }
+    },
+    [],
+  );
 
   const parseCSV = (csvText: string): CSVEmployeeRow[] => {
     const lines = csvText.split("\n").filter((line) => line.trim());
@@ -173,7 +187,7 @@ export function ImportTab({ organizationId, language, t }: ImportTabProps) {
 
       const result = await response.json();
       setSuccess(
-        `${t.importSuccess}: ${result.statistics.created} ${language === "ja" ? "名追加" : "added"}, ${result.statistics.updated} ${language === "ja" ? "名更新" : "updated"}, ${result.statistics.transferred} ${language === "ja" ? "名異動" : "transferred"}`
+        `${t.importSuccess}: ${result.statistics.created} ${language === "ja" ? "名追加" : "added"}, ${result.statistics.updated} ${language === "ja" ? "名更新" : "updated"}, ${result.statistics.transferred} ${language === "ja" ? "名異動" : "transferred"}`,
       );
       setShowPreview(false);
       setParsedFiles([]);
@@ -185,21 +199,26 @@ export function ImportTab({ organizationId, language, t }: ImportTabProps) {
     }
   };
 
-  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const droppedFiles = e.dataTransfer.files;
-    if (droppedFiles.length > 0) {
-      const input = document.createElement("input");
-      input.type = "file";
-      input.multiple = true;
-      const dataTransfer = new DataTransfer();
-      for (const file of Array.from(droppedFiles)) {
-        dataTransfer.items.add(file);
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      const droppedFiles = e.dataTransfer.files;
+      if (droppedFiles.length > 0) {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.multiple = true;
+        const dataTransfer = new DataTransfer();
+        for (const file of Array.from(droppedFiles)) {
+          dataTransfer.items.add(file);
+        }
+        input.files = dataTransfer.files;
+        handleFileChange({
+          target: input,
+        } as unknown as React.ChangeEvent<HTMLInputElement>);
       }
-      input.files = dataTransfer.files;
-      handleFileChange({ target: input } as unknown as React.ChangeEvent<HTMLInputElement>);
-    }
-  }, [handleFileChange]);
+    },
+    [handleFileChange],
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -210,7 +229,9 @@ export function ImportTab({ organizationId, language, t }: ImportTabProps) {
       <div className="flex items-center gap-3 mb-6">
         <FaUpload className="w-6 h-6 text-blue-600" />
         <div>
-          <h2 className="text-xl font-semibold text-foreground">{t.importTitle}</h2>
+          <h2 className="text-xl font-semibold text-foreground">
+            {t.importTitle}
+          </h2>
           <p className="text-sm text-muted-foreground">{t.importDescription}</p>
         </div>
       </div>
@@ -231,13 +252,13 @@ export function ImportTab({ organizationId, language, t }: ImportTabProps) {
           className="hidden"
         />
         <FaFileExcel className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-        <p className="text-foreground font-medium mb-2">
-          {t.dropFileHere}
-        </p>
+        <p className="text-foreground font-medium mb-2">{t.dropFileHere}</p>
         <p className="text-sm text-muted-foreground">{t.supportedFormats}</p>
         <p className="text-sm text-muted-foreground">{t.maxFileSize}</p>
         <p className="text-xs text-muted-foreground mt-2">
-          {language === "ja" ? "※複数ファイルをドロップできます" : "※You can drop multiple files"}
+          {language === "ja"
+            ? "※複数ファイルをドロップできます"
+            : "※You can drop multiple files"}
         </p>
       </div>
 
@@ -266,9 +287,13 @@ export function ImportTab({ organizationId, language, t }: ImportTabProps) {
               <div className="flex items-center gap-3">
                 <FaFileExcel className="w-5 h-5 text-green-600" />
                 <div>
-                  <p className="text-sm font-medium text-foreground">{pf.file.name}</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {pf.file.name}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    {language === "ja" ? `${pf.data.length}件のレコード` : `${pf.data.length} records`}
+                    {language === "ja"
+                      ? `${pf.data.length}件のレコード`
+                      : `${pf.data.length} records`}
                   </p>
                 </div>
               </div>

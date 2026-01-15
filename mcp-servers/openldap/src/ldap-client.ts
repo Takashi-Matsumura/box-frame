@@ -112,7 +112,7 @@ export class LdapClient {
       await client.bind(this.config.adminDN, this.config.adminPassword);
       const users = await this.searchUsersInternal(
         client,
-        "(objectClass=inetOrgPerson)"
+        "(objectClass=inetOrgPerson)",
       );
 
       // ページネーション適用
@@ -164,7 +164,8 @@ export class LdapClient {
       console.error("[LdapClient] Failed to search users:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to search users",
+        error:
+          error instanceof Error ? error.message : "Failed to search users",
       };
     } finally {
       await this.closeClient(client);
@@ -220,7 +221,7 @@ export class LdapClient {
    */
   private async searchUsersInternal(
     client: Client,
-    filter: string
+    filter: string,
   ): Promise<LdapUser[]> {
     const opts: SearchOptions = {
       filter,

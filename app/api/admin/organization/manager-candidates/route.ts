@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
 import { EXECUTIVES_DEPARTMENT_NAME } from "@/lib/importers/organization/parser";
+import { prisma } from "@/lib/prisma";
 
 /**
  * GET /api/admin/organization/manager-candidates
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     if (!type || !id) {
       return NextResponse.json(
         { error: "Type and ID are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -60,7 +60,7 @@ export async function GET(request: Request) {
     // 役職コード順（昇順）、同じ役職コードは氏名順でソート
     const sortByPositionCode = (
       a: { positionCode: string | null; name: string },
-      b: { positionCode: string | null; name: string }
+      b: { positionCode: string | null; name: string },
     ) => {
       const codeA = a.positionCode || "999";
       const codeB = b.positionCode || "999";
@@ -73,7 +73,13 @@ export async function GET(request: Request) {
       return a.name.localeCompare(b.name, "ja");
     };
 
-    let candidates: { id: string; employeeId: string; name: string; position: string | null; positionCode: string | null }[] = [];
+    let candidates: {
+      id: string;
+      employeeId: string;
+      name: string;
+      position: string | null;
+      positionCode: string | null;
+    }[] = [];
 
     if (type === "department") {
       // 本部の責任者候補: 役員 + その本部の本部長/事業部長
@@ -86,7 +92,7 @@ export async function GET(request: Request) {
       if (!department) {
         return NextResponse.json(
           { error: "Department not found" },
-          { status: 404 }
+          { status: 404 },
         );
       }
 
@@ -98,7 +104,13 @@ export async function GET(request: Request) {
         },
       });
 
-      let executives: { id: string; employeeId: string; name: string; position: string | null; positionCode: string | null }[] = [];
+      let executives: {
+        id: string;
+        employeeId: string;
+        name: string;
+        position: string | null;
+        positionCode: string | null;
+      }[] = [];
       if (executivesDepartment) {
         executives = await prisma.employee.findMany({
           where: {
@@ -157,7 +169,7 @@ export async function GET(request: Request) {
       if (!section) {
         return NextResponse.json(
           { error: "Section not found" },
-          { status: 404 }
+          { status: 404 },
         );
       }
 
@@ -193,7 +205,7 @@ export async function GET(request: Request) {
       if (!course) {
         return NextResponse.json(
           { error: "Course not found" },
-          { status: 404 }
+          { status: 404 },
         );
       }
 
@@ -221,7 +233,7 @@ export async function GET(request: Request) {
     console.error("Error fetching manager candidates:", error);
     return NextResponse.json(
       { error: "Failed to fetch manager candidates" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

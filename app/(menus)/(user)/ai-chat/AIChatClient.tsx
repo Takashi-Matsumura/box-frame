@@ -1,27 +1,27 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
-import ReactMarkdown from "react-markdown";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  RiSendPlane2Line,
+  RiBarChartBoxLine,
+  RiCheckLine,
   RiDeleteBinLine,
   RiFileCopyLine,
-  RiCheckLine,
   RiRefreshLine,
+  RiRobot2Line,
+  RiSendPlane2Line,
+  RiSparklingLine,
   RiStopCircleLine,
   RiUser3Line,
-  RiRobot2Line,
-  RiSparklingLine,
-  RiBarChartBoxLine,
 } from "react-icons/ri";
+import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
-import { aiChatTranslations } from "./translations";
 import {
-  estimateTokens,
   estimateMessagesTokens,
-  getContextWindowSize,
+  estimateTokens,
   formatTokenCount,
+  getContextWindowSize,
 } from "@/lib/core-modules/ai";
+import { aiChatTranslations } from "./translations";
 
 interface Message {
   id: string;
@@ -85,7 +85,10 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
             modelName: data.modelName,
           });
           // コンテキストウィンドウサイズを設定
-          const contextWindow = getContextWindowSize(data.providerName, data.modelName);
+          const contextWindow = getContextWindowSize(
+            data.providerName,
+            data.modelName,
+          );
           setTokenStats((prev) => ({ ...prev, contextWindow }));
         }
       })
@@ -250,7 +253,8 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
               setTokenStats((prev) => ({
                 ...prev,
                 outputTokens,
-                tokensPerSecond: elapsed > 0 ? Math.round(outputTokens / elapsed) : 0,
+                tokensPerSecond:
+                  elapsed > 0 ? Math.round(outputTokens / elapsed) : 0,
                 generationStartTime: null,
               }));
             }
@@ -259,7 +263,10 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
             }
           } catch (parseError) {
             // JSON以外のデータは無視
-            if (parseError instanceof Error && parseError.message !== "Unexpected end of JSON input") {
+            if (
+              parseError instanceof Error &&
+              parseError.message !== "Unexpected end of JSON input"
+            ) {
               if (data !== "[DONE]") {
                 console.error("Parse error:", parseError);
               }
@@ -464,7 +471,8 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
                 setTokenStats((prev) => ({
                   ...prev,
                   outputTokens,
-                  tokensPerSecond: elapsed > 0 ? Math.round(outputTokens / elapsed) : 0,
+                  tokensPerSecond:
+                    elapsed > 0 ? Math.round(outputTokens / elapsed) : 0,
                   generationStartTime: null,
                 }));
               }
@@ -473,7 +481,10 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
               }
             } catch (parseError) {
               // JSON以外のデータは無視
-              if (parseError instanceof Error && parseError.message !== "Unexpected end of JSON input") {
+              if (
+                parseError instanceof Error &&
+                parseError.message !== "Unexpected end of JSON input"
+              ) {
                 if (data !== "[DONE]") {
                   console.error("Parse error:", parseError);
                 }
@@ -552,8 +563,10 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
 
   // コンテキスト使用率を計算
   const contextUsagePercent = Math.min(
-    ((tokenStats.inputTokens + tokenStats.outputTokens) / tokenStats.contextWindow) * 100,
-    100
+    ((tokenStats.inputTokens + tokenStats.outputTokens) /
+      tokenStats.contextWindow) *
+      100,
+    100,
   );
 
   return (
@@ -652,7 +665,7 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
                       <span className="text-xs text-muted-foreground">
                         {message.timestamp.toLocaleTimeString(
                           language === "ja" ? "ja-JP" : "en-US",
-                          { hour: "2-digit", minute: "2-digit" }
+                          { hour: "2-digit", minute: "2-digit" },
                         )}
                       </span>
                     </div>
@@ -662,7 +675,12 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
                           components={{
                             // リンクを新しいタブで開く
                             a: ({ children, href }) => (
-                              <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                              <a
+                                href={href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline"
+                              >
                                 {children}
                               </a>
                             ),
@@ -699,7 +717,9 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
                           variant="ghost"
                           size="sm"
                           className="h-7 px-2 text-xs"
-                          onClick={() => handleCopy(message.content, message.id)}
+                          onClick={() =>
+                            handleCopy(message.content, message.id)
+                          }
                         >
                           {copiedId === message.id ? (
                             <>
@@ -736,7 +756,12 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
                       <ReactMarkdown
                         components={{
                           a: ({ children, href }) => (
-                            <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                            <a
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline"
+                            >
                               {children}
                             </a>
                           ),
@@ -779,7 +804,9 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
             {/* Error message */}
             {error && (
               <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-                <p className="text-sm text-destructive font-medium">{t.errorTitle}</p>
+                <p className="text-sm text-destructive font-medium">
+                  {t.errorTitle}
+                </p>
                 <p className="text-sm text-destructive/80 mt-1">{error}</p>
               </div>
             )}
@@ -790,49 +817,69 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
       </div>
 
       {/* Stats Panel */}
-      {showStats && (tokenStats.inputTokens > 0 || tokenStats.outputTokens > 0 || isLoading) && (
-        <div className="flex-shrink-0 px-4 py-2 border-t bg-muted/30">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
-            {/* Context Usage Bar */}
-            <div className="flex items-center gap-2 flex-1 min-w-[180px]">
-              <span className="text-muted-foreground whitespace-nowrap">{t.stats.contextUsage}</span>
-              <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden min-w-[60px]">
-                <div
-                  className={`h-full transition-all duration-300 rounded-full ${
-                    contextUsagePercent > 90
-                      ? "bg-destructive"
-                      : contextUsagePercent > 70
-                        ? "bg-amber-500"
-                        : "bg-primary"
-                  }`}
-                  style={{ width: `${Math.max(contextUsagePercent, 1)}%` }}
-                />
+      {showStats &&
+        (tokenStats.inputTokens > 0 ||
+          tokenStats.outputTokens > 0 ||
+          isLoading) && (
+          <div className="flex-shrink-0 px-4 py-2 border-t bg-muted/30">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+              {/* Context Usage Bar */}
+              <div className="flex items-center gap-2 flex-1 min-w-[180px]">
+                <span className="text-muted-foreground whitespace-nowrap">
+                  {t.stats.contextUsage}
+                </span>
+                <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden min-w-[60px]">
+                  <div
+                    className={`h-full transition-all duration-300 rounded-full ${
+                      contextUsagePercent > 90
+                        ? "bg-destructive"
+                        : contextUsagePercent > 70
+                          ? "bg-amber-500"
+                          : "bg-primary"
+                    }`}
+                    style={{ width: `${Math.max(contextUsagePercent, 1)}%` }}
+                  />
+                </div>
+                <span className="font-mono text-muted-foreground whitespace-nowrap">
+                  {formatTokenCount(
+                    tokenStats.inputTokens + tokenStats.outputTokens,
+                  )}
+                  /{formatTokenCount(tokenStats.contextWindow)}
+                </span>
               </div>
-              <span className="font-mono text-muted-foreground whitespace-nowrap">
-                {formatTokenCount(tokenStats.inputTokens + tokenStats.outputTokens)}/{formatTokenCount(tokenStats.contextWindow)}
-              </span>
-            </div>
 
-            {/* Token Counts */}
-            <div className="flex items-center gap-3">
-              <span className="text-muted-foreground">
-                {t.stats.inputTokens}: <span className="font-mono font-medium text-foreground">{formatTokenCount(tokenStats.inputTokens)}</span>
-              </span>
-              <span className="text-muted-foreground">
-                {t.stats.outputTokens}: <span className="font-mono font-medium text-foreground">{formatTokenCount(tokenStats.outputTokens)}</span>
-              </span>
-            </div>
+              {/* Token Counts */}
+              <div className="flex items-center gap-3">
+                <span className="text-muted-foreground">
+                  {t.stats.inputTokens}:{" "}
+                  <span className="font-mono font-medium text-foreground">
+                    {formatTokenCount(tokenStats.inputTokens)}
+                  </span>
+                </span>
+                <span className="text-muted-foreground">
+                  {t.stats.outputTokens}:{" "}
+                  <span className="font-mono font-medium text-foreground">
+                    {formatTokenCount(tokenStats.outputTokens)}
+                  </span>
+                </span>
+              </div>
 
-            {/* Tokens per second */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground">{t.stats.tokensPerSecond}:</span>
-              <span className={`font-mono font-medium ${isLoading ? "text-primary animate-pulse" : "text-foreground"}`}>
-                {tokenStats.tokensPerSecond > 0 ? `${tokenStats.tokensPerSecond} ${t.stats.tpsUnit}` : "-"}
-              </span>
+              {/* Tokens per second */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-muted-foreground">
+                  {t.stats.tokensPerSecond}:
+                </span>
+                <span
+                  className={`font-mono font-medium ${isLoading ? "text-primary animate-pulse" : "text-foreground"}`}
+                >
+                  {tokenStats.tokensPerSecond > 0
+                    ? `${tokenStats.tokensPerSecond} ${t.stats.tpsUnit}`
+                    : "-"}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Input area */}
       <div className="flex-shrink-0 border-t px-4 py-4">

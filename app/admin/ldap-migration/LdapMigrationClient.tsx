@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import {
   Button,
   Card,
@@ -10,12 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
 
 type TabType = "settings" | "test" | "stats";
 
@@ -61,7 +61,8 @@ interface TestResult {
 const translations = {
   en: {
     title: "LDAP Migration",
-    description: "Configure legacy LDAP settings for lazy migration to OpenLDAP",
+    description:
+      "Configure legacy LDAP settings for lazy migration to OpenLDAP",
     tabs: {
       settings: "Settings",
       test: "Connection Test",
@@ -71,7 +72,8 @@ const translations = {
       title: "Legacy LDAP Configuration",
       description: "Configure connection settings for the legacy LDAP server",
       enabled: "Enable Legacy LDAP Authentication",
-      enabledDescription: "When enabled, authentication will fall back to legacy LDAP if OpenLDAP fails",
+      enabledDescription:
+        "When enabled, authentication will fall back to legacy LDAP if OpenLDAP fails",
       serverUrl: "Server URL",
       serverUrlPlaceholder: "ldap://ldap.example.com:389",
       baseDN: "Base DN",
@@ -90,13 +92,15 @@ const translations = {
     },
     test: {
       title: "Connection Test",
-      description: "Test connection and authentication against the legacy LDAP server",
+      description:
+        "Test connection and authentication against the legacy LDAP server",
       connectionTest: "Connection Test",
       connectionTestDescription: "Test basic connectivity to the LDAP server",
       searchTest: "User Search Test",
       searchTestDescription: "Search for a user in the LDAP directory",
       authTest: "Authentication Test",
-      authTestDescription: "Test user authentication with username and password",
+      authTestDescription:
+        "Test user authentication with username and password",
       username: "Username",
       usernamePlaceholder: "Enter username",
       password: "Password",
@@ -145,7 +149,8 @@ const translations = {
       title: "レガシーLDAP設定",
       description: "レガシーLDAPサーバへの接続設定を行います",
       enabled: "レガシーLDAP認証を有効化",
-      enabledDescription: "有効にすると、OpenLDAP認証に失敗した場合にレガシーLDAPへフォールバックします",
+      enabledDescription:
+        "有効にすると、OpenLDAP認証に失敗した場合にレガシーLDAPへフォールバックします",
       serverUrl: "サーバURL",
       serverUrlPlaceholder: "ldap://ldap.example.com:389",
       baseDN: "ベースDN",
@@ -215,13 +220,17 @@ export function LdapMigrationClient({
 }: LdapMigrationClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const t = translations[language as keyof typeof translations] || translations.ja;
+  const t =
+    translations[language as keyof typeof translations] || translations.ja;
 
   // State
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState<string | null>(null);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   // Legacy LDAP Config
   const [legacyConfig, setLegacyConfig] = useState<LegacyLdapConfig>({
@@ -445,7 +454,10 @@ export function LdapMigrationClient({
                   id="serverUrl"
                   value={legacyConfig.serverUrl}
                   onChange={(e) =>
-                    setLegacyConfig({ ...legacyConfig, serverUrl: e.target.value })
+                    setLegacyConfig({
+                      ...legacyConfig,
+                      serverUrl: e.target.value,
+                    })
                   }
                   placeholder={t.settings.serverUrlPlaceholder}
                 />
@@ -485,7 +497,10 @@ export function LdapMigrationClient({
                   type="password"
                   value={legacyConfig.bindPassword}
                   onChange={(e) =>
-                    setLegacyConfig({ ...legacyConfig, bindPassword: e.target.value })
+                    setLegacyConfig({
+                      ...legacyConfig,
+                      bindPassword: e.target.value,
+                    })
                   }
                   placeholder={t.settings.bindPasswordPlaceholder}
                 />
@@ -498,7 +513,10 @@ export function LdapMigrationClient({
                   id="searchFilter"
                   value={legacyConfig.searchFilter}
                   onChange={(e) =>
-                    setLegacyConfig({ ...legacyConfig, searchFilter: e.target.value })
+                    setLegacyConfig({
+                      ...legacyConfig,
+                      searchFilter: e.target.value,
+                    })
                   }
                   placeholder={t.settings.searchFilterPlaceholder}
                 />
@@ -585,7 +603,9 @@ export function LdapMigrationClient({
                 </div>
                 <Button
                   onClick={() => runTest("search")}
-                  disabled={testing !== null || !testUsername || !legacyConfig.isEnabled}
+                  disabled={
+                    testing !== null || !testUsername || !legacyConfig.isEnabled
+                  }
                 >
                   {testing === "search" ? (
                     <>
@@ -660,7 +680,9 @@ export function LdapMigrationClient({
                 >
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{t.test.result}:</span>
-                    <Badge variant={testResult.success ? "default" : "destructive"}>
+                    <Badge
+                      variant={testResult.success ? "default" : "destructive"}
+                    >
                       {testResult.success ? t.test.success : t.test.failed}
                     </Badge>
                   </div>
@@ -718,7 +740,11 @@ export function LdapMigrationClient({
                         : "outline"
                   }
                 >
-                  {t.stats.periodStatus[periodStatus as keyof typeof t.stats.periodStatus]}
+                  {
+                    t.stats.periodStatus[
+                      periodStatus as keyof typeof t.stats.periodStatus
+                    ]
+                  }
                 </Badge>
               </div>
 

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { verifyTotp } from "@/lib/totp";
 import { NotificationService } from "@/lib/services/notification-service";
+import { verifyTotp } from "@/lib/totp";
 
 /**
  * POST /api/user/two-factor/enable

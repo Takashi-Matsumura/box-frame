@@ -1,5 +1,5 @@
-import { OpenLdapLoginForm } from "@/components/OpenLdapLoginForm";
 import { OAuthButtons } from "@/components/OAuthButtons";
+import { OpenLdapLoginForm } from "@/components/OpenLdapLoginForm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { getLanguage } from "@/lib/i18n/get-language";
@@ -55,9 +55,7 @@ export default async function LoginPage() {
         <Card className="shadow-xl">
           <CardContent className="pt-6">
             {/* OpenLDAPログインフォーム */}
-            {isOpenLdapEnabled && (
-              <OpenLdapLoginForm language={language} />
-            )}
+            {isOpenLdapEnabled && <OpenLdapLoginForm language={language} />}
 
             {/* OpenLDAPとOAuthの両方が有効な場合のセパレータ */}
             {isOpenLdapEnabled && hasOAuthEnabled && (

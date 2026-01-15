@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { useSidebarStore } from "@/lib/stores/sidebar-store";
 import { CloseIcon } from "@/components/ui/Icons";
+import { useSidebarStore } from "@/lib/stores/sidebar-store";
 
 interface BaseModalProps {
   /** モーダルの表示状態 */

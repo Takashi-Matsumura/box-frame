@@ -1,7 +1,7 @@
 "use client";
 
+import { AlertCircle, AlertTriangle, Info, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { X, Info, AlertTriangle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Announcement {
@@ -38,7 +38,9 @@ const levelStyles = {
   },
 };
 
-export function AnnouncementBanner({ language = "ja" }: AnnouncementBannerProps) {
+export function AnnouncementBanner({
+  language = "ja",
+}: AnnouncementBannerProps) {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
@@ -71,7 +73,7 @@ export function AnnouncementBanner({ language = "ja" }: AnnouncementBannerProps)
 
   // 非表示にしたアナウンスを除外
   const visibleAnnouncements = announcements.filter(
-    (a) => !dismissedIds.has(a.id)
+    (a) => !dismissedIds.has(a.id),
   );
 
   if (isLoading || visibleAnnouncements.length === 0) {

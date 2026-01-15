@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
  */
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const session = await auth();
@@ -62,7 +62,7 @@ export async function GET(
     if (!employee) {
       return NextResponse.json(
         { error: "Employee not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -95,7 +95,7 @@ export async function GET(
     console.error("Error fetching employee:", error);
     return NextResponse.json(
       { error: "Failed to fetch employee" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

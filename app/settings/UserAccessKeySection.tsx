@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { RiKey2Line, RiInformationLine } from "react-icons/ri";
+import { RiInformationLine, RiKey2Line } from "react-icons/ri";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -183,7 +183,11 @@ export function UserAccessKeySection({
       {message && (
         <Alert
           variant={message.type === "error" ? "destructive" : "default"}
-          className={message.type === "success" ? "mb-4 border-green-200 bg-green-50 text-green-800" : "mb-4"}
+          className={
+            message.type === "success"
+              ? "mb-4 border-green-200 bg-green-50 text-green-800"
+              : "mb-4"
+          }
         >
           <AlertDescription>{message.text}</AlertDescription>
         </Alert>
@@ -241,9 +245,7 @@ export function UserAccessKeySection({
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <h4 className="font-medium">
-                            {accessKey.name}
-                          </h4>
+                          <h4 className="font-medium">{accessKey.name}</h4>
                           {(isExpired || isInactive) && (
                             <Badge variant="destructive">
                               {isExpired
