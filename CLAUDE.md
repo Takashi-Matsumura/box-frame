@@ -560,6 +560,85 @@ OAuth認証は管理画面（システム情報タブ）で個別に有効化/�
 3. LdapMigrationServiceで認証（Legacy LDAP + OpenLDAP対応）
 4. JWTトークン発行
 
+## フローティングウィンドウ（フレーム基盤）
+
+メイン画面と同時に操作可能なフローティングサブウィンドウを提供するフレーム基盤機能です。
+
+### 機能
+
+| 機能 | 説明 |
+|------|------|
+| ドラッグ移動 | タイトルバーをドラッグして移動 |
+| リサイズ | 四辺・四隅をドラッグしてサイズ変更 |
+| 最小化 | タスクバー風に左下に最小表示 |
+| 最大化 | 全画面表示（タイトルバーダブルクリックでも可） |
+| 閉じる | ボタンまたはESCキーで閉じる |
+
+### 使用方法
+
+```typescript
+"use client";
+
+import { FloatingWindow } from "@/components/ui/floating-window";
+import { useFloatingWindowStore } from "@/lib/stores/floating-window-store";
+
+export default function MyPage() {
+  const { open, isOpen } = useFloatingWindowStore();
+
+  const handleOpen = () => {
+    open({
+      title: "Window Title",
+      titleJa: "ウィンドウタイトル",
+      content: (
+        <div>
+          {/* ウィンドウ内のコンテンツ */}
+          <p>Your content here</p>
+        </div>
+      ),
+      initialPosition: { x: 200, y: 150 },  // 初期位置（オプション）
+      initialSize: { width: 450, height: 400 },  // 初期サイズ（オプション）
+    });
+  };
+
+  return (
+    <div>
+      <button onClick={handleOpen} disabled={isOpen}>
+        Open Window
+      </button>
+      {/* ページの最後にFloatingWindowを配置 */}
+      <FloatingWindow language="ja" />
+    </div>
+  );
+}
+```
+
+### ストアAPI
+
+```typescript
+const {
+  isOpen,       // ウィンドウが開いているか
+  isMinimized,  // 最小化されているか
+  isMaximized,  // 最大化されているか
+  position,     // 現在位置 { x, y }
+  size,         // 現在サイズ { width, height }
+  open,         // ウィンドウを開く
+  close,        // ウィンドウを閉じる
+  minimize,     // 最小化
+  maximize,     // 最大化
+  restore,      // 最小化/最大化から復元
+  setPosition,  // 位置を設定
+  setSize,      // サイズを設定
+  setContent,   // コンテンツを変更
+} = useFloatingWindowStore();
+```
+
+### 注意事項
+
+- サブウィンドウは1つのみ（複数同時表示は非対応）
+- z-index: 100（Header上、BaseModal下）
+- メイン画面は同時操作可能（背景クリックで閉じない）
+- ESCキーで閉じる（最小化中は無効）
+
 ## 通知機能（フレーム基盤）
 
 通知機能はモジュールではなく、フレーム基盤として提供されます。
