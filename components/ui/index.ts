@@ -18,4 +18,5 @@ export {
   CardHeader,
   CardTitle,
 } from "./card";
+export { FloatingWindow } from "./floating-window";
 export { AlertIcon, CloseIcon, InfoIcon, LoadingSpinner } from "./Icons";
