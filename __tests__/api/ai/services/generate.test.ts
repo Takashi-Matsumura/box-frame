@@ -16,12 +16,12 @@
  */
 
 import { POST } from "@/app/api/ai/services/generate/route";
-import { AIService } from "@/lib/core-modules/ai/ai-service";
+import { AIService } from "@/lib/core-modules/ai";
 import { auth } from "@/auth";
 
 // モック
 jest.mock("@/auth");
-jest.mock("@/lib/core-modules/ai/ai-service");
+jest.mock("@/lib/core-modules/ai");
 
 const mockAuth = auth as jest.MockedFunction<typeof auth>;
 const mockGenerate = AIService.generate as jest.MockedFunction<typeof AIService.generate>;

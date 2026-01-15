@@ -21,7 +21,7 @@ import {
   estimateMessagesTokens,
   getContextWindowSize,
   formatTokenCount,
-} from "@/lib/core-modules/ai/token-utils";
+} from "@/lib/core-modules/ai";
 
 interface Message {
   id: string;

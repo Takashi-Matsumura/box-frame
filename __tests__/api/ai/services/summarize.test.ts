@@ -15,12 +15,12 @@
  */
 
 import { POST } from "@/app/api/ai/services/summarize/route";
-import { AIService } from "@/lib/core-modules/ai/ai-service";
+import { AIService } from "@/lib/core-modules/ai";
 import { auth } from "@/auth";
 
 // モック
 jest.mock("@/auth");
-jest.mock("@/lib/core-modules/ai/ai-service");
+jest.mock("@/lib/core-modules/ai");
 
 const mockAuth = auth as jest.MockedFunction<typeof auth>;
 const mockSummarize = AIService.summarize as jest.MockedFunction<typeof AIService.summarize>;

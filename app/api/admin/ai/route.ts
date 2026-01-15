@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { AIService, LOCAL_LLM_DEFAULTS } from "@/lib/core-modules/ai/ai-service";
+import { AIService, LOCAL_LLM_DEFAULTS } from "@/lib/core-modules/ai";
 import { AuditService } from "@/lib/services/audit-service";
 
 /**

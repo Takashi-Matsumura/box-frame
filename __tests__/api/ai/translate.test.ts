@@ -18,12 +18,12 @@
  */
 
 import { GET, POST } from "@/app/api/ai/translate/route";
-import { AIService } from "@/lib/core-modules/ai/ai-service";
+import { AIService } from "@/lib/core-modules/ai";
 import { auth } from "@/auth";
 
 // モック
 jest.mock("@/auth");
-jest.mock("@/lib/core-modules/ai/ai-service");
+jest.mock("@/lib/core-modules/ai");
 
 const mockAuth = auth as jest.MockedFunction<typeof auth>;
 const mockIsAvailable = AIService.isAvailable as jest.MockedFunction<typeof AIService.isAvailable>;
