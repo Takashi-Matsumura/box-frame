@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
+import type { ReactNode } from "react";
 import { useState } from "react";
 import {
   Collapsible,
@@ -23,6 +24,7 @@ interface SidebarMenuGroupProps {
     name: string;
     nameJa: string;
     color?: string;
+    icon?: ReactNode;
   };
   menus: AppMenu[];
   language: string;
@@ -67,7 +69,8 @@ export function SidebarMenuGroup({
       <SidebarGroup>
         <CollapsibleTrigger asChild>
           <SidebarGroupLabel className="cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-4 py-2 h-auto flex justify-between items-center mb-2">
-            <span className="uppercase text-xs font-semibold tracking-wide">
+            <span className="uppercase text-xs font-semibold tracking-wide flex items-center gap-1.5">
+              {group.icon}
               {groupTitle}
             </span>
             <ChevronDown

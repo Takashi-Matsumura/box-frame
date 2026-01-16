@@ -944,6 +944,48 @@ model PersonalGoal {
 }
 
 // ========================================
+// 業務プロセス管理（バックオフィスモジュール）
+// ========================================
+
+// 業務プロセスステータス
+enum BusinessProcessStatus {
+  DRAFT       // 下書き
+  INTERVIEW   // ヒアリング中
+  DIAGRAMMING // フロー作成中
+  REVIEW      // レビュー中
+  PUBLISHED   // 公開済み
+  ARCHIVED    // アーカイブ
+}
+
+// 業務プロセス
+model BusinessProcess {
+  id                String                @id @default(cuid())
+  title             String                // 業務名
+  description       String?               // 業務概要
+  status            BusinessProcessStatus @default(DRAFT)
+
+  // 業務フロー言語化（AIヒアリング結果）
+  flowDescription   String?               // 言語化された業務フロー
+  interviewHistory  Json?                 // AIヒアリング履歴
+
+  // draw.io XMLデータ
+  diagramXml        String?               // draw.io XMLデータ
+
+  // メタデータ
+  tags              String?               // タグ（カンマ区切り）
+  version           Int                   @default(1)
+  createdBy         String                // 作成者ユーザーID
+  updatedBy         String?               // 最終更新者
+
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@index([status])
+  @@index([createdBy])
+  @@index([createdAt])
+}
+
+// ========================================
 // RAG（生成AIモジュール - 汎用）
 // ========================================
 

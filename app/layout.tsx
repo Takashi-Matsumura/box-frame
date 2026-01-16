@@ -127,6 +127,17 @@ export default async function RootLayout({
       }
     }
 
+    // ADMINロールの場合、requiredAccessKeyが設定されているメニューも追加
+    if (session.user.role === "ADMIN") {
+      const currentMenuPaths = new Set(accessibleMenus.map((m) => m.path));
+      const accessKeyRequiredMenus = allMenus.filter(
+        (menu) => menu.requiredAccessKey && !currentMenuPaths.has(menu.path),
+      );
+      for (const menu of accessKeyRequiredMenus) {
+        accessibleMenus.push(menu);
+      }
+    }
+
     // メニューグループごとにメニューをグループ化
     groupedMenus = groupMenusByMenuGroup(accessibleMenus);
 

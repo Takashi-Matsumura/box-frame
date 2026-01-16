@@ -1,6 +1,8 @@
 // コアモジュール（静的インポート）
 
+import { LockKeyhole } from "lucide-react";
 // アドオンモジュール
+import { backofficeModule } from "@/lib/addon-modules/backoffice";
 import { evaluationModule } from "@/lib/addon-modules/evaluation/module";
 import { ldapMigrationModule } from "@/lib/addon-modules/ldap-migration";
 import { openldapModule } from "@/lib/addon-modules/openldap";
@@ -57,6 +59,14 @@ export const menuGroups: Record<string, MenuGroup> = {
     color: "text-purple-700",
     order: 5,
   },
+  backoffice: {
+    id: "backoffice",
+    name: "BACKOFFICE",
+    nameJa: "バックオフィス",
+    color: "text-amber-700",
+    order: 6,
+    icon: <LockKeyhole className="w-3 h-3" />,
+  },
 };
 
 /**
@@ -110,6 +120,7 @@ export const moduleRegistry: ModuleRegistry = {
   system: systemModule,
 
   // アドオンモジュール
+  backoffice: backofficeModule,
   evaluation: evaluationModule,
   "ldap-migration": ldapMigrationModule,
   openldap: openldapModule,

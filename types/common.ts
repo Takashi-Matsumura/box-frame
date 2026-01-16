@@ -14,7 +14,13 @@ export type Language = "en" | "ja";
  * サイドバーでの表示グループを定義
  * ロール階層: GUEST → USER → MANAGER → EXECUTIVE → ADMIN
  */
-export type MenuGroupId = "guest" | "user" | "manager" | "executive" | "admin";
+export type MenuGroupId =
+  | "guest"
+  | "user"
+  | "manager"
+  | "executive"
+  | "admin"
+  | "backoffice";
 
 /**
  * 日付範囲型

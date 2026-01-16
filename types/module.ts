@@ -278,6 +278,7 @@ export interface MenuGroup {
   nameJa: string;
   color?: string;
   order: number;
+  icon?: ReactNode;
 }
 
 /**

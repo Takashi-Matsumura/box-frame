@@ -129,7 +129,8 @@ app/
   ├── (menus)/              # メニューページ実装
   │   ├── (user)/           # 全社員向け（組織図）
   │   ├── (manager)/        # 管理職向け（分析）
-  │   └── (admin)/          # システム管理者向け
+  │   ├── (admin)/          # システム管理者向け
+  │   └── (backoffice)/     # バックオフィス（アクセスキー必須）
   ├── admin/                # 管理画面
   ├── login/                # ログインページ
   └── api/                  # APIルート
@@ -149,7 +150,10 @@ lib/
   │   │   ├── types.ts      # 型定義
   │   │   ├── constants.ts  # 定数
   │   │   └── services/     # 評価サービス
-  │   └── ldap-migration/   # LDAPマイグレーション
+  │   ├── ldap-migration/   # LDAPマイグレーション
+  │   └── backoffice/       # 業務分析モジュール
+  │       ├── components/   # draw.ioエディタ等
+  │       └── utils/        # XML操作ユーティリティ
   ├── services/             # フレーム基盤サービス
   │   └── notification-service.ts  # 通知サービス
   ├── stores/               # Zustandストア
@@ -318,7 +322,64 @@ lib/addon-modules/evaluation/
 
 **依存:** openldapモジュール
 
-## Prismaモデル（26モデル）
+### backofficeモジュール（業務分析）
+
+アクセスキーで保護された「鍵付きモジュール」として、業務プロセスの分析とドキュメント化機能を提供します。
+
+**アクセス制御:**
+- `requiredAccessKey: "backoffice"` でアクセスキー必須
+- ADMINロールはアクセスキーなしで閲覧可能
+- 一般ユーザーは管理画面でアクセスキーを付与する必要あり
+
+**モジュール構造:**
+```
+lib/addon-modules/backoffice/
+├── module.tsx                    # モジュール定義
+├── index.ts                      # エクスポート
+├── components/
+│   └── DiagramEditor.tsx         # draw.ioエディタコンポーネント
+└── utils/
+    └── diagram-utils.ts          # draw.io XML操作ユーティリティ
+```
+
+**業務分析機能 (`/backoffice/analytics`):**
+- 業務プロセスの一覧表示・新規作成・削除
+- ステータス管理（下書き/ヒアリング中/フロー作成中/レビュー中/公開済み/アーカイブ）
+
+**AIヒアリング機能:**
+- 一問一答形式の対話で業務フローをヒアリング
+- フェーズ1: 基本情報収集（トリガー、ステップ、担当者、分岐、ツール、完了条件、例外処理）
+- フェーズ2: 深掘りとベストプラクティス比較
+- フェーズ3: 全体フロー整理と最終確認
+- ヒアリング履歴はDBに保存
+- やり直しボタンで会話をリセット可能
+
+**フロー図機能:**
+- draw.io（react-drawio）を使用したフロー図エディタ
+- フローティングサブウィンドウで表示
+- ドラッグ、リサイズ、最小化、最大化対応
+- XMLデータとしてDBに保存
+
+**データモデル:**
+```prisma
+model BusinessProcess {
+  id                String                @id
+  title             String
+  description       String?
+  status            BusinessProcessStatus  // DRAFT/INTERVIEW/DIAGRAMMING/REVIEW/PUBLISHED/ARCHIVED
+  flowDescription   String?               // 言語化された業務フロー
+  interviewHistory  Json?                 // AIヒアリング履歴
+  diagramXml        String?               // draw.io XMLデータ
+  tags              String?
+  version           Int
+  createdBy         String
+  updatedBy         String?
+  createdAt         DateTime
+  updatedAt         DateTime
+}
+```
+
+## Prismaモデル（27モデル）
 
 ### 認証系
 - Account, Session, User, VerificationToken
@@ -340,6 +401,9 @@ lib/addon-modules/evaluation/
 
 ### システム系
 - SystemSetting
+
+### 業務分析系
+- BusinessProcess
 
 ## 開発コマンド
 
@@ -522,10 +586,16 @@ GUEST → USER → MANAGER → EXECUTIVE → ADMIN
 
 **メニューグループ（セクション）:**
 ```typescript
-type MenuGroupId = "guest" | "user" | "manager" | "executive" | "admin";
+type MenuGroupId = "guest" | "user" | "manager" | "executive" | "admin" | "backoffice";
 ```
 
 各メニューは `menuGroup` プロパティでセクションを指定します。上位ロールは下位ロールのセクションも表示されます。
+
+**backofficeセクション:**
+- アクセスキーで保護された「鍵付き」セクション
+- ADMINロールはアクセスキーなしで閲覧可能
+- 一般ユーザーは `requiredAccessKey` と `AccessKey` の設定が必要
+- サイドバーにカギアイコンで表示
 
 ## レスポンシブ対応
 

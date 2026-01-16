@@ -1,0 +1,1 @@
+export { backofficeModule } from "./module";
