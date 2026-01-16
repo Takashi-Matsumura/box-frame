@@ -1,1 +1,0 @@
-export { subwindowDemoModule } from "./module";

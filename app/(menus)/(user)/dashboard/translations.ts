@@ -35,6 +35,23 @@ export const dashboardTranslations = {
     cardTitle: "Sample Card",
     cardDescription: "Cards can contain any content.",
     cardContent: "This is a sample card using shadcn/ui Card component.",
+    // Floating Window Demo
+    floatingWindowTitle: "Floating Window Demo",
+    floatingWindowDescription:
+      "This is a floating sub-window that can be used simultaneously with the main content area.",
+    floatingWindowOpen: "Open Sub Window",
+    floatingWindowOpened: "Window is Open",
+    floatingWindowFeatures: "Features",
+    floatingWindowFeature1: "Drag title bar to move",
+    floatingWindowFeature2: "Resize from edges and corners",
+    floatingWindowFeature3: "Minimize, maximize, close",
+    floatingWindowFeature4: "ESC key to close",
+    floatingWindowFeature5: "Double-click title to maximize",
+    floatingWindowNote: "Note",
+    floatingWindowNoteText:
+      "This window can be used simultaneously with the main content area.",
+    floatingWindowHint:
+      "Click the button to open a floating window. While open, close it with the button or ESC key.",
   },
   ja: {
     title: "ダッシュボード",
@@ -71,6 +88,23 @@ export const dashboardTranslations = {
     cardDescription: "カードには任意のコンテンツを含められます。",
     cardContent:
       "これはshadcn/ui Cardコンポーネントを使用したサンプルカードです。",
+    // Floating Window Demo
+    floatingWindowTitle: "フローティングウィンドウ デモ",
+    floatingWindowDescription:
+      "メインコンテンツエリアと同時に操作可能なフローティングサブウィンドウです。",
+    floatingWindowOpen: "サブウィンドウを開く",
+    floatingWindowOpened: "ウィンドウ表示中",
+    floatingWindowFeatures: "機能",
+    floatingWindowFeature1: "タイトルバーをドラッグで移動",
+    floatingWindowFeature2: "端と角からリサイズ",
+    floatingWindowFeature3: "最小化、最大化、閉じる",
+    floatingWindowFeature4: "ESCキーで閉じる",
+    floatingWindowFeature5: "タイトルダブルクリックで最大化",
+    floatingWindowNote: "注意",
+    floatingWindowNoteText:
+      "このウィンドウはメインコンテンツエリアと同時に操作できます。",
+    floatingWindowHint:
+      "ボタンをクリックしてフローティングウィンドウを開いてください。開いている間は閉じるボタンまたはESCキーで閉じられます。",
   },
 } as const;
 

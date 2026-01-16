@@ -5,7 +5,6 @@ import { evaluationModule } from "@/lib/addon-modules/evaluation/module";
 import { ldapMigrationModule } from "@/lib/addon-modules/ldap-migration";
 import { openldapModule } from "@/lib/addon-modules/openldap";
 import { organizationModule } from "@/lib/addon-modules/organization";
-import { subwindowDemoModule } from "@/lib/addon-modules/subwindow-demo";
 import { aiModule } from "@/lib/core-modules/ai";
 import { systemModule } from "@/lib/core-modules/system";
 import { prisma } from "@/lib/prisma";
@@ -115,7 +114,6 @@ export const moduleRegistry: ModuleRegistry = {
   "ldap-migration": ldapMigrationModule,
   openldap: openldapModule,
   organization: organizationModule,
-  "subwindow-demo": subwindowDemoModule,
 };
 
 /**

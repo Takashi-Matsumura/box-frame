@@ -9,6 +9,7 @@ import {
   RiServerLine,
   RiShieldUserLine,
   RiTranslate2,
+  RiWindowLine,
 } from "react-icons/ri";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FloatingWindow } from "@/components/ui/floating-window";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -31,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { useFloatingWindowStore } from "@/lib/stores/floating-window-store";
 import { dashboardTranslations } from "./translations";
 
 interface DashboardClientProps {
@@ -47,6 +50,37 @@ export function DashboardClient({
   const t = dashboardTranslations[language];
   const [switchValue, setSwitchValue] = useState(false);
   const [checkboxValue, setCheckboxValue] = useState(false);
+  const { open, isOpen } = useFloatingWindowStore();
+
+  const handleOpenFloatingWindow = () => {
+    open({
+      title: "Demo Window",
+      titleJa: "デモウィンドウ",
+      content: (
+        <div className="space-y-4">
+          <p className="text-muted-foreground">{t.floatingWindowDescription}</p>
+          <div className="p-4 bg-muted rounded-lg">
+            <h4 className="font-semibold mb-2">{t.floatingWindowFeatures}</h4>
+            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+              <li>{t.floatingWindowFeature1}</li>
+              <li>{t.floatingWindowFeature2}</li>
+              <li>{t.floatingWindowFeature3}</li>
+              <li>{t.floatingWindowFeature4}</li>
+              <li>{t.floatingWindowFeature5}</li>
+            </ul>
+          </div>
+          <div className="p-4 bg-accent/50 rounded-lg">
+            <h4 className="font-semibold mb-2">{t.floatingWindowNote}</h4>
+            <p className="text-sm text-muted-foreground">
+              {t.floatingWindowNoteText}
+            </p>
+          </div>
+        </div>
+      ),
+      initialPosition: { x: 200, y: 150 },
+      initialSize: { width: 450, height: 400 },
+    });
+  };
 
   const features = [
     {
@@ -68,6 +102,11 @@ export function DashboardClient({
       icon: RiTranslate2,
       title: t.featureI18n,
       description: t.featureI18nDesc,
+    },
+    {
+      icon: RiWindowLine,
+      title: t.floatingWindowTitle,
+      description: t.floatingWindowDescription,
     },
   ];
 
@@ -275,8 +314,25 @@ export function DashboardClient({
               </div>
             </div>
           </div>
+
+          {/* Floating Window Demo */}
+          <div>
+            <h4 className="font-medium mb-3">{t.floatingWindowTitle}</h4>
+            <div className="flex items-center gap-4">
+              <Button onClick={handleOpenFloatingWindow} disabled={isOpen}>
+                <RiWindowLine className="w-4 h-4 mr-2" />
+                {isOpen ? t.floatingWindowOpened : t.floatingWindowOpen}
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                {t.floatingWindowHint}
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
+
+      {/* FloatingWindow Component */}
+      <FloatingWindow language={language} />
     </div>
   );
 }
