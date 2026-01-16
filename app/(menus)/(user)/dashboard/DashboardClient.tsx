@@ -9,6 +9,7 @@ import {
   RiServerLine,
   RiShieldUserLine,
   RiTranslate2,
+  RiWindowLine,
 } from "react-icons/ri";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { FloatingWindow } from "@/components/ui/floating-window";
+import { useFloatingWindowStore } from "@/lib/stores/floating-window-store";
 import { dashboardTranslations } from "./translations";
 
 interface DashboardClientProps {
@@ -47,6 +50,30 @@ export function DashboardClient({
   const t = dashboardTranslations[language];
   const [switchValue, setSwitchValue] = useState(false);
   const [checkboxValue, setCheckboxValue] = useState(false);
+  const { open: openFloatingWindow, isOpen: isFloatingWindowOpen } =
+    useFloatingWindowStore();
+
+  const handleOpenFloatingWindow = () => {
+    openFloatingWindow({
+      title: t.floatingWindowTitle,
+      titleJa: t.floatingWindowTitle,
+      content: (
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">{t.floatingWindowContent}</p>
+          <div className="flex flex-wrap gap-2">
+            <Badge>Draggable</Badge>
+            <Badge variant="secondary">Resizable</Badge>
+            <Badge variant="outline">Minimizable</Badge>
+            <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+              Maximizable
+            </Badge>
+          </div>
+        </div>
+      ),
+      initialPosition: { x: 200, y: 150 },
+      initialSize: { width: 400, height: 250 },
+    });
+  };
 
   const features = [
     {
@@ -226,6 +253,23 @@ export function DashboardClient({
             </div>
           </div>
 
+          {/* Floating Window */}
+          <div>
+            <h4 className="font-medium mb-3">{t.demoFloatingWindow}</h4>
+            <div className="flex items-center gap-4">
+              <Button
+                onClick={handleOpenFloatingWindow}
+                disabled={isFloatingWindowOpen}
+              >
+                <RiWindowLine className="w-4 h-4 mr-2" />
+                {t.floatingWindowButton}
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                {t.floatingWindowNote}
+              </span>
+            </div>
+          </div>
+
           {/* Form Inputs */}
           <div>
             <h4 className="font-medium mb-3">{t.demoInputs}</h4>
@@ -277,6 +321,9 @@ export function DashboardClient({
           </div>
         </CardContent>
       </Card>
+
+      {/* Floating Window Component */}
+      <FloatingWindow language={language} />
     </div>
   );
 }

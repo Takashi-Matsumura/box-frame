@@ -35,6 +35,12 @@ export const dashboardTranslations = {
     cardTitle: "Sample Card",
     cardDescription: "Cards can contain any content.",
     cardContent: "This is a sample card using shadcn/ui Card component.",
+    // Floating Window Demo
+    demoFloatingWindow: "Floating Window",
+    floatingWindowButton: "Open Floating Window",
+    floatingWindowTitle: "Sample Floating Window",
+    floatingWindowContent: "This window can be dragged, resized, minimized, and maximized. Try it out!",
+    floatingWindowNote: "Drag title bar to move, edges to resize, double-click title for maximize.",
   },
   ja: {
     title: "ダッシュボード",
@@ -71,6 +77,12 @@ export const dashboardTranslations = {
     cardDescription: "カードには任意のコンテンツを含められます。",
     cardContent:
       "これはshadcn/ui Cardコンポーネントを使用したサンプルカードです。",
+    // Floating Window Demo
+    demoFloatingWindow: "フローティングウィンドウ",
+    floatingWindowButton: "フローティングウィンドウを開く",
+    floatingWindowTitle: "サンプルフローティングウィンドウ",
+    floatingWindowContent: "このウィンドウはドラッグ、リサイズ、最小化、最大化が可能です。お試しください！",
+    floatingWindowNote: "タイトルバーをドラッグで移動、辺をドラッグでリサイズ、ダブルクリックで最大化。",
   },
 } as const;
 
