@@ -5,18 +5,23 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Check,
+  CheckCircle2,
+  Circle,
   Edit2,
+  FileText,
   GitBranch,
   Loader2,
   MessageSquare,
+  PlayCircle,
   RotateCcw,
   Send,
+  Upload,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FloatingWindow } from "@/components/ui/floating-window";
 import { useFloatingWindowStore } from "@/lib/stores/floating-window-store";
-import { DiagramEditor } from "@/lib/addon-modules/backoffice/components/DiagramEditor";
+import { DiagramEditorWithAI } from "@/lib/addon-modules/backoffice/components/DiagramEditorWithAI";
 import { wrapWithMxFile } from "@/lib/addon-modules/backoffice/utils/diagram-utils";
 import { processDetailTranslations } from "./translations";
 
@@ -145,6 +150,110 @@ export function ProcessDetailClient({
       ARCHIVED: t.archived,
     };
     return statusMap[status] || status;
+  };
+
+  // Step progress calculation
+  type StepStatus = "completed" | "current" | "pending";
+
+  const getStepStatuses = (): StepStatus[] => {
+    if (!process) return ["pending", "pending", "pending", "pending", "pending"];
+
+    const hasStartedHearing = chatMessages.length > 0;
+    const hasFlowDescription = !!process.flowDescription;
+    const hasDiagram = !!process.diagramXml;
+    const status = process.status;
+
+    // Step 1: AI Hearing
+    // 4つ以上のメッセージがあれば十分なヒアリングとみなす
+    const hasEnoughMessages = chatMessages.length >= 4;
+    let step1: StepStatus = "pending";
+    if (status === "PUBLISHED" || status === "REVIEW" || status === "DIAGRAMMING" || hasFlowDescription || hasEnoughMessages) {
+      step1 = "completed";
+    } else if (hasStartedHearing || status === "INTERVIEW") {
+      step1 = "current";
+    }
+
+    // Step 2: Flow Description
+    let step2: StepStatus = "pending";
+    if (hasFlowDescription && (status === "DIAGRAMMING" || status === "REVIEW" || status === "PUBLISHED" || hasDiagram)) {
+      step2 = "completed";
+    } else if (hasEnoughMessages && !hasFlowDescription) {
+      // 十分なヒアリングがあり、まだフロー説明がない場合は「フロー説明生成」が次のアクション
+      step2 = "current";
+    }
+
+    // Step 3: Flow Diagram
+    let step3: StepStatus = "pending";
+    if (hasDiagram && (status === "REVIEW" || status === "PUBLISHED")) {
+      step3 = "completed";
+    } else if (status === "DIAGRAMMING" || (hasFlowDescription && step2 === "completed")) {
+      step3 = "current";
+    }
+
+    // Step 4: Review
+    let step4: StepStatus = "pending";
+    if (status === "PUBLISHED") {
+      step4 = "completed";
+    } else if (status === "REVIEW") {
+      step4 = "current";
+    }
+
+    // Step 5: Publish
+    let step5: StepStatus = "pending";
+    if (status === "PUBLISHED") {
+      step5 = "completed";
+    } else if (status === "REVIEW" && step4 === "current") {
+      step5 = "pending";
+    }
+
+    return [step1, step2, step3, step4, step5];
+  };
+
+  const stepStatuses = getStepStatuses();
+
+  const steps = [
+    { title: t.step1Title, desc: t.step1Desc, action: t.step1Action, icon: MessageSquare },
+    { title: t.step2Title, desc: t.step2Desc, action: t.step2Action, icon: FileText },
+    { title: t.step3Title, desc: t.step3Desc, action: t.step3Action, icon: GitBranch },
+    { title: t.step4Title, desc: t.step4Desc, action: t.step4Action, icon: PlayCircle },
+    { title: t.step5Title, desc: t.step5Desc, action: t.step5Action, icon: Upload },
+  ];
+
+  // Find the current step index
+  const currentStepIndex = stepStatuses.findIndex((s) => s === "current");
+
+  const handleStepAction = (stepIndex: number) => {
+    switch (stepIndex) {
+      case 0: // Start hearing
+        if (chatMessages.length === 0) {
+          const initialMessage: ChatMessage = {
+            role: "assistant",
+            content:
+              language === "ja"
+                ? `「${process?.title}」についてヒアリングを始めます。\n\n一問一答形式で業務フローを詳しくお聞きしていきます。回答いただいた内容を元に、次の質問をしていきますので、分かる範囲でお答えください。\n\nでは最初の質問です。\n**この業務はどのようなきっかけ（トリガー）で開始されますか？**`
+                : `Let's start the hearing about "${process?.title}".\n\nI'll ask you questions one at a time to understand your business process in detail. Please answer as best you can.\n\nFirst question:\n**What triggers this business process to start?**`,
+            timestamp: new Date().toISOString(),
+          };
+          setChatMessages([initialMessage]);
+          updateProcess({
+            interviewHistory: [initialMessage],
+            status: "INTERVIEW",
+          });
+        }
+        break;
+      case 1: // Generate flow description
+        handleGenerateFlowDescription();
+        break;
+      case 2: // Open diagram editor
+        handleOpenDiagramEditor();
+        break;
+      case 3: // Start review
+        updateProcess({ status: "REVIEW" });
+        break;
+      case 4: // Publish
+        updateProcess({ status: "PUBLISHED" });
+        break;
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -338,14 +447,16 @@ ${process?.description ? `説明: ${process.description}` : ""}
     openFloatingWindow({
       title: "Diagram Editor",
       titleJa: t.diagramEditor,
-      initialSize: { width: 900, height: 700 },
-      initialPosition: { x: 100, y: 50 },
+      initialSize: { width: 1200, height: 700 },
+      initialPosition: { x: 50, y: 50 },
       content: (
-        <DiagramEditor
+        <DiagramEditorWithAI
           xml={xml}
+          flowDescription={process?.flowDescription || undefined}
           onChange={(newXml) => {
             setDiagramXml(newXml);
           }}
+          language={language}
           className="w-full h-full"
         />
       ),
@@ -376,16 +487,18 @@ ${process?.description ? `説明: ${process.description}` : ""}
     if (diagramXml) {
       const xml = wrapWithMxFile(diagramXml);
       setContent(
-        <DiagramEditor
+        <DiagramEditorWithAI
           xml={xml}
+          flowDescription={process?.flowDescription || undefined}
           onChange={(newXml) => {
             setDiagramXml(newXml);
           }}
+          language={language}
           className="w-full h-full"
         />,
       );
     }
-  }, [diagramXml, setContent]);
+  }, [diagramXml, setContent, process?.flowDescription, language]);
 
   if (isLoading) {
     return (
@@ -467,6 +580,182 @@ ${process?.description ? `説明: ${process.description}` : ""}
           <span>
             {t.updatedAt}: {formatDate(process.updatedAt)}
           </span>
+        </div>
+      </div>
+
+      {/* Step Progress Indicator */}
+      <div className="bg-card rounded-xl p-6 shadow-sm border">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold">{t.progressSteps}</h2>
+          {currentStepIndex >= 0 && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full text-sm">
+              <span className="font-medium">{t.nextAction}:</span>
+              <span>{steps[currentStepIndex].action}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop: Horizontal stepper */}
+        <div className="hidden md:block">
+          <div className="flex items-start justify-between relative">
+            {/* Progress line */}
+            <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 dark:bg-gray-700" />
+            <div
+              className="absolute top-5 left-0 h-0.5 bg-amber-500 transition-all duration-500"
+              style={{
+                width: `${(stepStatuses.filter((s) => s === "completed").length / (steps.length - 1)) * 100}%`,
+              }}
+            />
+
+            {steps.map((step, index) => {
+              const status = stepStatuses[index];
+              const StepIcon = step.icon;
+              return (
+                <div key={index} className="flex flex-col items-center relative z-10 flex-1">
+                  {/* Step circle */}
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                      status === "completed"
+                        ? "bg-amber-500 border-amber-500 text-white"
+                        : status === "current"
+                          ? "bg-white dark:bg-gray-800 border-amber-500 text-amber-500"
+                          : "bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400"
+                    }`}
+                  >
+                    {status === "completed" ? (
+                      <CheckCircle2 className="w-5 h-5" />
+                    ) : (
+                      <StepIcon className="w-5 h-5" />
+                    )}
+                  </div>
+
+                  {/* Step content */}
+                  <div className="mt-3 text-center px-2">
+                    <p
+                      className={`text-sm font-medium ${
+                        status === "completed"
+                          ? "text-amber-600 dark:text-amber-400"
+                          : status === "current"
+                            ? "text-foreground"
+                            : "text-muted-foreground"
+                      }`}
+                    >
+                      {step.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1 max-w-[120px]">
+                      {step.desc}
+                    </p>
+
+                    {/* Action button for current step */}
+                    {status === "current" && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="mt-3"
+                        onClick={() => handleStepAction(index)}
+                        disabled={isSaving}
+                      >
+                        {isSaving ? (
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                        ) : null}
+                        {step.action}
+                      </Button>
+                    )}
+
+                    {/* Status badge */}
+                    {status === "completed" && (
+                      <span className="inline-block mt-2 text-xs text-amber-600 dark:text-amber-400 font-medium">
+                        {t.stepCompleted}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Mobile: Vertical stepper */}
+        <div className="md:hidden space-y-4">
+          {steps.map((step, index) => {
+            const status = stepStatuses[index];
+            const StepIcon = step.icon;
+            const isLast = index === steps.length - 1;
+            return (
+              <div key={index} className="flex gap-4">
+                {/* Left: Icon and line */}
+                <div className="flex flex-col items-center">
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center border-2 flex-shrink-0 ${
+                      status === "completed"
+                        ? "bg-amber-500 border-amber-500 text-white"
+                        : status === "current"
+                          ? "bg-white dark:bg-gray-800 border-amber-500 text-amber-500"
+                          : "bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400"
+                    }`}
+                  >
+                    {status === "completed" ? (
+                      <CheckCircle2 className="w-5 h-5" />
+                    ) : (
+                      <StepIcon className="w-5 h-5" />
+                    )}
+                  </div>
+                  {!isLast && (
+                    <div
+                      className={`w-0.5 flex-1 min-h-[24px] ${
+                        status === "completed"
+                          ? "bg-amber-500"
+                          : "bg-gray-200 dark:bg-gray-700"
+                      }`}
+                    />
+                  )}
+                </div>
+
+                {/* Right: Content */}
+                <div className="flex-1 pb-4">
+                  <div className="flex items-center gap-2">
+                    <p
+                      className={`text-sm font-medium ${
+                        status === "completed"
+                          ? "text-amber-600 dark:text-amber-400"
+                          : status === "current"
+                            ? "text-foreground"
+                            : "text-muted-foreground"
+                      }`}
+                    >
+                      {step.title}
+                    </p>
+                    {status === "completed" && (
+                      <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full">
+                        {t.stepCompleted}
+                      </span>
+                    )}
+                    {status === "current" && (
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
+                        {t.stepCurrent}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{step.desc}</p>
+
+                  {status === "current" && (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => handleStepAction(index)}
+                      disabled={isSaving}
+                    >
+                      {isSaving ? (
+                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                      ) : null}
+                      {step.action}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

@@ -12,7 +12,12 @@ interface DiagramEditorProps {
 export function DiagramEditor({ xml, onChange, className }: DiagramEditorProps) {
   // XMLが変わるたびに新しいキーを生成してコンポーネントを再マウント
   const editorKey = useMemo(() => {
-    return xml ? `editor-${Date.now()}` : "editor-empty";
+    const key = xml ? `editor-${Date.now()}` : "editor-empty";
+    console.log("=== DiagramEditor ===");
+    console.log("Key:", key);
+    console.log("XML length:", xml?.length || 0);
+    console.log("XML preview:", xml?.substring(0, 200));
+    return key;
   }, [xml]);
 
   return (
