@@ -522,12 +522,13 @@ ${process?.description ? `説明: ${process.description}` : ""}
         </Button>
       </div>
 
-      {/* Process Info Card */}
+      {/* Process Info Card with Step Progress */}
       <div className="bg-card rounded-xl p-6 shadow-sm border">
+        {/* Header: Title, Status, Actions */}
         <div className="flex items-start justify-between mb-4">
           <div>
             <h1 className="text-2xl font-bold mb-2">{process.title}</h1>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <span
                 className={`text-sm px-3 py-1 rounded-full ${statusColors[process.status as ProcessStatus] || statusColors.DRAFT}`}
               >
@@ -536,9 +537,18 @@ ${process?.description ? `説明: ${process.description}` : ""}
               <span className="text-sm text-muted-foreground">
                 {t.version} {process.version}
               </span>
+              <span className="text-xs text-muted-foreground">
+                {t.updatedAt}: {formatDate(process.updatedAt)}
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {currentStepIndex >= 0 && (
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full text-sm">
+                <span className="font-medium">{t.nextAction}:</span>
+                <span>{steps[currentStepIndex].action}</span>
+              </div>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -563,37 +573,24 @@ ${process?.description ? `説明: ${process.description}` : ""}
             )}
           </div>
         </div>
-        <p className="text-muted-foreground">
-          {process.description || t.noDescription}
-        </p>
-        {process.tags && (
-          <div className="mt-2">
-            <span className="text-sm text-amber-600 dark:text-amber-400">
-              {process.tags}
-            </span>
+
+        {/* Description */}
+        {(process.description || process.tags) && (
+          <div className="mb-6 pb-6 border-b">
+            <p className="text-muted-foreground text-sm">
+              {process.description || t.noDescription}
+            </p>
+            {process.tags && (
+              <div className="mt-2">
+                <span className="text-sm text-amber-600 dark:text-amber-400">
+                  {process.tags}
+                </span>
+              </div>
+            )}
           </div>
         )}
-        <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
-          <span>
-            {t.createdAt}: {formatDate(process.createdAt)}
-          </span>
-          <span>
-            {t.updatedAt}: {formatDate(process.updatedAt)}
-          </span>
-        </div>
-      </div>
 
-      {/* Step Progress Indicator */}
-      <div className="bg-card rounded-xl p-6 shadow-sm border">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold">{t.progressSteps}</h2>
-          {currentStepIndex >= 0 && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full text-sm">
-              <span className="font-medium">{t.nextAction}:</span>
-              <span>{steps[currentStepIndex].action}</span>
-            </div>
-          )}
-        </div>
+        {/* Step Progress Indicator */}
 
         {/* Desktop: Horizontal stepper */}
         <div className="hidden md:block">
