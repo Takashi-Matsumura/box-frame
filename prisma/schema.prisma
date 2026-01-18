@@ -971,6 +971,41 @@ model BusinessProcess {
   // draw.io XMLデータ
   diagramXml        String?               // draw.io XMLデータ
 
+  // ========================================
+  // 業務分掌9項目
+  // ========================================
+
+  // 1. 業務概要・目的
+  purpose               String?           // 業務の目的・背景・価値
+
+  // 2. 責任範囲
+  responsibleDepartment String?           // 担当部署
+  responsiblePerson     String?           // 責任者
+  authority             String?           // 権限範囲
+
+  // 3. ステークホルダー
+  stakeholders          Json?             // ステークホルダー配列 [{name, role, department}]
+
+  // 4. 業務フロー（構造化）
+  businessFlow          String?           // 構造化された業務フロー（マークダウン形式）
+  actors                Json?             // シーケンス図のアクター一覧 [{id, name, department}]
+
+  // 5. インプット/アウトプット
+  inputs                Json?             // インプット配列 [{name, description, source}]
+  outputs               Json?             // アウトプット配列 [{name, description, destination}]
+
+  // 6. 使用システム・ツール
+  systemsAndTools       Json?             // システム・ツール配列 [{name, purpose, url}]
+
+  // 7. KPI/成果指標
+  kpis                  Json?             // KPI配列 [{name, target, unit, frequency}]
+
+  // 8. リスク・課題
+  risksAndIssues        Json?             // リスク・課題配列 [{type, description, impact, mitigation}]
+
+  // 9. 改善提案
+  improvements          Json?             // 改善提案配列 [{title, description, priority, expectedBenefit}]
+
   // メタデータ
   tags              String?               // タグ（カンマ区切り）
   version           Int                   @default(1)

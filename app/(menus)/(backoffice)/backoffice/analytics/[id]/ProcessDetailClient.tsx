@@ -3,19 +3,28 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  AlertTriangle,
   ArrowLeft,
+  BarChart3,
+  Boxes,
   Check,
   CheckCircle2,
-  Circle,
+  ClipboardList,
   Edit2,
+  FileInput,
+  FileOutput,
   FileText,
   GitBranch,
+  Lightbulb,
   Loader2,
   MessageSquare,
+  Monitor,
   PlayCircle,
   RotateCcw,
   Send,
+  Target,
   Upload,
+  Users,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,6 +33,53 @@ import { useFloatingWindowStore } from "@/lib/stores/floating-window-store";
 import { DiagramEditorWithAI } from "@/lib/addon-modules/backoffice/components/DiagramEditorWithAI";
 import { wrapWithMxFile } from "@/lib/addon-modules/backoffice/utils/diagram-utils";
 import { processDetailTranslations } from "./translations";
+
+// 業務分掌データの型定義
+interface Stakeholder {
+  name: string;
+  role: string;
+  department?: string;
+}
+
+interface Actor {
+  id: string;
+  name: string;
+  department?: string;
+}
+
+interface InputOutput {
+  name: string;
+  description?: string;
+  source?: string;
+  destination?: string;
+}
+
+interface SystemTool {
+  name: string;
+  purpose?: string;
+  url?: string;
+}
+
+interface KPI {
+  name: string;
+  target?: string;
+  unit?: string;
+  frequency?: string;
+}
+
+interface RiskIssue {
+  type: string;
+  description: string;
+  impact?: string;
+  mitigation?: string;
+}
+
+interface Improvement {
+  title: string;
+  description: string;
+  priority?: string;
+  expectedBenefit?: string;
+}
 
 interface BusinessProcess {
   id: string;
@@ -38,6 +94,20 @@ interface BusinessProcess {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  // 業務分掌9項目
+  purpose: string | null;
+  responsibleDepartment: string | null;
+  responsiblePerson: string | null;
+  authority: string | null;
+  stakeholders: Stakeholder[] | null;
+  businessFlow: string | null;
+  actors: Actor[] | null;
+  inputs: InputOutput[] | null;
+  outputs: InputOutput[] | null;
+  systemsAndTools: SystemTool[] | null;
+  kpis: KPI[] | null;
+  risksAndIssues: RiskIssue[] | null;
+  improvements: Improvement[] | null;
 }
 
 interface ChatMessage {
@@ -87,11 +157,10 @@ export function ProcessDetailClient({
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isAiThinking, setIsAiThinking] = useState(false);
-  const [isComposing, setIsComposing] = useState(false); // IME変換中かどうか
-  const [isEditingFlow, setIsEditingFlow] = useState(false);
-  const [editedFlowDescription, setEditedFlowDescription] = useState("");
+  const [isComposing, setIsComposing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [diagramXml, setDiagramXml] = useState<string>("");
+  const [isOrganizing, setIsOrganizing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const fetchProcess = useCallback(async () => {
@@ -124,7 +193,6 @@ export function ProcessDetailClient({
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -133,7 +201,6 @@ export function ProcessDetailClient({
   }, [inputMessage]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // IME変換中はEnterキーでメッセージを送信しない
     if (e.key === "Enter" && !e.shiftKey && !isComposing) {
       e.preventDefault();
       handleSendMessage();
@@ -152,6 +219,23 @@ export function ProcessDetailClient({
     return statusMap[status] || status;
   };
 
+  // 業務分掌が整理済みかどうかを判定
+  const hasJobDescription = () => {
+    if (!process) return false;
+    return !!(
+      process.purpose ||
+      process.responsibleDepartment ||
+      process.stakeholders?.length ||
+      process.businessFlow ||
+      process.inputs?.length ||
+      process.outputs?.length ||
+      process.systemsAndTools?.length ||
+      process.kpis?.length ||
+      process.risksAndIssues?.length ||
+      process.improvements?.length
+    );
+  };
+
   // Step progress calculation
   type StepStatus = "completed" | "current" | "pending";
 
@@ -159,42 +243,40 @@ export function ProcessDetailClient({
     if (!process) return ["pending", "pending", "pending", "pending", "pending"];
 
     const hasStartedHearing = chatMessages.length > 0;
-    const hasFlowDescription = !!process.flowDescription;
+    const hasJobDesc = hasJobDescription();
     const hasDiagram = !!process.diagramXml;
     const status = process.status;
 
-    // Step 1: AI Hearing
-    // 4つ以上のメッセージがあれば十分なヒアリングとみなす
-    const hasEnoughMessages = chatMessages.length >= 4;
+    // Step 1: AI Hearing - 8メッセージ以上で十分なヒアリングとみなす
+    const hasEnoughMessages = chatMessages.length >= 8;
     let step1: StepStatus = "pending";
-    if (status === "PUBLISHED" || status === "REVIEW" || status === "DIAGRAMMING" || hasFlowDescription || hasEnoughMessages) {
+    if (status === "PUBLISHED" || status === "REVIEW" || status === "DIAGRAMMING" || hasJobDesc || hasEnoughMessages) {
       step1 = "completed";
     } else if (hasStartedHearing || status === "INTERVIEW") {
       step1 = "current";
     }
 
-    // Step 2: Flow Description
+    // Step 2: Job Description (業務分掌整理)
     let step2: StepStatus = "pending";
-    if (hasFlowDescription && (status === "DIAGRAMMING" || status === "REVIEW" || status === "PUBLISHED" || hasDiagram)) {
+    if (hasJobDesc && (status === "DIAGRAMMING" || status === "REVIEW" || status === "PUBLISHED" || hasDiagram)) {
       step2 = "completed";
-    } else if (hasEnoughMessages && !hasFlowDescription) {
-      // 十分なヒアリングがあり、まだフロー説明がない場合は「フロー説明生成」が次のアクション
+    } else if (hasEnoughMessages && !hasJobDesc) {
       step2 = "current";
     }
 
-    // Step 3: Flow Diagram
+    // Step 3: Sequence Diagram - 図が保存されたら完了
     let step3: StepStatus = "pending";
-    if (hasDiagram && (status === "REVIEW" || status === "PUBLISHED")) {
+    if (hasDiagram) {
       step3 = "completed";
-    } else if (status === "DIAGRAMMING" || (hasFlowDescription && step2 === "completed")) {
+    } else if (status === "DIAGRAMMING" || (hasJobDesc && step2 === "completed")) {
       step3 = "current";
     }
 
-    // Step 4: Review
+    // Step 4: Review - 図が完成したらレビュー開始可能
     let step4: StepStatus = "pending";
     if (status === "PUBLISHED") {
       step4 = "completed";
-    } else if (status === "REVIEW") {
+    } else if (status === "REVIEW" || (hasDiagram && step3 === "completed")) {
       step4 = "current";
     }
 
@@ -202,8 +284,6 @@ export function ProcessDetailClient({
     let step5: StepStatus = "pending";
     if (status === "PUBLISHED") {
       step5 = "completed";
-    } else if (status === "REVIEW" && step4 === "current") {
-      step5 = "pending";
     }
 
     return [step1, step2, step3, step4, step5];
@@ -213,13 +293,12 @@ export function ProcessDetailClient({
 
   const steps = [
     { title: t.step1Title, desc: t.step1Desc, action: t.step1Action, icon: MessageSquare },
-    { title: t.step2Title, desc: t.step2Desc, action: t.step2Action, icon: FileText },
+    { title: t.step2Title, desc: t.step2Desc, action: t.step2Action, icon: ClipboardList },
     { title: t.step3Title, desc: t.step3Desc, action: t.step3Action, icon: GitBranch },
     { title: t.step4Title, desc: t.step4Desc, action: t.step4Action, icon: PlayCircle },
     { title: t.step5Title, desc: t.step5Desc, action: t.step5Action, icon: Upload },
   ];
 
-  // Find the current step index
   const currentStepIndex = stepStatuses.findIndex((s) => s === "current");
 
   const handleStepAction = (stepIndex: number) => {
@@ -230,8 +309,8 @@ export function ProcessDetailClient({
             role: "assistant",
             content:
               language === "ja"
-                ? `「${process?.title}」についてヒアリングを始めます。\n\n一問一答形式で業務フローを詳しくお聞きしていきます。回答いただいた内容を元に、次の質問をしていきますので、分かる範囲でお答えください。\n\nでは最初の質問です。\n**この業務はどのようなきっかけ（トリガー）で開始されますか？**`
-                : `Let's start the hearing about "${process?.title}".\n\nI'll ask you questions one at a time to understand your business process in detail. Please answer as best you can.\n\nFirst question:\n**What triggers this business process to start?**`,
+                ? `「${process?.title}」について業務分掌のヒアリングを始めます。\n\n9つの項目について順番に質問していきます。分かる範囲でお答えください。\n\nまず最初の質問です。\n**この業務の目的・背景を教えてください。なぜこの業務が必要なのでしょうか？**`
+                : `Let's start the job description hearing for "${process?.title}".\n\nI'll ask you about 9 items in order. Please answer as best you can.\n\nFirst question:\n**What is the purpose and background of this business process? Why is it necessary?**`,
             timestamp: new Date().toISOString(),
           };
           setChatMessages([initialMessage]);
@@ -241,8 +320,8 @@ export function ProcessDetailClient({
           });
         }
         break;
-      case 1: // Generate flow description
-        handleGenerateFlowDescription();
+      case 1: // Organize job description
+        handleOrganizeJobDescription();
         break;
       case 2: // Open diagram editor
         handleOpenDiagramEditor();
@@ -281,60 +360,59 @@ export function ProcessDetailClient({
     setInputMessage("");
     setIsAiThinking(true);
 
-    // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
 
-    // Update status to INTERVIEW if it's DRAFT
     if (process?.status === "DRAFT") {
       await updateProcess({ status: "INTERVIEW" });
     }
 
     try {
-      // Call AI API for hearing
-      const systemPrompt = `あなたは業務プロセスのヒアリングを行うインタビュアーです。
-ユーザーの業務フローを深く理解するために、**一度に1つだけ質問**してください。
+      // 業務分掌9項目に対応したAIヒアリングプロンプト
+      const systemPrompt = `あなたは業務分掌のヒアリングを行うインタビュアーです。
+ユーザーの業務について深く理解するために、**一度に1つだけ質問**してください。
 
 ## ヒアリング対象
 業務名: ${process?.title || "不明"}
 ${process?.description ? `説明: ${process.description}` : ""}
 
-## ヒアリングの進め方
+## 業務分掌9項目（順番にヒアリング）
 
-### フェーズ1: 基本情報の収集（順番に1つずつ質問）
-ユーザーの回答を受けて、次の観点を順番にヒアリングしてください：
-1. 業務の開始トリガー（何がきっかけで業務が始まるか）
-2. 主要なステップ（どのような作業を行うか）
-3. 各ステップの担当者（誰が行うか）
-4. 判断ポイント（分岐条件があるか）
-5. 使用するシステムやツール
-6. 業務の完了条件
-7. 例外処理やエラー時の対応
+### フェーズ1: 基本情報の収集
+以下の9項目を順番にヒアリングしてください：
+
+1. **業務概要・目的** - 目的、背景、この業務が組織に提供する価値
+2. **責任範囲** - 担当部署、責任者、権限の範囲
+3. **ステークホルダー** - 関係する部署・役割・外部関係者（後でシーケンス図のアクターになります）
+4. **業務フロー** - 業務の開始条件、主要なステップ、各ステップの担当者、完了条件
+5. **インプット/アウトプット** - 必要な入力情報と成果物
+6. **使用システム・ツール** - 業務で使用するシステムやツール
+7. **KPI/成果指標** - 業務の評価基準、目標値
+8. **リスク・課題** - 現在の問題点、ボトルネック、リスク
+9. **改善提案** - ヒアリング内容から見える改善の余地
 
 ### フェーズ2: 深掘りと確認
 基本情報が揃ったら：
 - 回答されたフローの詳細を深掘り
 - 曖昧な点や不明点を確認
-- 一般的な同業務のベストプラクティスと比較して気になる点を指摘
+- ステークホルダー間の相互作用を明確化
 
 ### フェーズ3: 全体確認
 十分な情報が集まったら：
-- これまでの会話から業務フロー全体を整理して提示
-- 漏れている可能性のあるステップを指摘
+- これまでの会話から業務分掌全体を整理して提示
+- 漏れている可能性のある項目を指摘
 - 最終確認の質問
 
 ## 回答ルール
 - **必ず1つの質問だけ**をしてください（複数の質問を一度にしない）
 - 質問は簡潔に（1-2文程度）
 - ユーザーの回答を受け止めてから次の質問へ進む
-- 「はい/いいえ」で答えられる質問より、具体的な回答を引き出す質問を心がける`;
+- 「はい/いいえ」で答えられる質問より、具体的な回答を引き出す質問を心がける
+- ステークホルダーについては特に詳しく聞いてください（シーケンス図作成に重要）`;
 
-      // ローカルLLMはuser/assistant交互を要求するため、メッセージを整形
-      // 最初のassistant挨拶を除外し、user→assistant→user...の順にする
       const apiMessages: { role: string; content: string }[] = [];
       for (const m of newMessages) {
-        // 最初のメッセージがassistantの場合はスキップ（システムプロンプトで代替）
         if (apiMessages.length === 0 && m.role === "assistant") {
           continue;
         }
@@ -359,8 +437,6 @@ ${process?.description ? `説明: ${process.description}` : ""}
         };
         const updatedMessages = [...newMessages, assistantMessage];
         setChatMessages(updatedMessages);
-
-        // Save interview history
         await updateProcess({ interviewHistory: updatedMessages });
       }
     } catch (error) {
@@ -390,6 +466,10 @@ ${process?.description ? `説明: ${process.description}` : ""}
       if (response.ok) {
         const updated = await response.json();
         setProcess(updated);
+        // diagramXmlが更新された場合は、ローカルステートも更新
+        if (data.diagramXml !== undefined) {
+          setDiagramXml(updated.diagramXml || "");
+        }
         return true;
       }
     } catch (error) {
@@ -398,78 +478,128 @@ ${process?.description ? `説明: ${process.description}` : ""}
     return false;
   };
 
-  const handleSaveFlowDescription = async () => {
-    setIsSaving(true);
-    const success = await updateProcess({
-      flowDescription: editedFlowDescription,
-      status: "DIAGRAMMING",
-    });
-    if (success) {
-      setIsEditingFlow(false);
-    }
-    setIsSaving(false);
-  };
-
-  const handleGenerateFlowDescription = async () => {
+  // 業務分掌を整理する
+  const handleOrganizeJobDescription = async () => {
     if (chatMessages.length === 0) return;
 
-    setIsSaving(true);
+    setIsOrganizing(true);
     try {
-      const response = await fetch("/api/ai/services/summarize", {
+      const conversationText = chatMessages
+        .map((m) => `${m.role === "user" ? "ユーザー" : "AI"}: ${m.content}`)
+        .join("\n");
+
+      const response = await fetch("/api/ai/services/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text: chatMessages
-            .map((m) => `${m.role === "user" ? "ユーザー" : "AI"}: ${m.content}`)
-            .join("\n"),
-          length: "long",
-          language: "ja",
+          input: conversationText,
+          systemPrompt: `以下の会話から業務分掌9項目を抽出し、JSON形式で出力してください。
+
+## 出力形式（厳守）
+以下のJSON形式のみを出力してください。説明文は不要です。
+
+{
+  "purpose": "業務の目的・背景・価値（文字列）",
+  "responsibleDepartment": "担当部署名（文字列）",
+  "responsiblePerson": "責任者名（文字列）",
+  "authority": "権限範囲の説明（文字列）",
+  "stakeholders": [
+    {"name": "部署/役割名", "role": "役割の説明", "department": "所属部署"}
+  ],
+  "businessFlow": "業務フローの説明（マークダウン形式）",
+  "actors": [
+    {"id": "actor1", "name": "アクター名", "department": "所属部署"}
+  ],
+  "inputs": [
+    {"name": "入力名", "description": "説明", "source": "入力元"}
+  ],
+  "outputs": [
+    {"name": "成果物名", "description": "説明", "destination": "出力先"}
+  ],
+  "systemsAndTools": [
+    {"name": "システム名", "purpose": "用途", "url": "URL（あれば）"}
+  ],
+  "kpis": [
+    {"name": "KPI名", "target": "目標値", "unit": "単位", "frequency": "測定頻度"}
+  ],
+  "risksAndIssues": [
+    {"type": "リスク/課題", "description": "説明", "impact": "影響", "mitigation": "対策"}
+  ],
+  "improvements": [
+    {"title": "改善提案タイトル", "description": "説明", "priority": "優先度", "expectedBenefit": "期待効果"}
+  ]
+}
+
+## ルール
+- 会話から読み取れない項目はnullまたは空配列にする
+- actorsはステークホルダーから主要なアクターを抽出（シーケンス図で使用）
+- businessFlowはマークダウン形式で、ステップごとに番号付きリストで記述
+- 改善提案(improvements)は会話内容から見える潜在的な改善点をAIが提案`,
+          temperature: 0.3,
+          maxTokens: 4000,
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        const flowDescription = data.summary;
-        await updateProcess({
-          flowDescription,
-          status: "DIAGRAMMING",
-        });
+        const output = data.output || "";
+
+        // JSONを抽出
+        const jsonMatch = output.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            const jobDescription = JSON.parse(jsonMatch[0]);
+            await updateProcess({
+              ...jobDescription,
+              status: "DIAGRAMMING",
+            });
+          } catch (parseError) {
+            console.error("Failed to parse job description JSON:", parseError);
+          }
+        }
       }
     } catch (error) {
-      console.error("Failed to generate flow description:", error);
+      console.error("Failed to organize job description:", error);
     } finally {
-      setIsSaving(false);
+      setIsOrganizing(false);
     }
   };
 
   const handleOpenDiagramEditor = () => {
     const xml = diagramXml ? wrapWithMxFile(diagramXml) : "";
+
+    // シーケンス図用のアクター情報を渡す
+    const actorsForDiagram = process?.actors || process?.stakeholders?.map((s, i) => ({
+      id: `actor${i + 1}`,
+      name: s.name,
+      department: s.department || "",
+    })) || [];
+
+    // 保存コールバック（XMLを受け取って保存）
+    const handleSaveInEditor = async (xmlToSave: string): Promise<boolean> => {
+      const success = await updateProcess({ diagramXml: xmlToSave });
+      return success;
+    };
+
     openFloatingWindow({
-      title: "Diagram Editor",
+      title: "Sequence Diagram Editor",
       titleJa: t.diagramEditor,
       initialSize: { width: 1200, height: 700 },
       initialPosition: { x: 50, y: 50 },
       content: (
         <DiagramEditorWithAI
           xml={xml}
-          flowDescription={process?.flowDescription || undefined}
+          flowDescription={process?.businessFlow || process?.flowDescription || undefined}
+          actors={actorsForDiagram}
           onChange={(newXml) => {
             setDiagramXml(newXml);
           }}
+          onSave={handleSaveInEditor}
           language={language}
           className="w-full h-full"
         />
       ),
     });
-  };
-
-  const handleSaveDiagram = async () => {
-    setIsSaving(true);
-    const success = await updateProcess({ diagramXml });
-    if (success) {
-      alert(t.diagramSaved);
-    }
-    setIsSaving(false);
   };
 
   const handleRestartHearing = async () => {
@@ -479,26 +609,55 @@ ${process?.description ? `説明: ${process.description}` : ""}
     await updateProcess({
       interviewHistory: null,
       status: "DRAFT",
+      // 業務分掌もリセット
+      purpose: null,
+      responsibleDepartment: null,
+      responsiblePerson: null,
+      authority: null,
+      stakeholders: null,
+      businessFlow: null,
+      actors: null,
+      inputs: null,
+      outputs: null,
+      systemsAndTools: null,
+      kpis: null,
+      risksAndIssues: null,
+      improvements: null,
     });
   };
 
-  // Update floating window content when diagramXml changes
-  useEffect(() => {
-    if (diagramXml) {
-      const xml = wrapWithMxFile(diagramXml);
-      setContent(
-        <DiagramEditorWithAI
-          xml={xml}
-          flowDescription={process?.flowDescription || undefined}
-          onChange={(newXml) => {
-            setDiagramXml(newXml);
-          }}
-          language={language}
-          className="w-full h-full"
-        />,
-      );
-    }
-  }, [diagramXml, setContent, process?.flowDescription, language]);
+  // Note: setContentはフローティングウィンドウを開く時のみ呼び出す
+  // diagramXmlの変更でsetContentを再呼び出しすると、エディタが再マウントされてしまうため削除
+
+  // 業務分掌カードコンポーネント
+  const JobDescriptionCard = ({
+    icon: Icon,
+    title,
+    description,
+    children,
+    isEmpty,
+  }: {
+    icon: React.ElementType;
+    title: string;
+    description: string;
+    children: React.ReactNode;
+    isEmpty?: boolean;
+  }) => (
+    <div className="bg-card rounded-lg border p-4">
+      <div className="flex items-start gap-3 mb-2">
+        <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+          <Icon className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+        </div>
+        <div>
+          <h4 className="font-medium text-sm">{title}</h4>
+          <p className="text-xs text-muted-foreground">{description}</p>
+        </div>
+      </div>
+      <div className={`mt-3 text-sm ${isEmpty ? "text-muted-foreground italic" : ""}`}>
+        {children}
+      </div>
+    </div>
+  );
 
   if (isLoading) {
     return (
@@ -557,19 +716,11 @@ ${process?.description ? `説明: ${process.description}` : ""}
               <GitBranch className="w-4 h-4 mr-1" />
               {t.openDiagram}
             </Button>
-            {diagramXml && (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleSaveDiagram}
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  t.saveDiagram
-                )}
-              </Button>
+            {process.diagramXml && (
+              <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                {t.diagramSavedIndicator}
+              </span>
             )}
           </div>
         </div>
@@ -591,11 +742,9 @@ ${process?.description ? `説明: ${process.description}` : ""}
         )}
 
         {/* Step Progress Indicator */}
-
         {/* Desktop: Horizontal stepper */}
         <div className="hidden md:block">
           <div className="flex items-start justify-between relative">
-            {/* Progress line */}
             <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 dark:bg-gray-700" />
             <div
               className="absolute top-5 left-0 h-0.5 bg-amber-500 transition-all duration-500"
@@ -609,7 +758,6 @@ ${process?.description ? `説明: ${process.description}` : ""}
               const StepIcon = step.icon;
               return (
                 <div key={index} className="flex flex-col items-center relative z-10 flex-1">
-                  {/* Step circle */}
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
                       status === "completed"
@@ -626,7 +774,6 @@ ${process?.description ? `説明: ${process.description}` : ""}
                     )}
                   </div>
 
-                  {/* Step content */}
                   <div className="mt-3 text-center px-2">
                     <p
                       className={`text-sm font-medium ${
@@ -643,23 +790,21 @@ ${process?.description ? `説明: ${process.description}` : ""}
                       {step.desc}
                     </p>
 
-                    {/* Action button for current step */}
                     {status === "current" && (
                       <Button
                         variant="primary"
                         size="sm"
                         className="mt-3"
                         onClick={() => handleStepAction(index)}
-                        disabled={isSaving}
+                        disabled={isSaving || isOrganizing}
                       >
-                        {isSaving ? (
+                        {(isSaving || isOrganizing) ? (
                           <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                         ) : null}
                         {step.action}
                       </Button>
                     )}
 
-                    {/* Status badge */}
                     {status === "completed" && (
                       <span className="inline-block mt-2 text-xs text-amber-600 dark:text-amber-400 font-medium">
                         {t.stepCompleted}
@@ -680,7 +825,6 @@ ${process?.description ? `説明: ${process.description}` : ""}
             const isLast = index === steps.length - 1;
             return (
               <div key={index} className="flex gap-4">
-                {/* Left: Icon and line */}
                 <div className="flex flex-col items-center">
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center border-2 flex-shrink-0 ${
@@ -708,7 +852,6 @@ ${process?.description ? `説明: ${process.description}` : ""}
                   )}
                 </div>
 
-                {/* Right: Content */}
                 <div className="flex-1 pb-4">
                   <div className="flex items-center gap-2">
                     <p
@@ -741,9 +884,9 @@ ${process?.description ? `説明: ${process.description}` : ""}
                       size="sm"
                       className="mt-2"
                       onClick={() => handleStepAction(index)}
-                      disabled={isSaving}
+                      disabled={isSaving || isOrganizing}
                     >
-                      {isSaving ? (
+                      {(isSaving || isOrganizing) ? (
                         <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                       ) : null}
                       {step.action}
@@ -789,8 +932,8 @@ ${process?.description ? `説明: ${process.description}` : ""}
                       role: "assistant",
                       content:
                         language === "ja"
-                          ? `「${process.title}」についてヒアリングを始めます。\n\n一問一答形式で業務フローを詳しくお聞きしていきます。回答いただいた内容を元に、次の質問をしていきますので、分かる範囲でお答えください。\n\nでは最初の質問です。\n**この業務はどのようなきっかけ（トリガー）で開始されますか？**`
-                          : `Let's start the hearing about "${process.title}".\n\nI'll ask you questions one at a time to understand your business process in detail. Please answer as best you can.\n\nFirst question:\n**What triggers this business process to start?**`,
+                          ? `「${process.title}」について業務分掌のヒアリングを始めます。\n\n9つの項目について順番に質問していきます。分かる範囲でお答えください。\n\nまず最初の質問です。\n**この業務の目的・背景を教えてください。なぜこの業務が必要なのでしょうか？**`
+                          : `Let's start the job description hearing for "${process.title}".\n\nI'll ask you about 9 items in order. Please answer as best you can.\n\nFirst question:\n**What is the purpose and background of this business process? Why is it necessary?**`,
                       timestamp: new Date().toISOString(),
                     };
                     setChatMessages([initialMessage]);
@@ -866,83 +1009,227 @@ ${process?.description ? `説明: ${process.description}` : ""}
                   <Send className="w-5 h-5" />
                 </Button>
               </div>
-              {chatMessages.length >= 4 && !process.flowDescription && (
+              {chatMessages.length >= 8 && !hasJobDescription() && (
                 <Button
                   variant="outline"
                   className="w-full mt-2"
-                  onClick={handleGenerateFlowDescription}
-                  disabled={isSaving}
+                  onClick={handleOrganizeJobDescription}
+                  disabled={isOrganizing}
                 >
-                  {isSaving ? (
+                  {isOrganizing ? (
                     <Loader2 className="w-4 h-4 mr-1 animate-spin" />
                   ) : null}
-                  {t.generateDiagram}
+                  {isOrganizing ? t.organizingJobDescription : t.organizeJobDescription}
                 </Button>
               )}
             </div>
           )}
         </div>
 
-        {/* Flow Description */}
+        {/* Job Description (業務分掌) */}
         <div className="bg-card rounded-xl shadow-sm border flex flex-col h-[500px]">
           <div className="p-4 border-b flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <GitBranch className="w-5 h-5 text-amber-600" />
-              <h2 className="font-semibold">{t.flowDescription}</h2>
+              <ClipboardList className="w-5 h-5 text-amber-600" />
+              <h2 className="font-semibold">{t.jobDescription}</h2>
             </div>
-            {process.flowDescription && !isEditingFlow && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setEditedFlowDescription(process.flowDescription || "");
-                  setIsEditingFlow(true);
-                }}
-              >
-                <Edit2 className="w-4 h-4" />
-              </Button>
-            )}
           </div>
           <div className="flex-1 overflow-y-auto p-4">
-            {isEditingFlow ? (
-              <div className="h-full flex flex-col">
-                <textarea
-                  value={editedFlowDescription}
-                  onChange={(e) => setEditedFlowDescription(e.target.value)}
-                  className="flex-1 w-full px-3 py-2 border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                />
-                <div className="flex justify-end gap-2 mt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditingFlow(false)}
-                  >
-                    <X className="w-4 h-4 mr-1" />
-                    {t.cancelEdit}
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={handleSaveFlowDescription}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? (
-                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                    ) : (
-                      <Check className="w-4 h-4 mr-1" />
-                    )}
-                    {t.saveFlowDescription}
-                  </Button>
-                </div>
-              </div>
-            ) : process.flowDescription ? (
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                <p className="whitespace-pre-wrap">{process.flowDescription}</p>
+            {hasJobDescription() ? (
+              <div className="grid grid-cols-1 gap-3">
+                {/* 1. 業務概要・目的 */}
+                <JobDescriptionCard
+                  icon={Target}
+                  title={t.itemPurpose}
+                  description={t.itemPurposeDesc}
+                  isEmpty={!process.purpose}
+                >
+                  {process.purpose || t.notSet}
+                </JobDescriptionCard>
+
+                {/* 2. 責任範囲 */}
+                <JobDescriptionCard
+                  icon={Users}
+                  title={t.itemResponsibility}
+                  description={t.itemResponsibilityDesc}
+                  isEmpty={!process.responsibleDepartment && !process.responsiblePerson}
+                >
+                  {(process.responsibleDepartment || process.responsiblePerson || process.authority) ? (
+                    <div className="space-y-1">
+                      {process.responsibleDepartment && (
+                        <p><span className="text-muted-foreground">{t.department}:</span> {process.responsibleDepartment}</p>
+                      )}
+                      {process.responsiblePerson && (
+                        <p><span className="text-muted-foreground">{t.person}:</span> {process.responsiblePerson}</p>
+                      )}
+                      {process.authority && (
+                        <p><span className="text-muted-foreground">{t.authority}:</span> {process.authority}</p>
+                      )}
+                    </div>
+                  ) : t.notSet}
+                </JobDescriptionCard>
+
+                {/* 3. ステークホルダー */}
+                <JobDescriptionCard
+                  icon={Boxes}
+                  title={t.itemStakeholders}
+                  description={t.itemStakeholdersDesc}
+                  isEmpty={!process.stakeholders?.length}
+                >
+                  {process.stakeholders?.length ? (
+                    <ul className="space-y-1">
+                      {process.stakeholders.map((s, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-amber-500" />
+                          <span>{s.name}</span>
+                          {s.role && <span className="text-muted-foreground">- {s.role}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : t.notSet}
+                </JobDescriptionCard>
+
+                {/* 4. 業務フロー */}
+                <JobDescriptionCard
+                  icon={GitBranch}
+                  title={t.itemBusinessFlow}
+                  description={t.itemBusinessFlowDesc}
+                  isEmpty={!process.businessFlow}
+                >
+                  {process.businessFlow ? (
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <p className="whitespace-pre-wrap">{process.businessFlow}</p>
+                    </div>
+                  ) : t.notSet}
+                </JobDescriptionCard>
+
+                {/* 5. インプット/アウトプット */}
+                <JobDescriptionCard
+                  icon={FileInput}
+                  title={t.itemInputOutput}
+                  description={t.itemInputOutputDesc}
+                  isEmpty={!process.inputs?.length && !process.outputs?.length}
+                >
+                  {(process.inputs?.length || process.outputs?.length) ? (
+                    <div className="space-y-2">
+                      {process.inputs?.length ? (
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground mb-1">Input</p>
+                          <ul className="space-y-1">
+                            {process.inputs.map((item, i) => (
+                              <li key={i} className="flex items-center gap-2">
+                                <FileInput className="w-3 h-3 text-blue-500" />
+                                <span>{item.name}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                      {process.outputs?.length ? (
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground mb-1">Output</p>
+                          <ul className="space-y-1">
+                            {process.outputs.map((item, i) => (
+                              <li key={i} className="flex items-center gap-2">
+                                <FileOutput className="w-3 h-3 text-green-500" />
+                                <span>{item.name}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : t.notSet}
+                </JobDescriptionCard>
+
+                {/* 6. 使用システム・ツール */}
+                <JobDescriptionCard
+                  icon={Monitor}
+                  title={t.itemSystemsTools}
+                  description={t.itemSystemsToolsDesc}
+                  isEmpty={!process.systemsAndTools?.length}
+                >
+                  {process.systemsAndTools?.length ? (
+                    <ul className="space-y-1">
+                      {process.systemsAndTools.map((item, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <Monitor className="w-3 h-3 text-purple-500" />
+                          <span>{item.name}</span>
+                          {item.purpose && <span className="text-muted-foreground">- {item.purpose}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : t.notSet}
+                </JobDescriptionCard>
+
+                {/* 7. KPI/成果指標 */}
+                <JobDescriptionCard
+                  icon={BarChart3}
+                  title={t.itemKPIs}
+                  description={t.itemKPIsDesc}
+                  isEmpty={!process.kpis?.length}
+                >
+                  {process.kpis?.length ? (
+                    <ul className="space-y-1">
+                      {process.kpis.map((item, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <BarChart3 className="w-3 h-3 text-cyan-500" />
+                          <span>{item.name}</span>
+                          {item.target && <span className="text-muted-foreground">({item.target}{item.unit})</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : t.notSet}
+                </JobDescriptionCard>
+
+                {/* 8. リスク・課題 */}
+                <JobDescriptionCard
+                  icon={AlertTriangle}
+                  title={t.itemRisksIssues}
+                  description={t.itemRisksIssuesDesc}
+                  isEmpty={!process.risksAndIssues?.length}
+                >
+                  {process.risksAndIssues?.length ? (
+                    <ul className="space-y-1">
+                      {process.risksAndIssues.map((item, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <AlertTriangle className="w-3 h-3 text-orange-500 mt-1" />
+                          <div>
+                            <span className="font-medium">{item.type}</span>
+                            <p className="text-muted-foreground text-xs">{item.description}</p>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : t.notSet}
+                </JobDescriptionCard>
+
+                {/* 9. 改善提案 */}
+                <JobDescriptionCard
+                  icon={Lightbulb}
+                  title={t.itemImprovements}
+                  description={t.itemImprovementsDesc}
+                  isEmpty={!process.improvements?.length}
+                >
+                  {process.improvements?.length ? (
+                    <ul className="space-y-2">
+                      {process.improvements.map((item, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <Lightbulb className="w-3 h-3 text-yellow-500 mt-1" />
+                          <div>
+                            <span className="font-medium">{item.title}</span>
+                            <p className="text-muted-foreground text-xs">{item.description}</p>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : t.notSet}
+                </JobDescriptionCard>
               </div>
             ) : (
               <div className="text-center py-8">
-                <GitBranch className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">{t.noFlowDescription}</p>
+                <ClipboardList className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">{t.noJobDescription}</p>
               </div>
             )}
           </div>

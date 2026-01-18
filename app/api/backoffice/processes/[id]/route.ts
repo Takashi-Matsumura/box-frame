@@ -79,6 +79,34 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
     if (body.tags !== undefined) updateData.tags = body.tags?.trim() || null;
 
+    // 業務分掌9項目
+    if (body.purpose !== undefined)
+      updateData.purpose = body.purpose?.trim() || null;
+    if (body.responsibleDepartment !== undefined)
+      updateData.responsibleDepartment = body.responsibleDepartment?.trim() || null;
+    if (body.responsiblePerson !== undefined)
+      updateData.responsiblePerson = body.responsiblePerson?.trim() || null;
+    if (body.authority !== undefined)
+      updateData.authority = body.authority?.trim() || null;
+    if (body.stakeholders !== undefined)
+      updateData.stakeholders = body.stakeholders;
+    if (body.businessFlow !== undefined)
+      updateData.businessFlow = body.businessFlow?.trim() || null;
+    if (body.actors !== undefined)
+      updateData.actors = body.actors;
+    if (body.inputs !== undefined)
+      updateData.inputs = body.inputs;
+    if (body.outputs !== undefined)
+      updateData.outputs = body.outputs;
+    if (body.systemsAndTools !== undefined)
+      updateData.systemsAndTools = body.systemsAndTools;
+    if (body.kpis !== undefined)
+      updateData.kpis = body.kpis;
+    if (body.risksAndIssues !== undefined)
+      updateData.risksAndIssues = body.risksAndIssues;
+    if (body.improvements !== undefined)
+      updateData.improvements = body.improvements;
+
     const updated = await prisma.businessProcess.update({
       where: { id },
       data: updateData,

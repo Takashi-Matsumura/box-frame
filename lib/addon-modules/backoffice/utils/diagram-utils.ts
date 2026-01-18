@@ -8,16 +8,30 @@
  * 既にmxfile形式の場合はそのまま返す
  */
 export function wrapWithMxFile(xml: string): string {
+  if (!xml || !xml.trim()) {
+    return "";
+  }
+
+  const trimmedXml = xml.trim();
+
   // 既にmxfile形式の場合はそのまま返す
-  if (xml.trim().startsWith("<mxfile")) {
+  if (trimmedXml.startsWith("<mxfile")) {
     return xml;
   }
 
-  // APIから返されるXMLに含まれるルートセル（id="0", id="1"）を除外
-  // これにより重複IDを防ぐ
-  const cleanedXml = removeRootCells(xml);
-
   const diagramId = `diagram-${Date.now()}`;
+
+  // mxGraphModel形式の場合は、そのまま内部に含める
+  if (trimmedXml.startsWith("<mxGraphModel")) {
+    return `<mxfile>
+  <diagram id="${diagramId}" name="Page-1">
+    ${trimmedXml}
+  </diagram>
+</mxfile>`;
+  }
+
+  // それ以外（mxCellのみの場合など）は、構造を構築する
+  const cleanedXml = removeRootCells(xml);
 
   return `<mxfile>
   <diagram id="${diagramId}" name="Page-1">

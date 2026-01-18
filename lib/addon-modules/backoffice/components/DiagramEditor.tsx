@@ -1,24 +1,18 @@
 "use client";
 
-import { useMemo } from "react";
 import { DrawIoEmbed } from "react-drawio";
 
 interface DiagramEditorProps {
   xml?: string;
+  loadKey?: number; // XMLを再読み込みしたい時にインクリメント
   onChange?: (xml: string) => void;
   className?: string;
 }
 
-export function DiagramEditor({ xml, onChange, className }: DiagramEditorProps) {
-  // XMLが変わるたびに新しいキーを生成してコンポーネントを再マウント
-  const editorKey = useMemo(() => {
-    const key = xml ? `editor-${Date.now()}` : "editor-empty";
-    console.log("=== DiagramEditor ===");
-    console.log("Key:", key);
-    console.log("XML length:", xml?.length || 0);
-    console.log("XML preview:", xml?.substring(0, 200));
-    return key;
-  }, [xml]);
+export function DiagramEditor({ xml, loadKey = 0, onChange, className }: DiagramEditorProps) {
+  // loadKeyが変わった時のみ再マウント（AI生成時など）
+  // autosaveによる変更では再マウントしない
+  const editorKey = `editor-${loadKey}`;
 
   return (
     <div className={className || "w-full h-full"}>
