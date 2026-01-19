@@ -187,6 +187,8 @@ export function ProcessDetailClient({
   const [isSaving, setIsSaving] = useState(false);
   const [diagramXml, setDiagramXml] = useState<string>("");
   const [isOrganizing, setIsOrganizing] = useState(false);
+  // 業務分掌パネル内でAIヒアリングを表示するかどうか
+  const [showAIHearing, setShowAIHearing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 深掘りモード
@@ -242,8 +244,8 @@ export function ProcessDetailClient({
         role: "assistant",
         content:
           language === "ja"
-            ? `「${title}」について業務分掌のヒアリングを始めます。\n\n9つの項目について順番に質問していきます。各項目1回ずつ、テンポよく進めましょう。\n\n**【項目1/9: 業務概要・目的】**\nこの業務の目的・背景を教えてください。なぜこの業務が必要ですか？`
-            : `Let's start the job description hearing for "${title}".\n\nI'll ask about 9 items, one question each. Let's move through them efficiently.\n\n**[Item 1/9: Purpose]**\nWhat is the purpose and background of this business process?`,
+            ? `「${title}」について業務分掌のヒアリングを始めます。\n\nまず、この業務の概要を自由にお聞かせください。\n- どのような業務ですか？\n- 何を目的としていますか？\n- 担当部署や関係者は誰ですか？\n\nわかる範囲で教えてください。`
+            : `Let's start the job description hearing for "${title}".\n\nFirst, please tell me about this business process freely.\n- What kind of work is it?\n- What is its purpose?\n- Who are the responsible departments and stakeholders?\n\nPlease share what you know.`,
         timestamp: new Date().toISOString(),
       };
     },
@@ -1526,185 +1528,293 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
         </CollapsiblePanelContent>
       </CollapsiblePanel>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* AI Hearing Chat / Deep Dive Mode */}
-        <div
-          className={`bg-card rounded-xl shadow-sm border flex flex-col h-[500px] ${deepDiveItem ? "ring-2 ring-amber-500" : ""}`}
-        >
-          <div className="p-4 border-b flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {deepDiveItem ? (
-                <>
-                  <Search className="w-5 h-5 text-amber-600" />
-                  <h2 className="font-semibold">{t.deepDiveMode}</h2>
-                  <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full">
-                    {itemKeyToTitle[deepDiveItem]}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <MessageSquare className="w-5 h-5 text-amber-600" />
-                  <h2 className="font-semibold">{t.aiHearing}</h2>
-                </>
-              )}
-            </div>
-            {deepDiveItem ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleExitDeepDive}
-                className="text-muted-foreground hover:text-foreground"
+      {/* Job Description (業務分掌) - AIヒアリング統合パネル */}
+      <div className="bg-card rounded-xl shadow-sm border flex flex-col h-[600px]">
+        {/* ヘッダー */}
+        <div className="p-4 border-b flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ClipboardList className="w-5 h-5 text-amber-600" />
+            <h2 className="font-semibold">{t.jobDescription}</h2>
+            {/* 編集モードインジケーター */}
+            {isEditMode && (
+              <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full">
+                {t.editMode}
+              </span>
+            )}
+            {/* レビュー結果サマリー（クリックで表示切替） */}
+            {!isEditMode && reviewResults.length > 0 && (
+              <button
+                onClick={() => setShowReviewResults(!showReviewResults)}
+                className="text-xs text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
               >
-                <X className="w-4 h-4 mr-1" />
-                {t.exitDeepDive}
-              </Button>
-            ) : (
-              chatMessages.length > 0 && (
+                ({reviewResults.filter((r) => r.status !== "complete").length}{" "}
+                {t.issuesFound})
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {hasJobDescription() && !isEditMode && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleStartEditMode}
+                >
+                  <Edit2 className="w-4 h-4 mr-1" />
+                  {t.editModeOn}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReviewJobDescription}
+                  disabled={isReviewing}
+                >
+                  {isReviewing ? (
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4 mr-1" />
+                  )}
+                  {isReviewing ? t.reviewing : t.reviewJobDescription}
+                </Button>
+              </>
+            )}
+            {isEditMode && (
+              <>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={handleRestartHearing}
-                  className="text-muted-foreground hover:text-destructive"
+                  onClick={handleCancelEditMode}
+                  disabled={isSaving}
                 >
-                  <RotateCcw className="w-4 h-4 mr-1" />
-                  {t.restartHearing}
+                  {t.cancelEdit}
                 </Button>
-              )
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleSaveEditMode}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4 mr-1" />
+                  )}
+                  {isSaving ? t.savingChanges : t.saveChanges}
+                </Button>
+              </>
             )}
+            {/* AIヒアリングボタン（トグル）- 右端に配置 */}
+            <Button
+              variant={showAIHearing ? "primary" : "outline"}
+              size="sm"
+              onClick={() => setShowAIHearing(!showAIHearing)}
+              className={showAIHearing
+                ? "bg-amber-600 hover:bg-amber-700"
+                : "text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+              }
+            >
+              <MessageSquare className="w-4 h-4 mr-1" />
+              {t.aiHearing}
+              {chatMessages.length > 0 && (
+                <span className="ml-1 text-xs">({chatMessages.length})</span>
+              )}
+            </Button>
           </div>
+        </div>
 
-          {/* Deep Dive Mode Content */}
-          {deepDiveItem ? (
-            <>
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {deepDiveMessages.map((message, index) => (
-                  <div
-                    key={`deep-${message.timestamp}-${index}`}
-                    className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                  >
-                    <div
-                      className={`max-w-[80%] rounded-lg p-3 ${
-                        message.role === "user"
-                          ? "bg-amber-600 text-white"
-                          : "bg-muted"
-                      }`}
-                    >
-                      <p className="text-sm whitespace-pre-wrap">
-                        {message.content}
-                      </p>
+        {/* パネルコンテンツ - 分割表示 or 業務分掌のみ */}
+        <div className={`flex-1 flex ${showAIHearing || deepDiveItem ? "flex-row" : "flex-col"} overflow-hidden`}>
+          {/* 左側: 業務分掌表示 */}
+          <div className={`${showAIHearing || deepDiveItem ? "w-1/2 border-r" : "w-full"} flex flex-col overflow-hidden`}>
+            <div className="flex-1 overflow-y-auto p-4">
+              {hasJobDescription() ? (
+                isEditMode ? (
+                  /* 編集モード（マークダウン） */
+                  <textarea
+                    className="w-full h-full p-3 border rounded-md text-sm bg-background resize-none font-mono"
+                    value={editMarkdown}
+                    onChange={(e) => setEditMarkdown(e.target.value)}
+                    placeholder={
+                      language === "ja"
+                        ? "マークダウン形式で業務分掌を記述..."
+                        : "Write job description in markdown..."
+                    }
+                  />
+                ) : showReviewResults && reviewResults.length > 0 ? (
+                  /* レビュー結果表示 */
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-sm">
+                        {language === "ja" ? "レビュー結果" : "Review Results"}
+                      </h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowReviewResults(false)}
+                      >
+                        <X className="w-4 h-4 mr-1" />
+                        {language === "ja" ? "閉じる" : "Close"}
+                      </Button>
                     </div>
-                  </div>
-                ))}
-                {isAiThinking && (
-                  <div className="flex justify-start">
-                    <div className="bg-muted rounded-lg p-3">
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span className="text-sm text-muted-foreground">
-                          {t.aiThinking}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <div ref={chatEndRef} />
-              </div>
-              <div className="p-4 border-t">
-                <div className="flex gap-2 items-end">
-                  <div className="flex-1 relative">
-                    <textarea
-                      ref={textareaRef}
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey && !isComposing) {
-                          e.preventDefault();
-                          handleSendDeepDiveMessage();
-                        }
-                      }}
-                      onCompositionStart={() => setIsComposing(true)}
-                      onCompositionEnd={() => setIsComposing(false)}
-                      placeholder={t.inputPlaceholder}
-                      className="w-full resize-none rounded-xl border border-input bg-background px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[48px] max-h-[200px]"
-                      rows={1}
-                      disabled={isAiThinking}
-                    />
-                  </div>
-                  <Button
-                    variant="primary"
-                    size="icon"
-                    onClick={handleSendDeepDiveMessage}
-                    disabled={!inputMessage.trim() || isAiThinking}
-                    className="h-12 w-12 rounded-xl flex-shrink-0 bg-amber-600 hover:bg-amber-700"
-                  >
-                    <Send className="w-5 h-5" />
-                  </Button>
-                </div>
-                {deepDiveMessages.length >= 4 && (
-                  <div className="flex gap-2 mt-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={handleExitDeepDive}
-                    >
-                      {t.discardChanges}
-                    </Button>
-                    <Button
-                      variant="primary"
-                      className="flex-1 bg-amber-600 hover:bg-amber-700"
-                      onClick={handleApplyDeepDiveChanges}
-                      disabled={isUpdatingItem}
-                    >
-                      {isUpdatingItem ? (
-                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                      ) : (
-                        <Check className="w-4 h-4 mr-1" />
-                      )}
-                      {isUpdatingItem ? t.updatingItem : t.applyChanges}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            /* Normal AI Hearing Mode */
-            <>
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {chatMessages.length === 0 ? (
-                  <div className="text-center py-8">
-                    <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">
-                      {t.hearingDescription}
-                    </p>
-                    <Button
-                      variant="primary"
-                      className="mt-4"
-                      onClick={() => {
-                        const initialMessage = createInitialHearingMessage(
-                          process.title,
-                        );
-                        setChatMessages([initialMessage]);
-                        updateProcess({
-                          interviewHistory: [initialMessage],
-                          status: "INTERVIEW",
-                        });
-                      }}
-                    >
-                      {t.startHearing}
-                    </Button>
+                    {reviewResults.map((result) => {
+                      const itemTitle =
+                        itemKeyToTitle[result.itemKey as DeepDiveItemKey] ||
+                        result.itemKey;
+                      const statusConfig = {
+                        complete: {
+                          icon: CheckCircle2,
+                          color: "text-green-600 dark:text-green-400",
+                          bg: "bg-green-50 dark:bg-green-900/20",
+                          label: language === "ja" ? "完了" : "Complete",
+                        },
+                        needs_attention: {
+                          icon: AlertCircle,
+                          color: "text-yellow-600 dark:text-yellow-400",
+                          bg: "bg-yellow-50 dark:bg-yellow-900/20",
+                          label: language === "ja" ? "要確認" : "Needs Attention",
+                        },
+                        incomplete: {
+                          icon: XCircle,
+                          color: "text-red-600 dark:text-red-400",
+                          bg: "bg-red-50 dark:bg-red-900/20",
+                          label: language === "ja" ? "不足" : "Incomplete",
+                        },
+                      };
+                      const config =
+                        statusConfig[result.status] ||
+                        statusConfig.needs_attention;
+                      const StatusIcon = config.icon;
+
+                      return (
+                        <div
+                          key={result.itemKey}
+                          className={`p-3 rounded-lg border ${config.bg}`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-start gap-2 flex-1">
+                              <StatusIcon
+                                className={`w-4 h-4 mt-0.5 flex-shrink-0 ${config.color}`}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-medium text-sm">
+                                    {itemTitle}
+                                  </span>
+                                  <span
+                                    className={`text-xs px-1.5 py-0.5 rounded ${config.color} ${config.bg}`}
+                                  >
+                                    {config.label}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  {result.comment}
+                                </p>
+                              </div>
+                            </div>
+                            {result.status !== "complete" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="flex-shrink-0"
+                                onClick={() => {
+                                  handleReviewChat(result.itemKey);
+                                  setShowAIHearing(true);
+                                }}
+                              >
+                                <MessageCircle className="w-3.5 h-3.5 mr-1" />
+                                <span className="text-xs">
+                                  {language === "ja" ? "深掘り" : "Discuss"}
+                                </span>
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
-                  <>
-                    {chatMessages.map((message, index) => (
+                  /* 表示モード（マークダウン） */
+                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {process.jobDescriptionMd || ""}
+                    </ReactMarkdown>
+                  </div>
+                )
+              ) : (
+                <div className="text-center py-8">
+                  <ClipboardList className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">{t.noJobDescription}</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {language === "ja"
+                      ? "「AIヒアリング」ボタンからヒアリングを開始してください"
+                      : "Click 'AI Hearing' button to start the interview"}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 右側: AIヒアリング/深掘りモード（分割表示時のみ） */}
+          {(showAIHearing || deepDiveItem) && (
+            <div className="w-1/2 flex flex-col overflow-hidden bg-muted/30">
+              {/* AIヒアリングヘッダー */}
+              <div className="p-3 border-b bg-background flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {deepDiveItem ? (
+                    <>
+                      <Search className="w-4 h-4 text-amber-600" />
+                      <span className="font-medium text-sm">{t.deepDiveMode}</span>
+                      <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full">
+                        {itemKeyToTitle[deepDiveItem]}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <MessageSquare className="w-4 h-4 text-amber-600" />
+                      <span className="font-medium text-sm">{t.aiHearing}</span>
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  {deepDiveItem ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleExitDeepDive}
+                      className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="w-3.5 h-3.5 mr-1" />
+                      {t.exitDeepDive}
+                    </Button>
+                  ) : chatMessages.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRestartHearing}
+                      className="h-7 text-xs text-muted-foreground hover:text-destructive"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                      {t.restartHearing}
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* チャットコンテンツ */}
+              {deepDiveItem ? (
+                /* 深掘りモード */
+                <>
+                  <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                    {deepDiveMessages.map((message, index) => (
                       <div
-                        key={`${message.timestamp}-${index}`}
+                        key={`deep-${message.timestamp}-${index}`}
                         className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                       >
                         <div
-                          className={`max-w-[80%] rounded-lg p-3 ${
+                          className={`max-w-[85%] rounded-lg p-2.5 ${
                             message.role === "user"
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted"
+                              ? "bg-amber-600 text-white"
+                              : "bg-background border"
                           }`}
                         >
                           <p className="text-sm whitespace-pre-wrap">
@@ -1715,7 +1825,7 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                     ))}
                     {isAiThinking && (
                       <div className="flex justify-start">
-                        <div className="bg-muted rounded-lg p-3">
+                        <div className="bg-background border rounded-lg p-2.5">
                           <div className="flex items-center gap-2">
                             <Loader2 className="w-4 h-4 animate-spin" />
                             <span className="text-sm text-muted-foreground">
@@ -1726,291 +1836,213 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                       </div>
                     )}
                     <div ref={chatEndRef} />
-                  </>
-                )}
-              </div>
-              {chatMessages.length > 0 && (
-                <div className="p-4 border-t">
-                  <div className="flex gap-2 items-end">
-                    <div className="flex-1 relative">
+                  </div>
+                  <div className="p-3 border-t bg-background">
+                    <div className="flex gap-2 items-end">
                       <textarea
                         ref={textareaRef}
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
-                        onKeyDown={handleKeyDown}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey && !isComposing) {
+                            e.preventDefault();
+                            handleSendDeepDiveMessage();
+                          }
+                        }}
                         onCompositionStart={() => setIsComposing(true)}
                         onCompositionEnd={() => setIsComposing(false)}
                         placeholder={t.inputPlaceholder}
-                        className="w-full resize-none rounded-xl border border-input bg-background px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[48px] max-h-[200px]"
+                        className="flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm min-h-[40px] max-h-[120px]"
                         rows={1}
                         disabled={isAiThinking}
                       />
-                    </div>
-                    <Button
-                      variant="primary"
-                      size="icon"
-                      onClick={handleSendMessage}
-                      disabled={!inputMessage.trim() || isAiThinking}
-                      className="h-12 w-12 rounded-xl flex-shrink-0"
-                    >
-                      <Send className="w-5 h-5" />
-                    </Button>
-                  </div>
-                  {(chatMessages.length >= 8 ||
-                    chatMessages.some((m) =>
-                      m.content.includes("ヒアリング完了"),
-                    )) &&
-                    !hasJobDescription() && (
                       <Button
-                        variant="outline"
-                        className="w-full mt-2"
-                        onClick={handleOrganizeJobDescription}
-                        disabled={isOrganizing}
+                        variant="primary"
+                        size="icon"
+                        onClick={handleSendDeepDiveMessage}
+                        disabled={!inputMessage.trim() || isAiThinking}
+                        className="h-10 w-10 rounded-lg flex-shrink-0 bg-amber-600 hover:bg-amber-700"
                       >
-                        {isOrganizing ? (
-                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                        ) : null}
-                        {isOrganizing
-                          ? t.organizingJobDescription
-                          : t.organizeJobDescription}
+                        <Send className="w-4 h-4" />
                       </Button>
-                    )}
-                  {/* レビュー深掘り後の更新ボタン */}
-                  {reviewDeepDiveItem && hasJobDescription() && (
-                    <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                      <p className="text-xs text-amber-700 dark:text-amber-300 mb-2">
-                        {language === "ja"
-                          ? `「${itemKeyToTitle[reviewDeepDiveItem as DeepDiveItemKey] || reviewDeepDiveItem}」の追加情報を業務分掌に反映しますか？`
-                          : `Apply the additional information about "${itemKeyToTitle[reviewDeepDiveItem as DeepDiveItemKey] || reviewDeepDiveItem}" to the job description?`}
-                      </p>
-                      <div className="flex gap-2">
+                    </div>
+                    {deepDiveMessages.length >= 4 && (
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={handleExitDeepDive}
+                        >
+                          {t.discardChanges}
+                        </Button>
                         <Button
                           variant="primary"
                           size="sm"
-                          className="flex-1"
-                          onClick={handleUpdateMarkdownFromChat}
-                          disabled={isUpdatingMarkdown}
+                          className="flex-1 bg-amber-600 hover:bg-amber-700"
+                          onClick={handleApplyDeepDiveChanges}
+                          disabled={isUpdatingItem}
                         >
-                          {isUpdatingMarkdown ? (
+                          {isUpdatingItem ? (
                             <Loader2 className="w-4 h-4 mr-1 animate-spin" />
                           ) : (
                             <Check className="w-4 h-4 mr-1" />
                           )}
-                          {language === "ja"
-                            ? "業務分掌を更新"
-                            : "Update Job Description"}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setReviewDeepDiveItem(null)}
-                          disabled={isUpdatingMarkdown}
-                        >
-                          {language === "ja" ? "キャンセル" : "Cancel"}
+                          {isUpdatingItem ? t.updatingItem : t.applyChanges}
                         </Button>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Job Description (業務分掌) */}
-        <div className="bg-card rounded-xl shadow-sm border flex flex-col h-[500px]">
-          <div className="p-4 border-b flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ClipboardList className="w-5 h-5 text-amber-600" />
-              <h2 className="font-semibold">{t.jobDescription}</h2>
-              {/* 編集モードインジケーター */}
-              {isEditMode && (
-                <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full">
-                  {t.editMode}
-                </span>
-              )}
-              {/* レビュー結果サマリー（クリックで表示切替） */}
-              {!isEditMode && reviewResults.length > 0 && (
-                <button
-                  onClick={() => setShowReviewResults(!showReviewResults)}
-                  className="text-xs text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
-                >
-                  ({reviewResults.filter((r) => r.status !== "complete").length}{" "}
-                  {t.issuesFound})
-                </button>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {hasJobDescription() && !isEditMode && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleStartEditMode}
-                  >
-                    <Edit2 className="w-4 h-4 mr-1" />
-                    {t.editModeOn}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleReviewJobDescription}
-                    disabled={isReviewing}
-                  >
-                    {isReviewing ? (
-                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                    ) : (
-                      <Sparkles className="w-4 h-4 mr-1" />
                     )}
-                    {isReviewing ? t.reviewing : t.reviewJobDescription}
-                  </Button>
-                </>
-              )}
-              {isEditMode && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCancelEditMode}
-                    disabled={isSaving}
-                  >
-                    {t.cancelEdit}
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={handleSaveEditMode}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? (
-                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                    ) : (
-                      <Check className="w-4 h-4 mr-1" />
-                    )}
-                    {isSaving ? t.savingChanges : t.saveChanges}
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4">
-            {hasJobDescription() ? (
-              isEditMode ? (
-                /* 編集モード（マークダウン） */
-                <textarea
-                  className="w-full h-full p-3 border rounded-md text-sm bg-background resize-none font-mono"
-                  value={editMarkdown}
-                  onChange={(e) => setEditMarkdown(e.target.value)}
-                  placeholder={
-                    language === "ja"
-                      ? "マークダウン形式で業務分掌を記述..."
-                      : "Write job description in markdown..."
-                  }
-                />
-              ) : showReviewResults && reviewResults.length > 0 ? (
-                /* レビュー結果表示 */
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-sm">
-                      {language === "ja" ? "レビュー結果" : "Review Results"}
-                    </h3>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowReviewResults(false)}
-                    >
-                      <X className="w-4 h-4 mr-1" />
-                      {language === "ja" ? "閉じる" : "Close"}
-                    </Button>
                   </div>
-                  {reviewResults.map((result) => {
-                    const itemTitle =
-                      itemKeyToTitle[result.itemKey as DeepDiveItemKey] ||
-                      result.itemKey;
-                    const statusConfig = {
-                      complete: {
-                        icon: CheckCircle2,
-                        color: "text-green-600 dark:text-green-400",
-                        bg: "bg-green-50 dark:bg-green-900/20",
-                        label: language === "ja" ? "完了" : "Complete",
-                      },
-                      needs_attention: {
-                        icon: AlertCircle,
-                        color: "text-yellow-600 dark:text-yellow-400",
-                        bg: "bg-yellow-50 dark:bg-yellow-900/20",
-                        label: language === "ja" ? "要確認" : "Needs Attention",
-                      },
-                      incomplete: {
-                        icon: XCircle,
-                        color: "text-red-600 dark:text-red-400",
-                        bg: "bg-red-50 dark:bg-red-900/20",
-                        label: language === "ja" ? "不足" : "Incomplete",
-                      },
-                    };
-                    const config =
-                      statusConfig[result.status] ||
-                      statusConfig.needs_attention;
-                    const StatusIcon = config.icon;
-
-                    return (
-                      <div
-                        key={result.itemKey}
-                        className={`p-3 rounded-lg border ${config.bg}`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-start gap-2 flex-1">
-                            <StatusIcon
-                              className={`w-4 h-4 mt-0.5 flex-shrink-0 ${config.color}`}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium text-sm">
-                                  {itemTitle}
-                                </span>
-                                <span
-                                  className={`text-xs px-1.5 py-0.5 rounded ${config.color} ${config.bg}`}
-                                >
-                                  {config.label}
-                                </span>
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                {result.comment}
+                </>
+              ) : (
+                /* 通常のAIヒアリングモード */
+                <>
+                  <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                    {chatMessages.length === 0 ? (
+                      <div className="text-center py-8">
+                        <MessageSquare className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+                        <p className="text-sm text-muted-foreground mb-3">
+                          {t.hearingDescription}
+                        </p>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => {
+                            const initialMessage = createInitialHearingMessage(
+                              process.title,
+                            );
+                            setChatMessages([initialMessage]);
+                            updateProcess({
+                              interviewHistory: [initialMessage],
+                              status: "INTERVIEW",
+                            });
+                          }}
+                        >
+                          {t.startHearing}
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        {chatMessages.map((message, index) => (
+                          <div
+                            key={`${message.timestamp}-${index}`}
+                            className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                          >
+                            <div
+                              className={`max-w-[85%] rounded-lg p-2.5 ${
+                                message.role === "user"
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-background border"
+                              }`}
+                            >
+                              <p className="text-sm whitespace-pre-wrap">
+                                {message.content}
                               </p>
                             </div>
                           </div>
-                          {result.status !== "complete" && (
+                        ))}
+                        {isAiThinking && (
+                          <div className="flex justify-start">
+                            <div className="bg-background border rounded-lg p-2.5">
+                              <div className="flex items-center gap-2">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <span className="text-sm text-muted-foreground">
+                                  {t.aiThinking}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        <div ref={chatEndRef} />
+                      </>
+                    )}
+                  </div>
+                  {chatMessages.length > 0 && (
+                    <div className="p-3 border-t bg-background">
+                      <div className="flex gap-2 items-end">
+                        <textarea
+                          ref={textareaRef}
+                          value={inputMessage}
+                          onChange={(e) => setInputMessage(e.target.value)}
+                          onKeyDown={handleKeyDown}
+                          onCompositionStart={() => setIsComposing(true)}
+                          onCompositionEnd={() => setIsComposing(false)}
+                          placeholder={t.inputPlaceholder}
+                          className="flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm min-h-[40px] max-h-[120px]"
+                          rows={1}
+                          disabled={isAiThinking}
+                        />
+                        <Button
+                          variant="primary"
+                          size="icon"
+                          onClick={handleSendMessage}
+                          disabled={!inputMessage.trim() || isAiThinking}
+                          className="h-10 w-10 rounded-lg flex-shrink-0"
+                        >
+                          <Send className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      {(chatMessages.length >= 8 ||
+                        chatMessages.some((m) =>
+                          m.content.includes("ヒアリング完了"),
+                        )) &&
+                        !hasJobDescription() && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full mt-2"
+                            onClick={handleOrganizeJobDescription}
+                            disabled={isOrganizing}
+                          >
+                            {isOrganizing ? (
+                              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                            ) : null}
+                            {isOrganizing
+                              ? t.organizingJobDescription
+                              : t.organizeJobDescription}
+                          </Button>
+                        )}
+                      {/* レビュー深掘り後の更新ボタン */}
+                      {reviewDeepDiveItem && hasJobDescription() && (
+                        <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                          <p className="text-xs text-amber-700 dark:text-amber-300 mb-2">
+                            {language === "ja"
+                              ? `「${itemKeyToTitle[reviewDeepDiveItem as DeepDiveItemKey] || reviewDeepDiveItem}」の追加情報を反映しますか？`
+                              : `Apply info about "${itemKeyToTitle[reviewDeepDiveItem as DeepDiveItemKey] || reviewDeepDiveItem}"?`}
+                          </p>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              className="flex-1 h-7 text-xs"
+                              onClick={handleUpdateMarkdownFromChat}
+                              disabled={isUpdatingMarkdown}
+                            >
+                              {isUpdatingMarkdown ? (
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                              ) : (
+                                <Check className="w-3 h-3 mr-1" />
+                              )}
+                              {language === "ja" ? "更新" : "Update"}
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="flex-shrink-0"
-                              onClick={() => handleReviewChat(result.itemKey)}
+                              className="h-7 text-xs"
+                              onClick={() => setReviewDeepDiveItem(null)}
+                              disabled={isUpdatingMarkdown}
                             >
-                              <MessageCircle className="w-3.5 h-3.5 mr-1" />
-                              <span className="text-xs">
-                                {language === "ja" ? "深掘り" : "Discuss"}
-                              </span>
+                              {language === "ja" ? "キャンセル" : "Cancel"}
                             </Button>
-                          )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                /* 表示モード（マークダウン） */
-                <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {process.jobDescriptionMd || ""}
-                  </ReactMarkdown>
-                </div>
-              )
-            ) : (
-              <div className="text-center py-8">
-                <ClipboardList className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">{t.noJobDescription}</p>
-              </div>
-            )}
-          </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
