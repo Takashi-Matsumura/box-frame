@@ -22,6 +22,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  CollapsiblePanel,
+  CollapsiblePanelContent,
+  CollapsiblePanelDescription,
+  CollapsiblePanelHeader,
+  CollapsiblePanelTitle,
+} from "@/components/ui/collapsible-panel";
 import { FloatingWindow } from "@/components/ui/floating-window";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -145,12 +152,14 @@ export function DashboardClient({
       </Card>
 
       {/* About This Application */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t.messageTitle}</CardTitle>
-          <CardDescription>{t.messageDescription}</CardDescription>
-        </CardHeader>
-        <CardContent>
+      <CollapsiblePanel defaultOpen={false}>
+        <CollapsiblePanelHeader>
+          <CollapsiblePanelTitle>{t.messageTitle}</CollapsiblePanelTitle>
+          <CollapsiblePanelDescription>
+            {t.messageDescription}
+          </CollapsiblePanelDescription>
+        </CollapsiblePanelHeader>
+        <CollapsiblePanelContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {features.map((feature) => (
               <div
@@ -169,8 +178,8 @@ export function DashboardClient({
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </CollapsiblePanelContent>
+      </CollapsiblePanel>
 
       {/* Component Demo Section */}
       <Card>

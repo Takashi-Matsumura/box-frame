@@ -1,7 +1,5 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   ArrowLeft,
@@ -22,22 +20,24 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { FloatingWindow } from "@/components/ui/floating-window";
-import {
-  CollapsiblePanel,
-  CollapsiblePanelHeader,
-  CollapsiblePanelTitle,
-  CollapsiblePanelDescription,
-  CollapsiblePanelSummary,
-  CollapsiblePanelContent,
-} from "@/components/ui/collapsible-panel";
-import { useFloatingWindowStore } from "@/lib/stores/floating-window-store";
-import { DiagramEditorWithAI } from "@/lib/addon-modules/backoffice/components/DiagramEditorWithAI";
-import { wrapWithMxFile } from "@/lib/addon-modules/backoffice/utils/diagram-utils";
-import { processDetailTranslations } from "./translations";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Button } from "@/components/ui/button";
+import {
+  CollapsiblePanel,
+  CollapsiblePanelContent,
+  CollapsiblePanelDescription,
+  CollapsiblePanelHeader,
+  CollapsiblePanelSummary,
+  CollapsiblePanelTitle,
+} from "@/components/ui/collapsible-panel";
+import { FloatingWindow } from "@/components/ui/floating-window";
+import { DiagramEditorWithAI } from "@/lib/addon-modules/backoffice/components/DiagramEditorWithAI";
+import { wrapWithMxFile } from "@/lib/addon-modules/backoffice/utils/diagram-utils";
+import { useFloatingWindowStore } from "@/lib/stores/floating-window-store";
+import { processDetailTranslations } from "./translations";
 
 // 業務分掌データの型定義
 interface Stakeholder {
@@ -171,12 +171,12 @@ const statusColors: Record<ProcessStatus, string> = {
 export function ProcessDetailClient({
   processId,
   language,
-  userName,
+  userName: _userName,
 }: ProcessDetailClientProps) {
   const t = processDetailTranslations[language];
   const router = useRouter();
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const { open: openFloatingWindow, setContent } = useFloatingWindowStore();
+  const { open: openFloatingWindow } = useFloatingWindowStore();
 
   const [process, setProcess] = useState<BusinessProcess | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -190,7 +190,9 @@ export function ProcessDetailClient({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 深掘りモード
-  const [deepDiveItem, setDeepDiveItem] = useState<DeepDiveItemKey | null>(null);
+  const [deepDiveItem, setDeepDiveItem] = useState<DeepDiveItemKey | null>(
+    null,
+  );
   const [deepDiveMessages, setDeepDiveMessages] = useState<ChatMessage[]>([]);
   const [isUpdatingItem, setIsUpdatingItem] = useState(false);
 
@@ -202,6 +204,55 @@ export function ProcessDetailClient({
   const [isEditMode, setIsEditMode] = useState(false);
   const [editMarkdown, setEditMarkdown] = useState("");
 
+  // ============================================================
+  // プロセス更新関数（useEffectより先に定義が必要）
+  // ============================================================
+  const updateProcess = useCallback(
+    async (data: Partial<BusinessProcess>) => {
+      try {
+        const response = await fetch(`/api/backoffice/processes/${processId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+
+        if (response.ok) {
+          const updated = await response.json();
+          setProcess(updated);
+          // diagramXmlが更新された場合は、ローカルステートも更新
+          if (data.diagramXml !== undefined) {
+            setDiagramXml(updated.diagramXml || "");
+          }
+          return true;
+        }
+      } catch (error) {
+        console.error("Failed to update process:", error);
+      }
+      return false;
+    },
+    [processId],
+  );
+
+  // ============================================================
+  // ヒアリング初期化メッセージの生成（重複コード防止のヘルパー）
+  // ============================================================
+  const createInitialHearingMessage = useCallback(
+    (title: string): ChatMessage => {
+      return {
+        role: "assistant",
+        content:
+          language === "ja"
+            ? `「${title}」について業務分掌のヒアリングを始めます。\n\n9つの項目について順番に質問していきます。各項目1回ずつ、テンポよく進めましょう。\n\n**【項目1/9: 業務概要・目的】**\nこの業務の目的・背景を教えてください。なぜこの業務が必要ですか？`
+            : `Let's start the job description hearing for "${title}".\n\nI'll ask about 9 items, one question each. Let's move through them efficiently.\n\n**[Item 1/9: Purpose]**\nWhat is the purpose and background of this business process?`,
+        timestamp: new Date().toISOString(),
+      };
+    },
+    [language],
+  );
+
+  // ============================================================
+  // データ取得
+  // ============================================================
   const fetchProcess = useCallback(async () => {
     try {
       const response = await fetch(`/api/backoffice/processes/${processId}`);
@@ -224,6 +275,9 @@ export function ProcessDetailClient({
     }
   }, [processId, router]);
 
+  // ============================================================
+  // useEffect群
+  // ============================================================
   useEffect(() => {
     fetchProcess();
   }, [fetchProcess]);
@@ -244,7 +298,7 @@ export function ProcessDetailClient({
     if (process?.jobDescriptionMd && process.status === "INTERVIEW") {
       updateProcess({ status: "DIAGRAMMING" });
     }
-  }, [process?.jobDescriptionMd, process?.status]);
+  }, [process?.jobDescriptionMd, process?.status, updateProcess]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey && !isComposing) {
@@ -280,8 +334,9 @@ export function ProcessDetailClient({
   // Step progress calculation
   type StepStatus = "completed" | "current" | "pending";
 
-  const getStepStatuses = (): StepStatus[] => {
-    if (!process) return ["pending", "pending", "pending", "pending", "pending"];
+  const stepStatuses = useMemo((): StepStatus[] => {
+    if (!process)
+      return ["pending", "pending", "pending", "pending", "pending"];
 
     const hasStartedHearing = chatMessages.length > 0;
     const hasJobDesc = hasJobDescription();
@@ -291,7 +346,13 @@ export function ProcessDetailClient({
     // Step 1: AI Hearing - 8メッセージ以上で十分なヒアリングとみなす
     const hasEnoughMessages = chatMessages.length >= 8;
     let step1: StepStatus = "pending";
-    if (status === "PUBLISHED" || status === "REVIEW" || status === "DIAGRAMMING" || hasJobDesc || hasEnoughMessages) {
+    if (
+      status === "PUBLISHED" ||
+      status === "REVIEW" ||
+      status === "DIAGRAMMING" ||
+      hasJobDesc ||
+      hasEnoughMessages
+    ) {
       step1 = "completed";
     } else if (hasStartedHearing || status === "INTERVIEW") {
       step1 = "current";
@@ -332,32 +393,54 @@ export function ProcessDetailClient({
     }
 
     return [step1, step2, step3, step4, step5];
-  };
+  }, [process, chatMessages.length]);
 
-  const stepStatuses = getStepStatuses();
+  const steps = useMemo(
+    () => [
+      {
+        title: t.step1Title,
+        desc: t.step1Desc,
+        action: t.step1Action,
+        icon: MessageSquare,
+      },
+      {
+        title: t.step2Title,
+        desc: t.step2Desc,
+        action: t.step2Action,
+        icon: ClipboardList,
+      },
+      {
+        title: t.step3Title,
+        desc: t.step3Desc,
+        action: t.step3Action,
+        icon: GitBranch,
+      },
+      {
+        title: t.step4Title,
+        desc: t.step4Desc,
+        action: t.step4Action,
+        icon: PlayCircle,
+      },
+      {
+        title: t.step5Title,
+        desc: t.step5Desc,
+        action: t.step5Action,
+        icon: Upload,
+      },
+    ],
+    [t],
+  );
 
-  const steps = [
-    { title: t.step1Title, desc: t.step1Desc, action: t.step1Action, icon: MessageSquare },
-    { title: t.step2Title, desc: t.step2Desc, action: t.step2Action, icon: ClipboardList },
-    { title: t.step3Title, desc: t.step3Desc, action: t.step3Action, icon: GitBranch },
-    { title: t.step4Title, desc: t.step4Desc, action: t.step4Action, icon: PlayCircle },
-    { title: t.step5Title, desc: t.step5Desc, action: t.step5Action, icon: Upload },
-  ];
-
-  const currentStepIndex = stepStatuses.findIndex((s) => s === "current");
+  const currentStepIndex = useMemo(
+    () => stepStatuses.indexOf("current"),
+    [stepStatuses],
+  );
 
   const handleStepAction = (stepIndex: number) => {
     switch (stepIndex) {
       case 0: // Start hearing
-        if (chatMessages.length === 0) {
-          const initialMessage: ChatMessage = {
-            role: "assistant",
-            content:
-              language === "ja"
-                ? `「${process?.title}」について業務分掌のヒアリングを始めます。\n\n9つの項目について順番に質問していきます。各項目1回ずつ、テンポよく進めましょう。\n\n**【項目1/9: 業務概要・目的】**\nこの業務の目的・背景を教えてください。なぜこの業務が必要ですか？`
-                : `Let's start the job description hearing for "${process?.title}".\n\nI'll ask about 9 items, one question each. Let's move through them efficiently.\n\n**[Item 1/9: Purpose]**\nWhat is the purpose and background of this business process?`,
-            timestamp: new Date().toISOString(),
-          };
+        if (chatMessages.length === 0 && process?.title) {
+          const initialMessage = createInitialHearingMessage(process.title);
           setChatMessages([initialMessage]);
           updateProcess({
             interviewHistory: [initialMessage],
@@ -416,7 +499,7 @@ export function ProcessDetailClient({
     try {
       // 業務分掌9項目に対応したAIヒアリングプロンプト
       // 会話数から現在の進捗を推定
-      const messageCount = newMessages.filter(m => m.role === "user").length;
+      const messageCount = newMessages.filter((m) => m.role === "user").length;
       const estimatedItem = Math.min(Math.floor(messageCount) + 1, 9);
 
       const systemPrompt = `あなたは業務分掌のヒアリングを行うインタビュアーです。
@@ -477,7 +560,10 @@ ${process?.description ? `説明: ${process.description}` : ""}
         const data = await response.json();
         const assistantMessage: ChatMessage = {
           role: "assistant",
-          content: data.content || data.message || "申し訳ございません。応答を生成できませんでした。",
+          content:
+            data.content ||
+            data.message ||
+            "申し訳ございません。応答を生成できませんでした。",
           timestamp: new Date().toISOString(),
         };
         const updatedMessages = [...newMessages, assistantMessage];
@@ -498,29 +584,6 @@ ${process?.description ? `説明: ${process.description}` : ""}
     } finally {
       setIsAiThinking(false);
     }
-  };
-
-  const updateProcess = async (data: Partial<BusinessProcess>) => {
-    try {
-      const response = await fetch(`/api/backoffice/processes/${processId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      if (response.ok) {
-        const updated = await response.json();
-        setProcess(updated);
-        // diagramXmlが更新された場合は、ローカルステートも更新
-        if (data.diagramXml !== undefined) {
-          setDiagramXml(updated.diagramXml || "");
-        }
-        return true;
-      }
-    } catch (error) {
-      console.error("Failed to update process:", error);
-    }
-    return false;
   };
 
   // 業務分掌を整理する（マークダウン形式で生成）
@@ -611,7 +674,7 @@ ${process?.description ? `説明: ${process.description}` : ""}
           alert(
             language === "ja"
               ? "業務分掌の整理に失敗しました。もう一度お試しください。"
-              : "Failed to organize job description. Please try again."
+              : "Failed to organize job description. Please try again.",
           );
         }
       }
@@ -620,7 +683,7 @@ ${process?.description ? `説明: ${process.description}` : ""}
       alert(
         language === "ja"
           ? "エラーが発生しました。もう一度お試しください。"
-          : "An error occurred. Please try again."
+          : "An error occurred. Please try again.",
       );
     } finally {
       setIsOrganizing(false);
@@ -631,11 +694,14 @@ ${process?.description ? `説明: ${process.description}` : ""}
     const xml = diagramXml ? wrapWithMxFile(diagramXml) : "";
 
     // シーケンス図用のアクター情報を渡す
-    const actorsForDiagram = process?.actors || process?.stakeholders?.map((s, i) => ({
-      id: `actor${i + 1}`,
-      name: s.name,
-      department: s.department || "",
-    })) || [];
+    const actorsForDiagram =
+      process?.actors ||
+      process?.stakeholders?.map((s, i) => ({
+        id: `actor${i + 1}`,
+        name: s.name,
+        department: s.department || "",
+      })) ||
+      [];
 
     // 保存コールバック（XMLを受け取って保存）
     const handleSaveInEditor = async (xmlToSave: string): Promise<boolean> => {
@@ -651,7 +717,12 @@ ${process?.description ? `説明: ${process.description}` : ""}
       content: (
         <DiagramEditorWithAI
           xml={xml}
-          flowDescription={process?.jobDescriptionMd || process?.businessFlow || process?.flowDescription || undefined}
+          flowDescription={
+            process?.jobDescriptionMd ||
+            process?.businessFlow ||
+            process?.flowDescription ||
+            undefined
+          }
           actors={actorsForDiagram}
           onChange={(newXml) => {
             setDiagramXml(newXml);
@@ -780,11 +851,13 @@ ${process?.description ? `説明: ${process.description}` : ""}
   };
 
   // レビュー結果に基づいてAIヒアリングを開始
-  const [reviewDeepDiveItem, setReviewDeepDiveItem] = useState<string | null>(null);
+  const [reviewDeepDiveItem, setReviewDeepDiveItem] = useState<string | null>(
+    null,
+  );
   const [isUpdatingMarkdown, setIsUpdatingMarkdown] = useState(false);
 
   const handleReviewChat = (itemKey: string) => {
-    const result = reviewResults.find(r => r.itemKey === itemKey);
+    const result = reviewResults.find((r) => r.itemKey === itemKey);
     if (!result) return;
 
     const itemTitle = itemKeyToTitle[itemKey as DeepDiveItemKey] || itemKey;
@@ -805,7 +878,9 @@ ${process?.description ? `説明: ${process.description}` : ""}
 
     setIsUpdatingMarkdown(true);
     try {
-      const itemTitle = itemKeyToTitle[reviewDeepDiveItem as DeepDiveItemKey] || reviewDeepDiveItem;
+      const itemTitle =
+        itemKeyToTitle[reviewDeepDiveItem as DeepDiveItemKey] ||
+        reviewDeepDiveItem;
 
       // 直近のチャット内容を取得（レビュー開始後のメッセージ）
       const recentMessages = chatMessages.slice(-10);
@@ -840,7 +915,11 @@ ${process?.description ? `説明: ${process.description}` : ""}
           setReviewDeepDiveItem(null);
           // レビュー結果をクリア（更新されたので再レビューが必要）
           setReviewResults([]);
-          alert(language === "ja" ? "業務分掌を更新しました" : "Job description updated");
+          alert(
+            language === "ja"
+              ? "業務分掌を更新しました"
+              : "Job description updated",
+          );
         }
       }
     } catch (error) {
@@ -871,7 +950,8 @@ ${process?.description ? `説明: ${process.description}` : ""}
     improvements: t.itemImprovements,
   };
 
-  const handleStartDeepDive = (itemKey: DeepDiveItemKey) => {
+  // Note: Deep dive機能の開始関数（将来の拡張用に保持）
+  const _handleStartDeepDive = (itemKey: DeepDiveItemKey) => {
     setDeepDiveItem(itemKey);
     // 深掘り開始メッセージ
     const itemTitle = itemKeyToTitle[itemKey];
@@ -894,28 +974,52 @@ ${process?.description ? `説明: ${process.description}` : ""}
         return process.purpose || "";
       case "responsibility":
         return [
-          process.responsibleDepartment && `担当部署: ${process.responsibleDepartment}`,
+          process.responsibleDepartment &&
+            `担当部署: ${process.responsibleDepartment}`,
           process.responsiblePerson && `責任者: ${process.responsiblePerson}`,
           process.authority && `権限: ${process.authority}`,
         ]
           .filter(Boolean)
           .join("\n");
       case "stakeholders":
-        return process.stakeholders?.map((s) => `- ${s.name}: ${s.role}`).join("\n") || "";
+        return (
+          process.stakeholders
+            ?.map((s) => `- ${s.name}: ${s.role}`)
+            .join("\n") || ""
+        );
       case "businessFlow":
         return process.businessFlow || "";
-      case "inputOutput":
-        const inputs = process.inputs?.map((i) => `[入力] ${i.name}`).join("\n") || "";
-        const outputs = process.outputs?.map((o) => `[出力] ${o.name}`).join("\n") || "";
+      case "inputOutput": {
+        const inputs =
+          process.inputs?.map((i) => `[入力] ${i.name}`).join("\n") || "";
+        const outputs =
+          process.outputs?.map((o) => `[出力] ${o.name}`).join("\n") || "";
         return [inputs, outputs].filter(Boolean).join("\n");
+      }
       case "systemsTools":
-        return process.systemsAndTools?.map((s) => `- ${s.name}: ${s.purpose || ""}`).join("\n") || "";
+        return (
+          process.systemsAndTools
+            ?.map((s) => `- ${s.name}: ${s.purpose || ""}`)
+            .join("\n") || ""
+        );
       case "kpis":
-        return process.kpis?.map((k) => `- ${k.name}: ${k.target || ""}${k.unit || ""}`).join("\n") || "";
+        return (
+          process.kpis
+            ?.map((k) => `- ${k.name}: ${k.target || ""}${k.unit || ""}`)
+            .join("\n") || ""
+        );
       case "risksIssues":
-        return process.risksAndIssues?.map((r) => `- ${r.type}: ${r.description}`).join("\n") || "";
+        return (
+          process.risksAndIssues
+            ?.map((r) => `- ${r.type}: ${r.description}`)
+            .join("\n") || ""
+        );
       case "improvements":
-        return process.improvements?.map((i) => `- ${i.title}: ${i.description}`).join("\n") || "";
+        return (
+          process.improvements
+            ?.map((i) => `- ${i.title}: ${i.description}`)
+            .join("\n") || ""
+        );
       default:
         return "";
     }
@@ -1004,14 +1108,14 @@ ${process?.description ? `説明: ${process.description}` : ""}
 担当部署: ${process?.responsibleDepartment || "未設定"}
 責任者: ${process?.responsiblePerson || "未設定"}
 権限: ${process?.authority || "未設定"}
-ステークホルダー: ${process?.stakeholders?.map(s => `${s.name}(${s.role})`).join(", ") || "未設定"}
+ステークホルダー: ${process?.stakeholders?.map((s) => `${s.name}(${s.role})`).join(", ") || "未設定"}
 業務フロー: ${process?.businessFlow || "未設定"}
-インプット: ${process?.inputs?.map(i => i.name).join(", ") || "未設定"}
-アウトプット: ${process?.outputs?.map(o => o.name).join(", ") || "未設定"}
-使用システム・ツール: ${process?.systemsAndTools?.map(s => s.name).join(", ") || "未設定"}
-KPI: ${process?.kpis?.map(k => k.name).join(", ") || "未設定"}
-リスク・課題: ${process?.risksAndIssues?.map(r => r.description).join(", ") || "未設定"}
-改善提案: ${process?.improvements?.map(i => i.title).join(", ") || "未設定"}
+インプット: ${process?.inputs?.map((i) => i.name).join(", ") || "未設定"}
+アウトプット: ${process?.outputs?.map((o) => o.name).join(", ") || "未設定"}
+使用システム・ツール: ${process?.systemsAndTools?.map((s) => s.name).join(", ") || "未設定"}
+KPI: ${process?.kpis?.map((k) => k.name).join(", ") || "未設定"}
+リスク・課題: ${process?.risksAndIssues?.map((r) => r.description).join(", ") || "未設定"}
+改善提案: ${process?.improvements?.map((i) => i.title).join(", ") || "未設定"}
 `.trim();
 
       const systemPrompt = `あなたは業務分掌の深掘りインタビュアーです。
@@ -1047,7 +1151,10 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
         const data = await response.json();
         const assistantMessage: ChatMessage = {
           role: "assistant",
-          content: data.content || data.message || "申し訳ございません。応答を生成できませんでした。",
+          content:
+            data.content ||
+            data.message ||
+            "申し訳ございません。応答を生成できませんでした。",
           timestamp: new Date().toISOString(),
         };
         setDeepDiveMessages([...newMessages, assistantMessage]);
@@ -1214,7 +1321,8 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                   ))}
                 </div>
                 <span className="text-sm text-muted-foreground">
-                  {stepStatuses.filter((s) => s === "completed").length}/{steps.length} {t.stepCompleted}
+                  {stepStatuses.filter((s) => s === "completed").length}/
+                  {steps.length} {t.stepCompleted}
                 </span>
               </div>
             </div>
@@ -1270,7 +1378,10 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                 const status = stepStatuses[index];
                 const StepIcon = step.icon;
                 return (
-                  <div key={index} className="flex flex-col items-center relative z-10 flex-1">
+                  <div
+                    key={index}
+                    className="flex flex-col items-center relative z-10 flex-1"
+                  >
                     <div
                       className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
                         status === "completed"
@@ -1311,7 +1422,7 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                           onClick={() => handleStepAction(index)}
                           disabled={isSaving || isOrganizing}
                         >
-                          {(isSaving || isOrganizing) ? (
+                          {isSaving || isOrganizing ? (
                             <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                           ) : null}
                           {step.action}
@@ -1389,7 +1500,9 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">{step.desc}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {step.desc}
+                    </p>
 
                     {status === "current" && (
                       <Button
@@ -1399,7 +1512,7 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                         onClick={() => handleStepAction(index)}
                         disabled={isSaving || isOrganizing}
                       >
-                        {(isSaving || isOrganizing) ? (
+                        {isSaving || isOrganizing ? (
                           <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                         ) : null}
                         {step.action}
@@ -1415,7 +1528,9 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* AI Hearing Chat / Deep Dive Mode */}
-        <div className={`bg-card rounded-xl shadow-sm border flex flex-col h-[500px] ${deepDiveItem ? "ring-2 ring-amber-500" : ""}`}>
+        <div
+          className={`bg-card rounded-xl shadow-sm border flex flex-col h-[500px] ${deepDiveItem ? "ring-2 ring-amber-500" : ""}`}
+        >
           <div className="p-4 border-b flex items-center justify-between">
             <div className="flex items-center gap-2">
               {deepDiveItem ? (
@@ -1558,19 +1673,16 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                 {chatMessages.length === 0 ? (
                   <div className="text-center py-8">
                     <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">{t.hearingDescription}</p>
+                    <p className="text-muted-foreground">
+                      {t.hearingDescription}
+                    </p>
                     <Button
                       variant="primary"
                       className="mt-4"
                       onClick={() => {
-                        const initialMessage: ChatMessage = {
-                          role: "assistant",
-                          content:
-                            language === "ja"
-                              ? `「${process.title}」について業務分掌のヒアリングを始めます。\n\n9つの項目について順番に質問していきます。各項目1回ずつ、テンポよく進めましょう。\n\n**【項目1/9: 業務概要・目的】**\nこの業務の目的・背景を教えてください。なぜこの業務が必要ですか？`
-                              : `Let's start the job description hearing for "${process.title}".\n\nI'll ask about 9 items, one question each. Let's move through them efficiently.\n\n**[Item 1/9: Purpose]**\nWhat is the purpose and background of this business process?`,
-                          timestamp: new Date().toISOString(),
-                        };
+                        const initialMessage = createInitialHearingMessage(
+                          process.title,
+                        );
                         setChatMessages([initialMessage]);
                         updateProcess({
                           interviewHistory: [initialMessage],
@@ -1644,19 +1756,25 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                       <Send className="w-5 h-5" />
                     </Button>
                   </div>
-                  {(chatMessages.length >= 8 || chatMessages.some(m => m.content.includes("ヒアリング完了"))) && !hasJobDescription() && (
-                    <Button
-                      variant="outline"
-                      className="w-full mt-2"
-                      onClick={handleOrganizeJobDescription}
-                      disabled={isOrganizing}
-                    >
-                      {isOrganizing ? (
-                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                      ) : null}
-                      {isOrganizing ? t.organizingJobDescription : t.organizeJobDescription}
-                    </Button>
-                  )}
+                  {(chatMessages.length >= 8 ||
+                    chatMessages.some((m) =>
+                      m.content.includes("ヒアリング完了"),
+                    )) &&
+                    !hasJobDescription() && (
+                      <Button
+                        variant="outline"
+                        className="w-full mt-2"
+                        onClick={handleOrganizeJobDescription}
+                        disabled={isOrganizing}
+                      >
+                        {isOrganizing ? (
+                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        ) : null}
+                        {isOrganizing
+                          ? t.organizingJobDescription
+                          : t.organizeJobDescription}
+                      </Button>
+                    )}
                   {/* レビュー深掘り後の更新ボタン */}
                   {reviewDeepDiveItem && hasJobDescription() && (
                     <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
@@ -1678,7 +1796,9 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                           ) : (
                             <Check className="w-4 h-4 mr-1" />
                           )}
-                          {language === "ja" ? "業務分掌を更新" : "Update Job Description"}
+                          {language === "ja"
+                            ? "業務分掌を更新"
+                            : "Update Job Description"}
                         </Button>
                         <Button
                           variant="ghost"
@@ -1715,7 +1835,8 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                   onClick={() => setShowReviewResults(!showReviewResults)}
                   className="text-xs text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
                 >
-                  ({reviewResults.filter(r => r.status !== "complete").length} {t.issuesFound})
+                  ({reviewResults.filter((r) => r.status !== "complete").length}{" "}
+                  {t.issuesFound})
                 </button>
               )}
             </div>
@@ -1780,7 +1901,11 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                   className="w-full h-full p-3 border rounded-md text-sm bg-background resize-none font-mono"
                   value={editMarkdown}
                   onChange={(e) => setEditMarkdown(e.target.value)}
-                  placeholder={language === "ja" ? "マークダウン形式で業務分掌を記述..." : "Write job description in markdown..."}
+                  placeholder={
+                    language === "ja"
+                      ? "マークダウン形式で業務分掌を記述..."
+                      : "Write job description in markdown..."
+                  }
                 />
               ) : showReviewResults && reviewResults.length > 0 ? (
                 /* レビュー結果表示 */
@@ -1799,7 +1924,9 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                     </Button>
                   </div>
                   {reviewResults.map((result) => {
-                    const itemTitle = itemKeyToTitle[result.itemKey as DeepDiveItemKey] || result.itemKey;
+                    const itemTitle =
+                      itemKeyToTitle[result.itemKey as DeepDiveItemKey] ||
+                      result.itemKey;
                     const statusConfig = {
                       complete: {
                         icon: CheckCircle2,
@@ -1820,7 +1947,9 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                         label: language === "ja" ? "不足" : "Incomplete",
                       },
                     };
-                    const config = statusConfig[result.status] || statusConfig.needs_attention;
+                    const config =
+                      statusConfig[result.status] ||
+                      statusConfig.needs_attention;
                     const StatusIcon = config.icon;
 
                     return (
@@ -1830,15 +1959,23 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-start gap-2 flex-1">
-                            <StatusIcon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${config.color}`} />
+                            <StatusIcon
+                              className={`w-4 h-4 mt-0.5 flex-shrink-0 ${config.color}`}
+                            />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium text-sm">{itemTitle}</span>
-                                <span className={`text-xs px-1.5 py-0.5 rounded ${config.color} ${config.bg}`}>
+                                <span className="font-medium text-sm">
+                                  {itemTitle}
+                                </span>
+                                <span
+                                  className={`text-xs px-1.5 py-0.5 rounded ${config.color} ${config.bg}`}
+                                >
                                   {config.label}
                                 </span>
                               </div>
-                              <p className="text-xs text-muted-foreground">{result.comment}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {result.comment}
+                              </p>
                             </div>
                           </div>
                           {result.status !== "complete" && (
@@ -1849,7 +1986,9 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                               onClick={() => handleReviewChat(result.itemKey)}
                             >
                               <MessageCircle className="w-3.5 h-3.5 mr-1" />
-                              <span className="text-xs">{language === "ja" ? "深掘り" : "Discuss"}</span>
+                              <span className="text-xs">
+                                {language === "ja" ? "深掘り" : "Discuss"}
+                              </span>
                             </Button>
                           )}
                         </div>
