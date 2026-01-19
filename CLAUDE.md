@@ -358,21 +358,27 @@ lib/addon-modules/backoffice/
 **ステップ進捗条件:**
 | ステップ | 完了条件 |
 |---------|---------|
-| 1. AIヒアリング | 8メッセージ以上 OR 業務分掌あり |
-| 2. 業務分掌整理 | 業務分掌あり AND (ステータスがDIAGRAMMING以降 OR 図あり) |
+| 1. AIヒアリング | 業務分掌マークダウンあり OR 8メッセージ以上 |
+| 2. 業務分掌整理 | 業務分掌マークダウンあり |
 | 3. シーケンス図 | 図が保存されている |
-| 4. レビュー | ステータスがPUBLISHED |
+| 4. レビュー | ステータスがREVIEW以降 |
 | 5. 公開 | ステータスがPUBLISHED |
+
+**ステータス自動修正:**
+- 業務分掌マークダウンがあるのにステータスがINTERVIEWの場合、自動的にDIAGRAMMINGに更新
 
 **AIヒアリング機能:**
 - 一問一答形式の対話で業務分掌9項目をヒアリング
 - 業務分掌9項目: 業務概要・目的、責任範囲、ステークホルダー、業務フロー、インプット/アウトプット、使用システム・ツール、KPI/成果指標、リスク・課題、改善提案
-- フェーズ1: 9項目を順番にヒアリング
-- フェーズ2: 深掘りとベストプラクティス比較
-- フェーズ3: 全体フロー整理と最終確認
 - ヒアリング履歴はDBに保存
 - やり直しボタンで会話をリセット可能
 - 8メッセージ以上で「業務分掌を整理」ボタンが表示
+
+**業務分掌（マークダウン形式）:**
+- AIヒアリング結果をマークダウン形式で整理・保存
+- `jobDescriptionMd`フィールドに格納
+- ReactMarkdownで表示、直接編集も可能
+- AIレビュー機能で課題を検出、深掘りチャットで追加情報を収集
 
 **シーケンス図機能:**
 - draw.io（react-drawio）を使用したシーケンス図エディタ
@@ -394,12 +400,14 @@ model BusinessProcess {
   title             String
   description       String?
   status            BusinessProcessStatus  // DRAFT/INTERVIEW/DIAGRAMMING/REVIEW/PUBLISHED/ARCHIVED
-  flowDescription   String?               // 言語化された業務フロー
+  flowDescription   String?               // 言語化された業務フロー（レガシー）
   interviewHistory  Json?                 // AIヒアリング履歴
   diagramXml        String?               // draw.io XMLデータ
   tags              String?
   version           Int
-  // 業務分掌9項目
+  // 業務分掌（マークダウン形式）
+  jobDescriptionMd      String?           // 業務分掌マークダウン（メイン）
+  // 業務分掌9項目（レガシー - 今後廃止予定）
   purpose               String?           // 業務の目的・背景・価値
   responsibleDepartment String?           // 担当部署
   responsiblePerson     String?           // 責任者
@@ -419,6 +427,29 @@ model BusinessProcess {
   updatedAt         DateTime
 }
 ```
+
+### 今後の機能拡張候補（業務マニュアルガイドライン準拠）
+
+以下の機能拡張を検討中。実装の可否は業務分掌整備・業務分析の開発過程を経て判断する。
+
+参照: `docs/business-manual-guideline.md`
+
+#### 1. 付加価値分析（VA/NVA/BV）機能
+- 各作業にVA/NVA/BVタグを付与
+- 色分け表示（VA=緑、NVA=赤、BV=黄）
+- NVA/BV比率の自動計算
+- AIによる自動分類提案
+
+#### 2. 作業手順書（ユースケース記述）機能
+- 業務フローの各作業から1:1で作業手順書を作成
+- ユースケース記述書形式（作業名、概要、目的、アクター、イベントフロー等）
+- メイン/代替/例外フローの記述対応
+
+#### 3. スイムレーンフローチャートの記号拡張
+- ガイドライン準拠の記号パレット
+- 状態（楕円）、作業（長方形）、分岐（ひし形）
+- 伝達データ（角丸長方形）、蓄積データ（円筒）
+- KPI測定ポイントのマーキング
 
 ## Prismaモデル（27モデル）
 

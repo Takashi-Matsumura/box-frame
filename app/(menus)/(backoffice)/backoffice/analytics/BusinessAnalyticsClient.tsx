@@ -4,11 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   FileText,
-  GitBranch,
   Loader2,
   MessageSquare,
   Plus,
-  Settings,
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -162,24 +160,6 @@ export function BusinessAnalyticsClient({
     });
   };
 
-  const featureCards = [
-    {
-      icon: MessageSquare,
-      title: t.featureCards.hearing.title,
-      description: t.featureCards.hearing.description,
-    },
-    {
-      icon: GitBranch,
-      title: t.featureCards.diagram.title,
-      description: t.featureCards.diagram.description,
-    },
-    {
-      icon: Settings,
-      title: t.featureCards.management.title,
-      description: t.featureCards.management.description,
-    },
-  ];
-
   return (
     <div className="space-y-6">
       {/* Welcome Card */}
@@ -193,24 +173,6 @@ export function BusinessAnalyticsClient({
             </p>
           </div>
         </div>
-      </div>
-
-      {/* Feature Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {featureCards.map((card) => (
-          <div
-            key={card.title}
-            className="bg-card rounded-xl p-6 shadow-sm border hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-amber-100 dark:bg-amber-900 rounded-lg">
-                <card.icon className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <h2 className="font-semibold text-lg">{card.title}</h2>
-            </div>
-            <p className="text-muted-foreground text-sm">{card.description}</p>
-          </div>
-        ))}
       </div>
 
       {/* Process List */}

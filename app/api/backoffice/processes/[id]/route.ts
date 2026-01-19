@@ -107,6 +107,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (body.improvements !== undefined)
       updateData.improvements = body.improvements;
 
+    // 業務分掌（マークダウン形式）
+    if (body.jobDescriptionMd !== undefined)
+      updateData.jobDescriptionMd = body.jobDescriptionMd?.trim() || null;
+
     const updated = await prisma.businessProcess.update({
       where: { id },
       data: updateData,

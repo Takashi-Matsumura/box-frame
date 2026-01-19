@@ -3,6 +3,27 @@ export { BackButton } from "./BackButton";
 export type { ButtonProps, ButtonSize, ButtonVariant } from "./button";
 export { Button } from "./button";
 export type {
+  CollapsiblePanelProps,
+  CollapsiblePanelHeaderProps,
+  CollapsiblePanelTitleProps,
+  CollapsiblePanelDescriptionProps,
+  CollapsiblePanelSummaryProps,
+  CollapsiblePanelContentProps,
+  CollapsiblePanelDividerProps,
+  CollapsiblePanelTriggerProps,
+} from "./collapsible-panel";
+export {
+  CollapsiblePanel,
+  CollapsiblePanelHeader,
+  CollapsiblePanelTitle,
+  CollapsiblePanelDescription,
+  CollapsiblePanelSummary,
+  CollapsiblePanelContent,
+  CollapsiblePanelDivider,
+  CollapsiblePanelTrigger,
+  useCollapsiblePanel,
+} from "./collapsible-panel";
+export type {
   CardContentProps,
   CardDescriptionProps,
   CardFooterProps,

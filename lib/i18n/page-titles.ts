@@ -52,6 +52,7 @@ export const pageTitles = {
     "/backoffice/page-announcements": "Page Announcements",
     "/backoffice/ticket-sales": "Internal Ticket Sales",
     "/backoffice/ai-business-analysis": "AI Business Analysis",
+    "/backoffice/analytics": "Business Process Management",
     "/admin/openldap": "OpenLDAP Settings",
   },
   ja: {
@@ -100,6 +101,7 @@ export const pageTitles = {
     "/backoffice/page-announcements": "ページ案内",
     "/backoffice/ticket-sales": "社内チケット販売",
     "/backoffice/ai-business-analysis": "AI業務分析",
+    "/backoffice/analytics": "業務分析",
     "/admin/openldap": "OpenLDAP設定",
   },
 } as const;
@@ -168,6 +170,8 @@ export const pageDescriptions = {
       "Manage internal ticket sales, customers, and products",
     "/backoffice/ai-business-analysis":
       "Analyze business processes through AI dialogue to create job descriptions and workflow diagrams",
+    "/backoffice/analytics":
+      "Create and manage job descriptions and workflow diagrams through AI-assisted interviews",
     "/admin/openldap":
       "Manage OpenLDAP users, migrate from existing LDAP servers, and configure OpenLDAP settings",
   },
@@ -222,6 +226,8 @@ export const pageDescriptions = {
     "/backoffice/ticket-sales": "社内チケット販売、顧客、商品を管理します",
     "/backoffice/ai-business-analysis":
       "AIとの対話を通じて業務プロセスを分析し、業務分掌・業務フロー図を作成します",
+    "/backoffice/analytics":
+      "AIヒアリングを通じて業務分掌を整理し、シーケンス図を作成・管理します",
     "/admin/openldap":
       "OpenLDAPユーザの管理、既存LDAPサーバからの移行、OpenLDAP設定を行います",
   },
@@ -282,6 +288,11 @@ export function getPageTitle(pathname: string, language: "en" | "ja"): string {
   // /user/calendar/* -> "わたしのカレンダー"
   if (pathname.startsWith("/user/calendar")) {
     return language === "ja" ? "わたしのカレンダー" : "My Calendar";
+  }
+
+  // /backoffice/analytics/* -> "業務分析"
+  if (pathname.startsWith("/backoffice/analytics")) {
+    return language === "ja" ? "業務分析" : "Business Process Analysis";
   }
 
   // モジュールレジストリからメニュー名を動的に取得
