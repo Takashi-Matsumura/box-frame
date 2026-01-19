@@ -30,7 +30,7 @@ interface ChatMessage {
 const translations = {
   en: {
     aiAssistant: "AI Assistant",
-    generateFromFlow: "Generate Sequence Diagram",
+    generateFromFlow: "Generate Business Flow",
     generating: "Generating...",
     inputPlaceholder: "Describe what you want to create or modify...",
     send: "Send",
@@ -41,7 +41,7 @@ const translations = {
     addProcess: "Add Process Step",
     addDecision: "Add Decision",
     improveLayout: "Improve Layout",
-    generatedSuccess: "Sequence diagram generated successfully!",
+    generatedSuccess: "Business flow diagram generated successfully!",
     modifiedSuccess: "Diagram modified successfully!",
     actors: "Actors",
     saveDiagram: "Save Diagram",
@@ -50,18 +50,18 @@ const translations = {
   },
   ja: {
     aiAssistant: "AIアシスタント",
-    generateFromFlow: "シーケンス図を生成",
+    generateFromFlow: "業務フロー図を生成",
     generating: "生成中...",
     inputPlaceholder: "作成・修正したい内容を入力...",
     send: "送信",
-    aiThinking: "AIがシーケンス図を生成中...",
+    aiThinking: "AIが業務フロー図を生成中...",
     noFlowDescription: "フロー説明がありません。まずAIヒアリングを完了してください。",
     quickActions: "クイックアクション",
     addStartEnd: "開始/終了を追加",
     addProcess: "処理を追加",
     addDecision: "分岐を追加",
     improveLayout: "レイアウト改善",
-    generatedSuccess: "シーケンス図を生成しました！",
+    generatedSuccess: "業務フロー図を生成しました！",
     modifiedSuccess: "図を修正しました！",
     actors: "アクター",
     saveDiagram: "図を保存",
@@ -127,52 +127,41 @@ export function DiagramEditorWithAI({
     }
   }, [onSave, currentXml, t.saved]);
 
-  // スイムレーン形式のシーケンス図生成プロンプト（縦書き：アクターが横に並ぶ）
-  const getSequenceDiagramPrompt = () => {
+  // スイムレーン形式の業務フロー図生成プロンプト（縦書き：アクターが横に並ぶ）
+  const getBusinessFlowDiagramPrompt = () => {
     const actorsList = actors.length > 0
       ? actors.map((a, i) => `${i + 1}. ${a.name}${a.department ? ` (${a.department})` : ""}`).join("\n")
       : "（アクター情報なし）";
 
-    return `あなたはdraw.io用のスイムレーン形式シーケンス図XMLを生成するエキスパートです。
+    return `あなたはdraw.io用のスイムレーン形式業務フロー図XMLを生成するエキスパートです。
 以下の業務フロー説明とアクター情報を読んで、draw.io形式のmxGraphModel XMLを生成してください。
 
 ## アクター（スイムレーンとして横に並べる）
 ${actorsList}
 
-## 重要：縦書きスイムレーン形式シーケンス図のXML構造
+## 重要：縦書きスイムレーン形式業務フロー図のXML構造
 
-\`\`\`xml
 <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10">
   <root>
     <mxCell id="0"/>
     <mxCell id="1" parent="0"/>
-
-    <!-- スイムレーン（横に並べる、縦方向にフローが流れる） -->
     <mxCell id="lane1" value="アクター1" style="swimlane;horizontal=1;startSize=30;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" vertex="1" parent="1">
-      <mxGeometry x="50" y="50" width="180" height="500" as="geometry"/>
+      <mxGeometry x="50" y="50" width="180" height="400" as="geometry"/>
     </mxCell>
     <mxCell id="lane2" value="アクター2" style="swimlane;horizontal=1;startSize=30;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" vertex="1" parent="1">
-      <mxGeometry x="230" y="50" width="180" height="500" as="geometry"/>
+      <mxGeometry x="230" y="50" width="180" height="400" as="geometry"/>
     </mxCell>
-    <mxCell id="lane3" value="アクター3" style="swimlane;horizontal=1;startSize=30;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" vertex="1" parent="1">
-      <mxGeometry x="410" y="50" width="180" height="500" as="geometry"/>
-    </mxCell>
-
-    <!-- 処理ステップ（各レーン内に上から下へ配置） -->
     <mxCell id="step1" value="処理1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="lane1">
       <mxGeometry x="40" y="50" width="100" height="40" as="geometry"/>
     </mxCell>
     <mxCell id="step2" value="処理2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="lane2">
       <mxGeometry x="40" y="120" width="100" height="40" as="geometry"/>
     </mxCell>
-
-    <!-- アクター間の矢印（横方向に流れる） -->
     <mxCell id="msg1" value="依頼" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;endFill=1;" edge="1" parent="1" source="step1" target="step2">
       <mxGeometry relative="1" as="geometry"/>
     </mxCell>
   </root>
 </mxGraphModel>
-\`\`\`
 
 ## 縦書きスイムレーン配置ルール
 1. 各アクターを横に並べたスイムレーンとして配置（horizontal=1）
@@ -182,22 +171,45 @@ ${actorsList}
 5. アクター間のやり取りは横方向の矢印（edge）で表現
 6. 時系列は上から下へ流れる
 
+## 記号一覧（ガイドライン準拠）
+
+| 記号 | 名称 | 用途 | スタイル |
+|------|------|------|----------|
+| 楕円 | 状態 | 開始条件、終了結果 | ellipse;fillColor=#d5e8d4;strokeColor=#82b366;（開始）/ fillColor=#f8cecc;strokeColor=#b85450;（終了） |
+| 長方形 | 作業 | 工数・時間が発生する作業 | rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf; |
+| 角丸長方形 | 処理 | システム処理 | rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf; |
+| ひし形 | 分岐 | 判断による分岐 | rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656; |
+| 角丸長方形（紫） | 伝達データ | 作業間で受け渡すデータ | rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6; |
+| 円筒 | 蓄積データ | DB等に蓄積されるデータ | shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;size=10; |
+| 実線矢印 | 作業の流れ | 作業順序 | edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;endFill=1;dashed=0; |
+| 点線矢印 | データの流れ | データ入出力 | edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;endFill=1;dashed=1;dashPattern=3 3; |
+
 ## スタイル
 - スイムレーン: swimlane;horizontal=1;startSize=30;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;
-- 処理: rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;
+- 作業（人手）: rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;
+- 処理（システム）: rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;
 - 判断: rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;
 - 開始: ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;
 - 終了: ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;
-- 矢印: edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;endFill=1;
+- 伝達データ: rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;
+- 蓄積データ: shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;size=10;
+- 作業の流れ（実線矢印）: edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;endFill=1;dashed=0;
+- データの流れ（点線矢印）: edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;endFill=1;dashed=1;
+## 生成ルール
+- 作業間でデータを受け渡す場合は「伝達データ」記号（紫の角丸長方形）を使用
+- DBやファイルへの読み書きがある場合は「蓄積データ」記号（円筒）を使用
+- 人手による作業は長方形（角丸なし）、システム処理は角丸長方形で区別
+- 作業の流れは実線矢印、データの流れは点線矢印で区別
 
 ## 生成時の注意
 - 必ずアクター数分のスイムレーンを横に並べて作成
 - 業務フローの各ステップを上から下へ配置（y座標を70pxずつ増加）
 - アクター間のコミュニケーションは横方向の矢印で表現
 - 時系列は上から下へ流れるように配置
-- 複雑すぎる場合は主要なステップに絞る（5〜8ステップ程度）
+- **重要: 主要なステップのみに絞り、最大5〜6ステップ程度に抑えること**
+- XMLコメント（<!-- -->）は使用しないこと
 
-XMLのみを出力し、説明文は不要です。`;
+XMLのみを出力してください。\`\`\`xml や説明文は不要です。`;
   };
 
   const generateDiagramFromFlow = async () => {
@@ -219,9 +231,9 @@ XMLのみを出力し、説明文は不要です。`;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           input: flowDescription,
-          systemPrompt: getSequenceDiagramPrompt(),
+          systemPrompt: getBusinessFlowDiagramPrompt(),
           temperature: 0.3,
-          maxTokens: 6000,
+          maxTokens: 10000,
         }),
       });
 
@@ -229,11 +241,53 @@ XMLのみを出力し、説明文は不要です。`;
         const data = await response.json();
         const output = data.output || "";
 
-        // XMLを抽出（```xml...```形式または直接XMLの両方に対応）
-        const xmlMatch = output.match(/```xml\s*([\s\S]*?)\s*```/);
-        const extractedXml = xmlMatch ? xmlMatch[1].trim() : output;
+        // XMLを抽出（複数のパターンに対応）
+        let extractedXml = "";
 
-        if (extractedXml.includes("<mxGraphModel") || extractedXml.includes("<mxCell")) {
+        // 1. ```xml...```形式のコードブロックを探す
+        const xmlCodeBlockMatch = output.match(/```xml\s*([\s\S]*?)\s*```/);
+        if (xmlCodeBlockMatch) {
+          console.log("Matched: xml code block");
+          extractedXml = xmlCodeBlockMatch[1].trim();
+        } else {
+          // 2. <mxGraphModel から </mxGraphModel> までを抽出
+          const mxGraphMatch = output.match(/<mxGraphModel[\s\S]*<\/mxGraphModel>/);
+          if (mxGraphMatch) {
+            extractedXml = mxGraphMatch[0].trim();
+          } else {
+            // 3. 出力全体がXMLの場合
+            extractedXml = output.trim();
+          }
+        }
+
+        // XMLが<mxGraphModelで始まっていない場合、そこまでをトリミング
+        const mxGraphStartIndex = extractedXml.indexOf("<mxGraphModel");
+        if (mxGraphStartIndex > 0) {
+          extractedXml = extractedXml.substring(mxGraphStartIndex);
+        }
+
+        if (extractedXml.startsWith("<mxGraphModel")) {
+          // XMLの基本的な検証
+          try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(extractedXml, "text/xml");
+            const parseError = doc.querySelector("parsererror");
+            if (parseError) {
+              console.error("XML Parse Error:", parseError.textContent);
+              const errorMessage: ChatMessage = {
+                role: "assistant",
+                content: language === "ja"
+                  ? `XMLの構文エラーが発生しました。もう一度お試しください。\n\nエラー: ${parseError.textContent?.substring(0, 200)}`
+                  : `XML syntax error occurred. Please try again.\n\nError: ${parseError.textContent?.substring(0, 200)}`,
+                timestamp: new Date().toISOString(),
+              };
+              setChatMessages((prev) => [...prev, errorMessage]);
+              return;
+            }
+          } catch (e) {
+            console.error("XML validation failed:", e);
+          }
+
           setCurrentXml(extractedXml);
           onChange?.(extractedXml);
           setLoadKey((prev) => prev + 1); // エディタを再マウントして新しいXMLを読み込む
@@ -247,8 +301,8 @@ XMLのみを出力し、説明文は不要です。`;
           const errorMessage: ChatMessage = {
             role: "assistant",
             content: language === "ja"
-              ? "シーケンス図の生成に失敗しました。もう一度お試しください。"
-              : "Failed to generate sequence diagram. Please try again.",
+              ? `シーケンス図の生成に失敗しました。もう一度お試しください。\n\n出力: ${output.substring(0, 300)}`
+              : `Failed to generate sequence diagram. Please try again.\n\nOutput: ${output.substring(0, 300)}`,
             timestamp: new Date().toISOString(),
           };
           setChatMessages((prev) => [...prev, errorMessage]);
@@ -299,9 +353,9 @@ ${inputMessage}
 ${flowDescription ? `参考：業務フロー説明\n${flowDescription}` : ""}
 
 ${actors.length > 0 ? `アクター一覧:\n${actors.map((a, i) => `${i + 1}. ${a.name}`).join("\n")}` : ""}`,
-          systemPrompt: getSequenceDiagramPrompt(),
+          systemPrompt: getBusinessFlowDiagramPrompt(),
           temperature: 0.3,
-          maxTokens: 6000,
+          maxTokens: 10000,
         }),
       });
 
@@ -309,10 +363,31 @@ ${actors.length > 0 ? `アクター一覧:\n${actors.map((a, i) => `${i + 1}. ${
         const data = await response.json();
         const output = data.output || "";
 
-        const xmlMatch = output.match(/```xml\s*([\s\S]*?)\s*```/);
-        const extractedXml = xmlMatch ? xmlMatch[1].trim() : output;
+        // XMLを抽出（複数のパターンに対応）
+        let extractedXml = "";
 
-        if (extractedXml.includes("<mxGraphModel") || extractedXml.includes("<mxCell")) {
+        // 1. ```xml...```形式のコードブロックを探す
+        const xmlCodeBlockMatch = output.match(/```xml\s*([\s\S]*?)\s*```/);
+        if (xmlCodeBlockMatch) {
+          extractedXml = xmlCodeBlockMatch[1].trim();
+        } else {
+          // 2. <mxGraphModel から </mxGraphModel> までを抽出
+          const mxGraphMatch = output.match(/<mxGraphModel[\s\S]*<\/mxGraphModel>/);
+          if (mxGraphMatch) {
+            extractedXml = mxGraphMatch[0].trim();
+          } else {
+            // 3. 出力全体をそのまま使用
+            extractedXml = output.trim();
+          }
+        }
+
+        // XMLが<mxGraphModelで始まっていない場合、そこまでをトリミング
+        const mxGraphStartIndex = extractedXml.indexOf("<mxGraphModel");
+        if (mxGraphStartIndex > 0) {
+          extractedXml = extractedXml.substring(mxGraphStartIndex);
+        }
+
+        if (extractedXml.startsWith("<mxGraphModel")) {
           setCurrentXml(extractedXml);
           onChange?.(extractedXml);
           setLoadKey((prev) => prev + 1); // エディタを再マウントして新しいXMLを読み込む

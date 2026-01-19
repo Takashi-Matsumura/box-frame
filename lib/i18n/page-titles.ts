@@ -227,7 +227,7 @@ export const pageDescriptions = {
     "/backoffice/ai-business-analysis":
       "AIとの対話を通じて業務プロセスを分析し、業務分掌・業務フロー図を作成します",
     "/backoffice/analytics":
-      "AIヒアリングを通じて業務分掌を整理し、シーケンス図を作成・管理します",
+      "AIヒアリングを通じて業務分掌を整理し、業務フロー図を作成・管理します",
     "/admin/openldap":
       "OpenLDAPユーザの管理、既存LDAPサーバからの移行、OpenLDAP設定を行います",
   },

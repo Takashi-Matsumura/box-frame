@@ -367,7 +367,7 @@ export function ProcessDetailClient({
       step2 = "current";
     }
 
-    // Step 3: Sequence Diagram - 図が保存されたら完了
+    // Step 3: Business Flow Diagram - 図が保存されたら完了
     // hasJobDescがあれば図作成可能（ステータスに依存しない）
     let step3: StepStatus = "pending";
     if (hasDiagram) {
@@ -517,7 +517,7 @@ ${process?.description ? `説明: ${process.description}` : ""}
 
 1. **業務概要・目的** - 目的、背景、価値
 2. **責任範囲** - 担当部署、責任者、権限
-3. **ステークホルダー** - 関係者（シーケンス図のアクターになる重要項目）
+3. **ステークホルダー** - 関係者（業務フロー図のアクターになる重要項目）
 4. **業務フロー** - 開始条件、主要ステップ、完了条件
 5. **インプット/アウトプット** - 入力情報と成果物
 6. **使用システム・ツール** - システムやツール
@@ -693,7 +693,7 @@ ${process?.description ? `説明: ${process.description}` : ""}
   const handleOpenDiagramEditor = () => {
     const xml = diagramXml ? wrapWithMxFile(diagramXml) : "";
 
-    // シーケンス図用のアクター情報を渡す
+    // 業務フロー図用のアクター情報を渡す
     const actorsForDiagram =
       process?.actors ||
       process?.stakeholders?.map((s, i) => ({
@@ -710,7 +710,7 @@ ${process?.description ? `説明: ${process.description}` : ""}
     };
 
     openFloatingWindow({
-      title: "Sequence Diagram Editor",
+      title: "Business Flow Editor",
       titleJa: t.diagramEditor,
       initialSize: { width: 1200, height: 700 },
       initialPosition: { x: 50, y: 50 },
