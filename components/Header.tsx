@@ -110,6 +110,7 @@ export function Header({
   const isEvaluationMaster = pathname === "/admin/evaluation-master";
   const isEvaluationRag = pathname === "/admin/evaluation-rag";
   const isMyEvaluation = pathname === "/my-evaluation";
+  const isTicketSales = pathname === "/backoffice/ticket-sales";
 
   // 組織分析タブ
   const analyticsTab = searchParams.get("tab") || "overview";
@@ -275,6 +276,17 @@ export function Header({
       active: myEvaluationTab === tab.id,
     })) || [];
 
+  // 社内チケット販売タブ（レジストリから取得）
+  const ticketSalesTab = searchParams.get("tab") || "customers";
+  const registryTicketSalesTabs = getTabsByMenuPath("/backoffice/ticket-sales");
+  const ticketSalesTabs =
+    registryTicketSalesTabs?.map((tab) => ({
+      name: language === "ja" ? tab.nameJa : tab.name,
+      icon: tab.icon,
+      path: `/backoffice/ticket-sales?tab=${tab.id}`,
+      active: ticketSalesTab === tab.id,
+    })) || [];
+
   const renderTabs = (tabs: TabItem[], label: string) => (
     <div className="border-t border-border bg-muted">
       <nav className="flex gap-1 px-6" aria-label={label}>
@@ -383,6 +395,11 @@ export function Header({
           "Evaluation AI Support Tabs",
         )}
       {isMyEvaluation && renderTabs(myEvaluationTabs, "My Evaluation Tabs")}
+      {isTicketSales &&
+        renderTabs(
+          filterTabsByPermission(ticketSalesTabs, "/backoffice/ticket-sales"),
+          "Ticket Sales Tabs",
+        )}
     </header>
   );
 }

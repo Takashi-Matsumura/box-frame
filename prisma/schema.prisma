@@ -1114,16 +1114,17 @@ model TicketCustomer {
 
 // 商品マスタ
 model TicketProduct {
-  id             String    @id @default(cuid())
-  code           String    @unique               // 商品コード（例: ticket, book, sportsX）
-  name           String                          // 商品名（英語）
-  nameJa         String                          // 商品名（日本語）
-  description    String?                         // 説明
-  unitPrice      Int                             // 単価（円）
-  isActive       Boolean   @default(true)
-  sortOrder      Int       @default(0)           // 表示順序
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id              String    @id @default(cuid())
+  code            String    @unique               // 商品コード（例: ticket, book, sportsX）
+  name            String                          // 商品名（英語）
+  nameJa          String                          // 商品名（日本語）
+  description     String?                         // 説明
+  unitPrice       Int                             // 単価（円）
+  defaultQuantity Int       @default(1)           // 初期数量（販売画面のデフォルト）
+  isActive        Boolean   @default(true)
+  sortOrder       Int       @default(0)           // 表示順序
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   sales          TicketSale[]
 
@@ -1157,6 +1158,38 @@ model TicketSale {
   @@index([customerId])
   @@index([productId])
   @@index([paymentMethod])
+}
+
+// チケット販売APIキー（F/Eアプリ認証用）
+// 常に1レコードのみ存在（新規発行時は古いキーを削除）
+model TicketSalesApiKey {
+  id             String    @id @default(cuid())
+  apiKey         String    @unique               // ハッシュ化されたAPIキー
+  adminNfcId     String                          // 管理者のNFC ID
+  adminEmail     String                          // 管理者メールアドレス
+  expiresAt      DateTime?                       // 有効期限（nullの場合は無期限）
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+// チケット販売API監査ログ
+model TicketSalesApiLog {
+  id             String    @id @default(cuid())
+  timestamp      DateTime  @default(now())       // リクエスト日時
+  method         String                          // HTTPメソッド（GET, POST, etc.）
+  endpoint       String                          // APIエンドポイント
+  statusCode     Int                             // レスポンスステータスコード
+  ipAddress      String?                         // クライアントIPアドレス
+  userAgent      String?                         // ユーザーエージェント
+  origin         String?                         // リクエスト元オリジン
+  apiKeyId       String?                         // 使用されたAPIキーのID（認証成功時）
+  errorMessage   String?                         // エラーメッセージ（失敗時）
+  responseTimeMs Int?                            // レスポンス時間（ミリ秒）
+
+  @@index([timestamp])
+  @@index([endpoint])
+  @@index([statusCode])
+  @@index([apiKeyId])
 }
 
 // ========================================

@@ -66,7 +66,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const { id } = await params;
     const body = await request.json();
 
-    const { code, name, nameJa, description, unitPrice, sortOrder, isActive } =
+    const { code, name, nameJa, description, unitPrice, defaultQuantity, sortOrder, isActive } =
       body;
 
     // 既存の商品を確認
@@ -100,6 +100,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             ? description || null
             : existing.description,
         unitPrice: unitPrice ?? existing.unitPrice,
+        defaultQuantity: defaultQuantity ?? existing.defaultQuantity,
         sortOrder: sortOrder ?? existing.sortOrder,
         isActive: isActive ?? existing.isActive,
       },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+import ApiSettingsTab from "./components/ApiSettingsTab";
 import CustomersTab from "./components/CustomersTab";
 import ProductsTab from "./components/ProductsTab";
 import SalesTab from "./components/SalesTab";
@@ -9,7 +10,7 @@ interface TicketSalesClientProps {
   language: "en" | "ja";
 }
 
-type TabId = "customers" | "products" | "sales";
+type TabId = "customers" | "products" | "sales" | "api";
 
 export default function TicketSalesClient({
   language,
@@ -22,6 +23,7 @@ export default function TicketSalesClient({
       {activeTab === "customers" && <CustomersTab language={language} />}
       {activeTab === "products" && <ProductsTab language={language} />}
       {activeTab === "sales" && <SalesTab language={language} />}
+      {activeTab === "api" && <ApiSettingsTab language={language} />}
     </div>
   );
 }

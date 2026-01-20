@@ -7,20 +7,18 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { validateTicketSalesApiKey } from "@/lib/addon-modules/backoffice/ticket-sales/api-key-utils";
+import {
+  getCorsHeaders,
+  handleCorsPreflightResponse,
+} from "@/lib/addon-modules/backoffice/ticket-sales/cors";
+import { createApiLogger } from "@/lib/addon-modules/backoffice/ticket-sales/audit-logger";
 
-/**
- * API Key認証を検証
- */
-function validateApiKey(request: NextRequest): boolean {
-  const apiKey = request.headers.get("X-API-Key");
-  const expectedApiKey = process.env.TICKET_SALES_API_KEY;
-
-  if (!expectedApiKey) {
-    console.warn("TICKET_SALES_API_KEY is not set");
-    return false;
-  }
-
-  return apiKey === expectedApiKey;
+// OPTIONSリクエスト（プリフライト）
+export async function OPTIONS(request: Request) {
+  const preflightResponse = handleCorsPreflightResponse(request);
+  if (preflightResponse) return preflightResponse;
+  return new Response(null, { status: 405 });
 }
 
 /**
@@ -113,18 +111,30 @@ export async function GET(request: NextRequest) {
  * 販売記録を作成（F/E Webアプリからも利用可能）
  */
 export async function POST(request: NextRequest) {
-  try {
-    // 認証チェック（セッションまたはAPI Key）
-    const session = await auth();
-    const hasApiKey = validateApiKey(request);
+  const corsHeaders = getCorsHeaders(request);
+  const logger = createApiLogger(request);
 
-    if (!session?.user && !hasApiKey) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    // 認証チェック（APIキー優先、またはセッション認証）
+    const apiKeyConfig = await validateTicketSalesApiKey(request);
+    const session = apiKeyConfig ? null : await auth();
+
+    // APIキー認証でもセッション認証（ADMIN）でもない場合は拒否
+    if (!apiKeyConfig && !session?.user) {
+      await logger.log(401, null, "Unauthorized");
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401, headers: corsHeaders }
+      );
     }
 
-    // 管理者またはAPI Key
-    if (session?.user && session.user.role !== "ADMIN" && !hasApiKey) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // セッション認証の場合、ADMIN必須
+    if (!apiKeyConfig && session?.user && session.user.role !== "ADMIN") {
+      await logger.log(403, null, "Forbidden");
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403, headers: corsHeaders }
+      );
     }
 
     const body = await request.json();
@@ -153,7 +163,7 @@ export async function POST(request: NextRequest) {
           error:
             "customerName, productId, quantity, paymentMethod, adminNfcId, adminName are required",
         },
-        { status: 400 },
+        { status: 400, headers: corsHeaders },
       );
     }
 
@@ -163,13 +173,16 @@ export async function POST(request: NextRequest) {
     });
 
     if (!product) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Product not found" },
+        { status: 404, headers: corsHeaders }
+      );
     }
 
     if (!product.isActive) {
       return NextResponse.json(
         { error: "Product is not available" },
-        { status: 400 },
+        { status: 400, headers: corsHeaders },
       );
     }
 
@@ -177,7 +190,7 @@ export async function POST(request: NextRequest) {
     if (typeof quantity !== "number" || quantity <= 0) {
       return NextResponse.json(
         { error: "quantity must be a positive number" },
-        { status: 400 },
+        { status: 400, headers: corsHeaders },
       );
     }
 
@@ -185,7 +198,7 @@ export async function POST(request: NextRequest) {
     if (paymentMethod !== "CASH" && paymentMethod !== "PAYROLL") {
       return NextResponse.json(
         { error: "paymentMethod must be CASH or PAYROLL" },
-        { status: 400 },
+        { status: 400, headers: corsHeaders },
       );
     }
 
@@ -216,12 +229,17 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(sale, { status: 201 });
+    // APIキー経由のアクセスのみログ記録
+    if (apiKeyConfig) {
+      await logger.log(201, apiKeyConfig.id);
+    }
+    return NextResponse.json(sale, { status: 201, headers: corsHeaders });
   } catch (error) {
     console.error("Error creating sale:", error);
+    await logger.log(500, null, "Failed to create sale");
     return NextResponse.json(
       { error: "Failed to create sale" },
-      { status: 500 },
+      { status: 500, headers: corsHeaders },
     );
   }
 }

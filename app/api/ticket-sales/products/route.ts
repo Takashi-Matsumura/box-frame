@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { code, name, nameJa, description, unitPrice, sortOrder } = body;
+    const { code, name, nameJa, description, unitPrice, defaultQuantity, sortOrder } = body;
 
     // 必須項目チェック
     if (!code || !name || !nameJa || unitPrice === undefined) {
@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
         nameJa,
         description: description || null,
         unitPrice,
+        defaultQuantity: defaultQuantity ?? 1,
         sortOrder: sortOrder ?? 0,
       },
     });

@@ -137,17 +137,15 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     console.error("Error creating customer:", error);
 
-    // 一意制約違反
+    // 一意制約違反（フィールド名は漏洩させない）
     if (
       error &&
       typeof error === "object" &&
       "code" in error &&
       error.code === "P2002"
     ) {
-      const meta = (error as { meta?: { target?: string[] } }).meta;
-      const field = meta?.target?.[0] || "field";
       return NextResponse.json(
-        { error: `${field} is already registered` },
+        { error: "This customer ID or NFC ID is already registered" },
         { status: 409 },
       );
     }

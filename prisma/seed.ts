@@ -1,6 +1,12 @@
 import { PrismaClient } from "@prisma/client";
+import { createHash } from "crypto";
 
 const prisma = new PrismaClient();
+
+// APIキーをハッシュ化
+function hashApiKey(apiKey: string): string {
+  return createHash("sha256").update(apiKey).digest("hex");
+}
 
 async function main() {
   console.log("🌱 Seeding database...");
@@ -108,6 +114,23 @@ async function main() {
     });
   }
 
+  // Create TicketSalesApiKey for F/E app authentication
+  const ticketSalesApiKey = "bee2b026237296f9a097a90c4c960566d3327c860a1dfd62435050df21b5dacb";
+  const hashedApiKey = hashApiKey(ticketSalesApiKey);
+
+  const ticketApiKey = await prisma.ticketSalesApiKey.upsert({
+    where: { apiKey: hashedApiKey },
+    update: {
+      adminNfcId: "0116020053187C01",
+      adminEmail: "matsumura@occ.co.jp",
+    },
+    create: {
+      apiKey: hashedApiKey,
+      adminNfcId: "0116020053187C01",
+      adminEmail: "matsumura@occ.co.jp",
+    },
+  });
+
   console.log("✅ Database seeded successfully!");
   console.log("Created admin user:");
   console.log(`  - ${admin.email} (${admin.role})`);
@@ -115,6 +138,9 @@ async function main() {
   console.log("  - Username: admin");
   console.log("  - Password: admin");
   console.log(`\nGrowth Categories: ${growthCategories.length} items created`);
+  console.log("\nTicketSalesApiKey:");
+  console.log(`  - Admin NFC ID: ${ticketApiKey.adminNfcId}`);
+  console.log(`  - Admin Email: ${ticketApiKey.adminEmail}`);
 }
 
 main()

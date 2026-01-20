@@ -53,6 +53,7 @@ export const backofficeModule: AppModule = {
         { id: "customers", name: "Customers", nameJa: "顧客管理", order: 1 },
         { id: "products", name: "Products", nameJa: "商品管理", order: 2 },
         { id: "sales", name: "Sales Records", nameJa: "販売記録", order: 3 },
+        { id: "api", name: "API Settings", nameJa: "API設定", order: 4 },
       ],
     },
   ],

@@ -158,11 +158,8 @@ export default function CustomersTab({ language }: CustomersTabProps) {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   {t.company}
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  {t.hasApproval}
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  {t.linkedEmployee}
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase max-w-[150px]">
+                  {t.department}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   {t.actions}
@@ -173,7 +170,7 @@ export default function CustomersTab({ language }: CustomersTabProps) {
               {loading ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={6}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     {t.loading}
@@ -182,7 +179,7 @@ export default function CustomersTab({ language }: CustomersTabProps) {
               ) : customers.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={6}
                     className="px-4 py-8 text-center text-gray-500"
                   >
                     {t.noData}
@@ -204,26 +201,13 @@ export default function CustomersTab({ language }: CustomersTabProps) {
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {customer.company}
                     </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`px-2 py-1 text-xs font-semibold rounded ${
-                          customer.hasApproval
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        {customer.hasApproval ? "OK" : "-"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {customer.employee ? (
-                        <span>
-                          {customer.employee.name}
-                          {customer.employee.department && (
-                            <span className="text-gray-400 ml-1">
-                              ({customer.employee.department.name})
-                            </span>
-                          )}
+                    <td className="px-4 py-3 text-sm text-gray-600 max-w-[150px]">
+                      {customer.employee?.department?.name ? (
+                        <span
+                          className="block truncate"
+                          title={customer.employee.department.name}
+                        >
+                          {customer.employee.department.name}
                         </span>
                       ) : (
                         "-"
