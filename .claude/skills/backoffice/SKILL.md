@@ -23,9 +23,12 @@ lib/addon-modules/backoffice/
 ├── index.ts
 ├── components/
 │   ├── DiagramEditor.tsx         # draw.ioエディタ
-│   └── DiagramEditorWithAI.tsx   # AIアシスタント付き
+│   ├── DiagramEditorWithAI.tsx   # AIアシスタント付き
+│   ├── ProcedureEditModal.tsx    # 作業手順書編集モーダル
+│   └── WorkProceduresPanel.tsx   # 作業手順書一覧パネル
 └── utils/
-    └── diagram-utils.ts          # XML操作
+    ├── diagram-utils.ts          # XML操作
+    └── task-extractor.ts         # フロー図から作業抽出
 ```
 
 ---
@@ -107,7 +110,64 @@ AIヒアリングボタンクリック時:
 
 ---
 
+## 作業手順書機能
+
+公開済み業務プロセスのフロー図から作業を抽出し、各作業の手順書を作成・管理。
+
+### 画面構成
+
+`/backoffice/analytics/[id]/procedures` - 専用ページ
+
+- **左側**: 業務フロー図（draw.io 閲覧専用）
+- **右側**: 作業一覧（抽出された作業のリスト）
+
+### 作業抽出ロジック
+
+`task-extractor.ts` で draw.io XML から作業を自動抽出:
+
+| 形状 | 作業タイプ |
+|------|-----------|
+| 長方形（rounded=0）| manual（人手作業） |
+| 角丸長方形（rounded=1）| system（システム処理） |
+
+除外: 楕円（状態）、ひし形（分岐）、円筒（データ）、スイムレーン
+
+### 作業手順書フォーマット
+
+マークダウン形式で記述:
+
+```markdown
+# 作業名
+
+## 概要
+## 目的
+## アクター
+## 事前条件
+## メインフロー
+## 代替フロー
+## 例外処理
+## 事後条件
+## 備考
+```
+
+### AI生成機能
+
+「AIで生成」ボタンで業務分掌コンテキストを活用した手順書ドラフトを自動生成。
+
+### APIエンドポイント
+
+| Method | Path | 説明 |
+|--------|------|------|
+| GET | `/api/backoffice/processes/[id]/tasks` | フロー図から作業を抽出 |
+| GET | `/api/backoffice/processes/[id]/procedures` | 手順書一覧を取得 |
+| POST | `/api/backoffice/processes/[id]/procedures` | 手順書を作成/更新 |
+| POST | `/api/backoffice/processes/[id]/procedures/generate` | AI手順書生成 |
+
+---
+
 ## データモデル
+
+### BusinessProcess
 
 ```prisma
 model BusinessProcess {
@@ -126,15 +186,41 @@ model BusinessProcess {
   // 業務分掌（マークダウン形式）
   jobDescriptionMd  String?               // メイン
 
-  // 業務分掌9項目（レガシー - 今後廃止予定）
-  purpose           String?
-  responsibleDepartment String?
-  // ... 他フィールド
+  // リレーション
+  workProcedures    WorkProcedure[]       // 作業手順書
 
   createdBy         String
   updatedBy         String?
   createdAt         DateTime
   updatedAt         DateTime
+}
+```
+
+### WorkProcedure
+
+```prisma
+model WorkProcedure {
+  id                String          @id @default(cuid())
+  businessProcessId String
+  businessProcess   BusinessProcess @relation(...)
+
+  // draw.ioでの識別情報
+  diagramCellId     String          // mxCell id
+  swimlaneId        String?         // 親スイムレーンのid
+
+  // 作業情報
+  taskName          String          // 作業名
+  taskType          String          // manual | system
+  actorName         String?         // アクター名
+
+  // 作業手順書（マークダウン）
+  procedureMd       String?
+
+  sortOrder         Int             @default(0)
+  createdAt         DateTime
+  updatedAt         DateTime
+
+  @@unique([businessProcessId, diagramCellId])
 }
 ```
 
@@ -150,11 +236,6 @@ model BusinessProcess {
 - 色分け表示（VA=緑、NVA=赤、BV=黄）
 - AIによる自動分類提案
 
-### 2. 作業手順書（ユースケース記述）
-
-- 業務フローから1:1で作業手順書を作成
-- メイン/代替/例外フローの記述対応
-
-### 3. スイムレーン記号拡張
+### 2. スイムレーン記号拡張
 
 - KPI測定ポイントのマーキング

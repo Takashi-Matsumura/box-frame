@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  ClipboardList,
   FileText,
   Loader2,
   MessageSquare,
@@ -245,6 +246,21 @@ export function BusinessAnalyticsClient({
                   </div>
                 </div>
                 <div className="flex items-center gap-2 ml-4">
+                  {process.status === "PUBLISHED" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        router.push(`/backoffice/analytics/${process.id}/procedures`)
+                      }
+                      className="text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                    >
+                      <ClipboardList className="w-4 h-4" />
+                      <span className="ml-1 hidden sm:inline">
+                        {t.workProcedures}
+                      </span>
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"

@@ -1023,6 +1023,37 @@ model BusinessProcess {
   @@index([status])
   @@index([createdBy])
   @@index([createdAt])
+
+  // リレーション
+  workProcedures    WorkProcedure[]
+}
+
+// 作業手順書
+model WorkProcedure {
+  id                String          @id @default(cuid())
+  businessProcessId String
+  businessProcess   BusinessProcess @relation(fields: [businessProcessId], references: [id], onDelete: Cascade)
+
+  // draw.ioでの識別情報
+  diagramCellId     String          // mxCell id
+  swimlaneId        String?         // 親スイムレーンのid
+
+  // 作業情報
+  taskName          String          // 作業名
+  taskType          String          @default("manual") // manual | system
+  actorName         String?         // アクター名
+
+  // 作業手順書（マークダウン）
+  procedureMd       String?
+
+  // メタデータ
+  sortOrder         Int             @default(0)
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([businessProcessId, diagramCellId])
+  @@index([businessProcessId])
 }
 
 // ========================================

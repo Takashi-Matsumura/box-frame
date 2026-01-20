@@ -32,8 +32,9 @@ export const businessAnalyticsTranslations = {
     create: "Create",
     creating: "Creating...",
     // Actions
-    startHearing: "Start Hearing",
+    startHearing: "Start Analysis",
     viewDiagram: "View Diagram",
+    workProcedures: "Procedures",
     edit: "Edit",
     delete: "Delete",
     // Status descriptions
@@ -95,8 +96,9 @@ export const businessAnalyticsTranslations = {
     create: "作成",
     creating: "作成中...",
     // Actions
-    startHearing: "ヒアリング開始",
+    startHearing: "業務分析開始",
     viewDiagram: "フロー図を表示",
+    workProcedures: "作業手順書",
     edit: "編集",
     delete: "削除",
     // Status descriptions
