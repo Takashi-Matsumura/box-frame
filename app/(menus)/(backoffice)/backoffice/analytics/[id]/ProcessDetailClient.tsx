@@ -837,7 +837,11 @@ ${process?.description ? `説明: ${process.description}` : ""}
         const jsonMatch = output.match(/\[[\s\S]*\]/);
         if (jsonMatch) {
           try {
-            const results = JSON.parse(jsonMatch[0]) as ItemReviewResult[];
+            // LLMが末尾カンマを含む不正なJSONを返すことがあるのでサニタイズ
+            const sanitizedJson = jsonMatch[0]
+              .replace(/,\s*\]/g, "]")  // 配列末尾のカンマを削除
+              .replace(/,\s*\}/g, "}"); // オブジェクト末尾のカンマを削除
+            const results = JSON.parse(sanitizedJson) as ItemReviewResult[];
             setReviewResults(results);
             setShowReviewResults(true);
           } catch (parseError) {
