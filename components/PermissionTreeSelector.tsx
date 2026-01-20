@@ -193,10 +193,11 @@ export function PermissionTreeSelector({
     }
   };
 
-  // タブがあるメニューのみをフィルタリング
-  const modulesWithTabs = useMemo(() => {
+  // アクセスキー対象のメニューを持つモジュールをフィルタリング
+  // タブの有無に関わらず、有効なメニューがあればアクセスキー対象
+  const modulesForAccessKey = useMemo(() => {
     return modules.filter((module) =>
-      module.menus.some((menu) => menu.tabs && menu.tabs.length > 0),
+      module.menus.some((menu) => menu.enabled !== false),
     );
   }, [modules]);
 
@@ -215,16 +216,16 @@ export function PermissionTreeSelector({
       </div>
 
       <div className="max-h-80 overflow-y-auto p-2">
-        {modulesWithTabs.length === 0 ? (
+        {modulesForAccessKey.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground text-sm">
             {t(
-              "No modules with tabs available",
-              "タブを持つモジュールがありません",
+              "No modules available for access key",
+              "アクセスキー対象のモジュールがありません",
             )}
           </div>
         ) : (
           <div className="space-y-1">
-            {modulesWithTabs.map((module) => (
+            {modulesForAccessKey.map((module) => (
               <ModuleNode
                 key={module.id}
                 module={module}
@@ -308,8 +309,9 @@ function ModuleNode({
   ) => void;
   t: (en: string, ja: string) => string;
 }) {
-  const menusWithTabs = module.menus.filter(
-    (menu) => menu.tabs && menu.tabs.length > 0,
+  // 有効なメニューをすべて表示（タブの有無に関わらず）
+  const enabledMenus = module.menus.filter(
+    (menu) => menu.enabled !== false,
   );
 
   const moduleSelected = isSelected("module", module.id);
@@ -363,7 +365,7 @@ function ModuleNode({
       {/* メニュー一覧 */}
       {isExpanded && (
         <div className="border-t pl-6 py-1">
-          {menusWithTabs.map((menu) => (
+          {enabledMenus.map((menu) => (
             <MenuNode
               key={menu.id}
               menu={menu}
@@ -433,21 +435,28 @@ function MenuNode({
   const menuDisplayName = `${menu.name} (${t("Menu", "メニュー")})`;
   const menuDisplayNameJa = `${menu.nameJa} (メニュー)`;
 
+  const hasTabs = tabs.length > 0;
+
   return (
     <div className="py-0.5">
       {/* メニューヘッダー */}
       <div className="flex items-center gap-2 p-2 rounded hover:bg-muted/50 transition-colors">
-        <button
-          type="button"
-          onClick={onToggle}
-          className="p-0.5 hover:bg-muted rounded"
-        >
-          {isExpanded ? (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          )}
-        </button>
+        {/* タブがある場合のみ展開ボタンを表示 */}
+        {hasTabs ? (
+          <button
+            type="button"
+            onClick={onToggle}
+            className="p-0.5 hover:bg-muted rounded"
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            )}
+          </button>
+        ) : (
+          <div className="w-5" /> /* スペーサー */
+        )}
 
         <Checkbox
           checked={menuSelected || implicitlySelected}
