@@ -1052,8 +1052,28 @@ model WorkProcedure {
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
+  // リレーション
+  images            ProcedureImage[]
+
   @@unique([businessProcessId, diagramCellId])
   @@index([businessProcessId])
+}
+
+// 手順書添付画像
+model ProcedureImage {
+  id              String        @id @default(cuid())
+  workProcedureId String
+  workProcedure   WorkProcedure @relation(fields: [workProcedureId], references: [id], onDelete: Cascade)
+
+  filename        String        // 保存ファイル名
+  originalName    String        // アップロード時のファイル名
+  caption         String?       // キャプション（画像の説明）
+  sortOrder       Int           @default(0)
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([workProcedureId])
 }
 
 // ========================================

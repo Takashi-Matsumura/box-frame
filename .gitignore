@@ -76,6 +76,9 @@ docker-volumes/
 # Uploaded files (user profile images - not in git)
 /uploads/
 
+# Non-public storage (procedure images, etc.)
+/storage/
+
 # Database backups (contains sensitive data)
 backups/
 

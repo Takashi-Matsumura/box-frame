@@ -2,6 +2,7 @@
 
 import {
   ArrowLeft,
+  Camera,
   CheckCircle2,
   ClipboardList,
   Loader2,
@@ -25,6 +26,12 @@ interface ExtractedTask {
   position: { x: number; y: number };
 }
 
+interface ProcedureImage {
+  id: string;
+  filename: string;
+  caption: string | null;
+}
+
 interface WorkProcedure {
   id: string;
   businessProcessId: string;
@@ -37,6 +44,7 @@ interface WorkProcedure {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+  images?: ProcedureImage[];
 }
 
 interface ProceduresPageClientProps {
@@ -226,11 +234,6 @@ export function ProceduresPageClient({
                 ui: "min",
                 spin: true,
                 libraries: false,
-                chrome: 0,
-                toolbar: 0,
-                lightbox: 1,
-                nav: 1,
-                layers: 1,
               }}
             />
           </div>
@@ -308,6 +311,12 @@ export function ProceduresPageClient({
                             ) : (
                               <span className="text-amber-600 dark:text-amber-400">
                                 {t.procedureNotCreated}
+                              </span>
+                            )}
+                            {procedure?.images && procedure.images.length > 0 && (
+                              <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                                <Camera className="w-3 h-3" />
+                                {procedure.images.length}
                               </span>
                             )}
                           </div>

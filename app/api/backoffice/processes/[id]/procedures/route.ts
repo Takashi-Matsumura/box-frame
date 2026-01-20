@@ -32,6 +32,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const procedures = await prisma.workProcedure.findMany({
       where: { businessProcessId: id },
       orderBy: { sortOrder: "asc" },
+      include: {
+        images: {
+          orderBy: { sortOrder: "asc" },
+        },
+      },
     });
 
     return NextResponse.json({ procedures });

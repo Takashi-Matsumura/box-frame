@@ -24,6 +24,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         id: procedureId,
         businessProcessId: id,
       },
+      include: {
+        images: {
+          orderBy: { sortOrder: "asc" },
+        },
+      },
     });
 
     if (!procedure) {

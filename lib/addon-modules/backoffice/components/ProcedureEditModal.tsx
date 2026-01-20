@@ -1,9 +1,13 @@
 "use client";
 
-import { Loader2, Monitor, Sparkles, User, X } from "lucide-react";
-import { useCallback, useState } from "react";
+import { Camera, Loader2, Monitor, Sparkles, User, X } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
 import { marked } from "marked";
 import { Button } from "@/components/ui/button";
+import {
+  ProcedureImageManager,
+  type ProcedureImage,
+} from "./ProcedureImageManager";
 
 interface ExtractedTask {
   cellId: string;
@@ -26,6 +30,7 @@ interface WorkProcedure {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+  images?: ProcedureImage[];
 }
 
 interface ProcedureEditModalProps {
@@ -115,6 +120,7 @@ const translations = {
     taskTypeSystem: "System",
     markdown: "Markdown",
     preview: "Preview",
+    images: "Images",
     generateWithAI: "Generate with AI",
     generating: "Generating...",
     save: "Save",
@@ -132,6 +138,7 @@ const translations = {
     taskTypeSystem: "システム処理",
     markdown: "マークダウン",
     preview: "プレビュー",
+    images: "画像",
     generateWithAI: "AIで生成",
     generating: "生成中...",
     save: "保存",
@@ -155,7 +162,13 @@ export function ProcedureEditModal({
   const [content, setContent] = useState(procedure?.procedureMd || "");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<"markdown" | "preview">("markdown");
+  const [activeTab, setActiveTab] = useState<"markdown" | "preview" | "images">(
+    "markdown"
+  );
+  const [images, setImages] = useState<ProcedureImage[]>(
+    procedure?.images || []
+  );
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleGenerateWithAI = useCallback(async () => {
     setIsGenerating(true);
@@ -194,14 +207,28 @@ export function ProcedureEditModal({
     }
   };
 
+  const handleInsertToMarkdown = useCallback((markdown: string) => {
+    setContent((prev) => {
+      // カーソル位置または末尾に挿入
+      if (textareaRef.current) {
+        const { selectionStart, selectionEnd } = textareaRef.current;
+        const before = prev.substring(0, selectionStart);
+        const after = prev.substring(selectionEnd);
+        const newContent = `${before}\n\n${markdown}\n\n${after}`;
+        // マークダウンタブに切り替え
+        setActiveTab("markdown");
+        return newContent;
+      }
+      // textareaが無い場合は末尾に追加
+      return `${prev}\n\n${markdown}`;
+    });
+  }, []);
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/50"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-background rounded-xl shadow-xl w-[90vw] max-w-5xl h-[85vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
@@ -236,7 +263,7 @@ export function ProcedureEditModal({
 
         {/* Content */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Editor / Preview */}
+          {/* Editor / Preview / Images */}
           <div className="flex-1 flex flex-col">
             {/* Tabs */}
             <div className="flex items-center gap-2 p-2 border-b bg-muted/30">
@@ -260,6 +287,22 @@ export function ProcedureEditModal({
               >
                 {t.preview}
               </button>
+              <button
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === "images"
+                    ? "bg-background shadow"
+                    : "hover:bg-background/50"
+                }`}
+                onClick={() => setActiveTab("images")}
+              >
+                <Camera className="w-3.5 h-3.5" />
+                {t.images}
+                {images.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/10 text-primary rounded-full">
+                    {images.length}
+                  </span>
+                )}
+              </button>
               <div className="flex-1" />
               <Button
                 variant="outline"
@@ -276,16 +319,18 @@ export function ProcedureEditModal({
               </Button>
             </div>
 
-            {/* Editor / Preview Content */}
+            {/* Tab Content */}
             <div className="flex-1 overflow-hidden">
-              {activeTab === "markdown" ? (
+              {activeTab === "markdown" && (
                 <textarea
+                  ref={textareaRef}
                   className="w-full h-full p-4 resize-none font-mono text-sm bg-background focus:outline-none"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   placeholder={placeholderTemplate[language]}
                 />
-              ) : (
+              )}
+              {activeTab === "preview" && (
                 <div className="h-full overflow-y-auto p-4">
                   {content ? (
                     <article
@@ -299,6 +344,26 @@ export function ProcedureEditModal({
                       {t.noContent}
                     </div>
                   )}
+                </div>
+              )}
+              {activeTab === "images" && procedure && (
+                <div className="h-full p-4">
+                  <ProcedureImageManager
+                    procedureId={procedure.id}
+                    images={images}
+                    language={language}
+                    onImagesChange={setImages}
+                    onInsertToMarkdown={handleInsertToMarkdown}
+                  />
+                </div>
+              )}
+              {activeTab === "images" && !procedure && (
+                <div className="h-full flex items-center justify-center text-muted-foreground">
+                  <p className="text-sm">
+                    {language === "ja"
+                      ? "画像を追加するには、まず手順書を保存してください。"
+                      : "Save the procedure first to add images."}
+                  </p>
                 </div>
               )}
             </div>
