@@ -473,6 +473,9 @@ model Employee {
   customEvaluators   CustomEvaluator[] @relation("customEvaluator")
   exclusions         EvaluationExclusion[]
   personalGoals      PersonalGoal[]    @relation("personalGoals")
+
+  // チケット販売モジュール関連
+  ticketCustomer     TicketCustomer?   @relation("TicketCustomerEmployee")
 }
 
 // ========================================
@@ -1074,6 +1077,86 @@ model ProcedureImage {
   updatedAt       DateTime      @updatedAt
 
   @@index([workProcedureId])
+}
+
+// ========================================
+// 社内チケット販売システム（バックオフィスモジュール）
+// ========================================
+
+enum TicketPaymentMethod {
+  CASH      // 現金
+  PAYROLL   // 給与天引き
+}
+
+// 顧客マスタ（社員紐付け可能、社外来客も対応）
+model TicketCustomer {
+  id             String    @id @default(cuid())
+  name           String                          // 顧客名
+  customerId     String    @unique               // 顧客ID（社員番号など）
+  nfcId          String?   @unique               // NFC ID（F/E Webアプリ用）
+  email          String?                         // メールアドレス
+  company        String                          // 所属会社/区分（社員/来客）
+  paymentDay     Int       @default(25)          // 給与締め日（給与天引き用）
+  hasApproval    Boolean   @default(false)       // 承認済みフラグ（販売権限）
+  employeeId     String?   @unique               // Employee紐付け（社員の場合）
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  employee       Employee? @relation("TicketCustomerEmployee", fields: [employeeId], references: [id])
+  sales          TicketSale[]
+
+  @@index([customerId])
+  @@index([nfcId])
+  @@index([employeeId])
+  @@index([isActive])
+}
+
+// 商品マスタ
+model TicketProduct {
+  id             String    @id @default(cuid())
+  code           String    @unique               // 商品コード（例: ticket, book, sportsX）
+  name           String                          // 商品名（英語）
+  nameJa         String                          // 商品名（日本語）
+  description    String?                         // 説明
+  unitPrice      Int                             // 単価（円）
+  isActive       Boolean   @default(true)
+  sortOrder      Int       @default(0)           // 表示順序
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  sales          TicketSale[]
+
+  @@index([code])
+  @@index([isActive])
+  @@index([sortOrder])
+}
+
+// 販売記録
+model TicketSale {
+  id             String              @id @default(cuid())
+  soldAt         DateTime            @default(now())   // 販売日時
+  customerId     String?                               // 顧客ID（TicketCustomer.id）
+  customerName   String                                // 顧客名（スナップショット）
+  productId      String                                // 商品ID（TicketProduct.id）
+  productCode    String                                // 商品コード（スナップショット）
+  quantity       Int                                   // 数量
+  unitPrice      Int                                   // 単価（スナップショット）
+  totalPrice     Int                                   // 合計金額
+  paymentMethod  TicketPaymentMethod                   // 支払方法
+  adminNfcId     String                                // 販売管理者のNFC ID
+  adminName      String                                // 販売管理者名（スナップショット）
+  notes          String?                               // 備考
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  customer       TicketCustomer?     @relation(fields: [customerId], references: [id])
+  product        TicketProduct       @relation(fields: [productId], references: [id])
+
+  @@index([soldAt])
+  @@index([customerId])
+  @@index([productId])
+  @@index([paymentMethod])
 }
 
 // ========================================

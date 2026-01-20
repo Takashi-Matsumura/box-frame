@@ -15,6 +15,7 @@ import { useCallback, useEffect, useState } from "react";
 import { DrawIoEmbed } from "react-drawio";
 import { Button } from "@/components/ui/button";
 import { ProcedureEditModal } from "@/lib/addon-modules/backoffice/components/ProcedureEditModal";
+import { type ProcedureImage } from "@/lib/addon-modules/backoffice/components/ProcedureImageManager";
 import { wrapWithMxFile } from "@/lib/addon-modules/backoffice/utils/diagram-utils";
 
 interface ExtractedTask {
@@ -24,12 +25,6 @@ interface ExtractedTask {
   swimlaneId: string | null;
   actorName: string | null;
   position: { x: number; y: number };
-}
-
-interface ProcedureImage {
-  id: string;
-  filename: string;
-  caption: string | null;
 }
 
 interface WorkProcedure {
