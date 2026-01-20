@@ -262,11 +262,12 @@ export function BusinessAnalyticsClient({
                     </Button>
                   )}
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={() =>
                       router.push(`/backoffice/analytics/${process.id}`)
                     }
+                    className="border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900/20"
                   >
                     <MessageSquare className="w-4 h-4" />
                     <span className="ml-1 hidden sm:inline">

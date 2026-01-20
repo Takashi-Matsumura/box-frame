@@ -32,7 +32,7 @@ export const businessAnalyticsTranslations = {
     create: "Create",
     creating: "Creating...",
     // Actions
-    startHearing: "Start Analysis",
+    startHearing: "Job Duties",
     viewDiagram: "View Diagram",
     workProcedures: "Procedures",
     edit: "Edit",
@@ -96,7 +96,7 @@ export const businessAnalyticsTranslations = {
     create: "作成",
     creating: "作成中...",
     // Actions
-    startHearing: "業務分析開始",
+    startHearing: "業務分掌",
     viewDiagram: "フロー図を表示",
     workProcedures: "作業手順書",
     edit: "編集",
