@@ -355,6 +355,37 @@ export default function PageClient({ language }: { language: "en" | "ja" }) {
 </div>
 ```
 
+## ロール階層とメニューセクション
+
+### ロール階層
+
+```
+GUEST → USER → MANAGER → EXECUTIVE → ADMIN
+```
+
+| ロール | 説明 | 表示されるセクション |
+|--------|------|---------------------|
+| GUEST | 未認証/制限付き | ゲスト |
+| USER | 一般社員 | ゲスト、ユーザ |
+| MANAGER | 管理職 | ゲスト、ユーザ、マネージャー |
+| EXECUTIVE | 役員（経営層） | ゲスト、ユーザ、マネージャー、エグゼクティブ |
+| ADMIN | システム管理者 | 全セクション |
+
+### メニューグループ型
+
+```typescript
+type MenuGroupId = "guest" | "user" | "manager" | "executive" | "admin" | "backoffice";
+```
+
+### backofficeセクション
+
+- アクセスキーで保護された「鍵付き」セクション
+- ADMINロールはアクセスキーなしで閲覧可能
+- 一般ユーザーは `requiredAccessKey` と `AccessKey` の設定が必要
+- サイドバーにカギアイコンで表示
+
+---
+
 ## ベストプラクティス
 
 ### ✅ 推奨

@@ -329,6 +329,63 @@ import { BackButton } from "@/components/ui/BackButton";
 <BackButton onClick={() => setSelectedItem(null)} />
 ```
 
+## ロールカラースキーム
+
+テンプレートのウェルカムカード等で使用するロール別カラー:
+
+| ロール | 色 | Tailwind クラス |
+|--------|-----|-----------------|
+| GUEST | グレー | `bg-gray-600` |
+| USER | 青/シアン | `bg-blue-600` / `bg-cyan-700` |
+| MANAGER | 緑 | `bg-green-600` / `bg-green-700` |
+| EXECUTIVE | ローズ | `bg-rose-600` / `bg-rose-700` |
+| ADMIN | 紫 | `bg-purple-600` / `bg-purple-700` |
+
+---
+
+## レスポンシブ対応
+
+### ブレークポイント
+
+| サイズ | 幅 | サイドバー表示 |
+|--------|-----|---------------|
+| モバイル | < 768px | オーバーレイ（Sheet） |
+| タブレット | 768px - 1023px | オーバーレイ（Sheet） |
+| デスクトップ | >= 1024px | 固定表示 |
+
+**ベース端末**: iPad Mini（768×1024）
+
+### フック
+
+```typescript
+import { useIsMobile, useIsTabletOrMobile } from "@/hooks/use-mobile";
+
+// モバイルのみ（768px未満）
+const isMobile = useIsMobile();
+
+// タブレット含む（1024px未満）
+const isTabletOrMobile = useIsTabletOrMobile();
+```
+
+### サイドバー動作
+
+- **デスクトップ**: 固定表示、幅調整ハンドル（ResizeHandle）あり
+- **タブレット/モバイル**: オーバーレイ表示（Sheet）、ハンバーガーメニューで開閉
+
+### 実装時の注意
+
+```typescript
+// ✅ タブレット対応のレイアウト
+const isTabletOrMobile = useIsTabletOrMobile();
+<div style={{ left: isTabletOrMobile ? "0" : `${sidebarWidth}px` }}>
+
+// ❌ モバイルのみの判定（タブレットで問題発生）
+const isMobile = useIsMobile();
+<div style={{ left: isMobile ? "0" : `${sidebarWidth}px` }}>
+```
+
+---
+
 ## チェックリスト
 
 新しいUIを作成する際:
@@ -339,4 +396,4 @@ import { BackButton } from "@/components/ui/BackButton";
 - [ ] shadcn/ui コンポーネントを使用
 - [ ] 適切なスペーシングを適用
 - [ ] 空状態を実装
-- [ ] モバイル対応を考慮
+- [ ] モバイル対応を考慮（useIsTabletOrMobile）

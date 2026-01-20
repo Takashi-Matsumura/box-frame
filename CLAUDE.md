@@ -29,583 +29,99 @@
                     │
 ┌───────────────────┴─────────────────────────┐
 │       コアモジュール / アドオンモジュール     │
-│      (organization, system, openldap等)     │
+│      (organization, system, ai, backoffice) │
 └─────────────────────────────────────────────┘
 ```
 
 フレーム基盤機能はモジュールではなく、モジュールが利用するインフラストラクチャです。
-
-## モジュールの構成要素
-
-モジュールは**メニュー**と**サービス**の2種類の機能を持ちます。
-
-```
-┌─────────────────────────────────────────┐
-│            モジュール                    │
-│  ┌─────────────────────────────────────┐ │
-│  │ メニュー（画面あり）                 │ │
-│  │ - 組織図、データインポート等        │ │
-│  │ - サイドバーに表示                  │ │
-│  │ - ユーザーが直接アクセス            │ │
-│  └─────────────────────────────────────┘ │
-│  ┌─────────────────────────────────────┐ │
-│  │ サービス（画面なし）                 │ │
-│  │ - 承認経路取得、ワークフロー等      │ │
-│  │ - APIエンドポイントのみ提供         │ │
-│  │ - 他モジュールから呼び出される      │ │
-│  └─────────────────────────────────────┘ │
-└─────────────────────────────────────────┘
-```
-
-### メニュー vs サービス
-
-| 項目 | メニュー | サービス |
-|------|----------|----------|
-| 画面 | あり | なし |
-| サイドバー表示 | あり | なし |
-| ユーザー操作 | 直接アクセス | 間接的（他機能経由） |
-| 主な用途 | UI/UX提供 | API/ビジネスロジック提供 |
-| 例 | 組織図、データインポート | 承認経路取得、ワークフロー |
-
-### コンテナ依存関係
-
-モジュールはDockerコンテナに依存することがあります。依存関係を定義することで、管理画面でコンテナの稼働状況を確認できます。
-
-```typescript
-// モジュール定義例
-export const openldapModule: AppModule = {
-  id: "openldap",
-  // ...
-  containers: [
-    {
-      id: "openldap",
-      name: "OpenLDAP Server",
-      nameJa: "OpenLDAPサーバ",
-      healthCheckUrl: "/api/admin/openldap/status",
-      required: true,
-    },
-  ],
-};
-```
-
-**表示内容:**
-- モジュールカードにコンテナの稼働状況を表示
-- 稼働中: 緑色のインジケーター
-- 停止中: 黄色のインジケーター + 警告アイコン（必須コンテナの場合）
-
-### MCPサーバー
-
-モジュールは外部AI連携用のMCPサーバーを提供できます。管理画面でMCPサーバーの有無とツール数を確認できます。
-
-```typescript
-// モジュール定義例
-export const openldapModule: AppModule = {
-  id: "openldap",
-  // ...
-  mcpServer: {
-    id: "openldap-mcp",
-    name: "OpenLDAP MCP Server",
-    nameJa: "OpenLDAP MCPサーバ",
-    path: "mcp-servers/openldap",
-    toolCount: 5,
-    readOnly: true,
-    tools: [
-      { name: "ldap_check_status", descriptionJa: "サーバ接続状態を確認" },
-      { name: "ldap_list_users", descriptionJa: "ユーザ一覧を取得" },
-      // ...
-    ],
-  },
-};
-```
-
-**表示内容:**
-- モジュールカード: `MCP 5ツール`（シンプル表示）
-- モジュール詳細: ツール一覧、アクセスモード、サーバパス
 
 ## ディレクトリ構造
 
 ```
 app/
   ├── (menus)/              # メニューページ実装
-  │   ├── (user)/           # 全社員向け（組織図）
-  │   ├── (manager)/        # 管理職向け（分析）
+  │   ├── (user)/           # 全社員向け
+  │   ├── (manager)/        # 管理職向け
   │   ├── (admin)/          # システム管理者向け
   │   └── (backoffice)/     # バックオフィス（アクセスキー必須）
   ├── admin/                # 管理画面
-  ├── login/                # ログインページ
   └── api/                  # APIルート
 
 lib/
   ├── modules/              # モジュール定義（registry.tsx）
-  ├── core-modules/         # コアモジュール
-  │   ├── organization/     # 組織管理モジュール
-  │   ├── system/           # システムモジュール
-  │   └── ai/               # 生成AIモジュール
-  │       ├── types.ts      # 型定義
-  │       ├── constants.ts  # 定数
-  │       ├── services/     # AIサービス
-  │       └── providers/    # プロバイダ実装（OpenAI/Anthropic/Local）
-  ├── addon-modules/        # アドオンモジュール
-  │   ├── evaluation/       # 人事評価モジュール
-  │   │   ├── types.ts      # 型定義
-  │   │   ├── constants.ts  # 定数
-  │   │   └── services/     # 評価サービス
-  │   ├── ldap-migration/   # LDAPマイグレーション
-  │   └── backoffice/       # 業務分析モジュール
-  │       ├── components/   # draw.ioエディタ等
-  │       └── utils/        # XML操作ユーティリティ
+  ├── core-modules/         # コアモジュール（organization, system, ai）
+  ├── addon-modules/        # アドオンモジュール（evaluation, backoffice等）
   ├── services/             # フレーム基盤サービス
-  │   └── notification-service.ts  # 通知サービス
-  ├── stores/               # Zustandストア
-  │   └── notification-store.ts    # 通知ストア
-  ├── ldap/                 # LDAP認証
-  ├── i18n/                 # 多言語対応
-  ├── importers/            # データインポート
-  └── history/              # 履歴管理
+  └── i18n/                 # 多言語対応
 
 components/
   ├── ui/                   # 共通UIコンポーネント
-  ├── notifications/        # 通知UIコンポーネント
   └── *.tsx                 # 各種コンポーネント
 
 prisma/
   └── schema.prisma         # データベーススキーマ
-
-mcp-servers/
-  └── openldap/             # OpenLDAP MCPサーバー
 ```
-
-## コアモジュール構成
-
-### organizationモジュール
-- 組織図表示・検索
-  - 役職コード順ソート（一般社員は最後）
-  - 重複しない表示モード（評価関係表示）
-  - 本部→部→課の階層ナビゲーション
-- 社員詳細モーダル
-  - 基本情報タブ
-  - キャリア履歴タブ（入社・異動・昇進・退職の時系列表示）
-- 組織整備（責任者設定）
-  - 公開日設定（即時公開/予約公開）
-  - インポート取消（ロールバック機能）
-- データインポート（CSV/Excel）
-  - 役員・顧問の自動分類
-  - 重複検出・除外
-  - 変更タイプ自動判定（新規/異動/昇進/退職/復職）
-- 履歴管理
-  - EmployeeHistory: 社員スナップショット（validFrom/validTo）
-  - ChangeLog: フィールド単位の変更記録（batchId付き）
-
-### systemモジュール
-- ダッシュボード
-- 管理画面（ユーザー管理）
-- データ履歴
-- システム設定
-
-### aiモジュール
-- 生成AI機能を提供するコアモジュール
-- AIチャット（ChatGPT風UI、ストリーミング対応）
-- 翻訳API（日英相互翻訳）
-- OpenAI / Anthropic / ローカルLLM対応
-  - llama.cpp（OpenAI互換API）
-  - LM Studio
-  - Ollama
-- トークン統計表示（コンテキスト使用量、トークン/秒）
-- 管理画面の「システム情報」タブでAPI設定
-
-**モジュール構造:**
-```
-lib/core-modules/ai/
-├── module.tsx        # モジュール定義
-├── index.ts          # エクスポート
-├── types.ts          # 型定義（AIConfig, ChatMessage等）
-├── constants.ts      # 定数（LOCAL_LLM_DEFAULTS等）
-├── services/         # サービス層
-│   ├── ai-service.ts # メインサービス
-│   └── token-utils.ts # トークン計算
-└── providers/        # プロバイダ実装
-    ├── openai-provider.ts
-    ├── anthropic-provider.ts
-    └── local-provider.ts
-```
-- RAGバックエンド（Python FastAPI）
-  - ChromaDB: ベクトルデータベース
-  - sentence-transformers: 埋め込みモデル（multilingual-e5-small）
-  - ドキュメント登録・検索・チャット機能
-  - SSEストリーミング対応
-
-**RAGバックエンド起動:**
-```bash
-# Dockerで起動
-docker compose up -d airag-backend
-
-# ヘルスチェック
-curl http://localhost:8000/health
-```
-
-**人事評価モジュールでの利用:**
-- 評価画面右側にAIアシスタントパネルを表示
-- RAGを使用した評価アドバイス機能
-- クイックアクション（コメント作成、評価ポイント、フィードバック例、成長目標）
-- マークダウンレンダリング対応（react-markdown + remark-gfm）
-- ストリーミング表示（リアルタイムで回答を表示）
-- 停止ボタンで回答生成をキャンセル可能
-- リアルタイムの評価スコア（結果・プロセス・成長・最終スコア・グレード）をLLMに自動送信
-- 評価者コメント作成支援（スコアに基づいた適切なコメント例を生成）
-
-**ナレッジベース機能:**
-- RAGバッジ（例: `RAG (3ファイル)`）をクリックでダイアログ表示
-- 登録ドキュメント一覧をテーブル形式で表示
-- ドキュメント選択でマークダウンプレビュー表示（フルサイズダイアログ）
-- マニュアル/ドキュメント閲覧機能として利用可能
-
-**評価AIナレッジ管理画面 (`/admin/evaluation-rag`):**
-- ドキュメントの登録（タイトル、カテゴリ、内容）
-- 登録済みドキュメントの一覧表示（ファイル名でグループ化）
-- マークダウンプレビュー/ソース表示切り替え
-- ドキュメント削除機能
-
-## アドオンモジュール
-
-### evaluationモジュール（人事評価）
-
-3軸評価（結果・プロセス・成長）に基づく人事評価機能を提供するアドオンモジュールです。
-
-**モジュール構造:**
-```
-lib/addon-modules/evaluation/
-├── module.tsx        # モジュール定義
-├── index.ts          # エクスポート
-├── types.ts          # 型定義（ScoreResult, WeightConfig等）
-├── constants.ts      # 定数（LEVEL_TO_SCORE, DEFAULT_WEIGHTS等）
-└── services/         # サービス層
-    ├── score-calculator.ts   # スコア計算
-    ├── evaluator-resolver.ts # 評価者決定
-    ├── weight-service.ts     # 重み設定
-    └── batch-generator.ts    # 一括生成
-```
-
-**主要な機能:**
-- スコア計算（結果評価・プロセス評価・成長評価）
-- 評価者決定ロジック（カスタム評価者 → 課長 → 部長 → 本部長）
-- 役職×等級別の重み設定
-- 評価データの一括生成
-
-### ldap-migrationモジュール（LDAPマイグレーション）
-
-レガシーLDAPからOpenLDAPへのLazy Migration機能を提供するアドオンモジュールです。
-
-**認証フロー:**
-```
-1. ユーザーがOpenLDAPでログイン試行
-2. 認証失敗 & このモジュールが有効な場合
-3. レガシーLDAPで認証を試行
-4. 成功した場合:
-   - 会社組織(Employee)からメールで検索し社員情報取得
-   - OpenLDAPに新規ユーザーを自動作成
-   - User/LdapUserMappingを作成（migrated=true）
-5. マイグレーション完了後はモジュールを無効化するだけで運用可能
-```
-
-**設定場所:** モジュール管理画面（`/admin?tab=modules`）でモジュールを選択
-
-**設定項目:**
-- サーバURL: `ldap://ldap.example.com:389`
-- ベースDN: `ou=Users,dc=example,dc=com`
-- 検索フィルタ: `(uid={username})`
-- タイムアウト: ミリ秒
-
-**テスト機能:**
-- 接続テスト: サーバへの接続確認
-- ユーザー検索: ユーザー名でLDAP検索
-- 認証テスト: ユーザー名/パスワードで認証確認
-
-**依存:** openldapモジュール
-
-### backofficeモジュール（業務分析）
-
-アクセスキーで保護された「鍵付きモジュール」として、業務プロセスの分析とドキュメント化機能を提供します。
-
-**アクセス制御:**
-- `requiredAccessKey: "backoffice"` でアクセスキー必須
-- ADMINロールはアクセスキーなしで閲覧可能
-- 一般ユーザーは管理画面でアクセスキーを付与する必要あり
-
-**モジュール構造:**
-```
-lib/addon-modules/backoffice/
-├── module.tsx                    # モジュール定義
-├── index.ts                      # エクスポート
-├── components/
-│   ├── DiagramEditor.tsx         # draw.ioエディタコンポーネント
-│   └── DiagramEditorWithAI.tsx   # AIアシスタント付きエディタ
-└── utils/
-    └── diagram-utils.ts          # draw.io XML操作ユーティリティ
-```
-
-**業務分析機能 (`/backoffice/analytics`):**
-- 業務プロセスの一覧表示・新規作成・削除
-- ステータス管理（下書き/ヒアリング中/フロー作成中/レビュー中/公開済み/アーカイブ）
-
-**ステップインジケーター:**
-- 5つのステップを視覚的に表示（AIヒアリング→業務分掌整理→業務フロー図→レビュー→公開）
-- 完了/進行中/未着手の状態を色分け表示
-- 現在のステップに対応するアクションボタンを表示
-- 「次のアクション」を右上に明示
-- 業務フロー図保存時に「保存済み」インジケーター表示
-- レスポンシブ対応（デスクトップ: 横並び、モバイル: 縦並び）
-
-**ステップ進捗条件:**
-| ステップ | 完了条件 |
-|---------|---------|
-| 1. AIヒアリング | 業務分掌マークダウンあり OR 8メッセージ以上 |
-| 2. 業務分掌整理 | 業務分掌マークダウンあり |
-| 3. 業務フロー図 | 図が保存されている |
-| 4. レビュー | ステータスがREVIEW以降 |
-| 5. 公開 | ステータスがPUBLISHED |
-
-**ステータス自動修正:**
-- 業務分掌マークダウンがあるのにステータスがINTERVIEWの場合、自動的にDIAGRAMMINGに更新
-
-**AIヒアリング機能:**
-- 対話形式で業務分掌9項目をヒアリング
-- 業務分掌9項目: 業務概要・目的、責任範囲、ステークホルダー、業務フロー、インプット/アウトプット、使用システム・ツール、KPI/成果指標、リスク・課題、改善提案
-- ヒアリング履歴はDBに保存
-- やり直しボタンで会話をリセット可能
-- 8メッセージ以上で「業務分掌を整理」ボタンが表示
-- **パネル分割表示**: AIヒアリングボタンをクリックすると、パネルが左右に分割
-  - 左側: 業務分掌マークダウンを表示（参照しながらヒアリング可能）
-  - 右側: AIヒアリングチャット
-
-**業務分掌（マークダウン形式）:**
-- AIヒアリング結果をマークダウン形式で整理・保存
-- `jobDescriptionMd`フィールドに格納
-- ReactMarkdownで表示、直接編集も可能
-- AIレビュー機能で課題を検出、深掘りチャットで追加情報を収集
-
-**業務フロー図機能:**
-- draw.io（react-drawio）を使用した業務フロー図エディタ
-- フローティングサブウィンドウで表示（1200×700）
-- ドラッグ、リサイズ、最小化、最大化対応
-- XMLデータとしてDBに保存
-- **AIアシスタント付きエディタ:**
-  - 左パネル: AIチャット + 保存ボタン、右パネル: draw.ioエディタ
-  - 「業務フロー図を生成」ボタンでスイムレーン形式の図を自動生成
-  - ステークホルダーをアクター（スイムレーン）として横に配置
-  - 縦方向に時系列でフローを表現
-  - チャットでAIに指示を出して業務フロー図を修正可能
-  - draw.io形式のmxGraphModel XMLを生成
-- **ガイドライン準拠の記号セット:**
-  - 楕円（状態）: 開始条件、終了結果
-  - 長方形（作業）: 人手による作業
-  - 角丸長方形（処理）: システム処理
-  - ひし形（分岐）: 判断による分岐
-  - 角丸長方形・紫（伝達データ）: 作業間で受け渡すデータ
-  - 円筒（蓄積データ）: DB等に蓄積されるデータ
-  - 実線矢印（作業の流れ）、点線矢印（データの流れ）
-
-**データモデル:**
-```prisma
-model BusinessProcess {
-  id                String                @id
-  title             String
-  description       String?
-  status            BusinessProcessStatus  // DRAFT/INTERVIEW/DIAGRAMMING/REVIEW/PUBLISHED/ARCHIVED
-  flowDescription   String?               // 言語化された業務フロー（レガシー）
-  interviewHistory  Json?                 // AIヒアリング履歴
-  diagramXml        String?               // draw.io XMLデータ
-  tags              String?
-  version           Int
-  // 業務分掌（マークダウン形式）
-  jobDescriptionMd      String?           // 業務分掌マークダウン（メイン）
-  // 業務分掌9項目（レガシー - 今後廃止予定）
-  purpose               String?           // 業務の目的・背景・価値
-  responsibleDepartment String?           // 担当部署
-  responsiblePerson     String?           // 責任者
-  authority             String?           // 権限範囲
-  stakeholders          Json?             // ステークホルダー配列
-  businessFlow          String?           // 構造化された業務フロー
-  actors                Json?             // 業務フロー図のアクター一覧
-  inputs                Json?             // インプット配列
-  outputs               Json?             // アウトプット配列
-  systemsAndTools       Json?             // システム・ツール配列
-  kpis                  Json?             // KPI配列
-  risksAndIssues        Json?             // リスク・課題配列
-  improvements          Json?             // 改善提案配列
-  createdBy         String
-  updatedBy         String?
-  createdAt         DateTime
-  updatedAt         DateTime
-}
-```
-
-### 今後の機能拡張候補（業務マニュアルガイドライン準拠）
-
-以下の機能拡張を検討中。実装の可否は業務分掌整備・業務分析の開発過程を経て判断する。
-
-参照: `docs/business-manual-guideline.md`
-
-#### 1. 付加価値分析（VA/NVA/BV）機能
-- 各作業にVA/NVA/BVタグを付与
-- 色分け表示（VA=緑、NVA=赤、BV=黄）
-- NVA/BV比率の自動計算
-- AIによる自動分類提案
-
-#### 2. 作業手順書（ユースケース記述）機能
-- 業務フローの各作業から1:1で作業手順書を作成
-- ユースケース記述書形式（作業名、概要、目的、アクター、イベントフロー等）
-- メイン/代替/例外フローの記述対応
-
-#### 3. スイムレーンフローチャートの記号拡張
-- ガイドライン準拠の記号パレット
-- 状態（楕円）、作業（長方形）、分岐（ひし形）
-- 伝達データ（角丸長方形）、蓄積データ（円筒）
-- KPI測定ポイントのマーキング
-
-## Prismaモデル（27モデル）
-
-### 認証系
-- Account, Session, User, VerificationToken
-
-### 監査・通知系
-- AuditLog, Notification, Announcement
-
-### LDAP認証系
-- LdapConfig, LdapUserMapping, LdapAuthLog, OpenLdapConfig, LegacyLdapConfig
-
-### アクセス制御系
-- Permission, AccessKey, AccessKeyPermission, UserAccessKey
-
-### 組織系
-- Organization, Department, Section, Course, Employee
-
-### 履歴系
-- EmployeeHistory, OrganizationHistory, ChangeLog
-
-### システム系
-- SystemSetting
-
-### 業務分析系
-- BusinessProcess
 
 ## 開発コマンド
 
 ```bash
-# 開発サーバー起動
-npm run dev
-
-# ビルド
-npm run build
-
-# Prisma Studio
-npx prisma studio
-
-# Prismaクライアント生成
-npx prisma generate
-
-# データベース初期化
-npx prisma db push && npm run db:seed
-
-# テスト
-npm run test
-
-# テスト（カバレッジ付き）
-npm run test:coverage
-
-# 特定のテストのみ実行
-npm run test -- --testPathPatterns="access-control"
+npm run dev          # 開発サーバー起動
+npm run build        # ビルド
+npm run test         # テスト実行
+npx prisma studio    # Prisma Studio
+npx prisma generate  # Prismaクライアント生成
+npx prisma db push && npm run db:seed  # DB初期化
 ```
-
-## テスト戦略
-
-「仕様通りにフレームが設計されているか」を確認するためのテスト方針です。
-
-### テスト方針
-
-| 対象 | 方針 | 理由 |
-|------|------|------|
-| バックエンドAPI | 厳密にテスト | 外部モジュールが依存する契約 |
-| アクセス制御 | 厳密にテスト | セキュリティリスク |
-| フロントエンド | 手動確認中心 | 柔軟な変更に対応 |
-
-### テスト対象
-
-1. **外部モジュール向けAPI（契約テスト）** - 最優先
-   - `/api/ai/services/generate`
-   - `/api/ai/services/summarize`
-   - `/api/ai/services/extract`
-   - `/api/ai/translate`
-
-2. **アクセス制御ロジック** - 高優先
-   - `canAccessMenu()`
-   - `canAccessModule()`
-   - `canAccessMenuGroup()`
-   - `getAccessibleMenus()`
-
-3. **AIService（サービス層）** - 中優先
-   - `generate()`
-   - `summarize()`
-   - `extract()`
-
-### テストファイル構成
-
-```
-__tests__/
-├── api/
-│   └── ai/
-│       ├── services/
-│       │   ├── generate.test.ts    # 8テスト
-│       │   ├── summarize.test.ts   # 8テスト
-│       │   └── extract.test.ts     # 12テスト
-│       └── translate.test.ts       # 13テスト
-└── lib/
-    ├── modules/
-    │   └── access-control.test.ts  # 21テスト
-    └── core-modules/
-        └── ai/
-            └── ai-service.test.ts  # 15テスト
-
-jest.config.ts    # Jest設定
-jest.setup.ts     # グローバルモック
-```
-
-### モック戦略
-
-| 依存 | モック方法 |
-|------|-----------|
-| Prisma | `jest.mock("@/lib/prisma")` |
-| 外部API | `global.fetch = jest.fn()` |
-| 認証 | `jest.mock("@/auth")` |
 
 ## 環境変数
 
 ```env
-# 認証
 AUTH_SECRET=<生成された秘密鍵>
 AUTH_URL=http://localhost:3000
-
-# データベース
 DATABASE_URL="postgresql://user:password@localhost:5432/dbname?schema=public"
 
 # OAuth（オプション - 管理画面で有効化）
 GOOGLE_CLIENT_ID=<Google OAuthクライアントID>
 GOOGLE_CLIENT_SECRET=<Google OAuthクライアントシークレット>
-GITHUB_CLIENT_ID=<GitHub OAuthクライアントID>
-GITHUB_CLIENT_SECRET=<GitHub OAuthクライアントシークレット>
 ```
 
-## 重要なルール
+---
 
-### menuGroupとURLパスの一致
+## スキル活用ガイド
+
+詳細情報は必要に応じてスキルを参照してください。
+
+| 作業内容 | 使用スキル |
+|---------|-----------|
+| メニュー/モジュール追加 | /architecture |
+| UI実装、コンポーネント作成 | /ui-ux |
+| 翻訳追加、新規ページ作成 | /i18n |
+| 通知発行、通知センター拡張 | /notifications |
+| データインポート、履歴記録 | /data-management |
+| 本番環境構築、デプロイ | /deployment |
+| テスト作成・実行・デバッグ | /testing |
+| 認証機能の実装・設定 | /auth |
+| AI機能の実装・設定・利用 | /ai-services |
+| フローティングウィンドウ、監査ログ | /frame-services |
+| コアモジュール実装・拡張 | /core-modules |
+| 業務分析機能の実装・拡張 | /backoffice |
+| 人事評価機能の実装 | /evaluation |
+| Reactフック、無限ループ防止 | /react-hooks |
+| 日本語表記、用語統一 | /terminology |
+
+---
+
+## 基本ルール
+
+### 翻訳ファイルの使用
 
 ```typescript
 // ✅ 正しい
-path: "/manager/analytics"
-menuGroup: "manager"
+const t = translations[language];
+<h1>{t.title}</h1>
 
 // ❌ 間違い
-path: "/admin/dashboard"
-menuGroup: "user"
+<h1>Dashboard</h1>
 ```
 
 ### 共通コンポーネントの使用
@@ -619,599 +135,34 @@ import { Button } from "@/components/ui";
 <button className="px-4 py-2 bg-blue-600...">保存</button>
 ```
 
-### 翻訳ファイルの使用
+### menuGroupとURLパスの一致
 
 ```typescript
 // ✅ 正しい
-const t = translations[language];
-<h1>{t.title}</h1>
+path: "/manager/analytics"
+menuGroup: "manager"
 
 // ❌ 間違い
-<h1>Dashboard</h1>
+path: "/admin/dashboard"
+menuGroup: "user"
 ```
 
 ### ヘッダータイトルの動的取得
 
-ヘッダーに表示されるページタイトルは、モジュールレジストリから自動的に取得されます。
+新しいモジュールを追加する際、`page-titles.ts` を編集する必要はありません。
+モジュール定義の `name` / `nameJa` がヘッダーに自動表示されます。
 
-**取得順序:**
-1. `lib/i18n/page-titles.ts` のハードコーディング（既存ページ用）
-2. モジュールレジストリの `menu.name` / `menu.nameJa`（新規モジュール用）
-3. フォールバック: "BoxFrame"
+---
 
-新しいモジュールを追加する際、`page-titles.ts` を編集する必要はありません。モジュール定義の `name` / `nameJa` がヘッダーに自動表示されます。
+## 派生プロジェクト運用
 
-### ロールカラースキーム
-
-テンプレートのウェルカムカード等で使用するロール別カラー:
-
-| ロール | 色 | Tailwind クラス |
-|--------|-----|-----------------|
-| GUEST | グレー | `bg-gray-600` |
-| USER | 青/シアン | `bg-blue-600` / `bg-cyan-700` |
-| MANAGER | 緑 | `bg-green-600` / `bg-green-700` |
-| EXECUTIVE | ローズ | `bg-rose-600` / `bg-rose-700` |
-| ADMIN | 紫 | `bg-purple-600` / `bg-purple-700` |
-
-### ロール階層とメニューセクション
-
-```
-GUEST → USER → MANAGER → EXECUTIVE → ADMIN
-```
-
-| ロール | 説明 | 表示されるセクション |
-|--------|------|---------------------|
-| GUEST | 未認証/制限付き | ゲスト |
-| USER | 一般社員 | ゲスト、ユーザ |
-| MANAGER | 管理職 | ゲスト、ユーザ、マネージャー |
-| EXECUTIVE | 役員（経営層） | ゲスト、ユーザ、マネージャー、エグゼクティブ |
-| ADMIN | システム管理者 | 全セクション |
-
-**メニューグループ（セクション）:**
-```typescript
-type MenuGroupId = "guest" | "user" | "manager" | "executive" | "admin" | "backoffice";
-```
-
-各メニューは `menuGroup` プロパティでセクションを指定します。上位ロールは下位ロールのセクションも表示されます。
-
-**backofficeセクション:**
-- アクセスキーで保護された「鍵付き」セクション
-- ADMINロールはアクセスキーなしで閲覧可能
-- 一般ユーザーは `requiredAccessKey` と `AccessKey` の設定が必要
-- サイドバーにカギアイコンで表示
-
-## レスポンシブ対応
-
-### ブレークポイント
-
-| サイズ | 幅 | サイドバー表示 |
-|--------|-----|---------------|
-| モバイル | < 768px | オーバーレイ（Sheet） |
-| タブレット | 768px - 1023px | オーバーレイ（Sheet） |
-| デスクトップ | >= 1024px | 固定表示 |
-
-**ベース端末**: iPad Mini（768×1024）
-
-### フック
-
-```typescript
-// hooks/use-mobile.ts
-import { useIsMobile, useIsTabletOrMobile } from "@/hooks/use-mobile";
-
-// モバイルのみ（768px未満）
-const isMobile = useIsMobile();
-
-// タブレット含む（1024px未満）
-const isTabletOrMobile = useIsTabletOrMobile();
-```
-
-### サイドバー動作
-
-- **デスクトップ**: 固定表示、幅調整ハンドル（ResizeHandle）あり
-- **タブレット/モバイル**: オーバーレイ表示（Sheet）、ハンバーガーメニューで開閉
-
-### 実装時の注意
-
-```typescript
-// ✅ タブレット対応のレイアウト
-const isTabletOrMobile = useIsTabletOrMobile();
-<div style={{ left: isTabletOrMobile ? "0" : `${sidebarWidth}px` }}>
-
-// ❌ モバイルのみの判定（タブレットで問題発生）
-const isMobile = useIsMobile();
-<div style={{ left: isMobile ? "0" : `${sidebarWidth}px` }}>
-```
-
-## 認証アーキテクチャ
-
-### Edge Runtime対応
-
-Next.js 15のmiddlewareはEdge Runtimeで動作するため、認証設定を分離：
-
-1. `/auth.config.ts` - Edge Runtime用（middleware）
-   - Google OAuth / GitHub OAuth
-   - ldaptsを含まない
-
-2. `/auth.ts` - Node.js Runtime用（APIルート）
-   - LDAP/OpenLDAPプロバイダーを追加
-   - Dynamic Importでldaptsを遅延ロード
-
-3. `/middleware.ts` - auth.config.tsを使用
-
-### OAuth設定
-
-OAuth認証は管理画面（システム情報タブ）で個別に有効化/無効化できます。
-
-| プロバイダー | 環境変数 | 管理画面設定キー |
-|-------------|----------|-----------------|
-| Google | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | `google_oauth_enabled` |
-| GitHub | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | `github_oauth_enabled` |
-
-**設定手順:**
-1. 環境変数にクライアントID/シークレットを設定
-2. 管理画面 → システム情報 → 認証設定でトグルを有効化
-3. ログイン画面にOAuthボタンが表示される
-
-**ログイン画面の表示ロジック:**
-- `app/login/page.tsx` でDBから `google_oauth_enabled` / `github_oauth_enabled` を取得
-- 有効なプロバイダーのみ `OAuthButtons` コンポーネントに渡す
-- OpenLDAPとOAuthの両方が有効な場合はセパレーターで区切って表示
-
-### LDAP認証フロー
-
-1. ログイン画面でユーザー名/パスワード入力
-2. `/api/auth/callback/ldap`がNode.js Runtimeで実行
-3. LdapMigrationServiceで認証（Legacy LDAP + OpenLDAP対応）
-4. JWTトークン発行
-
-## フローティングウィンドウ（フレーム基盤）
-
-メイン画面と同時に操作可能なフローティングサブウィンドウを提供するフレーム基盤機能です。
-
-### 機能
-
-| 機能 | 説明 |
-|------|------|
-| ドラッグ移動 | タイトルバーをドラッグして移動 |
-| リサイズ | 四辺・四隅をドラッグしてサイズ変更 |
-| 最小化 | タスクバー風に左下に最小表示 |
-| 最大化 | 全画面表示（タイトルバーダブルクリックでも可） |
-| 閉じる | ボタンまたはESCキーで閉じる |
-
-### 使用方法
-
-```typescript
-"use client";
-
-import { FloatingWindow } from "@/components/ui/floating-window";
-import { useFloatingWindowStore } from "@/lib/stores/floating-window-store";
-
-export default function MyPage() {
-  const { open, isOpen } = useFloatingWindowStore();
-
-  const handleOpen = () => {
-    open({
-      title: "Window Title",
-      titleJa: "ウィンドウタイトル",
-      content: (
-        <div>
-          {/* ウィンドウ内のコンテンツ */}
-          <p>Your content here</p>
-        </div>
-      ),
-      initialPosition: { x: 200, y: 150 },  // 初期位置（オプション）
-      initialSize: { width: 450, height: 400 },  // 初期サイズ（オプション）
-    });
-  };
-
-  return (
-    <div>
-      <button onClick={handleOpen} disabled={isOpen}>
-        Open Window
-      </button>
-      {/* ページの最後にFloatingWindowを配置 */}
-      <FloatingWindow language="ja" />
-    </div>
-  );
-}
-```
-
-### ストアAPI
-
-```typescript
-const {
-  isOpen,       // ウィンドウが開いているか
-  isMinimized,  // 最小化されているか
-  isMaximized,  // 最大化されているか
-  position,     // 現在位置 { x, y }
-  size,         // 現在サイズ { width, height }
-  open,         // ウィンドウを開く
-  close,        // ウィンドウを閉じる
-  minimize,     // 最小化
-  maximize,     // 最大化
-  restore,      // 最小化/最大化から復元
-  setPosition,  // 位置を設定
-  setSize,      // サイズを設定
-  setContent,   // コンテンツを変更
-} = useFloatingWindowStore();
-```
-
-### 注意事項
-
-- サブウィンドウは1つのみ（複数同時表示は非対応）
-- z-index: 100（Header上、BaseModal下）
-- メイン画面は同時操作可能（背景クリックで閉じない）
-- ESCキーで閉じる（最小化中は無効）
-
-## 通知機能（フレーム基盤）
-
-通知機能はモジュールではなく、フレーム基盤として提供されます。
-
-### 使用方法
-
-```typescript
-import { NotificationService } from "@/lib/services/notification-service";
-
-// セキュリティ通知（対象ユーザへ）
-await NotificationService.securityNotify(userId, {
-  title: "New login detected",
-  titleJa: "新しいログインを検出しました",
-  message: "You have logged in successfully.",
-  messageJa: "正常にログインしました。",
-});
-
-// ブロードキャスト通知（特定ロールへ）
-await NotificationService.broadcast({
-  role: "ADMIN",
-  type: "SYSTEM",
-  priority: "HIGH",
-  title: "Settings updated",
-  titleJa: "設定が更新されました",
-  message: "Configuration has been changed.",
-  messageJa: "設定が変更されました。",
-  source: "ADMIN",
-});
-```
-
-### 注意事項
-
-- 通知は自動生成されない（開発者が明示的に呼び出す）
-- 通知失敗はメイン処理に影響させない（`.catch()` でログのみ）
-- 英語・日本語両方のタイトル・メッセージを指定
-
-詳細は `.claude/skills/notifications/SKILL.md` を参照。
-
-## 監査ログ（フレーム基盤）
-
-管理者操作とログイン履歴を記録・閲覧するためのフレーム基盤機能です。
-
-### 記録対象
-
-| カテゴリ | アクション | 説明 |
-|---------|-----------|------|
-| AUTH | LOGIN_SUCCESS | ログイン成功 |
-| AUTH | LOGIN_FAILURE | ログイン失敗 |
-| USER_MANAGEMENT | USER_DELETE | ユーザー削除 |
-| USER_MANAGEMENT | USER_ROLE_CHANGE | ロール変更 |
-| SYSTEM_SETTING | ANNOUNCEMENT_CREATE | アナウンス作成 |
-| SYSTEM_SETTING | ANNOUNCEMENT_UPDATE | アナウンス更新 |
-| SYSTEM_SETTING | ANNOUNCEMENT_DELETE | アナウンス削除 |
-| SYSTEM_SETTING | AI_CONFIG_UPDATE | AI設定変更 |
-| MODULE | MODULE_TOGGLE | モジュール有効/無効 |
-
-### 使用方法
-
-```typescript
-import { AuditService } from "@/lib/services/audit-service";
-
-// 監査ログを記録
-await AuditService.log({
-  action: "USER_DELETE",
-  category: "USER_MANAGEMENT",
-  userId: session.user.id,
-  targetId: deletedUserId,
-  targetType: "User",
-  details: { deletedUserName: "user@example.com" },
-}).catch(() => {});
-
-// ログを取得（ページネーション付き）
-const { logs, total } = await AuditService.getLogs({
-  category: "AUTH",
-  limit: 25,
-  offset: 0,
-});
-```
-
-### 管理画面
-
-管理画面の「監査ログ」タブで、カテゴリ・アクションによるフィルタリングとページネーション付きで閲覧可能。
-
-## システムアナウンス（フレーム基盤）
-
-全ユーザーへの告知バナーを表示するためのフレーム基盤機能です。
-
-### 機能
-
-- ヘッダー上部にバナー表示
-- ユーザーが閉じることができる（セッション中のみ非表示）
-- 開始日時・終了日時を設定可能
-- 重要度レベル（info, warning, critical）
-
-### レベル別スタイル
-
-| レベル | 色 | 用途 |
-|--------|-----|------|
-| info | 青色 | 一般的なお知らせ |
-| warning | 黄色 | 注意喚起 |
-| critical | 赤色 | 重要な警告 |
-
-### 管理画面
-
-管理画面の「アナウンス」タブで、アナウンスの作成・編集・削除・有効/無効の切り替えが可能。
-
-### API
-
-- `GET /api/announcements` - 現在有効なアナウンスを取得（全ユーザー）
-- `GET /api/admin/announcements` - 全アナウンスを取得（管理者）
-- `POST /api/admin/announcements` - アナウンスを作成（管理者）
-- `PATCH /api/admin/announcements/[id]` - アナウンスを更新（管理者）
-- `DELETE /api/admin/announcements/[id]` - アナウンスを削除（管理者）
-
-## 生成AI（コアモジュール）
-
-翻訳などのAI機能を提供するコアモジュールです。
-
-### 対応プロバイダー
-
-#### ローカルLLM（推奨）
-
-APIキー不要でローカルで動作するLLMサーバを使用します。
-
-| サーバ | デフォルトエンドポイント | 備考 |
-|--------|------------------------|------|
-| **llama.cpp** | `http://localhost:8080/v1/chat/completions` | デフォルト、OpenAI互換API |
-| **LM Studio** | `http://localhost:1234/v1/chat/completions` | OpenAI互換API |
-| **Ollama** | `http://localhost:11434/api/chat` | Ollama独自API |
-
-#### クラウドAPI
-
-| プロバイダー | モデル | 備考 |
-|-------------|--------|------|
-| OpenAI | gpt-4o-mini, gpt-4o, gpt-4-turbo | 推奨: gpt-4o-mini |
-| Anthropic | claude-3-haiku, claude-3.5-sonnet, claude-3-opus | 推奨: claude-3-haiku |
-
-### 設定
-
-管理画面の「システム情報」タブでAI設定を行います：
-
-1. AI機能の有効/無効切り替え
-2. プロバイダー選択（ローカルLLM / OpenAI / Anthropic）
-3. ローカルLLMの場合: サーバ選択、エンドポイントURL、モデル名、接続テスト
-4. クラウドAPIの場合: モデル選択、APIキー設定
-
-### 使用方法
-
-```typescript
-import { AIService } from "@/lib/core-modules/ai/ai-service";
-
-// AI機能が利用可能か確認
-const available = await AIService.isAvailable();
-
-// テキスト翻訳
-const result = await AIService.translate({
-  text: "こんにちは",
-  sourceLanguage: "ja",
-  targetLanguage: "en",
-});
-// result: { translatedText: "Hello", provider: "openai", model: "gpt-4o-mini" }
-```
-
-### API
-
-- `GET /api/ai/translate` - AI翻訳が利用可能か確認
-- `POST /api/ai/translate` - テキストを翻訳
-- `GET /api/admin/ai` - AI設定を取得（管理者）
-- `PATCH /api/admin/ai` - AI設定を更新（管理者）
-- `POST /api/admin/ai` - ローカルLLM接続テスト（管理者）
-
-### 外部モジュール向けAPIサービス
-
-他のモジュールからAI機能を利用するためのAPIサービスです。
-
-#### 汎用テキスト生成 `/api/ai/services/generate`
-
-カスタムプロンプトでテキストを生成します。
-
-```typescript
-// リクエスト
-const response = await fetch("/api/ai/services/generate", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    input: "売上データ: 1月100万円、2月150万円、3月120万円",
-    systemPrompt: "あなたはビジネスアナリストです。データを分析してください。",
-    temperature: 0.5, // オプション（0-2、デフォルト0.7）
-    maxTokens: 1000,  // オプション（デフォルト2000）
-  }),
-});
-
-// レスポンス
-{
-  "output": "分析結果...",
-  "provider": "local",
-  "model": "llama.cpp/gemma-3n"
-}
-```
-
-#### 要約 `/api/ai/services/summarize`
-
-テキストを要約します。
-
-```typescript
-// リクエスト
-const response = await fetch("/api/ai/services/summarize", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    text: "長い議事録テキスト...",
-    length: "short", // "short" | "medium" | "long"（オプション）
-    language: "ja",  // "ja" | "en"（オプション）
-  }),
-});
-
-// レスポンス
-{
-  "summary": "要約されたテキスト...",
-  "provider": "local",
-  "model": "llama.cpp/gemma-3n"
-}
-```
-
-#### データ抽出 `/api/ai/services/extract`
-
-テキストから構造化データを抽出します。
-
-```typescript
-// リクエスト
-const response = await fetch("/api/ai/services/extract", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    text: "田中太郎さん（35歳）は東京都在住で、エンジニアとして働いています。",
-    schema: [
-      { name: "name", description: "人物の名前", type: "string", required: true },
-      { name: "age", description: "年齢", type: "number" },
-      { name: "location", description: "居住地", type: "string" },
-      { name: "occupation", description: "職業", type: "string" },
-    ],
-    language: "ja", // オプション
-  }),
-});
-
-// レスポンス
-{
-  "data": {
-    "name": "田中太郎",
-    "age": 35,
-    "location": "東京都",
-    "occupation": "エンジニア"
-  },
-  "provider": "local",
-  "model": "llama.cpp/gemma-3n"
-}
-```
-
-### AIServiceの直接利用
-
-API経由ではなく、サーバーサイドから直接AIServiceを利用することもできます。
-
-```typescript
-import { AIService } from "@/lib/core-modules/ai";
-
-// 汎用テキスト生成
-const result = await AIService.generate({
-  input: "入力テキスト",
-  systemPrompt: "AIへの指示",
-  temperature: 0.5,
-});
-
-// 要約
-const summary = await AIService.summarize({
-  text: "長いテキスト",
-  length: "short",
-  language: "ja",
-});
-
-// データ抽出
-const extracted = await AIService.extract({
-  text: "非構造化テキスト",
-  schema: [
-    { name: "field1", description: "説明", type: "string" },
-  ],
-});
-```
-
-## MCPサーバー
-
-外部の生成AIからBoxFrameの機能を利用可能にするMCPサーバーを提供しています。
-
-### OpenLDAP MCPサーバー
-
-`mcp-servers/openldap/` に配置。読み取り専用でLDAPユーザー情報にアクセスできます。
-
-**提供ツール:**
-| ツール名 | 説明 |
-|----------|------|
-| `ldap_check_status` | サーバー接続状態を確認 |
-| `ldap_list_users` | ユーザー一覧を取得 |
-| `ldap_get_user` | ユーザー詳細を取得 |
-| `ldap_search_users` | ユーザーを検索 |
-| `ldap_user_exists` | ユーザー存在確認 |
-
-**セットアップ:**
-```bash
-cd mcp-servers/openldap
-npm install
-npm run build
-```
-
-**Claude Code設定 (.mcp.json):**
-```json
-{
-  "mcpServers": {
-    "openldap": {
-      "command": "node",
-      "args": ["mcp-servers/openldap/dist/index.js"],
-      "env": {
-        "OPENLDAP_URL": "ldap://localhost:390",
-        "OPENLDAP_ADMIN_DN": "cn=admin,dc=boxframe,dc=local",
-        "OPENLDAP_ADMIN_PASSWORD": "admin",
-        "OPENLDAP_BASE_DN": "dc=boxframe,dc=local",
-        "OPENLDAP_USERS_OU": "ou=users,dc=boxframe,dc=local"
-      }
-    }
-  }
-}
-```
-
-詳細は `mcp-servers/openldap/README.md` を参照。
-
-## 派生プロジェクト向け運用方針
-
-BoxFrameをクローンして業務アプリを開発する際のルールです。
-
-### ディレクトリ構成
-
-```
-project/
-├── lib/
-│   ├── core-modules/       # フレーム提供（編集禁止）
-│   │   ├── organization/
-│   │   ├── system/
-│   │   └── ai/
-│   └── addon-modules/      # 業務モジュール（追加のみ）
-│       └── workflow/       # 例: ワークフローモジュール
-│       └── expense/        # 例: 経費精算モジュール
-├── app/
-│   └── (menus)/
-│       ├── (admin)/        # フレーム提供
-│       ├── (user)/         # フレーム提供
-│       └── (business)/     # 業務画面（追加のみ）
-└── components/
-    ├── ui/                 # フレーム提供（編集禁止）
-    └── business/           # 業務コンポーネント（追加のみ）
-```
+BoxFrameをクローンして業務アプリを開発する際のルール:
 
 ### 編集禁止ディレクトリ
 
-以下はフレーム提供のため、直接編集しないこと：
-
-| ディレクトリ | 理由 |
-|-------------|------|
-| `lib/core-modules/` | コアモジュール |
-| `lib/modules/registry.tsx` の既存定義 | モジュールレジストリ |
-| `components/ui/` | 共通UIコンポーネント |
-| `lib/services/` | フレーム基盤サービス |
+- `lib/core-modules/` - コアモジュール
+- `components/ui/` - 共通UIコンポーネント
+- `lib/services/` - フレーム基盤サービス
 
 ### 業務モジュールの配置先
 
@@ -1224,54 +175,14 @@ project/
 
 ### フレーム改修が必要な場合
 
-```
-業務開発中にフレーム改修が必要
-              ↓
-      BoxFrame本体にIssue作成
-              ↓
-       ┌──────┴──────┐
-       ↓             ↓
-    急ぎでない      急ぎ
-       ↓             ↓
-    本家の対応    一時的にローカル修正
-    を待つ        （コメントで明記）
-                     ↓
-                  本家にPR作成
-                     ↓
-                  マージ後、
-                  ローカル修正を削除
-```
-
-### upstreamの設定
+1. BoxFrame本体にIssue作成
+2. 急ぎの場合は一時的にローカル修正（コメントで明記）
+3. 本家にPR作成
+4. マージ後、ローカル修正を削除
 
 ```bash
-# BoxFrame本体をupstreamとして追加
+# upstreamの設定
 git remote add upstream https://github.com/Takashi-Matsumura/box-frame.git
-
-# フレーム更新の取り込み
 git fetch upstream
 git merge upstream/main
-
-# Issue作成（ghコマンド）
-gh issue create --repo Takashi-Matsumura/box-frame \
-  --title "機能提案: ○○" \
-  --body "業務開発中に必要になった機能です..."
 ```
-
-### 一時的なローカル修正のルール
-
-やむを得ずフレームを一時修正する場合：
-
-```typescript
-// ========================================
-// TEMPORARY FIX: BoxFrame Issue #123
-// TODO: 本家マージ後に削除
-// ========================================
-// 修正内容の説明
-```
-
-## ビルド情報
-
-- ルート数: 39
-- dependencies: 24パッケージ
-- devDependencies: 14パッケージ
