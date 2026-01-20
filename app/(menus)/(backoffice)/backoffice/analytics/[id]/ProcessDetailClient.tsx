@@ -1623,24 +1623,27 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
         </div>
 
         {/* パネルコンテンツ - 分割表示 or 業務分掌のみ */}
-        <div className={`flex-1 flex ${showAIHearing || deepDiveItem ? "flex-row" : "flex-col"} overflow-hidden`}>
+        <div className={`flex-1 min-h-0 flex ${showAIHearing || deepDiveItem ? "flex-row" : "flex-col"} overflow-hidden`}>
           {/* 左側: 業務分掌表示 */}
-          <div className={`${showAIHearing || deepDiveItem ? "w-1/2 border-r" : "w-full"} flex flex-col overflow-hidden`}>
-            <div className="flex-1 overflow-y-auto p-4">
+          <div className={`${showAIHearing || deepDiveItem ? "w-1/2 border-r" : "w-full flex-1"} flex flex-col min-h-0 overflow-hidden`}>
+            {isEditMode && hasJobDescription() ? (
+              /* 編集モード（マークダウン） - パディング付きでフレックスで高さいっぱいに */
+              <div className="flex-1 min-h-0 p-4">
+                <textarea
+                  className="w-full h-full p-3 border rounded-md text-sm bg-background resize-none font-mono"
+                  value={editMarkdown}
+                  onChange={(e) => setEditMarkdown(e.target.value)}
+                  placeholder={
+                    language === "ja"
+                      ? "マークダウン形式で業務分掌を記述..."
+                      : "Write job description in markdown..."
+                  }
+                />
+              </div>
+            ) : (
+              <div className="flex-1 min-h-0 flex flex-col p-4 overflow-y-auto">
               {hasJobDescription() ? (
-                isEditMode ? (
-                  /* 編集モード（マークダウン） */
-                  <textarea
-                    className="w-full h-full p-3 border rounded-md text-sm bg-background resize-none font-mono"
-                    value={editMarkdown}
-                    onChange={(e) => setEditMarkdown(e.target.value)}
-                    placeholder={
-                      language === "ja"
-                        ? "マークダウン形式で業務分掌を記述..."
-                        : "Write job description in markdown..."
-                    }
-                  />
-                ) : showReviewResults && reviewResults.length > 0 ? (
+                showReviewResults && reviewResults.length > 0 ? (
                   /* レビュー結果表示 */
                   <div className="space-y-3">
                     <div className="flex items-center justify-between mb-4">
@@ -1751,7 +1754,8 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                   </p>
                 </div>
               )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* 右側: AIヒアリング/深掘りモード（分割表示時のみ） */}
