@@ -44,6 +44,10 @@ export const processDetailTranslations = {
     startHearing: "Start AI Hearing",
     hearingDescription:
       "Let's document your business process through a conversation. I'll ask you questions about the 9 job description items.",
+    generateSample: "Generate Sample First",
+    generateSampleDesc:
+      "Generate a sample job description as a reference before starting the hearing.",
+    generatingSample: "Generating sample...",
     hearingInProgress: "Hearing in Progress",
     hearingComplete: "Hearing Complete",
     generateDiagram: "Generate Diagram",
@@ -198,6 +202,10 @@ export const processDetailTranslations = {
     startHearing: "AIヒアリングを開始",
     hearingDescription:
       "対話を通じて業務分掌9項目を収集しましょう。業務について順番に質問していきます。",
+    generateSample: "先にサンプルを生成",
+    generateSampleDesc:
+      "ヒアリング前に、回答の参考になるサンプル業務分掌を生成します。",
+    generatingSample: "サンプル生成中...",
     hearingInProgress: "ヒアリング進行中",
     hearingComplete: "ヒアリング完了",
     generateDiagram: "業務フロー図を生成",

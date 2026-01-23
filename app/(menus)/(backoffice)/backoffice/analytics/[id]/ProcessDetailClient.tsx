@@ -206,6 +206,9 @@ export function ProcessDetailClient({
   const [isEditMode, setIsEditMode] = useState(false);
   const [editMarkdown, setEditMarkdown] = useState("");
 
+  // サンプル生成
+  const [isGeneratingSample, setIsGeneratingSample] = useState(false);
+
   // ============================================================
   // プロセス更新関数（useEffectより先に定義が必要）
   // ============================================================
@@ -239,13 +242,24 @@ export function ProcessDetailClient({
   // ヒアリング初期化メッセージの生成（重複コード防止のヘルパー）
   // ============================================================
   const createInitialHearingMessage = useCallback(
-    (title: string): ChatMessage => {
+    (title: string, hasSample: boolean): ChatMessage => {
+      let content: string;
+
+      if (hasSample) {
+        // サンプルがある場合：サンプルを参照しながら確認・修正する形式
+        content = language === "ja"
+          ? `「${title}」について業務分掌のヒアリングを始めます。\n\n左側にサンプルの業務分掌が表示されています。これを参考に、実際の業務内容との違いを教えてください。\n\n**【項目1/9: 業務概要・目的】**\nサンプルの「業務概要・目的」を見て、実際の業務と異なる点や追加したい内容があれば教えてください。\n\n（サンプルと同じ場合は「OK」や「同じです」とお答えください）`
+          : `Let's start the job description hearing for "${title}".\n\nA sample job description is displayed on the left. Please tell me the differences from your actual business.\n\n**[Item 1/9: Purpose & Goals]**\nLooking at the sample "Purpose & Goals", please tell me any differences or additions for your actual business.\n\n(If it's the same as the sample, you can say "OK" or "Same")`;
+      } else {
+        // サンプルがない場合：従来の自由回答形式
+        content = language === "ja"
+          ? `「${title}」について業務分掌のヒアリングを始めます。\n\nまず、この業務の概要を自由にお聞かせください。\n- どのような業務ですか？\n- 何を目的としていますか？\n- 担当部署や関係者は誰ですか？\n\nわかる範囲で教えてください。`
+          : `Let's start the job description hearing for "${title}".\n\nFirst, please tell me about this business process freely.\n- What kind of work is it?\n- What is its purpose?\n- Who are the responsible departments and stakeholders?\n\nPlease share what you know.`;
+      }
+
       return {
         role: "assistant",
-        content:
-          language === "ja"
-            ? `「${title}」について業務分掌のヒアリングを始めます。\n\nまず、この業務の概要を自由にお聞かせください。\n- どのような業務ですか？\n- 何を目的としていますか？\n- 担当部署や関係者は誰ですか？\n\nわかる範囲で教えてください。`
-            : `Let's start the job description hearing for "${title}".\n\nFirst, please tell me about this business process freely.\n- What kind of work is it?\n- What is its purpose?\n- Who are the responsible departments and stakeholders?\n\nPlease share what you know.`,
+        content,
         timestamp: new Date().toISOString(),
       };
     },
@@ -442,7 +456,8 @@ export function ProcessDetailClient({
     switch (stepIndex) {
       case 0: // Start hearing
         if (chatMessages.length === 0 && process?.title) {
-          const initialMessage = createInitialHearingMessage(process.title);
+          const hasSample = !!process.jobDescriptionMd;
+          const initialMessage = createInitialHearingMessage(process.title, hasSample);
           setChatMessages([initialMessage]);
           updateProcess({
             interviewHistory: [initialMessage],
@@ -503,8 +518,51 @@ export function ProcessDetailClient({
       // 会話数から現在の進捗を推定
       const messageCount = newMessages.filter((m) => m.role === "user").length;
       const estimatedItem = Math.min(Math.floor(messageCount) + 1, 9);
+      const hasSample = !!process?.jobDescriptionMd;
 
-      const systemPrompt = `あなたは業務分掌のヒアリングを行うインタビュアーです。
+      // サンプルがある場合とない場合でプロンプトを分岐
+      const systemPrompt = hasSample
+        ? `あなたは業務分掌のヒアリングを行うインタビュアーです。
+ユーザーには事前にAIが生成したサンプル業務分掌が表示されています。
+サンプルを参照しながら、実際の業務との違いを確認・修正していきます。
+
+## ヒアリング対象
+業務名: ${process?.title || "不明"}
+${process?.description ? `説明: ${process.description}` : ""}
+
+## 現在のサンプル業務分掌
+${process?.jobDescriptionMd || ""}
+
+## 現在の進捗
+ユーザーの回答数: ${messageCount}回
+推定進捗: 約${estimatedItem}/9項目
+
+## 業務分掌9項目（サンプルとの差分を確認）
+
+1. **業務概要・目的** - 目的、背景、価値
+2. **責任範囲** - 担当部署、責任者、権限
+3. **ステークホルダー** - 関係者（業務フロー図のアクターになる重要項目）
+4. **業務フロー** - 開始条件、主要ステップ、完了条件
+5. **インプット/アウトプット** - 入力情報と成果物
+6. **使用システム・ツール** - システムやツール
+7. **KPI/成果指標** - 評価基準、目標値
+8. **リスク・課題** - 問題点、ボトルネック
+9. **改善提案** - 改善の余地
+
+## 重要なルール（厳守）
+- サンプルの各項目について「実際と同じか、違いがあるか」を簡潔に確認
+- ユーザーが「OK」「同じ」と答えたら、その項目はサンプル通りとして次へ進む
+- 違いがある場合は、具体的な内容を聞いて次へ進む
+- **各項目は1回の回答で次の項目に進む**（深掘りしすぎない）
+- 質問の冒頭に **【項目N/9】** を付けて進捗を明示する
+- 9項目すべて確認したら「ヒアリング完了です。『業務分掌を整理』ボタンを押してください」と伝える
+
+## 回答フォーマット例
+「ありがとうございます。責任範囲を更新しますね。
+
+**【項目3/9: ステークホルダー】**
+サンプルでは経理部、営業部、取引先が関係者となっています。実際の業務では違いがありますか？」`
+        : `あなたは業務分掌のヒアリングを行うインタビュアーです。
 効率的にヒアリングを進め、**各項目は1回の回答で次に進みます**。
 
 ## ヒアリング対象
@@ -585,6 +643,94 @@ ${process?.description ? `説明: ${process.description}` : ""}
       setChatMessages([...newMessages, errorMessage]);
     } finally {
       setIsAiThinking(false);
+    }
+  };
+
+  // サンプル業務分掌を生成する（ヒアリング前の叩き台）
+  const handleGenerateSample = async () => {
+    if (!process) return;
+
+    setIsGeneratingSample(true);
+    try {
+      const response = await fetch("/api/ai/services/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input: `業務名: ${process.title}${process.description ? `\n説明: ${process.description}` : ""}`,
+          systemPrompt: `あなたは業務分掌のサンプルを作成する専門家です。
+与えられた業務名から、一般的な業務分掌のサンプル（叩き台）をマークダウン形式で作成してください。
+
+## 重要
+- これは「参考例」であり、実際の業務に合わせて修正が必要であることを前提としています
+- 各項目に具体的な例を入れて、回答の粒度がイメージできるようにしてください
+- 一般的な内容で構いませんが、業務名に即した妥当な内容にしてください
+
+## 出力形式（マークダウン）
+
+# ${process.title}（サンプル）
+
+> ⚠️ **これはAIが生成したサンプルです。** 実際の業務内容に合わせて修正してください。AIヒアリングで詳細を聞き取り、より正確な業務分掌を作成します。
+
+## 業務概要・目的
+[業務の目的、背景、価値を記述]
+
+## 責任範囲
+- **担当部署**: [部署名]
+- **責任者**: [責任者名]
+- **権限**: [権限範囲]
+
+## ステークホルダー
+| 役割 | 担当 | 部署 |
+|------|------|------|
+| [役割] | [担当者/グループ] | [部署] |
+
+## 業務フロー
+1. [ステップ1]
+2. [ステップ2]
+...
+
+## インプット/アウトプット
+### インプット
+- [入力1]
+
+### アウトプット
+- [成果物1]
+
+## 使用システム・ツール
+| システム名 | 用途 |
+|------------|------|
+| [システム] | [用途] |
+
+## KPI/成果指標
+| 指標名 | 目標値 | 測定頻度 |
+|--------|--------|----------|
+| [指標] | [目標] | [頻度] |
+
+## リスク・課題
+- **[リスク名]**: [説明と影響]
+
+## 改善提案
+- **[提案タイトル]**: [説明と期待効果]`,
+          temperature: 0.5,
+          maxTokens: 3000,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const sampleContent = data.output;
+
+        if (sampleContent) {
+          await updateProcess({
+            jobDescriptionMd: sampleContent,
+            status: "INTERVIEW",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to generate sample:", error);
+    } finally {
+      setIsGeneratingSample(false);
     }
   };
 
@@ -1912,22 +2058,52 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                         <p className="text-sm text-muted-foreground mb-3">
                           {t.hearingDescription}
                         </p>
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => {
-                            const initialMessage = createInitialHearingMessage(
-                              process.title,
-                            );
-                            setChatMessages([initialMessage]);
-                            updateProcess({
-                              interviewHistory: [initialMessage],
-                              status: "INTERVIEW",
-                            });
-                          }}
-                        >
-                          {t.startHearing}
-                        </Button>
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => {
+                              const hasSample = !!process.jobDescriptionMd;
+                              const initialMessage = createInitialHearingMessage(
+                                process.title,
+                                hasSample,
+                              );
+                              setChatMessages([initialMessage]);
+                              updateProcess({
+                                interviewHistory: [initialMessage],
+                                status: "INTERVIEW",
+                              });
+                            }}
+                          >
+                            {t.startHearing}
+                          </Button>
+                          <div className="flex items-center gap-2 my-1">
+                            <div className="flex-1 h-px bg-border" />
+                            <span className="text-xs text-muted-foreground">or</span>
+                            <div className="flex-1 h-px bg-border" />
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleGenerateSample}
+                            disabled={isGeneratingSample}
+                          >
+                            {isGeneratingSample ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                {t.generatingSample}
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="w-4 h-4 mr-1" />
+                                {t.generateSample}
+                              </>
+                            )}
+                          </Button>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {t.generateSampleDesc}
+                          </p>
+                        </div>
                       </div>
                     ) : (
                       <>
