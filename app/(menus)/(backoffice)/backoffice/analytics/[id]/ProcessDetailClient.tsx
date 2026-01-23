@@ -23,6 +23,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import {
@@ -209,6 +210,10 @@ export function ProcessDetailClient({
   // サンプル生成
   const [isGeneratingSample, setIsGeneratingSample] = useState(false);
 
+  // 変更提案の承認
+  const [isApprovingChange, setIsApprovingChange] = useState(false);
+  const [approvedMessageIndex, setApprovedMessageIndex] = useState<number | null>(null);
+
   // ============================================================
   // プロセス更新関数（useEffectより先に定義が必要）
   // ============================================================
@@ -246,10 +251,32 @@ export function ProcessDetailClient({
       let content: string;
 
       if (hasSample) {
-        // サンプルがある場合：サンプルを参照しながら確認・修正する形式
+        // サンプルがある場合：自由入力→置き換え提案形式
         content = language === "ja"
-          ? `「${title}」について業務分掌のヒアリングを始めます。\n\n左側にサンプルの業務分掌が表示されています。これを参考に、実際の業務内容との違いを教えてください。\n\n**【項目1/9: 業務概要・目的】**\nサンプルの「業務概要・目的」を見て、実際の業務と異なる点や追加したい内容があれば教えてください。\n\n（サンプルと同じ場合は「OK」や「同じです」とお答えください）`
-          : `Let's start the job description hearing for "${title}".\n\nA sample job description is displayed on the left. Please tell me the differences from your actual business.\n\n**[Item 1/9: Purpose & Goals]**\nLooking at the sample "Purpose & Goals", please tell me any differences or additions for your actual business.\n\n(If it's the same as the sample, you can say "OK" or "Same")`;
+          ? `「${title}」について業務分掌の確認を始めます。
+
+左側にサンプルの業務分掌が表示されています。
+
+**サンプルを見て、実際の業務と異なる点があれば自由にお聞かせください。**
+
+例：
+- 「担当は経理部ではなく総務部です」
+- 「承認者は課長ではなく部長です」
+- 「Excelではなく専用システムを使っています」
+
+お気づきの点から順番にどうぞ。すべてOKの場合は「問題ありません」とお答えください。`
+          : `Let's review the job description for "${title}".
+
+A sample job description is displayed on the left.
+
+**Please freely tell me any differences from your actual business.**
+
+Examples:
+- "The responsible department is General Affairs, not Accounting"
+- "The approver is the Department Manager, not the Section Chief"
+- "We use a dedicated system, not Excel"
+
+Please share any points you notice. If everything is OK, please say "No issues".`;
       } else {
         // サンプルがない場合：従来の自由回答形式
         content = language === "ja"
@@ -522,9 +549,9 @@ export function ProcessDetailClient({
 
       // サンプルがある場合とない場合でプロンプトを分岐
       const systemPrompt = hasSample
-        ? `あなたは業務分掌のヒアリングを行うインタビュアーです。
+        ? `あなたは業務分掌の確認・修正を支援するアシスタントです。
 ユーザーには事前にAIが生成したサンプル業務分掌が表示されています。
-サンプルを参照しながら、実際の業務との違いを確認・修正していきます。
+ユーザーが自由に気づいた点を入力するので、それを分析して置き換え提案を行います。
 
 ## ヒアリング対象
 業務名: ${process?.title || "不明"}
@@ -533,35 +560,42 @@ ${process?.description ? `説明: ${process.description}` : ""}
 ## 現在のサンプル業務分掌
 ${process?.jobDescriptionMd || ""}
 
-## 現在の進捗
-ユーザーの回答数: ${messageCount}回
-推定進捗: 約${estimatedItem}/9項目
+## あなたの役割
+1. ユーザーの入力から、サンプルのどの部分を修正すべきか特定する
+2. 具体的な置き換え提案を提示する
+3. ユーザーの確認を得る
+4. 他に修正点がないか確認する
 
-## 業務分掌9項目（サンプルとの差分を確認）
+## 回答フォーマット（厳守）
 
-1. **業務概要・目的** - 目的、背景、価値
-2. **責任範囲** - 担当部署、責任者、権限
-3. **ステークホルダー** - 関係者（業務フロー図のアクターになる重要項目）
-4. **業務フロー** - 開始条件、主要ステップ、完了条件
-5. **インプット/アウトプット** - 入力情報と成果物
-6. **使用システム・ツール** - システムやツール
-7. **KPI/成果指標** - 評価基準、目標値
-8. **リスク・課題** - 問題点、ボトルネック
-9. **改善提案** - 改善の余地
+ユーザーが修正点を指摘した場合：
+\`\`\`
+承知しました。以下の変更を提案します：
 
-## 重要なルール（厳守）
-- サンプルの各項目について「実際と同じか、違いがあるか」を簡潔に確認
-- ユーザーが「OK」「同じ」と答えたら、その項目はサンプル通りとして次へ進む
-- 違いがある場合は、具体的な内容を聞いて次へ進む
-- **各項目は1回の回答で次の項目に進む**（深掘りしすぎない）
-- 質問の冒頭に **【項目N/9】** を付けて進捗を明示する
-- 9項目すべて確認したら「ヒアリング完了です。『業務分掌を整理』ボタンを押してください」と伝える
+📍 **[該当セクション名]**
+- 変更前：「〇〇」
+- 変更後：「△△」
 
-## 回答フォーマット例
-「ありがとうございます。責任範囲を更新しますね。
+この変更でよろしいですか？他にも修正したい点があればお聞かせください。
+\`\`\`
 
-**【項目3/9: ステークホルダー】**
-サンプルでは経理部、営業部、取引先が関係者となっています。実際の業務では違いがありますか？」`
+ユーザーが「はい」「OK」と承認した場合：
+\`\`\`
+変更を記録しました。他に気づいた点はありますか？
+（すべてOKなら「完了」とお伝えください）
+\`\`\`
+
+ユーザーが「問題ありません」「完了」と言った場合：
+\`\`\`
+ヒアリング完了です。『業務分掌を整理』ボタンを押して、最終的な業務分掌を生成してください。
+\`\`\`
+
+## 重要なルール
+- ユーザーの入力を分析し、サンプルのどの項目に該当するか特定する
+- 変更前→変更後を明確に提示する
+- 一度に複数の修正点が含まれる場合は、それぞれ提案する
+- 曖昧な場合は確認の質問をする
+- 順番通りにヒアリングする必要はない（ユーザー主導）`
         : `あなたは業務分掌のヒアリングを行うインタビュアーです。
 効率的にヒアリングを進め、**各項目は1回の回答で次に進みます**。
 
@@ -645,6 +679,80 @@ ${process?.description ? `説明: ${process.description}` : ""}
       setIsAiThinking(false);
     }
   };
+
+  // 変更提案が含まれているかチェック
+  const hasChangeProposal = useCallback((content: string): boolean => {
+    return (
+      (content.includes("変更を提案") || content.includes("以下の変更")) &&
+      content.includes("変更前") &&
+      content.includes("変更後")
+    );
+  }, []);
+
+  // 変更提案を承認して業務分掌を更新
+  const handleApproveChange = useCallback(
+    async (messageIndex: number) => {
+      if (!process?.jobDescriptionMd) return;
+
+      setIsApprovingChange(true);
+      setApprovedMessageIndex(messageIndex);
+
+      try {
+        // 会話履歴から変更内容を抽出してAIに業務分掌を更新させる
+        const relevantMessages = chatMessages.slice(0, messageIndex + 1);
+        const conversationText = relevantMessages
+          .map((m) => `${m.role === "user" ? "ユーザー" : "AI"}: ${m.content}`)
+          .join("\n");
+
+        const response = await fetch("/api/ai/services/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            input: `現在の業務分掌:\n${process.jobDescriptionMd}\n\n会話履歴:\n${conversationText}`,
+            systemPrompt: `会話で承認された変更を業務分掌に適用してください。
+
+## ルール
+- 変更が承認された部分のみを更新
+- 変更箇所は <span class="text-red-600 font-medium">新しい内容</span> で囲む
+- それ以外の部分は元のまま維持
+- 出力は更新後の業務分掌全体（マークダウン形式）
+
+## 重要
+- 「変更前」→「変更後」の形式で提案された変更のみを適用
+- 冒頭の警告メッセージ（⚠️ これはAIが生成したサンプルです）は削除してよい`,
+            temperature: 0.2,
+            maxTokens: 4000,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.output) {
+            await updateProcess({ jobDescriptionMd: data.output });
+
+            // 承認完了メッセージを追加
+            const confirmMessage: ChatMessage = {
+              role: "assistant",
+              content:
+                language === "ja"
+                  ? "✅ 変更を適用しました。他に修正したい点はありますか？\n（すべてOKなら「完了」とお伝えください）"
+                  : "✅ Change applied. Any other modifications?\n(Say 'done' if everything is OK)",
+              timestamp: new Date().toISOString(),
+            };
+            const updatedMessages = [...chatMessages, confirmMessage];
+            setChatMessages(updatedMessages);
+            await updateProcess({ interviewHistory: updatedMessages });
+          }
+        }
+      } catch (error) {
+        console.error("Failed to approve change:", error);
+      } finally {
+        setIsApprovingChange(false);
+        setApprovedMessageIndex(null);
+      }
+    },
+    [process, chatMessages, updateProcess, language],
+  );
 
   // サンプル業務分掌を生成する（ヒアリング前の叩き台）
   const handleGenerateSample = async () => {
@@ -744,12 +852,36 @@ ${process?.description ? `説明: ${process.description}` : ""}
         .map((m) => `${m.role === "user" ? "ユーザー" : "AI"}: ${m.content}`)
         .join("\n");
 
-      const response = await fetch("/api/ai/services/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          input: conversationText,
-          systemPrompt: `会話から業務分掌をマークダウン形式で整理してください。
+      const hasSample = !!process?.jobDescriptionMd;
+      const sampleContent = process?.jobDescriptionMd || "";
+
+      // サンプルがある場合は差分を赤字でマーキング
+      const systemPrompt = hasSample
+        ? `会話内容に基づいて、サンプル業務分掌を修正してください。
+
+## 重要：変更箇所の表示ルール
+- サンプルから**変更・追加された部分**は <span class="text-red-600 font-medium">変更内容</span> で囲む
+- サンプルと同じ部分はそのまま記載
+- 冒頭の「⚠️ これはAIが生成したサンプルです」の注記は削除する
+
+## 元のサンプル業務分掌
+${sampleContent}
+
+## ヒアリング会話
+${conversationText}
+
+## 出力形式
+マークダウン形式で出力。変更部分は必ず <span class="text-red-600 font-medium">...</span> で囲む。
+
+例：
+- **担当部署**: <span class="text-red-600 font-medium">総務部 経理課</span>
+- 1. <span class="text-red-600 font-medium">受注データの確認</span>
+
+ルール:
+- ユーザーが「OK」「同じ」と回答した項目はサンプルのまま（赤字なし）
+- ユーザーが具体的に変更を指示した項目は赤字でマーキング
+- 見出し構造はサンプルを維持`
+        : `会話から業務分掌をマークダウン形式で整理してください。
 
 ## 出力形式（マークダウン）
 
@@ -803,7 +935,14 @@ ${process?.description ? `説明: ${process.description}` : ""}
 - 会話から読み取れない項目は「（未定義）」と記載
 - 表形式が適切な場合は表を使用
 - 箇条書きは「-」を使用
-- 見出しは「##」を使用`,
+- 見出しは「##」を使用`;
+
+      const response = await fetch("/api/ai/services/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input: hasSample ? `サンプル業務分掌とヒアリング会話` : conversationText,
+          systemPrompt,
           temperature: 0.3,
           maxTokens: 4000,
         }),
@@ -1888,7 +2027,10 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                 ) : (
                   /* 表示モード（マークダウン） */
                   <div className="prose prose-sm dark:prose-invert max-w-none">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeRaw]}
+                    >
                       {process.jobDescriptionMd || ""}
                     </ReactMarkdown>
                   </div>
@@ -2110,7 +2252,7 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                         {chatMessages.map((message, index) => (
                           <div
                             key={`${message.timestamp}-${index}`}
-                            className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                            className={`flex flex-col ${message.role === "user" ? "items-end" : "items-start"}`}
                           >
                             <div
                               className={`max-w-[85%] rounded-lg p-2.5 ${
@@ -2123,6 +2265,31 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
                                 {message.content}
                               </p>
                             </div>
+                            {/* AIの変更提案に承認ボタンを表示 */}
+                            {message.role === "assistant" &&
+                              hasChangeProposal(message.content) &&
+                              index === chatMessages.length - 1 &&
+                              process?.jobDescriptionMd && (
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  className="mt-2 bg-green-600 hover:bg-green-700"
+                                  onClick={() => handleApproveChange(index)}
+                                  disabled={isApprovingChange}
+                                >
+                                  {isApprovingChange && approvedMessageIndex === index ? (
+                                    <>
+                                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                      {t.approvingChange}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Check className="w-4 h-4 mr-1" />
+                                      {t.approveChange}
+                                    </>
+                                  )}
+                                </Button>
+                              )}
                           </div>
                         ))}
                         {isAiThinking && (

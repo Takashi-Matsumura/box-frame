@@ -48,6 +48,9 @@ export const processDetailTranslations = {
     generateSampleDesc:
       "Generate a sample job description as a reference before starting the hearing.",
     generatingSample: "Generating sample...",
+    approveChange: "Approve Change",
+    approvingChange: "Applying...",
+    changeApproved: "Change applied",
     hearingInProgress: "Hearing in Progress",
     hearingComplete: "Hearing Complete",
     generateDiagram: "Generate Diagram",
@@ -206,6 +209,9 @@ export const processDetailTranslations = {
     generateSampleDesc:
       "ヒアリング前に、回答の参考になるサンプル業務分掌を生成します。",
     generatingSample: "サンプル生成中...",
+    approveChange: "承認する",
+    approvingChange: "適用中...",
+    changeApproved: "変更を適用しました",
     hearingInProgress: "ヒアリング進行中",
     hearingComplete: "ヒアリング完了",
     generateDiagram: "業務フロー図を生成",
