@@ -1,0 +1,132 @@
+# ========================================
+# BoX2 Production Docker Compose
+# ポート8888でBoX1と同居
+# ========================================
+
+name: box2
+
+services:
+  # ----------------------------------------
+  # Next.js Application
+  # ----------------------------------------
+  nextjs:
+    image: box2-nextjs:latest
+    container_name: box2-nextjs
+    restart: unless-stopped
+    ports:
+      - "8888:3000"
+    environment:
+      # Database
+      DATABASE_URL: postgresql://box2:box2password@postgres:5432/box2?schema=public
+
+      # Auth
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_URL: http://172.16.2.222:8888
+      AUTH_TRUST_HOST: "true"
+
+      # AI Services
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://host.docker.internal:8080}
+      AIRAG_BACKEND_URL: http://airag-backend:8000
+
+      # Module Configuration
+      NEXT_PUBLIC_ENABLE_HR_EVALUATION: ${NEXT_PUBLIC_ENABLE_HR_EVALUATION:-true}
+      NEXT_PUBLIC_ENABLE_BACKOFFICE: ${NEXT_PUBLIC_ENABLE_BACKOFFICE:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - box2-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ----------------------------------------
+  # PostgreSQL Database (BoX2専用)
+  # ----------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: box2-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: box2
+      POSTGRES_PASSWORD: box2password
+      POSTGRES_DB: box2
+    volumes:
+      - box2_postgres_data:/var/lib/postgresql/data
+    networks:
+      - box2-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U box2"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------
+  # OpenLDAP Server
+  # 既存LDAPからマイグレーション用
+  # ----------------------------------------
+  openldap:
+    image: osixia/openldap:1.5.0
+    container_name: box2-openldap
+    restart: unless-stopped
+    environment:
+      LDAP_ORGANISATION: "BoX2"
+      LDAP_DOMAIN: "box2.local"
+      LDAP_BASE_DN: "dc=box2,dc=local"
+      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD:-admin}
+      LDAP_CONFIG_PASSWORD: ${LDAP_CONFIG_PASSWORD:-config}
+      LDAP_READONLY_USER: "false"
+      LDAP_RFC2307BIS_SCHEMA: "false"
+      LDAP_BACKEND: "mdb"
+      LDAP_TLS: "false"
+      LDAP_REPLICATION: "false"
+    ports:
+      - "3890:389"
+      - "6360:636"
+    volumes:
+      - box2_openldap_data:/var/lib/ldap
+      - box2_openldap_config:/etc/ldap/slapd.d
+    networks:
+      - box2-network
+    command: --copy-service
+
+  # ----------------------------------------
+  # AI RAG Backend (ChromaDB + Embeddings)
+  # ----------------------------------------
+  airag-backend:
+    image: box2-airag:latest
+    container_name: box2-airag-backend
+    restart: unless-stopped
+    environment:
+      - CHROMA_PERSIST_DIR=/app/chroma_data
+      - EMBEDDING_MODEL=intfloat/multilingual-e5-small
+      - LLM_BASE_URL=${LLM_BASE_URL:-http://host.docker.internal:8080}
+      - CHUNK_SIZE=500
+      - CHUNK_OVERLAP=50
+      - RAG_TOP_K=5
+      - RAG_SIMILARITY_THRESHOLD=0.3
+    volumes:
+      - box2_chroma_data:/app/chroma_data
+      - box2_model_cache:/app/model_cache
+    networks:
+      - box2-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 120s
+      retries: 3
+
+networks:
+  box2-network:
+    driver: bridge
+
+volumes:
+  box2_postgres_data:
+  box2_openldap_data:
+  box2_openldap_config:
+  box2_chroma_data:
+  box2_model_cache:
