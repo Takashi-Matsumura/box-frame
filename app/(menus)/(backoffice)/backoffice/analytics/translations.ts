@@ -13,7 +13,7 @@ export const businessAnalyticsTranslations = {
       "Create your first business process to start documenting workflows.",
     // Process card
     draft: "Draft",
-    interview: "Interviewing",
+    editing: "Editing",
     diagramming: "Diagramming",
     review: "Review",
     published: "Published",
@@ -40,7 +40,7 @@ export const businessAnalyticsTranslations = {
     // Status descriptions
     statusDescriptions: {
       draft: "Initial state, not yet started",
-      interview: "AI hearing in progress",
+      editing: "Editing job description",
       diagramming: "Creating flow diagram",
       review: "Under review",
       published: "Published and finalized",
@@ -77,7 +77,7 @@ export const businessAnalyticsTranslations = {
       "最初の業務プロセスを作成して、ワークフローの文書化を始めましょう。",
     // Process card
     draft: "下書き",
-    interview: "ヒアリング中",
+    editing: "編集中",
     diagramming: "フロー作成中",
     review: "レビュー中",
     published: "公開済み",
@@ -104,7 +104,7 @@ export const businessAnalyticsTranslations = {
     // Status descriptions
     statusDescriptions: {
       draft: "初期状態、未着手",
-      interview: "AIヒアリング進行中",
+      editing: "業務分掌を編集中",
       diagramming: "フロー図作成中",
       review: "レビュー中",
       published: "公開済み・完了",

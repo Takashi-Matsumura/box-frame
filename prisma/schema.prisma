@@ -953,7 +953,7 @@ model PersonalGoal {
 // 業務プロセスステータス
 enum BusinessProcessStatus {
   DRAFT       // 下書き
-  INTERVIEW   // ヒアリング中
+  EDITING     // 編集中
   DIAGRAMMING // フロー作成中
   REVIEW      // レビュー中
   PUBLISHED   // 公開済み

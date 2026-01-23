@@ -15,7 +15,7 @@ import { useCallback, useEffect, useState } from "react";
 import { DrawIoEmbed } from "react-drawio";
 import { Button } from "@/components/ui/button";
 import { ProcedureEditModal } from "@/lib/addon-modules/backoffice/components/ProcedureEditModal";
-import { type ProcedureImage } from "@/lib/addon-modules/backoffice/components/ProcedureImageManager";
+import type { ProcedureImage } from "@/lib/addon-modules/backoffice/components/ProcedureImageManager";
 import { wrapWithMxFile } from "@/lib/addon-modules/backoffice/utils/diagram-utils";
 
 interface ExtractedTask {
@@ -102,12 +102,15 @@ export function ProceduresPageClient({
   const [isLoading, setIsLoading] = useState(true);
   const [isExtracting, setIsExtracting] = useState(false);
   const [selectedTask, setSelectedTask] = useState<ExtractedTask | null>(null);
-  const [selectedProcedure, setSelectedProcedure] = useState<WorkProcedure | null>(null);
+  const [selectedProcedure, setSelectedProcedure] =
+    useState<WorkProcedure | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchProcedures = useCallback(async () => {
     try {
-      const response = await fetch(`/api/backoffice/processes/${processId}/procedures`);
+      const response = await fetch(
+        `/api/backoffice/processes/${processId}/procedures`,
+      );
       if (response.ok) {
         const data = await response.json();
         setProcedures(data.procedures || []);
@@ -120,7 +123,9 @@ export function ProceduresPageClient({
   const extractTasks = useCallback(async () => {
     setIsExtracting(true);
     try {
-      const response = await fetch(`/api/backoffice/processes/${processId}/tasks`);
+      const response = await fetch(
+        `/api/backoffice/processes/${processId}/tasks`,
+      );
       if (response.ok) {
         const data = await response.json();
         setTasks(data.tasks || []);
@@ -142,7 +147,7 @@ export function ProceduresPageClient({
   const handleOpenModal = (task: ExtractedTask) => {
     setSelectedTask(task);
     const existingProcedure = procedures.find(
-      (p) => p.diagramCellId === task.cellId
+      (p) => p.diagramCellId === task.cellId,
     );
     setSelectedProcedure(existingProcedure || null);
     setIsModalOpen(true);
@@ -158,19 +163,22 @@ export function ProceduresPageClient({
     if (!selectedTask) return;
 
     try {
-      const response = await fetch(`/api/backoffice/processes/${processId}/procedures`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          diagramCellId: selectedTask.cellId,
-          taskName: selectedTask.name,
-          taskType: selectedTask.type,
-          actorName: selectedTask.actorName,
-          swimlaneId: selectedTask.swimlaneId,
-          procedureMd,
-          sortOrder: tasks.findIndex((t) => t.cellId === selectedTask.cellId),
-        }),
-      });
+      const response = await fetch(
+        `/api/backoffice/processes/${processId}/procedures`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            diagramCellId: selectedTask.cellId,
+            taskName: selectedTask.name,
+            taskType: selectedTask.type,
+            actorName: selectedTask.actorName,
+            swimlaneId: selectedTask.swimlaneId,
+            procedureMd,
+            sortOrder: tasks.findIndex((t) => t.cellId === selectedTask.cellId),
+          }),
+        },
+      );
 
       if (response.ok) {
         await fetchProcedures();
@@ -280,7 +288,9 @@ export function ProceduresPageClient({
                           {index + 1}.
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-sm truncate">{task.name}</p>
+                          <p className="font-medium text-sm truncate">
+                            {task.name}
+                          </p>
                           <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
                             {task.actorName && (
                               <span className="flex items-center gap-1">
@@ -308,12 +318,13 @@ export function ProceduresPageClient({
                                 {t.procedureNotCreated}
                               </span>
                             )}
-                            {procedure?.images && procedure.images.length > 0 && (
-                              <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
-                                <Camera className="w-3 h-3" />
-                                {procedure.images.length}
-                              </span>
-                            )}
+                            {procedure?.images &&
+                              procedure.images.length > 0 && (
+                                <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                                  <Camera className="w-3 h-3" />
+                                  {procedure.images.length}
+                                </span>
+                              )}
                           </div>
                         </div>
                       </div>

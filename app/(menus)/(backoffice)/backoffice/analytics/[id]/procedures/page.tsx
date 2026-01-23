@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
 import { getLanguage } from "@/lib/i18n/get-language";
+import { prisma } from "@/lib/prisma";
 import { ProceduresPageClient } from "./ProceduresPageClient";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const { id } = await params;
   const process = await prisma.businessProcess.findUnique({
     where: { id },

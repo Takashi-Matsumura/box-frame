@@ -33,7 +33,7 @@ interface BusinessAnalyticsClientProps {
 
 type ProcessStatus =
   | "DRAFT"
-  | "INTERVIEW"
+  | "EDITING"
   | "DIAGRAMMING"
   | "REVIEW"
   | "PUBLISHED"
@@ -41,7 +41,7 @@ type ProcessStatus =
 
 const statusColors: Record<ProcessStatus, string> = {
   DRAFT: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
-  INTERVIEW: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+  EDITING: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
   DIAGRAMMING:
     "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300",
   REVIEW:
@@ -87,7 +87,7 @@ export function BusinessAnalyticsClient({
   const getStatusLabel = (status: string) => {
     const statusMap: Record<string, string> = {
       DRAFT: t.draft,
-      INTERVIEW: t.interview,
+      EDITING: t.editing,
       DIAGRAMMING: t.diagramming,
       REVIEW: t.review,
       PUBLISHED: t.published,
