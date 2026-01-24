@@ -136,43 +136,52 @@ export function DataManagementClient({
           </div>
 
           {/* Tab Content */}
-          {!selectedOrgId && organizations.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <FaUsers className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>{t.noOrganization}</p>
-            </div>
-          ) : (
-            <>
-              {tab === "import" && (
-                <ImportTab
-                  organizationId={selectedOrgId}
-                  language={language}
-                  t={t}
-                />
-              )}
-              {tab === "employees" && (
-                <EmployeesTab
-                  organizationId={selectedOrgId}
-                  language={language}
-                  t={t}
-                />
-              )}
-              {tab === "organize" && (
-                <OrganizeTab
-                  organizationId={selectedOrgId}
-                  language={language}
-                  t={t}
-                />
-              )}
-              {tab === "history" && (
-                <HistoryTab
-                  organizationId={selectedOrgId}
-                  language={language}
-                  t={t}
-                />
-              )}
-            </>
+          {tab === "import" && (
+            <ImportTab
+              organizationId={selectedOrgId}
+              language={language}
+              t={t}
+            />
           )}
+          {tab === "employees" &&
+            (!selectedOrgId ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <FaUsers className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>{t.noOrganization}</p>
+              </div>
+            ) : (
+              <EmployeesTab
+                organizationId={selectedOrgId}
+                language={language}
+                t={t}
+              />
+            ))}
+          {tab === "organize" &&
+            (!selectedOrgId ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <FaUsers className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>{t.noOrganization}</p>
+              </div>
+            ) : (
+              <OrganizeTab
+                organizationId={selectedOrgId}
+                language={language}
+                t={t}
+              />
+            ))}
+          {tab === "history" &&
+            (!selectedOrgId ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <FaUsers className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>{t.noOrganization}</p>
+              </div>
+            ) : (
+              <HistoryTab
+                organizationId={selectedOrgId}
+                language={language}
+                t={t}
+              />
+            ))}
         </CardContent>
       </Card>
     </div>

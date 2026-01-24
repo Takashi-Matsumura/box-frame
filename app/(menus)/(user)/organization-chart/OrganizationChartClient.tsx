@@ -410,15 +410,15 @@ export function OrganizationChartClient({
           <div className="flex gap-6">
             {/* デスクトップ: 左パネル（ツリービュー） */}
             {!isTabletOrMobile && (
-              <div className="w-[300px] flex-shrink-0">
-                <ScrollArea className="h-[calc(100vh-280px)]">
+              <div className="w-[300px] flex-shrink-0 border rounded-lg p-4">
+                <ScrollArea className="h-[calc(100vh-300px)]">
                   {treeView}
                 </ScrollArea>
               </div>
             )}
 
             {/* 右パネル（メンバーグリッド） */}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 border rounded-lg p-4">
               {/* パンくずリスト & 表示モード切替 */}
               <div className="flex items-center justify-between mb-2">
                 <OrgBreadcrumb

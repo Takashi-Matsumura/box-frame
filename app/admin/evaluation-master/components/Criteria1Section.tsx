@@ -88,7 +88,7 @@ export default function Criteria1Section({
   // 予実表示モード（ON: 予算・実績・達成率を表示、OFF: 部門タイプ・社員数・紐付け先を表示）
   const [showBudgetColumns, setShowBudgetColumns] = useState(false);
 
-  // Fetch periods
+  // Fetch periods (only once on mount)
   useEffect(() => {
     const fetchPeriods = async () => {
       try {
@@ -96,7 +96,7 @@ export default function Criteria1Section({
         if (res.ok) {
           const data = await res.json();
           setPeriods(data);
-          if (data.length > 0 && !periodId) {
+          if (data.length > 0 && !selectedPeriodId) {
             setPeriodId(data[0].id);
           }
         }
@@ -105,7 +105,7 @@ export default function Criteria1Section({
       }
     };
     fetchPeriods();
-  }, [periodId]);
+  }, [selectedPeriodId]);
 
   const fetchResults = useCallback(async () => {
     if (!periodId) {
@@ -132,6 +132,8 @@ export default function Criteria1Section({
   useEffect(() => {
     if (periodId) {
       fetchResults();
+    } else {
+      setLoading(false);
     }
   }, [periodId, fetchResults]);
 
