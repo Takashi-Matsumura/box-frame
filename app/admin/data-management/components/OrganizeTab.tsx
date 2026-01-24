@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Collapsible,
   CollapsibleContent,
@@ -17,10 +16,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { EXECUTIVES_DEPARTMENT_NAME } from "@/lib/importers/organization/parser";
 import { cn } from "@/lib/utils";
 import type { DataManagementTranslation } from "../translations";
+import { MergeDialog } from "./MergeDialog";
 
 // 型定義
 interface Manager {
@@ -112,6 +111,7 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
   const [employeeSearch, setEmployeeSearch] = useState("");
   const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [showAllPositions, setShowAllPositions] = useState(false);
 
   // Publish settings
   const [publishSettings, setPublishSettings] =
@@ -132,6 +132,29 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
   } | null>(null);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancellingImport, setCancellingImport] = useState(false);
+
+  // Merge dialog
+  const [showMergeDialog, setShowMergeDialog] = useState(false);
+
+  // Auto-assign dialog
+  const [showAutoAssignDialog, setShowAutoAssignDialog] = useState(false);
+  const [autoAssignPreview, setAutoAssignPreview] = useState<{
+    statistics: {
+      departments: { total: number; withManager: number; canAssign: number };
+      sections: { total: number; withManager: number; canAssign: number };
+      courses: { total: number; withManager: number; canAssign: number };
+    };
+    preview: {
+      type: string;
+      name: string;
+      currentManager: string | null;
+      suggestedManager: { name: string; position: string } | null;
+    }[];
+    totalPreview: number;
+  } | null>(null);
+  const [loadingAutoAssign, setLoadingAutoAssign] = useState(false);
+  const [overwriteExisting, setOverwriteExisting] = useState(false);
+  const [executingAutoAssign, setExecutingAutoAssign] = useState(false);
 
   // Fetch organization data
   const fetchOrgData = useCallback(async () => {
@@ -178,6 +201,58 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
       console.error("Error fetching cancel status:", err);
     }
   }, []);
+
+  // Fetch auto-assign preview
+  const fetchAutoAssignPreview = useCallback(async () => {
+    if (!organizationId) return;
+    try {
+      setLoadingAutoAssign(true);
+      const response = await fetch(
+        `/api/admin/organization/auto-assign-managers?organizationId=${organizationId}`,
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setAutoAssignPreview(data);
+      }
+    } catch (err) {
+      console.error("Error fetching auto-assign preview:", err);
+    } finally {
+      setLoadingAutoAssign(false);
+    }
+  }, [organizationId]);
+
+  // Execute auto-assign
+  const handleAutoAssign = async () => {
+    if (!organizationId) return;
+
+    try {
+      setExecutingAutoAssign(true);
+      const response = await fetch(
+        "/api/admin/organization/auto-assign-managers",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            organizationId,
+            overwriteExisting,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to auto-assign managers");
+      }
+
+      // Refresh data
+      await fetchOrgData();
+      setShowAutoAssignDialog(false);
+      setAutoAssignPreview(null);
+    } catch (err) {
+      console.error("Error auto-assigning managers:", err);
+    } finally {
+      setExecutingAutoAssign(false);
+    }
+  };
 
   useEffect(() => {
     fetchOrgData();
@@ -324,12 +399,15 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
 
   // Fetch manager candidates for manager selection
   const fetchEmployees = useCallback(
-    async (unitType: UnitType, unitId: string) => {
+    async (unitType: UnitType, unitId: string, showAll = false) => {
       try {
         setLoadingEmployees(true);
         const params = new URLSearchParams();
         params.set("type", unitType);
         params.set("id", unitId);
+        if (showAll) {
+          params.set("showAll", "true");
+        }
 
         const response = await fetch(
           `/api/admin/organization/manager-candidates?${params}`,
@@ -356,7 +434,16 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
   ) => {
     setSelectedUnit({ type, id, name, currentManager });
     setEmployeeSearch("");
-    fetchEmployees(type, id);
+    setShowAllPositions(false);
+    fetchEmployees(type, id, false);
+  };
+
+  // Handle showAllPositions toggle
+  const handleShowAllPositionsToggle = (checked: boolean) => {
+    setShowAllPositions(checked);
+    if (selectedUnit) {
+      fetchEmployees(selectedUnit.type, selectedUnit.id, checked);
+    }
   };
 
   // Handle manager assignment
@@ -523,6 +610,23 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
                     {t.cancelImport}
                   </Button>
                 )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowAutoAssignDialog(true);
+                    fetchAutoAssignPreview();
+                  }}
+                >
+                  {t.autoAssign}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowMergeDialog(true)}
+                >
+                  {t.merge}
+                </Button>
                 <Button size="sm" onClick={() => setShowPublishDialog(true)}>
                   {t.setPublishDate}
                 </Button>
@@ -849,12 +953,40 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
               )}
             </div>
 
-            {/* Search */}
-            <Input
-              placeholder={t.searchPlaceholder}
-              value={employeeSearch}
-              onChange={(e) => setEmployeeSearch(e.target.value)}
-            />
+            {/* Search and Toggle */}
+            <div className="space-y-2">
+              <Input
+                placeholder={t.searchPlaceholder}
+                value={employeeSearch}
+                onChange={(e) => setEmployeeSearch(e.target.value)}
+              />
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={showAllPositions}
+                  onClick={() =>
+                    handleShowAllPositionsToggle(!showAllPositions)
+                  }
+                  className={cn(
+                    "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors",
+                    showAllPositions
+                      ? "bg-primary"
+                      : "bg-gray-200 dark:bg-gray-700",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform",
+                      showAllPositions ? "translate-x-4" : "translate-x-0",
+                    )}
+                  />
+                </button>
+                <span className="text-muted-foreground">
+                  {t.showAllPositions}
+                </span>
+              </label>
+            </div>
 
             {/* Employee List */}
             <ScrollArea className="h-[300px] border rounded-md">
@@ -1054,6 +1186,201 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Auto-assign Dialog */}
+      <Dialog
+        open={showAutoAssignDialog}
+        onOpenChange={setShowAutoAssignDialog}
+      >
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>{t.autoAssignTitle}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Description */}
+            <p className="text-sm text-muted-foreground">
+              {t.autoAssignDescription}
+            </p>
+
+            {/* Statistics */}
+            {loadingAutoAssign ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+              </div>
+            ) : autoAssignPreview ? (
+              <>
+                <div className="grid grid-cols-3 gap-3">
+                  {/* Departments */}
+                  <div className="p-3 border rounded-md">
+                    <p className="text-xs text-muted-foreground mb-1">
+                      {t.department}
+                    </p>
+                    <p className="text-lg font-semibold">
+                      {autoAssignPreview.statistics.departments.canAssign}
+                      <span className="text-sm font-normal text-muted-foreground">
+                        {" "}
+                        / {autoAssignPreview.statistics.departments.total}
+                      </span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {t.currentlyAssigned}:{" "}
+                      {autoAssignPreview.statistics.departments.withManager}
+                    </p>
+                  </div>
+
+                  {/* Sections */}
+                  <div className="p-3 border rounded-md">
+                    <p className="text-xs text-muted-foreground mb-1">
+                      {t.section}
+                    </p>
+                    <p className="text-lg font-semibold">
+                      {autoAssignPreview.statistics.sections.canAssign}
+                      <span className="text-sm font-normal text-muted-foreground">
+                        {" "}
+                        / {autoAssignPreview.statistics.sections.total}
+                      </span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {t.currentlyAssigned}:{" "}
+                      {autoAssignPreview.statistics.sections.withManager}
+                    </p>
+                  </div>
+
+                  {/* Courses */}
+                  <div className="p-3 border rounded-md">
+                    <p className="text-xs text-muted-foreground mb-1">
+                      {t.course}
+                    </p>
+                    <p className="text-lg font-semibold">
+                      {autoAssignPreview.statistics.courses.canAssign}
+                      <span className="text-sm font-normal text-muted-foreground">
+                        {" "}
+                        / {autoAssignPreview.statistics.courses.total}
+                      </span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {t.currentlyAssigned}:{" "}
+                      {autoAssignPreview.statistics.courses.withManager}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Preview list */}
+                {autoAssignPreview.preview.length > 0 && (
+                  <div className="border rounded-md">
+                    <div className="p-2 bg-muted text-sm font-medium">
+                      {t.autoAssignPreview} ({autoAssignPreview.totalPreview})
+                    </div>
+                    <ScrollArea className="h-[200px]">
+                      <div className="p-2 space-y-2">
+                        {autoAssignPreview.preview.map((item, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between text-sm p-2 bg-muted/30 rounded"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="truncate font-medium">
+                                {item.name}
+                              </p>
+                              <Badge variant="outline" className="text-xs mt-1">
+                                {item.type === "department"
+                                  ? t.department
+                                  : item.type === "section"
+                                    ? t.section
+                                    : t.course}
+                              </Badge>
+                            </div>
+                            <div className="text-right ml-2">
+                              {item.suggestedManager && (
+                                <>
+                                  <p className="font-medium text-green-600 dark:text-green-400">
+                                    {item.suggestedManager.name}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {item.suggestedManager.position}
+                                  </p>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                )}
+
+                {/* No candidates message */}
+                {autoAssignPreview.statistics.departments.canAssign === 0 &&
+                  autoAssignPreview.statistics.sections.canAssign === 0 &&
+                  autoAssignPreview.statistics.courses.canAssign === 0 && (
+                    <div className="p-4 bg-muted rounded-md text-center text-sm text-muted-foreground">
+                      {language === "ja"
+                        ? "自動割当できる部署がありません。すでに全ての責任者が設定されているか、役職から責任者を特定できません。"
+                        : "No departments can be auto-assigned. Either all managers are already set, or no suitable candidates were found."}
+                    </div>
+                  )}
+
+                {/* Overwrite option */}
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={overwriteExisting}
+                    onChange={(e) => setOverwriteExisting(e.target.checked)}
+                    className="w-4 h-4 rounded border-input"
+                  />
+                  <span>{t.overwriteExisting}</span>
+                </label>
+              </>
+            ) : null}
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowAutoAssignDialog(false);
+                  setAutoAssignPreview(null);
+                  setOverwriteExisting(false);
+                }}
+                disabled={executingAutoAssign}
+              >
+                {t.cancel}
+              </Button>
+              <Button
+                onClick={handleAutoAssign}
+                disabled={
+                  executingAutoAssign ||
+                  loadingAutoAssign ||
+                  !autoAssignPreview ||
+                  (autoAssignPreview.statistics.departments.canAssign === 0 &&
+                    autoAssignPreview.statistics.sections.canAssign === 0 &&
+                    autoAssignPreview.statistics.courses.canAssign === 0 &&
+                    !overwriteExisting)
+                }
+              >
+                {executingAutoAssign ? t.autoAssigning : t.autoAssignExecute}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Merge Dialog */}
+      {orgData?.organization && (
+        <MergeDialog
+          open={showMergeDialog}
+          onOpenChange={setShowMergeDialog}
+          targetOrgId={organizationId}
+          targetOrgName={orgData.organization.name}
+          language={language}
+          t={t}
+          onMergeComplete={() => {
+            fetchOrgData();
+            fetchPublishSettings();
+          }}
+        />
+      )}
     </div>
   );
 }

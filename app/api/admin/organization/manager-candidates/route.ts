@@ -27,6 +27,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type"); // department, section, course
     const id = searchParams.get("id");
+    const showAll = searchParams.get("showAll") === "true"; // 全役職者を表示するかどうか
 
     if (!type || !id) {
       return NextResponse.json(
@@ -55,6 +56,16 @@ export async function GET(request: Request) {
       if (positionCode >= "900") return false;
       // エキスパート以上の役職のみ（役職コードが小さい＝役職が高い）
       return positionCode < EXPERT_POSITION_CODE;
+    };
+
+    // 役職者かどうかをチェック（showAll=trueの場合に使用）
+    const hasPosition = (positionCode: string | null): boolean => {
+      if (!positionCode) return false;
+      // 一般社員（000）は除外
+      if (positionCode === "000") return false;
+      // 特殊コード（名誉会長900、監査役903など）は除外
+      if (positionCode >= "900") return false;
+      return true;
     };
 
     // 役職コード順（昇順）、同じ役職コードは氏名順でソート
@@ -96,25 +107,11 @@ export async function GET(request: Request) {
         );
       }
 
-      // 1. 役員・顧問本部から役員を取得
-      const executivesDepartment = await prisma.department.findFirst({
-        where: {
-          organizationId: department.organizationId,
-          name: EXECUTIVES_DEPARTMENT_NAME,
-        },
-      });
-
-      let executives: {
-        id: string;
-        employeeId: string;
-        name: string;
-        position: string | null;
-        positionCode: string | null;
-      }[] = [];
-      if (executivesDepartment) {
-        executives = await prisma.employee.findMany({
+      if (showAll) {
+        // 全役職者モード: その本部に所属するすべての役職者を取得
+        const allEmployees = await prisma.employee.findMany({
           where: {
-            departmentId: executivesDepartment.id,
+            departmentId: id,
             isActive: true,
           },
           select: {
@@ -125,39 +122,75 @@ export async function GET(request: Request) {
             positionCode: true,
           },
         });
-      }
+        candidates = allEmployees
+          .filter((emp) => hasPosition(emp.positionCode))
+          .sort(sortByPositionCode);
+      } else {
+        // 通常モード: 役員 + その本部の本部長/事業部長
 
-      // 2. その本部の本部長/事業部長を取得
-      const departmentHeads = await prisma.employee.findMany({
-        where: {
-          departmentId: id,
-          isActive: true,
-          OR: departmentHeadPositions.map((pos) => ({
-            position: { contains: pos },
-          })),
-        },
-        select: {
-          id: true,
-          employeeId: true,
-          name: true,
-          position: true,
-          positionCode: true,
-        },
-      });
+        // 1. 役員・顧問本部から役員を取得
+        const executivesDepartment = await prisma.department.findFirst({
+          where: {
+            organizationId: department.organizationId,
+            name: EXECUTIVES_DEPARTMENT_NAME,
+          },
+        });
 
-      // 重複を除去してマージ
-      const candidateMap = new Map();
-      for (const emp of executives) {
-        if (isEligibleForManager(emp.positionCode)) {
-          candidateMap.set(emp.id, emp);
+        let executives: {
+          id: string;
+          employeeId: string;
+          name: string;
+          position: string | null;
+          positionCode: string | null;
+        }[] = [];
+        if (executivesDepartment) {
+          executives = await prisma.employee.findMany({
+            where: {
+              departmentId: executivesDepartment.id,
+              isActive: true,
+            },
+            select: {
+              id: true,
+              employeeId: true,
+              name: true,
+              position: true,
+              positionCode: true,
+            },
+          });
         }
-      }
-      for (const emp of departmentHeads) {
-        if (isEligibleForManager(emp.positionCode)) {
-          candidateMap.set(emp.id, emp);
+
+        // 2. その本部の本部長/事業部長を取得
+        const departmentHeads = await prisma.employee.findMany({
+          where: {
+            departmentId: id,
+            isActive: true,
+            OR: departmentHeadPositions.map((pos) => ({
+              position: { contains: pos },
+            })),
+          },
+          select: {
+            id: true,
+            employeeId: true,
+            name: true,
+            position: true,
+            positionCode: true,
+          },
+        });
+
+        // 重複を除去してマージ
+        const candidateMap = new Map();
+        for (const emp of executives) {
+          if (isEligibleForManager(emp.positionCode)) {
+            candidateMap.set(emp.id, emp);
+          }
         }
+        for (const emp of departmentHeads) {
+          if (isEligibleForManager(emp.positionCode)) {
+            candidateMap.set(emp.id, emp);
+          }
+        }
+        candidates = Array.from(candidateMap.values()).sort(sortByPositionCode);
       }
-      candidates = Array.from(candidateMap.values()).sort(sortByPositionCode);
     } else if (type === "section") {
       // 部の責任者候補: その本部に所属する役職持ち（一般ではない）社員
 
@@ -186,10 +219,18 @@ export async function GET(request: Request) {
           positionCode: true,
         },
       });
-      // 役職コードでフィルター（エキスパート未満のみ）してソート
-      candidates = sectionCandidates
-        .filter((emp) => isEligibleForManager(emp.positionCode))
-        .sort(sortByPositionCode);
+
+      if (showAll) {
+        // 全役職者モード: 役職を持つ全社員
+        candidates = sectionCandidates
+          .filter((emp) => hasPosition(emp.positionCode))
+          .sort(sortByPositionCode);
+      } else {
+        // 通常モード: 役職コードでフィルター（エキスパート未満のみ）してソート
+        candidates = sectionCandidates
+          .filter((emp) => isEligibleForManager(emp.positionCode))
+          .sort(sortByPositionCode);
+      }
     } else if (type === "course") {
       // 課の責任者候補: その本部に所属する役職持ち（一般ではない）社員
 
@@ -222,10 +263,18 @@ export async function GET(request: Request) {
           positionCode: true,
         },
       });
-      // 役職コードでフィルター（エキスパート未満のみ）してソート
-      candidates = courseCandidates
-        .filter((emp) => isEligibleForManager(emp.positionCode))
-        .sort(sortByPositionCode);
+
+      if (showAll) {
+        // 全役職者モード: 役職を持つ全社員
+        candidates = courseCandidates
+          .filter((emp) => hasPosition(emp.positionCode))
+          .sort(sortByPositionCode);
+      } else {
+        // 通常モード: 役職コードでフィルター（エキスパート未満のみ）してソート
+        candidates = courseCandidates
+          .filter((emp) => isEligibleForManager(emp.positionCode))
+          .sort(sortByPositionCode);
+      }
     }
 
     return NextResponse.json({ candidates });
