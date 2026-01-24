@@ -24,7 +24,7 @@ import { Switch } from "@/components/ui/switch";
 import { useIsTabletOrMobile } from "@/hooks/use-mobile";
 import { EXECUTIVES_DEPARTMENT_NAME } from "@/lib/importers/organization/parser";
 import { EmployeeDetailDialog } from "./components/EmployeeDetailDialog";
-import { MemberGrid } from "./components/MemberGrid";
+import { MemberGrid, type ViewMode } from "./components/MemberGrid";
 import { OrgBreadcrumb } from "./components/OrgBreadcrumb";
 import { OrgTreeView } from "./components/OrgTreeView";
 import { type Language, type Translations, translations } from "./translations";
@@ -153,6 +153,12 @@ export function OrganizationChartClient({
 
   // モバイルメニュー
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // サイドバー折りたたみ
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // 表示モード
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
   // 検索のデバウンス
   useEffect(() => {
@@ -410,10 +416,65 @@ export function OrganizationChartClient({
           <div className="flex gap-6">
             {/* デスクトップ: 左パネル（ツリービュー） */}
             {!isTabletOrMobile && (
-              <div className="w-[300px] flex-shrink-0 border rounded-lg p-4">
-                <ScrollArea className="h-[calc(100vh-300px)]">
-                  {treeView}
-                </ScrollArea>
+              <div
+                className={`flex-shrink-0 border rounded-lg transition-all duration-300 ${
+                  sidebarCollapsed ? "w-10" : "w-[300px]"
+                }`}
+              >
+                {sidebarCollapsed ? (
+                  // 折りたたみ時: 展開ボタンを表示
+                  <button
+                    type="button"
+                    onClick={() => setSidebarCollapsed(false)}
+                    className="w-full h-full min-h-[300px] flex flex-col items-center justify-start pt-4 hover:bg-muted/50 transition-colors rounded-lg bg-muted/30"
+                    title={t.expandSidebar}
+                  >
+                    <div className="p-1.5 rounded-md hover:bg-muted">
+                      <svg
+                        className="w-5 h-5 text-muted-foreground"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </div>
+                  </button>
+                ) : (
+                  // 展開時: ツリービューを表示
+                  <div className="p-4 h-full">
+                    <div className="flex items-center justify-end mb-2">
+                      <button
+                        type="button"
+                        onClick={() => setSidebarCollapsed(true)}
+                        className="p-1 hover:bg-muted rounded transition-colors"
+                        title={t.collapseSidebar}
+                      >
+                        <svg
+                          className="w-4 h-4 text-muted-foreground"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 19l-7-7 7-7"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                    <ScrollArea className="h-[calc(100vh-340px)]">
+                      {treeView}
+                    </ScrollArea>
+                  </div>
+                )}
               </div>
             )}
 
@@ -427,22 +488,79 @@ export function OrganizationChartClient({
                   onSelectNode={handleSelectNode}
                   t={t}
                 />
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Label
-                    htmlFor="exclusive-mode"
-                    className="text-sm text-muted-foreground cursor-pointer"
-                    title={t.exclusiveModeTooltip}
-                  >
-                    {t.exclusiveMode}
-                  </Label>
-                  <Switch
-                    id="exclusive-mode"
-                    checked={exclusiveMode}
-                    onCheckedChange={(checked) => {
-                      setExclusiveMode(checked);
-                      setPage(1);
-                    }}
-                  />
+                <div className="flex items-center gap-4 flex-shrink-0">
+                  {/* 表示モード切替 */}
+                  <div className="flex items-center border rounded-lg overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("grid")}
+                      className={`px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors ${
+                        viewMode === "grid"
+                          ? "bg-primary text-primary-foreground"
+                          : "hover:bg-muted"
+                      }`}
+                      title={t.viewModeGrid}
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                        />
+                      </svg>
+                      <span className="hidden sm:inline">{t.viewModeGrid}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("list")}
+                      className={`px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors ${
+                        viewMode === "list"
+                          ? "bg-primary text-primary-foreground"
+                          : "hover:bg-muted"
+                      }`}
+                      title={t.viewModeList}
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                        />
+                      </svg>
+                      <span className="hidden sm:inline">{t.viewModeList}</span>
+                    </button>
+                  </div>
+
+                  {/* 重複しないモード */}
+                  <div className="flex items-center gap-2">
+                    <Label
+                      htmlFor="exclusive-mode"
+                      className="text-sm text-muted-foreground cursor-pointer"
+                      title={t.exclusiveModeTooltip}
+                    >
+                      {t.exclusiveMode}
+                    </Label>
+                    <Switch
+                      id="exclusive-mode"
+                      checked={exclusiveMode}
+                      onCheckedChange={(checked) => {
+                        setExclusiveMode(checked);
+                        setPage(1);
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -510,6 +628,7 @@ export function OrganizationChartClient({
                 onSelectEmployee={setSelectedEmployeeId}
                 t={t}
                 language={language}
+                viewMode={viewMode}
               />
             </div>
           </div>

@@ -58,6 +58,12 @@ export const translations = {
     exclusiveMode: "Exclusive",
     exclusiveModeTooltip:
       "Show employees only at their direct level (no duplicates)",
+    // View mode
+    viewModeGrid: "Grid",
+    viewModeList: "List",
+    // Sidebar
+    collapseSidebar: "Collapse",
+    expandSidebar: "Expand",
   },
   ja: {
     title: "組織図",
@@ -113,6 +119,12 @@ export const translations = {
     // Display mode
     exclusiveMode: "重複しない",
     exclusiveModeTooltip: "各社員を所属階層のみに表示（評価関係表示）",
+    // View mode
+    viewModeGrid: "タイル",
+    viewModeList: "リスト",
+    // Sidebar
+    collapseSidebar: "閉じる",
+    expandSidebar: "開く",
   },
 } as const;
 
