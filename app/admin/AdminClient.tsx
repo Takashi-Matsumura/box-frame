@@ -365,6 +365,7 @@ export function AdminClient({
     bindDN: string;
     bindPassword: string;
     searchFilter: string;
+    emailDomain: string;
     timeout: number;
   }
 
@@ -442,6 +443,7 @@ export function AdminClient({
             bindDN: "",
             bindPassword: "",
             searchFilter: "(uid={username})",
+            emailDomain: "",
             timeout: 10000,
           });
         }
@@ -454,6 +456,7 @@ export function AdminClient({
           bindDN: "",
           bindPassword: "",
           searchFilter: "(uid={username})",
+          emailDomain: "",
           timeout: 10000,
         });
       }
@@ -2931,6 +2934,35 @@ export function AdminClient({
                                   {t(
                                     "{username} will be replaced with the login username",
                                     "{username} はログイン時のユーザ名に置換されます",
+                                  )}
+                                </p>
+                              </div>
+
+                              {/* Email Domain */}
+                              <div className="p-3 bg-card rounded-lg border border-border">
+                                <Label className="text-sm font-medium mb-2 block">
+                                  {t("Email Domain", "メールドメイン")}
+                                </Label>
+                                <Input
+                                  type="text"
+                                  value={legacyLdapConfig.emailDomain || ""}
+                                  onChange={(e) =>
+                                    setLegacyLdapConfig((prev) =>
+                                      prev
+                                        ? {
+                                            ...prev,
+                                            emailDomain: e.target.value,
+                                          }
+                                        : prev,
+                                    )
+                                  }
+                                  placeholder="occ.co.jp"
+                                  className="text-sm"
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {t(
+                                    "Used to generate email when LDAP has no mail attribute",
+                                    "mail属性がない場合にメールを生成",
                                   )}
                                 </p>
                               </div>
