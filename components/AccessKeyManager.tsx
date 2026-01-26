@@ -1,8 +1,8 @@
 "use client";
 
 import type { AccessKey } from "@prisma/client";
-import { Copy, Plus, Power, PowerOff, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { Check, Copy, Plus, Power, PowerOff, Search, Trash2, X } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import {
   PermissionTreeSelector,
   type SelectedPermission,
@@ -20,13 +20,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -93,8 +86,28 @@ export function AccessKeyManager({
     menuPaths: [] as string[],
     permissions: [] as SelectedPermission[],
   });
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const userSearchRef = useRef<HTMLDivElement>(null);
 
   const t = (en: string, ja: string) => (language === "ja" ? ja : en);
+
+  // フィルタリングされたユーザーリスト
+  const filteredUsers = useMemo(() => {
+    if (!userSearchQuery.trim()) return users;
+    const query = userSearchQuery.toLowerCase();
+    return users.filter(
+      (user) =>
+        user.name?.toLowerCase().includes(query) ||
+        user.email?.toLowerCase().includes(query)
+    );
+  }, [users, userSearchQuery]);
+
+  // 選択されたユーザーの情報を取得
+  const selectedUser = useMemo(
+    () => users.find((u) => u.id === formData.targetUserId),
+    [users, formData.targetUserId]
+  );
 
   const handleCreate = async () => {
     // 新しいpermissions形式または従来のmenuPaths形式をチェック
@@ -257,6 +270,8 @@ export function AccessKeyManager({
       menuPaths: [],
       permissions: [],
     });
+    setUserSearchQuery("");
+    setIsUserDropdownOpen(false);
   };
 
   return (
@@ -491,25 +506,80 @@ export function AccessKeyManager({
 
             <div className="space-y-2">
               <Label>{t("Target User", "対象ユーザ")}</Label>
-              <Select
-                value={formData.targetUserId}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, targetUserId: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={t("-- Select a user --", "-- ユーザを選択 --")}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name} ({user.email}) - {user.role}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="relative" ref={userSearchRef}>
+                {/* 選択済みユーザーの表示 or 検索入力 */}
+                {selectedUser && !isUserDropdownOpen ? (
+                  <div className="flex items-center justify-between border rounded-md px-3 py-2 bg-background">
+                    <span className="text-sm">
+                      {selectedUser.name} ({selectedUser.email}) - {selectedUser.role}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => {
+                        setFormData({ ...formData, targetUserId: "" });
+                        setUserSearchQuery("");
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      value={userSearchQuery}
+                      onChange={(e) => {
+                        setUserSearchQuery(e.target.value);
+                        setIsUserDropdownOpen(true);
+                      }}
+                      onFocus={() => setIsUserDropdownOpen(true)}
+                      placeholder={t("Search by name or email...", "名前またはメールで検索...")}
+                      className="pl-9"
+                    />
+                  </div>
+                )}
+
+                {/* ユーザードロップダウンリスト */}
+                {isUserDropdownOpen && (
+                  <>
+                    {/* クリック外でドロップダウンを閉じるオーバーレイ */}
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setIsUserDropdownOpen(false)}
+                    />
+                    <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-md max-h-60 overflow-y-auto">
+                      {filteredUsers.length === 0 ? (
+                        <div className="px-3 py-2 text-sm text-muted-foreground">
+                          {t("No users found", "ユーザーが見つかりません")}
+                        </div>
+                      ) : (
+                        filteredUsers.map((user) => (
+                          <button
+                            key={user.id}
+                            type="button"
+                            className="w-full px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground flex items-center justify-between"
+                            onClick={() => {
+                              setFormData({ ...formData, targetUserId: user.id });
+                              setUserSearchQuery("");
+                              setIsUserDropdownOpen(false);
+                            }}
+                          >
+                            <span>
+                              {user.name} ({user.email}) - {user.role}
+                            </span>
+                            {formData.targetUserId === user.id && (
+                              <Check className="h-4 w-4 text-primary" />
+                            )}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
