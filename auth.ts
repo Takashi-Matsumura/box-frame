@@ -98,10 +98,11 @@ async function tryLegacyLdapMigration(
     }
 
     // 5. OpenLDAPに新規ユーザーを作成
+    // メールアドレスはレガシーLDAPの値を優先（後で手動で正しい値に変更可能）
     const displayName =
       employeeData?.name || legacyAuthResult.displayName || username;
     const email =
-      employeeData?.email || ldapEmail || `${username}@openldap.local`;
+      ldapEmail || employeeData?.email || `${username}@openldap.local`;
 
     const createResult = await openLdapService.createUser(username, password, {
       displayName,

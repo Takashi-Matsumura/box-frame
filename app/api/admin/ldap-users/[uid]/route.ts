@@ -98,7 +98,11 @@ export async function PATCH(
     if (displayName !== undefined) attributes.displayName = displayName;
     if (mail !== undefined) attributes.mail = mail;
 
+    let employeeLinked = false;
+    let employeeInfo: { name: string; employeeId: string | null } | null = null;
+
     if (Object.keys(attributes).length > 0) {
+      // 1. OpenLDAPの属性を更新
       const updateResult = await ldapService.updateUser(uid, attributes);
       if (!updateResult.success) {
         return NextResponse.json(
@@ -109,12 +113,79 @@ export async function PATCH(
           { status: 500 },
         );
       }
+
+      // 2. メールアドレスが変更された場合、Userテーブルも更新
+      if (mail !== undefined) {
+        // LdapUserMappingからUserを特定
+        const mapping = await prisma.ldapUserMapping.findUnique({
+          where: { ldapUsername: uid },
+          include: { user: true },
+        });
+
+        if (mapping?.user) {
+          // 新しいメールアドレスが既に他のユーザーに使用されていないか確認
+          const existingUser = await prisma.user.findUnique({
+            where: { email: mail },
+          });
+
+          if (existingUser && existingUser.id !== mapping.user.id) {
+            return NextResponse.json(
+              {
+                error: "Email already in use",
+                errorJa: "このメールアドレスは既に使用されています",
+              },
+              { status: 400 },
+            );
+          }
+
+          // Userテーブルのメールアドレスを更新
+          await prisma.user.update({
+            where: { id: mapping.user.id },
+            data: { email: mail },
+          });
+
+          // 3. 新しいメールでEmployeeテーブルを検索し、社員情報を取得
+          const employee = await prisma.employee.findUnique({
+            where: { email: mail },
+            select: {
+              id: true,
+              name: true,
+              employeeId: true,
+            },
+          });
+
+          if (employee) {
+            employeeLinked = true;
+            employeeInfo = {
+              name: employee.name,
+              employeeId: employee.employeeId,
+            };
+
+            // Userテーブルの名前も更新
+            await prisma.user.update({
+              where: { id: mapping.user.id },
+              data: { name: employee.name },
+            });
+
+            // OpenLDAPのdisplayNameも更新（displayNameが明示的に指定されていない場合）
+            if (displayName === undefined) {
+              await ldapService.updateUser(uid, { displayName: employee.name });
+            }
+
+            console.log(
+              `[LDAP User Update] Linked to employee: ${employee.name} (${employee.employeeId})`,
+            );
+          }
+        }
+      }
     }
 
     return NextResponse.json({
       success: true,
       message: "User updated successfully",
       messageJa: "ユーザを更新しました",
+      employeeLinked,
+      employeeInfo,
     });
   } catch (error) {
     console.error("Error updating LDAP user:", error);
