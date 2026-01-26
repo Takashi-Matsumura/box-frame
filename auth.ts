@@ -8,6 +8,55 @@ import { AuditService } from "@/lib/services/audit-service";
 import { NotificationService } from "@/lib/services/notification-service";
 
 /**
+ * 初期ロールを決定する
+ *
+ * Employeeテーブルからメールアドレスで検索し、
+ * 部署責任者（本部長・部長・課長）の場合はMANAGERロールを返す
+ */
+async function determineInitialRole(email: string): Promise<Role> {
+  try {
+    // Employeeをメールで検索
+    const employee = await prisma.employee.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    if (!employee) {
+      return "USER";
+    }
+
+    // このEmployeeが部署責任者かどうかを確認
+    // Department, Section, Courseのいずれかでmanagerとして設定されているか
+    const [managedDepartment, managedSection, managedCourse] = await Promise.all([
+      prisma.department.findFirst({
+        where: { managerId: employee.id },
+        select: { id: true },
+      }),
+      prisma.section.findFirst({
+        where: { managerId: employee.id },
+        select: { id: true },
+      }),
+      prisma.course.findFirst({
+        where: { managerId: employee.id },
+        select: { id: true },
+      }),
+    ]);
+
+    const isManager = !!(managedDepartment || managedSection || managedCourse);
+
+    if (isManager) {
+      console.log(`[Auth] Employee ${email} is a manager, assigning MANAGER role`);
+      return "MANAGER";
+    }
+
+    return "USER";
+  } catch (error) {
+    console.error("[Auth] Error determining initial role:", error);
+    return "USER";
+  }
+}
+
+/**
  * Lazy Migration: レガシーLDAPからOpenLDAPへの移行を試行
  *
  * OpenLDAP認証に失敗した場合に呼び出され、以下のフローを実行:
@@ -147,12 +196,13 @@ async function tryLegacyLdapMigration(
     });
 
     if (!user) {
-      // 新規ユーザー作成
+      // 新規ユーザー作成（部署責任者の場合はMANAGERロール）
+      const initialRole = await determineInitialRole(email);
       user = await prisma.user.create({
         data: {
           email,
           name: displayName,
-          role: "USER",
+          role: initialRole,
           emailVerified: new Date(),
           lastSignInAt: new Date(),
         },
@@ -331,12 +381,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               });
             } else {
               // ユーザが存在しない場合、新規作成
+              // 部署責任者の場合はMANAGERロール
+              const initialRole = await determineInitialRole(email);
               const newUser = await prisma.user.create({
                 data: {
                   email,
                   name:
                     authResult.displayName || (credentials.username as string),
-                  role: "USER",
+                  role: initialRole,
                   emailVerified: new Date(),
                 },
               });
