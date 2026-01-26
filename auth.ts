@@ -375,11 +375,32 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             );
           }
 
-          // 表示名も同期
-          if (
+          // 表示名の同期（Employeeテーブルの名前を優先）
+          // Employeeが存在する場合はそちらの名前を使用
+          const employeeForName = mapping.user.email
+            ? await prisma.employee.findUnique({
+                where: { email: mapping.user.email },
+                select: { name: true },
+              })
+            : null;
+
+          if (employeeForName) {
+            // Employeeが存在する場合、Employeeの名前を優先
+            if (employeeForName.name !== mapping.user.name) {
+              await prisma.user.update({
+                where: { id: mapping.user.id },
+                data: { name: employeeForName.name },
+              });
+              mapping.user.name = employeeForName.name;
+              console.log(
+                `[Auth] User name synced from Employee: ${employeeForName.name}`,
+              );
+            }
+          } else if (
             authResult.displayName &&
             authResult.displayName !== mapping.user.name
           ) {
+            // Employeeが存在しない場合のみ、OpenLDAPのdisplayNameを使用
             await prisma.user.update({
               where: { id: mapping.user.id },
               data: { name: authResult.displayName },
