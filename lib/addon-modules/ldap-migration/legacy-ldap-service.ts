@@ -22,12 +22,13 @@ export interface LegacyLdapAuthResult {
 
 /**
  * データベースからレガシーLDAP設定を取得
+ * モジュールのON/OFFで移行を制御するため、isEnabledフィールドはチェックしない
  */
 export async function loadLegacyLdapConfigFromDatabase(): Promise<LegacyLdapConfig | null> {
   try {
     const dbConfig = await prisma.legacyLdapConfig.findFirst();
 
-    if (dbConfig?.isEnabled && dbConfig?.serverUrl) {
+    if (dbConfig?.serverUrl) {
       return {
         serverUrl: dbConfig.serverUrl,
         baseDN: dbConfig.baseDN,

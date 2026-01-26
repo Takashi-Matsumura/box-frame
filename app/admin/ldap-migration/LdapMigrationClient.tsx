@@ -14,10 +14,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-type TabType = "settings" | "test" | "stats";
+type TabType = "settings" | "test";
 
 interface LdapMigrationClientProps {
   language: string;
@@ -32,20 +31,6 @@ interface LegacyLdapConfig {
   bindPassword: string;
   searchFilter: string;
   timeout: number;
-  isEnabled: boolean;
-}
-
-interface MigrationConfig {
-  enabled: boolean;
-  startDate: string | null;
-  endDate: string | null;
-}
-
-interface MigrationStats {
-  totalUsers: number;
-  migratedUsers: number;
-  pendingUsers: number;
-  migrationPercentage: number;
 }
 
 interface TestResult {
@@ -66,14 +51,10 @@ const translations = {
     tabs: {
       settings: "Settings",
       test: "Connection Test",
-      stats: "Migration Stats",
     },
     settings: {
       title: "Legacy LDAP Configuration",
       description: "Configure connection settings for the legacy LDAP server",
-      enabled: "Enable Legacy LDAP Authentication",
-      enabledDescription:
-        "When enabled, authentication will fall back to legacy LDAP if OpenLDAP fails",
       serverUrl: "Server URL",
       serverUrlPlaceholder: "ldap://ldap.example.com:389",
       baseDN: "Base DN",
@@ -114,26 +95,6 @@ const translations = {
       email: "Email",
       displayName: "Display Name",
     },
-    stats: {
-      title: "Migration Statistics",
-      description: "Overview of the LDAP migration progress",
-      migrationPeriod: "Migration Period",
-      startDate: "Start Date",
-      endDate: "End Date",
-      periodStatus: {
-        not_configured: "Not Configured",
-        before: "Before Period",
-        active: "Active",
-        after: "Period Ended",
-      },
-      totalUsers: "Total Users",
-      migratedUsers: "Migrated Users",
-      pendingUsers: "Pending Users",
-      progress: "Migration Progress",
-      enableMigration: "Enable Migration",
-      disableMigration: "Disable Migration",
-      saveConfig: "Save Configuration",
-    },
     loading: "Loading...",
     notConfigured: "Not configured",
   },
@@ -143,14 +104,10 @@ const translations = {
     tabs: {
       settings: "設定",
       test: "接続テスト",
-      stats: "移行状況",
     },
     settings: {
       title: "レガシーLDAP設定",
       description: "レガシーLDAPサーバへの接続設定を行います",
-      enabled: "レガシーLDAP認証を有効化",
-      enabledDescription:
-        "有効にすると、OpenLDAP認証に失敗した場合にレガシーLDAPへフォールバックします",
       serverUrl: "サーバURL",
       serverUrlPlaceholder: "ldap://ldap.example.com:389",
       baseDN: "ベースDN",
@@ -172,12 +129,12 @@ const translations = {
       description: "レガシーLDAPサーバへの接続と認証をテストします",
       connectionTest: "接続テスト",
       connectionTestDescription: "LDAPサーバへの基本接続をテストします",
-      searchTest: "ユーザー検索テスト",
-      searchTestDescription: "LDAPディレクトリ内のユーザーを検索します",
+      searchTest: "ユーザ検索テスト",
+      searchTestDescription: "LDAPディレクトリ内のユーザを検索します",
       authTest: "認証テスト",
-      authTestDescription: "ユーザー名とパスワードで認証をテストします",
-      username: "ユーザー名",
-      usernamePlaceholder: "ユーザー名を入力",
+      authTestDescription: "ユーザ名とパスワードで認証をテストします",
+      username: "ユーザ名",
+      usernamePlaceholder: "ユーザ名を入力",
       password: "パスワード",
       passwordPlaceholder: "パスワードを入力",
       runTest: "テスト実行",
@@ -185,29 +142,9 @@ const translations = {
       result: "結果",
       success: "成功",
       failed: "失敗",
-      userDN: "ユーザーDN",
+      userDN: "ユーザDN",
       email: "メールアドレス",
       displayName: "表示名",
-    },
-    stats: {
-      title: "移行統計",
-      description: "LDAP移行の進捗状況を確認します",
-      migrationPeriod: "移行期間",
-      startDate: "開始日",
-      endDate: "終了日",
-      periodStatus: {
-        not_configured: "未設定",
-        before: "開始前",
-        active: "実施中",
-        after: "終了",
-      },
-      totalUsers: "総ユーザー数",
-      migratedUsers: "移行済み",
-      pendingUsers: "未移行",
-      progress: "移行進捗",
-      enableMigration: "移行を有効化",
-      disableMigration: "移行を無効化",
-      saveConfig: "設定を保存",
     },
     loading: "読み込み中...",
     notConfigured: "未設定",
@@ -240,25 +177,7 @@ export function LdapMigrationClient({
     bindPassword: "",
     searchFilter: "(uid={username})",
     timeout: 10000,
-    isEnabled: false,
   });
-
-  // Migration Config
-  const [migrationConfig, setMigrationConfig] = useState<MigrationConfig>({
-    enabled: false,
-    startDate: null,
-    endDate: null,
-  });
-
-  // Migration Stats
-  const [stats, setStats] = useState<MigrationStats>({
-    totalUsers: 0,
-    migratedUsers: 0,
-    pendingUsers: 0,
-    migrationPercentage: 0,
-  });
-
-  const [periodStatus, setPeriodStatus] = useState<string>("not_configured");
 
   // Test State
   const [testUsername, setTestUsername] = useState("");
@@ -274,15 +193,6 @@ export function LdapMigrationClient({
         const data = await response.json();
         if (data.legacyLdapConfig) {
           setLegacyConfig(data.legacyLdapConfig);
-        }
-        if (data.config) {
-          setMigrationConfig(data.config);
-        }
-        if (data.stats) {
-          setStats(data.stats);
-        }
-        if (data.periodStatus) {
-          setPeriodStatus(data.periodStatus);
         }
       }
     } catch (error) {
@@ -316,34 +226,11 @@ export function LdapMigrationClient({
       });
 
       if (response.ok) {
+        const data = await response.json();
+        if (data.legacyLdapConfig) {
+          setLegacyConfig(data.legacyLdapConfig);
+        }
         setMessage({ type: "success", text: t.settings.saved });
-        await loadData();
-      } else {
-        setMessage({ type: "error", text: t.settings.error });
-      }
-    } catch (error) {
-      console.error("Failed to save config:", error);
-      setMessage({ type: "error", text: t.settings.error });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Save migration config
-  const saveMigrationConfig = async () => {
-    try {
-      setSaving(true);
-      setMessage(null);
-
-      const response = await fetch("/api/admin/ldap-migration", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(migrationConfig),
-      });
-
-      if (response.ok) {
-        setMessage({ type: "success", text: t.settings.saved });
-        await loadData();
       } else {
         setMessage({ type: "error", text: t.settings.error });
       }
@@ -420,7 +307,6 @@ export function LdapMigrationClient({
         <TabsList>
           <TabsTrigger value="settings">{t.tabs.settings}</TabsTrigger>
           <TabsTrigger value="test">{t.tabs.test}</TabsTrigger>
-          <TabsTrigger value="stats">{t.tabs.stats}</TabsTrigger>
         </TabsList>
 
         {/* Settings Tab */}
@@ -431,111 +317,71 @@ export function LdapMigrationClient({
               <CardDescription>{t.settings.description}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Enable Toggle */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>{t.settings.enabled}</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {t.settings.enabledDescription}
-                  </p>
+              {/* 2x2 Grid Layout */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Server URL */}
+                <div className="space-y-2">
+                  <Label htmlFor="serverUrl">{t.settings.serverUrl}</Label>
+                  <Input
+                    id="serverUrl"
+                    value={legacyConfig.serverUrl}
+                    onChange={(e) =>
+                      setLegacyConfig({
+                        ...legacyConfig,
+                        serverUrl: e.target.value,
+                      })
+                    }
+                    placeholder={t.settings.serverUrlPlaceholder}
+                  />
                 </div>
-                <Switch
-                  checked={legacyConfig.isEnabled}
-                  onCheckedChange={(checked) =>
-                    setLegacyConfig({ ...legacyConfig, isEnabled: checked })
-                  }
-                />
-              </div>
 
-              {/* Server URL */}
-              <div className="space-y-2">
-                <Label htmlFor="serverUrl">{t.settings.serverUrl}</Label>
-                <Input
-                  id="serverUrl"
-                  value={legacyConfig.serverUrl}
-                  onChange={(e) =>
-                    setLegacyConfig({
-                      ...legacyConfig,
-                      serverUrl: e.target.value,
-                    })
-                  }
-                  placeholder={t.settings.serverUrlPlaceholder}
-                />
-              </div>
+                {/* Base DN */}
+                <div className="space-y-2">
+                  <Label htmlFor="baseDN">{t.settings.baseDN}</Label>
+                  <Input
+                    id="baseDN"
+                    value={legacyConfig.baseDN}
+                    onChange={(e) =>
+                      setLegacyConfig({
+                        ...legacyConfig,
+                        baseDN: e.target.value,
+                      })
+                    }
+                    placeholder={t.settings.baseDNPlaceholder}
+                  />
+                </div>
 
-              {/* Base DN */}
-              <div className="space-y-2">
-                <Label htmlFor="baseDN">{t.settings.baseDN}</Label>
-                <Input
-                  id="baseDN"
-                  value={legacyConfig.baseDN}
-                  onChange={(e) =>
-                    setLegacyConfig({ ...legacyConfig, baseDN: e.target.value })
-                  }
-                  placeholder={t.settings.baseDNPlaceholder}
-                />
-              </div>
+                {/* Search Filter */}
+                <div className="space-y-2">
+                  <Label htmlFor="searchFilter">{t.settings.searchFilter}</Label>
+                  <Input
+                    id="searchFilter"
+                    value={legacyConfig.searchFilter}
+                    onChange={(e) =>
+                      setLegacyConfig({
+                        ...legacyConfig,
+                        searchFilter: e.target.value,
+                      })
+                    }
+                    placeholder={t.settings.searchFilterPlaceholder}
+                  />
+                </div>
 
-              {/* Bind DN */}
-              <div className="space-y-2">
-                <Label htmlFor="bindDN">{t.settings.bindDN}</Label>
-                <Input
-                  id="bindDN"
-                  value={legacyConfig.bindDN}
-                  onChange={(e) =>
-                    setLegacyConfig({ ...legacyConfig, bindDN: e.target.value })
-                  }
-                  placeholder={t.settings.bindDNPlaceholder}
-                />
-              </div>
-
-              {/* Bind Password */}
-              <div className="space-y-2">
-                <Label htmlFor="bindPassword">{t.settings.bindPassword}</Label>
-                <Input
-                  id="bindPassword"
-                  type="password"
-                  value={legacyConfig.bindPassword}
-                  onChange={(e) =>
-                    setLegacyConfig({
-                      ...legacyConfig,
-                      bindPassword: e.target.value,
-                    })
-                  }
-                  placeholder={t.settings.bindPasswordPlaceholder}
-                />
-              </div>
-
-              {/* Search Filter */}
-              <div className="space-y-2">
-                <Label htmlFor="searchFilter">{t.settings.searchFilter}</Label>
-                <Input
-                  id="searchFilter"
-                  value={legacyConfig.searchFilter}
-                  onChange={(e) =>
-                    setLegacyConfig({
-                      ...legacyConfig,
-                      searchFilter: e.target.value,
-                    })
-                  }
-                  placeholder={t.settings.searchFilterPlaceholder}
-                />
-              </div>
-
-              {/* Timeout */}
-              <div className="space-y-2">
-                <Label htmlFor="timeout">{t.settings.timeout}</Label>
-                <Input
-                  id="timeout"
-                  type="number"
-                  value={legacyConfig.timeout}
-                  onChange={(e) =>
-                    setLegacyConfig({
-                      ...legacyConfig,
-                      timeout: parseInt(e.target.value, 10) || 10000,
-                    })
-                  }
-                />
+                {/* Timeout */}
+                <div className="space-y-2">
+                  <Label htmlFor="timeout">{t.settings.timeout}</Label>
+                  <Input
+                    id="timeout"
+                    type="number"
+                    value={legacyConfig.timeout}
+                    onChange={(e) =>
+                      setLegacyConfig({
+                        ...legacyConfig,
+                        timeout: parseInt(e.target.value, 10) || 10000,
+                      })
+                    }
+                  />
+                </div>
               </div>
 
               {/* Save Button */}
@@ -569,7 +415,7 @@ export function LdapMigrationClient({
                 </p>
                 <Button
                   onClick={() => runTest("connection")}
-                  disabled={testing !== null || !legacyConfig.isEnabled}
+                  disabled={testing !== null}
                 >
                   {testing === "connection" ? (
                     <>
@@ -603,9 +449,7 @@ export function LdapMigrationClient({
                 </div>
                 <Button
                   onClick={() => runTest("search")}
-                  disabled={
-                    testing !== null || !testUsername || !legacyConfig.isEnabled
-                  }
+                  disabled={testing !== null || !testUsername}
                 >
                   {testing === "search" ? (
                     <>
@@ -651,12 +495,7 @@ export function LdapMigrationClient({
                 </div>
                 <Button
                   onClick={() => runTest("auth")}
-                  disabled={
-                    testing !== null ||
-                    !testUsername ||
-                    !testPassword ||
-                    !legacyConfig.isEnabled
-                  }
+                  disabled={testing !== null || !testUsername || !testPassword}
                 >
                   {testing === "auth" ? (
                     <>
@@ -716,150 +555,6 @@ export function LdapMigrationClient({
                   )}
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Stats Tab */}
-        <TabsContent value="stats" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t.stats.title}</CardTitle>
-              <CardDescription>{t.stats.description}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Migration Period Status */}
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{t.stats.migrationPeriod}:</span>
-                <Badge
-                  variant={
-                    periodStatus === "active"
-                      ? "default"
-                      : periodStatus === "after"
-                        ? "secondary"
-                        : "outline"
-                  }
-                >
-                  {
-                    t.stats.periodStatus[
-                      periodStatus as keyof typeof t.stats.periodStatus
-                    ]
-                  }
-                </Badge>
-              </div>
-
-              {/* Period Config */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="startDate">{t.stats.startDate}</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={migrationConfig.startDate || ""}
-                    onChange={(e) =>
-                      setMigrationConfig({
-                        ...migrationConfig,
-                        startDate: e.target.value || null,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="endDate">{t.stats.endDate}</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={migrationConfig.endDate || ""}
-                    onChange={(e) =>
-                      setMigrationConfig({
-                        ...migrationConfig,
-                        endDate: e.target.value || null,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              {/* Enable/Disable Migration */}
-              <div className="flex items-center gap-4">
-                <Button
-                  variant={migrationConfig.enabled ? "destructive" : "default"}
-                  onClick={() =>
-                    setMigrationConfig({
-                      ...migrationConfig,
-                      enabled: !migrationConfig.enabled,
-                    })
-                  }
-                >
-                  {migrationConfig.enabled
-                    ? t.stats.disableMigration
-                    : t.stats.enableMigration}
-                </Button>
-                <Button onClick={saveMigrationConfig} disabled={saving}>
-                  {saving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {t.settings.saving}
-                    </>
-                  ) : (
-                    t.stats.saveConfig
-                  )}
-                </Button>
-              </div>
-
-              <hr className="border-border" />
-
-              {/* Stats Cards */}
-              <div className="grid grid-cols-3 gap-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      {t.stats.totalUsers}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-bold">{stats.totalUsers}</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      {t.stats.migratedUsers}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-bold text-green-600">
-                      {stats.migratedUsers}
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      {t.stats.pendingUsers}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-bold text-yellow-600">
-                      {stats.pendingUsers}
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>{t.stats.progress}</span>
-                  <span>{stats.migrationPercentage}%</span>
-                </div>
-                <div className="h-2 w-full rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all"
-                    style={{ width: `${stats.migrationPercentage}%` }}
-                  />
-                </div>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
