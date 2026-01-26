@@ -72,11 +72,31 @@ async function tryLegacyLdapMigration(
       employeeId?: string;
     } | null = null;
 
-    // レガシーLDAPからメールが取得できた場合
+    // レガシーLDAPの設定からemailDomainを取得
+    const { loadLegacyLdapConfigFromDatabase } = await import(
+      "@/lib/addon-modules/ldap-migration/legacy-ldap-service"
+    );
+    const legacyConfig = await loadLegacyLdapConfigFromDatabase();
+    const emailDomain = legacyConfig?.emailDomain;
+
+    // メールアドレスの決定
+    // 1. レガシーLDAPのmail属性
+    // 2. emailDomainが設定されている場合は username@emailDomain
+    // 3. フォールバック: username@openldap.local
     const ldapEmail = legacyAuthResult.email;
-    if (ldapEmail) {
+    let generatedEmail: string | null = null;
+
+    if (!ldapEmail && emailDomain) {
+      // emailDomainが設定されている場合、ユーザ名からメールを生成
+      generatedEmail = `${username}@${emailDomain}`;
+      console.log(`[Auth] Generated email from emailDomain: ${generatedEmail}`);
+    }
+
+    // メールアドレスでEmployee検索
+    const searchEmail = ldapEmail || generatedEmail;
+    if (searchEmail) {
       const employee = await prisma.employee.findUnique({
-        where: { email: ldapEmail },
+        where: { email: searchEmail },
         select: {
           id: true,
           name: true,
@@ -88,7 +108,7 @@ async function tryLegacyLdapMigration(
       if (employee) {
         employeeData = {
           name: employee.name,
-          email: employee.email || ldapEmail,
+          email: employee.email || searchEmail,
           employeeId: employee.employeeId,
         };
         console.log(
@@ -98,11 +118,11 @@ async function tryLegacyLdapMigration(
     }
 
     // 5. OpenLDAPに新規ユーザーを作成
-    // メールアドレスはレガシーLDAPの値を優先（後で手動で正しい値に変更可能）
+    // メールアドレスの優先順位: LDAPのmail属性 > 生成したメール > Employee > フォールバック
     const displayName =
       employeeData?.name || legacyAuthResult.displayName || username;
     const email =
-      ldapEmail || employeeData?.email || `${username}@openldap.local`;
+      ldapEmail || generatedEmail || employeeData?.email || `${username}@openldap.local`;
 
     const createResult = await openLdapService.createUser(username, password, {
       displayName,

@@ -184,6 +184,7 @@ model LegacyLdapConfig {
   bindDN        String?                        // cn=admin,dc=occ,dc=co,dc=jp
   bindPassword  String?                        // 認証用（空の場合はAnonymous Bind）
   searchFilter  String   @default("(uid={username})")
+  emailDomain   String?                        // メールドメイン（例: occ.co.jp）mail属性がない場合に使用
   timeout       Int      @default(10000)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

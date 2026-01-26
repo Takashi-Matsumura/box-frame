@@ -30,6 +30,7 @@ interface LegacyLdapConfig {
   bindDN: string;
   bindPassword: string;
   searchFilter: string;
+  emailDomain: string;
   timeout: number;
 }
 
@@ -65,6 +66,9 @@ const translations = {
       bindPasswordPlaceholder: "Leave empty for anonymous bind",
       searchFilter: "Search Filter",
       searchFilterPlaceholder: "(uid={username})",
+      emailDomain: "Email Domain",
+      emailDomainPlaceholder: "example.com",
+      emailDomainHelp: "Used to generate email when LDAP has no mail attribute",
       timeout: "Timeout (ms)",
       save: "Save Settings",
       saving: "Saving...",
@@ -118,6 +122,9 @@ const translations = {
       bindPasswordPlaceholder: "匿名バインドの場合は空のままにしてください",
       searchFilter: "検索フィルタ",
       searchFilterPlaceholder: "(uid={username})",
+      emailDomain: "メールドメイン",
+      emailDomainPlaceholder: "example.co.jp",
+      emailDomainHelp: "mail属性がない場合にメールアドレスを生成するために使用",
       timeout: "タイムアウト（ミリ秒）",
       save: "設定を保存",
       saving: "保存中...",
@@ -176,6 +183,7 @@ export function LdapMigrationClient({
     bindDN: "",
     bindPassword: "",
     searchFilter: "(uid={username})",
+    emailDomain: "",
     timeout: 10000,
   });
 
@@ -365,6 +373,25 @@ export function LdapMigrationClient({
                     }
                     placeholder={t.settings.searchFilterPlaceholder}
                   />
+                </div>
+
+                {/* Email Domain */}
+                <div className="space-y-2">
+                  <Label htmlFor="emailDomain">{t.settings.emailDomain}</Label>
+                  <Input
+                    id="emailDomain"
+                    value={legacyConfig.emailDomain}
+                    onChange={(e) =>
+                      setLegacyConfig({
+                        ...legacyConfig,
+                        emailDomain: e.target.value,
+                      })
+                    }
+                    placeholder={t.settings.emailDomainPlaceholder}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t.settings.emailDomainHelp}
+                  </p>
                 </div>
 
                 {/* Timeout */}

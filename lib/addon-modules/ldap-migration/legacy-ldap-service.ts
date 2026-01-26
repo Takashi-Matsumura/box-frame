@@ -8,6 +8,7 @@ export interface LegacyLdapConfig {
   bindDN?: string;
   bindPassword?: string;
   searchFilter: string;
+  emailDomain?: string;  // メールドメイン（mail属性がない場合に使用）
   timeout: number;
 }
 
@@ -35,6 +36,7 @@ export async function loadLegacyLdapConfigFromDatabase(): Promise<LegacyLdapConf
         bindDN: dbConfig.bindDN || undefined,
         bindPassword: dbConfig.bindPassword || undefined,
         searchFilter: dbConfig.searchFilter,
+        emailDomain: dbConfig.emailDomain || undefined,
         timeout: dbConfig.timeout,
       };
     }

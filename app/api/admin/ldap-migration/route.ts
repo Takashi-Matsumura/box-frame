@@ -45,6 +45,7 @@ export async function GET() {
             // パスワードはマスクして返す
             bindPassword: legacyLdapConfig.bindPassword ? "********" : "",
             searchFilter: legacyLdapConfig.searchFilter,
+            emailDomain: legacyLdapConfig.emailDomain || "",
             timeout: legacyLdapConfig.timeout,
           }
         : null,
@@ -64,6 +65,7 @@ export interface LegacyLdapConfigInput {
   bindDN: string;
   bindPassword: string;
   searchFilter: string;
+  emailDomain: string;
   timeout: number;
 }
 
@@ -79,7 +81,7 @@ export async function PUT(request: Request) {
 
   try {
     const body = await request.json();
-    const { serverUrl, baseDN, bindDN, bindPassword, searchFilter, timeout } =
+    const { serverUrl, baseDN, bindDN, bindPassword, searchFilter, emailDomain, timeout } =
       body as LegacyLdapConfigInput;
 
     // 既存の設定を取得
@@ -101,6 +103,7 @@ export async function PUT(request: Request) {
           bindDN: bindDN || null,
           bindPassword: actualPassword,
           searchFilter: searchFilter || "(uid={username})",
+          emailDomain: emailDomain || null,
           timeout: timeout || 10000,
           isEnabled: true, // モジュールON時は常に有効
         },
@@ -114,6 +117,7 @@ export async function PUT(request: Request) {
           bindDN: bindDN || null,
           bindPassword: actualPassword,
           searchFilter: searchFilter || "(uid={username})",
+          emailDomain: emailDomain || null,
           timeout: timeout || 10000,
           isEnabled: true, // モジュールON時は常に有効
         },
@@ -143,6 +147,7 @@ export async function PUT(request: Request) {
         bindDN: bindDN || "",
         bindPassword: actualPassword ? "********" : "",
         searchFilter: searchFilter || "(uid={username})",
+        emailDomain: emailDomain || "",
         timeout: timeout || 10000,
       },
     });
