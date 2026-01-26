@@ -15,9 +15,15 @@ import { NotificationService } from "@/lib/services/notification-service";
  */
 async function determineInitialRole(email: string): Promise<Role> {
   try {
-    // Employeeをメールで検索
-    const employee = await prisma.employee.findUnique({
-      where: { email },
+    // Employeeをメールで検索（大文字小文字を無視）
+    const normalizedEmail = email.toLowerCase();
+    const employee = await prisma.employee.findFirst({
+      where: {
+        email: {
+          equals: normalizedEmail,
+          mode: "insensitive",
+        },
+      },
       select: { id: true },
     });
 
