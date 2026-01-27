@@ -1367,9 +1367,9 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6 h-[calc(100vh-128px)] overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-shrink-0">
         <Button variant="ghost" size="sm" onClick={() => router.back()}>
           <ArrowLeft className="w-4 h-4 mr-1" />
           {t.backToList}
@@ -1377,7 +1377,7 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
       </div>
 
       {/* Process Info Card with Step Progress - Collapsible */}
-      <CollapsiblePanel defaultOpen={true}>
+      <CollapsiblePanel defaultOpen={true} className="flex-shrink-0">
         <CollapsiblePanelHeader>
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
@@ -1653,7 +1653,7 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
       </CollapsiblePanel>
 
       {/* Job Description (業務分掌) - AIヒアリング統合パネル */}
-      <div className="bg-card rounded-xl shadow-sm border flex flex-col h-[600px]">
+      <div className="bg-card rounded-xl shadow-sm border flex flex-col flex-1 min-h-0">
         {/* ヘッダー */}
         <div className="p-4 border-b flex items-center justify-between">
           <div className="flex items-center gap-2">
