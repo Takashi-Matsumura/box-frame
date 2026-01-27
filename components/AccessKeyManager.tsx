@@ -72,6 +72,10 @@ export function AccessKeyManager({
   const [accessKeys, setAccessKeys] = useState(initialAccessKeys);
   const [isCreating, setIsCreating] = useState(false);
 
+  // フィルタリング用のstate
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("active");
+  const [searchQuery, setSearchQuery] = useState("");
+
   // デフォルトは1年後
   const getDefaultExpiryDate = () => {
     const date = new Date();
@@ -108,6 +112,26 @@ export function AccessKeyManager({
     () => users.find((u) => u.id === formData.targetUserId),
     [users, formData.targetUserId]
   );
+
+  // アクセスキーのフィルタリング
+  const filteredAccessKeys = useMemo(() => {
+    return accessKeys.filter((key) => {
+      // ステータスフィルタ
+      if (statusFilter === "active" && !key.isActive) return false;
+      if (statusFilter === "inactive" && key.isActive) return false;
+
+      // 検索フィルタ（名前、対象ユーザ名、メールアドレス）
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const matchesName = key.name.toLowerCase().includes(query);
+        const matchesUserName = key.targetUser?.name?.toLowerCase().includes(query) || false;
+        const matchesEmail = key.targetUser?.email?.toLowerCase().includes(query) || false;
+        if (!matchesName && !matchesUserName && !matchesEmail) return false;
+      }
+
+      return true;
+    });
+  }, [accessKeys, statusFilter, searchQuery]);
 
   const handleCreate = async () => {
     // 新しいpermissions形式または従来のmenuPaths形式をチェック
@@ -295,15 +319,57 @@ export function AccessKeyManager({
             </div>
           ) : (
             <>
-              {/* 合計表示 */}
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-sm text-muted-foreground">
-                  {t("Total", "合計")}:{" "}
+              {/* フィルタUI */}
+              <div className="flex flex-wrap items-center gap-4 mb-4">
+                {/* ステータスフィルタ */}
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm text-muted-foreground whitespace-nowrap">
+                    {t("Status", "ステータス")}:
+                  </Label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value as "all" | "active" | "inactive")}
+                    className="px-3 py-1.5 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option value="all">{t("All", "すべて")}</option>
+                    <option value="active">{t("Active", "有効")}</option>
+                    <option value="inactive">{t("Inactive", "無効")}</option>
+                  </select>
+                </div>
+
+                {/* 検索フィルタ */}
+                <div className="flex items-center gap-2 flex-1 min-w-[200px] max-w-[400px]">
+                  <div className="relative w-full">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={t("Search by name or email...", "名前またはメールで検索...")}
+                      className="pl-9 h-8"
+                    />
+                  </div>
+                </div>
+
+                {/* 合計表示 */}
+                <p className="text-sm text-muted-foreground ml-auto">
+                  {t("Showing", "表示")}:{" "}
+                  <span className="font-medium text-foreground">
+                    {filteredAccessKeys.length}
+                  </span>
+                  {" / "}
                   <span className="font-medium text-foreground">
                     {accessKeys.length}
                   </span>
                 </p>
               </div>
+              {filteredAccessKeys.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground border rounded-lg">
+                  {t(
+                    "No access keys match your filter criteria",
+                    "フィルタ条件に一致するアクセスキーがありません",
+                  )}
+                </div>
+              ) : (
               <div className="rounded-lg border overflow-hidden">
                 <Table>
                   <TableHeader className="bg-muted/50">
@@ -320,7 +386,7 @@ export function AccessKeyManager({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {accessKeys.map((accessKey) => {
+                    {filteredAccessKeys.map((accessKey) => {
                       const menuPaths = JSON.parse(
                         accessKey.menuPaths,
                       ) as string[];
@@ -469,6 +535,7 @@ export function AccessKeyManager({
                   </TableBody>
                 </Table>
               </div>
+              )}
             </>
           )}
         </CardContent>

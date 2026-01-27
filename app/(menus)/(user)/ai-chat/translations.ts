@@ -65,7 +65,7 @@ export const aiChatTranslations = {
     welcomeTitle: "今日は何をお手伝いしましょうか？",
     welcomeHint: "何でも聞いてください - ご質問にお答えします",
     suggestions: [
-      "このシステムの使い方を教えて",
+      "このAIチャットの使い方を教えて",
       "ドキュメントの作成を手伝って",
       "どんな機能がありますか？",
     ],

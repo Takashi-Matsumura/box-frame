@@ -17,11 +17,11 @@ async function main() {
 
   // Create admin user
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@boxframe.local' },
+    where: { email: 'admin@box2.local' },
     update: {},
     create: {
-      email: 'admin@boxframe.local',
-      name: 'System Administrator',
+      email: 'admin@box2.local',
+      name: 'System Admin',
       role: 'ADMIN',
       emailVerified: new Date(),
     },
