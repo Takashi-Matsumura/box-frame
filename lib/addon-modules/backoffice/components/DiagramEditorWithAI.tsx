@@ -4,6 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Save, Send, Sparkles, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DiagramEditor } from "./DiagramEditor";
+import {
+  generateFlowDiagramXml,
+  parseFlowDiagramJson,
+  sanitizeXmlAttributeValues,
+} from "../utils/diagram-utils";
 
 interface Actor {
   id: string;
@@ -127,91 +132,74 @@ export function DiagramEditorWithAI({
     }
   }, [onSave, currentXml, t.saved]);
 
-  // スイムレーン形式の業務フロー図生成プロンプト（縦書き：アクターが横に並ぶ）
-  const getBusinessFlowDiagramPrompt = () => {
+  // 2段階生成: Phase 1用のJSON生成プロンプト
+  const getFlowDiagramJsonPrompt = () => {
     const actorsList = actors.length > 0
-      ? actors.map((a, i) => `${i + 1}. ${a.name}${a.department ? ` (${a.department})` : ""}`).join("\n")
-      : "（アクター情報なし）";
+      ? actors.map((a, i) => `${i}. ${a.name}${a.department ? ` (${a.department})` : ""}`).join("\n")
+      : "（アクター情報なし - 業務フローから適切なアクターを抽出してください）";
 
-    return `あなたはdraw.io用のスイムレーン形式業務フロー図XMLを生成するエキスパートです。
-以下の業務フロー説明とアクター情報を読んで、draw.io形式のmxGraphModel XMLを生成してください。
+    return `あなたは業務フロー分析のエキスパートです。
+以下の業務フロー説明を分析し、スイムレーン形式の業務フロー図を作成するための構造化JSONを出力してください。
 
-## アクター（スイムレーンとして横に並べる）
+## アクター候補（インデックス番号で参照）
 ${actorsList}
 
-## 重要：縦書きスイムレーン形式業務フロー図のXML構造
+## 出力形式（JSON）
 
-<mxGraphModel dx="1200" dy="800" grid="1" gridSize="10">
-  <root>
-    <mxCell id="0"/>
-    <mxCell id="1" parent="0"/>
-    <mxCell id="lane1" value="アクター1" style="swimlane;horizontal=1;startSize=30;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" vertex="1" parent="1">
-      <mxGeometry x="50" y="50" width="180" height="400" as="geometry"/>
-    </mxCell>
-    <mxCell id="lane2" value="アクター2" style="swimlane;horizontal=1;startSize=30;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" vertex="1" parent="1">
-      <mxGeometry x="230" y="50" width="180" height="400" as="geometry"/>
-    </mxCell>
-    <mxCell id="step1" value="処理1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="lane1">
-      <mxGeometry x="40" y="50" width="100" height="40" as="geometry"/>
-    </mxCell>
-    <mxCell id="step2" value="処理2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="lane2">
-      <mxGeometry x="40" y="120" width="100" height="40" as="geometry"/>
-    </mxCell>
-    <mxCell id="msg1" value="依頼" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;endFill=1;" edge="1" parent="1" source="step1" target="step2">
-      <mxGeometry relative="1" as="geometry"/>
-    </mxCell>
-  </root>
-</mxGraphModel>
+\`\`\`json
+{
+  "actors": ["アクター1", "アクター2", "アクター3"],
+  "steps": [
+    {"id": "step1", "actor": 0, "label": "処理名", "type": "process"},
+    {"id": "step2", "actor": 1, "label": "処理名", "type": "process"}
+  ],
+  "connections": [
+    {"from": "step1", "to": "step2", "label": "データ名", "type": "flow"}
+  ]
+}
+\`\`\`
 
-## 縦書きスイムレーン配置ルール
-1. 各アクターを横に並べたスイムレーンとして配置（horizontal=1）
-2. レーン幅: 180px、高さ: 500px
-3. レーン間隔: x座標を180pxずつ増加（50, 230, 410, 590...）
-4. 処理ステップはレーン内に上から下へ配置（y座標を増加させる: 50, 120, 190, 260...）
-5. アクター間のやり取りは横方向の矢印（edge）で表現
-6. 時系列は上から下へ流れる
+## フィールド説明
 
-## 記号一覧（ガイドライン準拠）
+### actors（必須）
+- 業務に関わるアクター（役割・担当者）の配列
+- 左から右へ並ぶ順序で指定
+- 上記のアクター候補がある場合はそれを使用、なければ業務フローから抽出
 
-| 記号 | 名称 | 用途 | スタイル |
-|------|------|------|----------|
-| 楕円 | 状態 | 開始条件、終了結果 | ellipse;fillColor=#d5e8d4;strokeColor=#82b366;（開始）/ fillColor=#f8cecc;strokeColor=#b85450;（終了） |
-| 長方形 | 作業 | 工数・時間が発生する作業 | rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf; |
-| 角丸長方形 | 処理 | システム処理 | rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf; |
-| ひし形 | 分岐 | 判断による分岐 | rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656; |
-| 角丸長方形（紫） | 伝達データ | 作業間で受け渡すデータ | rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6; |
-| 円筒 | 蓄積データ | DB等に蓄積されるデータ | shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;size=10; |
-| 実線矢印 | 作業の流れ | 作業順序 | edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;endFill=1;dashed=0; |
-| 点線矢印 | データの流れ | データ入出力 | edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;endFill=1;dashed=1;dashPattern=3 3; |
+### steps（必須）
+- id: 一意のステップID（step1, step2, ...）
+- actor: そのステップを実行するアクターのインデックス（0始まり）
+- label: ステップの表示名（短く簡潔に）
+- type: ステップの種類
+  - "start": 開始（緑の楕円）
+  - "end": 終了（赤の楕円）
+  - "process": 処理（青の角丸長方形）- デフォルト
+  - "decision": 分岐・判断（黄のひし形）
+  - "data": 伝達データ（紫の角丸長方形）
+  - "database": DB・蓄積データ（円筒）
 
-## スタイル
-- スイムレーン: swimlane;horizontal=1;startSize=30;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;
-- 作業（人手）: rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;
-- 処理（システム）: rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;
-- 判断: rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;
-- 開始: ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;
-- 終了: ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;
-- 伝達データ: rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;
-- 蓄積データ: shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;size=10;
-- 作業の流れ（実線矢印）: edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;endFill=1;dashed=0;
-- データの流れ（点線矢印）: edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classic;endFill=1;dashed=1;
+### connections（必須）
+- from: 接続元のステップID
+- to: 接続先のステップID
+- label: 矢印に表示するラベル（省略可）
+- type: 接続の種類
+  - "flow": 作業の流れ（実線矢印）- デフォルト
+  - "data": データの流れ（点線矢印）
+
 ## 生成ルール
-- 作業間でデータを受け渡す場合は「伝達データ」記号（紫の角丸長方形）を使用
-- DBやファイルへの読み書きがある場合は「蓄積データ」記号（円筒）を使用
-- 人手による作業は長方形（角丸なし）、システム処理は角丸長方形で区別
-- 作業の流れは実線矢印、データの流れは点線矢印で区別
+1. 主要なステップのみに絞る（最大8ステップ程度）
+2. ステップは時系列順に並べる
+3. 各ステップは必ずいずれかのアクターに属する
+4. 接続は業務の流れを表現（必要に応じてラベルを付ける）
+5. 開始・終了は必須ではない（省略可）
 
-## 生成時の注意
-- 必ずアクター数分のスイムレーンを横に並べて作成
-- 業務フローの各ステップを上から下へ配置（y座標を70pxずつ増加）
-- アクター間のコミュニケーションは横方向の矢印で表現
-- 時系列は上から下へ流れるように配置
-- **重要: 主要なステップのみに絞り、最大5〜6ステップ程度に抑えること**
-- XMLコメント（<!-- -->）は使用しないこと
-
-XMLのみを出力してください。\`\`\`xml や説明文は不要です。`;
+## 注意
+- JSONのみを出力してください
+- 説明文は不要です
+- 必ず有効なJSONを出力してください`;
   };
 
+  // 2段階生成アプローチ: Phase 1でJSON取得、Phase 2でXML生成
   const generateDiagramFromFlow = async () => {
     if (!flowDescription || isGenerating) return;
 
@@ -226,88 +214,60 @@ XMLのみを出力してください。\`\`\`xml や説明文は不要です。`
     setChatMessages((prev) => [...prev, userMessage]);
 
     try {
+      // Phase 1: AIにJSONを生成させる
       const response = await fetch("/api/ai/services/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           input: flowDescription,
-          systemPrompt: getBusinessFlowDiagramPrompt(),
+          systemPrompt: getFlowDiagramJsonPrompt(),
           temperature: 0.3,
-          maxTokens: 10000,
+          maxTokens: 4096,  // JSONはXMLより小さいので十分
         }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        const output = data.output || "";
-
-        // XMLを抽出（複数のパターンに対応）
-        let extractedXml = "";
-
-        // 1. ```xml...```形式のコードブロックを探す
-        const xmlCodeBlockMatch = output.match(/```xml\s*([\s\S]*?)\s*```/);
-        if (xmlCodeBlockMatch) {
-          console.log("Matched: xml code block");
-          extractedXml = xmlCodeBlockMatch[1].trim();
-        } else {
-          // 2. <mxGraphModel から </mxGraphModel> までを抽出
-          const mxGraphMatch = output.match(/<mxGraphModel[\s\S]*<\/mxGraphModel>/);
-          if (mxGraphMatch) {
-            extractedXml = mxGraphMatch[0].trim();
-          } else {
-            // 3. 出力全体がXMLの場合
-            extractedXml = output.trim();
-          }
-        }
-
-        // XMLが<mxGraphModelで始まっていない場合、そこまでをトリミング
-        const mxGraphStartIndex = extractedXml.indexOf("<mxGraphModel");
-        if (mxGraphStartIndex > 0) {
-          extractedXml = extractedXml.substring(mxGraphStartIndex);
-        }
-
-        if (extractedXml.startsWith("<mxGraphModel")) {
-          // XMLの基本的な検証
-          try {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(extractedXml, "text/xml");
-            const parseError = doc.querySelector("parsererror");
-            if (parseError) {
-              console.error("XML Parse Error:", parseError.textContent);
-              const errorMessage: ChatMessage = {
-                role: "assistant",
-                content: language === "ja"
-                  ? `XMLの構文エラーが発生しました。もう一度お試しください。\n\nエラー: ${parseError.textContent?.substring(0, 200)}`
-                  : `XML syntax error occurred. Please try again.\n\nError: ${parseError.textContent?.substring(0, 200)}`,
-                timestamp: new Date().toISOString(),
-              };
-              setChatMessages((prev) => [...prev, errorMessage]);
-              return;
-            }
-          } catch (e) {
-            console.error("XML validation failed:", e);
-          }
-
-          setCurrentXml(extractedXml);
-          onChange?.(extractedXml);
-          setLoadKey((prev) => prev + 1); // エディタを再マウントして新しいXMLを読み込む
-          const successMessage: ChatMessage = {
-            role: "assistant",
-            content: t.generatedSuccess,
-            timestamp: new Date().toISOString(),
-          };
-          setChatMessages((prev) => [...prev, successMessage]);
-        } else {
-          const errorMessage: ChatMessage = {
-            role: "assistant",
-            content: language === "ja"
-              ? `シーケンス図の生成に失敗しました。もう一度お試しください。\n\n出力: ${output.substring(0, 300)}`
-              : `Failed to generate sequence diagram. Please try again.\n\nOutput: ${output.substring(0, 300)}`,
-            timestamp: new Date().toISOString(),
-          };
-          setChatMessages((prev) => [...prev, errorMessage]);
-        }
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
       }
+
+      const data = await response.json();
+      const output = data.output || "";
+
+      console.log("AI JSON output:", output);
+
+      // Phase 2: JSONをパースしてXMLを生成
+      const flowData = parseFlowDiagramJson(output);
+
+      if (!flowData) {
+        const errorMessage: ChatMessage = {
+          role: "assistant",
+          content: language === "ja"
+            ? `業務フローの解析に失敗しました。もう一度お試しください。\n\n出力: ${output.substring(0, 500)}`
+            : `Failed to parse business flow. Please try again.\n\nOutput: ${output.substring(0, 500)}`,
+          timestamp: new Date().toISOString(),
+        };
+        setChatMessages((prev) => [...prev, errorMessage]);
+        return;
+      }
+
+      console.log("Parsed flow data:", flowData);
+
+      // JSONからXMLを生成（プログラムで生成するので常に有効なXML）
+      const generatedXml = generateFlowDiagramXml(flowData);
+
+      console.log("Generated XML:", generatedXml);
+
+      setCurrentXml(generatedXml);
+      onChange?.(generatedXml);
+      setLoadKey((prev) => prev + 1);
+
+      const successMessage: ChatMessage = {
+        role: "assistant",
+        content: t.generatedSuccess,
+        timestamp: new Date().toISOString(),
+      };
+      setChatMessages((prev) => [...prev, successMessage]);
+
     } catch (error) {
       console.error("Failed to generate diagram:", error);
       const errorMessage: ChatMessage = {
@@ -323,6 +283,7 @@ XMLのみを出力してください。\`\`\`xml や説明文は不要です。`
     }
   };
 
+  // チャットによる図の修正（2段階生成アプローチ）
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isGenerating) return;
 
@@ -340,71 +301,60 @@ XMLのみを出力してください。\`\`\`xml や説明文は不要です。`
     }
 
     try {
+      // 修正用のプロンプト
+      const modifyPrompt = `${getFlowDiagramJsonPrompt()}
+
+## 追加の指示
+ユーザーが以下の修正を依頼しています。元の業務フローを参考に、修正を反映したJSONを出力してください。
+
+### 修正依頼
+${inputMessage}
+
+${flowDescription ? `### 元の業務フロー説明\n${flowDescription}` : ""}`;
+
       const response = await fetch("/api/ai/services/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          input: `現在のシーケンス図XML:
-${currentXml || "(空)"}
-
-ユーザーの指示:
-${inputMessage}
-
-${flowDescription ? `参考：業務フロー説明\n${flowDescription}` : ""}
-
-${actors.length > 0 ? `アクター一覧:\n${actors.map((a, i) => `${i + 1}. ${a.name}`).join("\n")}` : ""}`,
-          systemPrompt: getBusinessFlowDiagramPrompt(),
+          input: inputMessage,
+          systemPrompt: modifyPrompt,
           temperature: 0.3,
-          maxTokens: 10000,
+          maxTokens: 4096,
         }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        const output = data.output || "";
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
 
-        // XMLを抽出（複数のパターンに対応）
-        let extractedXml = "";
+      const data = await response.json();
+      const output = data.output || "";
 
-        // 1. ```xml...```形式のコードブロックを探す
-        const xmlCodeBlockMatch = output.match(/```xml\s*([\s\S]*?)\s*```/);
-        if (xmlCodeBlockMatch) {
-          extractedXml = xmlCodeBlockMatch[1].trim();
-        } else {
-          // 2. <mxGraphModel から </mxGraphModel> までを抽出
-          const mxGraphMatch = output.match(/<mxGraphModel[\s\S]*<\/mxGraphModel>/);
-          if (mxGraphMatch) {
-            extractedXml = mxGraphMatch[0].trim();
-          } else {
-            // 3. 出力全体をそのまま使用
-            extractedXml = output.trim();
-          }
-        }
+      console.log("AI modification output:", output);
 
-        // XMLが<mxGraphModelで始まっていない場合、そこまでをトリミング
-        const mxGraphStartIndex = extractedXml.indexOf("<mxGraphModel");
-        if (mxGraphStartIndex > 0) {
-          extractedXml = extractedXml.substring(mxGraphStartIndex);
-        }
+      // JSONをパースしてXMLを生成
+      const flowData = parseFlowDiagramJson(output);
 
-        if (extractedXml.startsWith("<mxGraphModel")) {
-          setCurrentXml(extractedXml);
-          onChange?.(extractedXml);
-          setLoadKey((prev) => prev + 1); // エディタを再マウントして新しいXMLを読み込む
-          const successMessage: ChatMessage = {
-            role: "assistant",
-            content: t.modifiedSuccess,
-            timestamp: new Date().toISOString(),
-          };
-          setChatMessages((prev) => [...prev, successMessage]);
-        } else {
-          const assistantMessage: ChatMessage = {
-            role: "assistant",
-            content: output,
-            timestamp: new Date().toISOString(),
-          };
-          setChatMessages((prev) => [...prev, assistantMessage]);
-        }
+      if (flowData) {
+        const generatedXml = generateFlowDiagramXml(flowData);
+        setCurrentXml(generatedXml);
+        onChange?.(generatedXml);
+        setLoadKey((prev) => prev + 1);
+
+        const successMessage: ChatMessage = {
+          role: "assistant",
+          content: t.modifiedSuccess,
+          timestamp: new Date().toISOString(),
+        };
+        setChatMessages((prev) => [...prev, successMessage]);
+      } else {
+        // JSONパースに失敗した場合は、AIの応答をそのまま表示
+        const assistantMessage: ChatMessage = {
+          role: "assistant",
+          content: output,
+          timestamp: new Date().toISOString(),
+        };
+        setChatMessages((prev) => [...prev, assistantMessage]);
       }
     } catch (error) {
       console.error("Failed to process request:", error);
