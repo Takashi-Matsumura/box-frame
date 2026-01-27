@@ -23,6 +23,19 @@ import {
 } from "@/lib/core-modules/ai";
 import { aiChatTranslations } from "./translations";
 
+// HTTPでも動作するようにUUID生成のフォールバック
+function generateUUID(): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for non-secure contexts (HTTP)
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -129,7 +142,7 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
     if (!text || isLoading) return;
 
     const userMessage: Message = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       role: "user",
       content: text,
       timestamp: new Date(),
@@ -239,7 +252,7 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
               messageAdded = true;
               const outputTokens = estimateTokens(fullContent);
               const assistantMessage: Message = {
-                id: crypto.randomUUID(),
+                id: generateUUID(),
                 role: "assistant",
                 content: fullContent,
                 timestamp: new Date(),
@@ -280,7 +293,7 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
         messageAdded = true;
         const outputTokens = estimateTokens(fullContent);
         const assistantMessage: Message = {
-          id: crypto.randomUUID(),
+          id: generateUUID(),
           role: "assistant",
           content: fullContent,
           timestamp: new Date(),
@@ -294,7 +307,7 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
         if (streamingContent) {
           const outputTokens = estimateTokens(streamingContent);
           const assistantMessage: Message = {
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             role: "assistant",
             content: streamingContent,
             timestamp: new Date(),
@@ -457,7 +470,7 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
                 messageAdded = true;
                 const outputTokens = estimateTokens(fullContent);
                 const assistantMessage: Message = {
-                  id: crypto.randomUUID(),
+                  id: generateUUID(),
                   role: "assistant",
                   content: fullContent,
                   timestamp: new Date(),
@@ -498,7 +511,7 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
           messageAdded = true;
           const outputTokens = estimateTokens(fullContent);
           const assistantMessage: Message = {
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             role: "assistant",
             content: fullContent,
             timestamp: new Date(),
@@ -512,7 +525,7 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
           if (streamingContent) {
             const outputTokens = estimateTokens(streamingContent);
             const assistantMessage: Message = {
-              id: crypto.randomUUID(),
+              id: generateUUID(),
               role: "assistant",
               content: streamingContent,
               timestamp: new Date(),
