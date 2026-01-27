@@ -26,7 +26,7 @@ services:
 
       # AI Services
       LLM_BASE_URL: ${LLM_BASE_URL:-http://host.docker.internal:8080}
-      AIRAG_BACKEND_URL: http://airag-backend:8000
+      RAG_BACKEND_URL: http://airag-backend:8000
 
       # Module Configuration
       NEXT_PUBLIC_ENABLE_HR_EVALUATION: ${NEXT_PUBLIC_ENABLE_HR_EVALUATION:-true}

@@ -110,8 +110,8 @@ export function HistoryTab({ organizationId, language, t }: HistoryTabProps) {
   };
 
   return (
-    <div>
-      <div className="flex items-center gap-3 mb-6">
+    <div className="flex flex-col h-[calc(100vh-340px)] min-h-[400px]">
+      <div className="flex items-center gap-3 mb-6 flex-shrink-0">
         <FaHistory className="w-6 h-6 text-purple-600" />
         <h2 className="text-xl font-semibold text-foreground">
           {t.historyTitle}
@@ -119,7 +119,7 @@ export function HistoryTab({ organizationId, language, t }: HistoryTabProps) {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-4 mb-6">
+      <div className="flex flex-wrap gap-4 mb-6 flex-shrink-0">
         <div className="flex items-center gap-2">
           <FaFilter className="w-4 h-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">{t.filter}:</span>
@@ -169,9 +169,9 @@ export function HistoryTab({ organizationId, language, t }: HistoryTabProps) {
           <p>{t.noHistory}</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-border">
+        <div className="flex-1 min-h-0 overflow-auto rounded-lg border border-border">
           <table className="w-full text-sm">
-            <thead className="bg-muted">
+            <thead className="bg-muted sticky top-0">
               <tr>
                 <th className="px-4 py-3 text-left font-medium text-foreground">
                   {t.changedAt}

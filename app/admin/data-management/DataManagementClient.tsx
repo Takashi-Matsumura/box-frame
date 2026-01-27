@@ -32,9 +32,15 @@ export function DataManagementClient({
   const tab = searchParams.get("tab") || "import";
   const t = dataManagementTranslations[language];
 
-  const [selectedOrgId, setSelectedOrgId] = useState<string>(
-    organizations[0]?.id || "",
-  );
+  // 社員数が最も多い組織をマージ先（メイン）とみなす
+  const primaryOrgId =
+    organizations.length > 0
+      ? organizations.reduce((max, org) =>
+          org._count.employees > max._count.employees ? org : max
+        ).id
+      : "";
+
+  const [selectedOrgId, setSelectedOrgId] = useState<string>(primaryOrgId);
   const [showCreateOrg, setShowCreateOrg] = useState(false);
   const [newOrgName, setNewOrgName] = useState("");
   const [isCreatingOrg, setIsCreatingOrg] = useState(false);
@@ -82,6 +88,7 @@ export function DataManagementClient({
                 >
                   {organizations.map((org) => (
                     <option key={org.id} value={org.id}>
+                      {org.id === primaryOrgId ? "★ " : ""}
                       {org.name} ({org._count.employees}名)
                     </option>
                   ))}

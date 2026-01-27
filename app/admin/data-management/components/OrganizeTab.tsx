@@ -564,9 +564,9 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
   }
 
   return (
-    <div>
+    <div className="flex flex-col h-[calc(100vh-340px)] min-h-[400px]">
       {/* Header with Publish Settings */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div>
           <h2 className="text-lg font-semibold text-foreground">
             {t.organizeTitle}
@@ -647,7 +647,7 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
       </div>
 
       {/* Controls */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 flex-shrink-0">
         <Button
           variant="ghost"
           size="sm"
@@ -667,7 +667,7 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
       </div>
 
       {/* Organization Tree */}
-      <ScrollArea className="h-[calc(100vh-340px)]">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="space-y-2 pr-4">
           {/* Departments */}
           {sortedDepartments.map((dept) => {

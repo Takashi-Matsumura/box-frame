@@ -158,7 +158,7 @@ export function OrganizationChartClient({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // 表示モード
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   // 検索のデバウンス
   useEffect(() => {
