@@ -139,9 +139,8 @@ type DeepDiveItemKey =
   | "businessFlow"
   | "inputOutput"
   | "systemsTools"
-  | "kpis"
-  | "risksIssues"
-  | "improvements";
+  | "skillsKnowledge"
+  | "risksIssues";
 
 interface ProcessDetailClientProps {
   processId: string;
@@ -638,16 +637,13 @@ ${process.title}
 |------------|------|
 | [システム] | [用途] |
 
-## KPI/成果指標
-| 指標名 | 目標値 | 測定頻度 |
-|--------|--------|----------|
-| [指標] | [目標] | [頻度] |
+## 必要なスキル/知識
+| スキル/知識 | レベル | 備考 |
+|-------------|--------|------|
+| [スキル名] | [初級/中級/上級] | [習得方法や補足] |
 
 ## リスク・課題
-- **[リスク名]**: [説明と影響]
-
-## 改善提案
-- **[提案タイトル]**: [説明と期待効果]`,
+- **[リスク名]**: [説明と影響]`,
           temperature: 0.5,
           maxTokens: 3000,
         }),
@@ -747,18 +743,13 @@ ${conversationText}
 - [システム1]: [用途]
 - [システム2]: [用途]
 
-## KPI/成果指標
-| 指標 | 目標値 |
-|------|--------|
-| [KPI名] | [目標] |
+## 必要なスキル/知識
+- [スキル/知識1]: [レベルや習得方法]
+- [スキル/知識2]: [レベルや習得方法]
 
 ## リスク・課題
 - [リスク/課題1]
 - [リスク/課題2]
-
-## 改善提案
-- [改善案1]
-- [改善案2]
 
 ルール:
 - 会話から読み取れない項目は「（未定義）」と記載
@@ -929,16 +920,15 @@ ${conversationText}
   {"itemKey": "businessFlow", "status": "...", "comment": "..."},
   {"itemKey": "inputOutput", "status": "...", "comment": "..."},
   {"itemKey": "systemsTools", "status": "...", "comment": "..."},
-  {"itemKey": "kpis", "status": "...", "comment": "..."},
-  {"itemKey": "risksIssues", "status": "...", "comment": "..."},
-  {"itemKey": "improvements", "status": "...", "comment": "..."}
+  {"itemKey": "skillsKnowledge", "status": "...", "comment": "..."},
+  {"itemKey": "risksIssues", "status": "...", "comment": "..."}
 ]
 
 ## レビュー観点
 - 各項目が具体的で実行可能な内容か
 - 項目間の整合性（例：ステークホルダーが業務フローに登場するか）
 - 曖昧な表現や抽象的な記述がないか
-- 測定可能なKPIが設定されているか
+- 必要なスキル/知識が業務内容と整合しているか
 - リスクに対する対策が明記されているか`,
           temperature: 0.3,
           maxTokens: 2000,
@@ -1067,9 +1057,8 @@ ${conversationText}
     businessFlow: t.itemBusinessFlow,
     inputOutput: t.itemInputOutput,
     systemsTools: t.itemSystemsTools,
-    kpis: t.itemKPIs,
+    skillsKnowledge: t.itemSkillsKnowledge,
     risksIssues: t.itemRisksIssues,
-    improvements: t.itemImprovements,
   };
 
   // Note: Deep dive機能の開始関数（将来の拡張用に保持）
@@ -1124,22 +1113,13 @@ ${conversationText}
             ?.map((s) => `- ${s.name}: ${s.purpose || ""}`)
             .join("\n") || ""
         );
-      case "kpis":
-        return (
-          process.kpis
-            ?.map((k) => `- ${k.name}: ${k.target || ""}${k.unit || ""}`)
-            .join("\n") || ""
-        );
+      case "skillsKnowledge":
+        // マークダウンから必要なスキル/知識セクションを抽出
+        return "";
       case "risksIssues":
         return (
           process.risksAndIssues
             ?.map((r) => `- ${r.type}: ${r.description}`)
-            .join("\n") || ""
-        );
-      case "improvements":
-        return (
-          process.improvements
-            ?.map((i) => `- ${i.title}: ${i.description}`)
             .join("\n") || ""
         );
       default:
@@ -1182,17 +1162,13 @@ ${conversationText}
         ja: "使用しているシステムやツールについてもう少し詳しく教えてください。どのような場面で使い、どんな課題がありますか？",
         en: "Could you tell me more about the systems and tools used? In what situations are they used, and what challenges exist?",
       },
-      kpis: {
-        ja: "KPIや成果指標について補足をお願いします。現在の達成状況や、測定方法、改善の取り組みはありますか？",
-        en: "Could you elaborate on the KPIs and metrics? What is the current achievement status, how are they measured, and are there any improvement efforts?",
+      skillsKnowledge: {
+        ja: "この業務に必要なスキルや知識について教えてください。どのレベルが求められますか？習得方法や研修はありますか？",
+        en: "Could you tell me about the skills and knowledge required for this task? What level is expected? Are there training programs or ways to acquire them?",
       },
       risksIssues: {
         ja: "リスクや課題についてもう少し詳しく教えてください。過去に問題が発生したことはありますか？対策は十分ですか？",
         en: "Could you tell me more about the risks and issues? Have there been problems in the past? Are the countermeasures sufficient?",
-      },
-      improvements: {
-        ja: "改善提案について、優先度や実現可能性を含めてもう少し詳しく教えていただけますか？",
-        en: "Could you elaborate on the improvements, including priority and feasibility?",
       },
     };
 
@@ -1235,9 +1211,7 @@ ${conversationText}
 インプット: ${process?.inputs?.map((i) => i.name).join(", ") || "未設定"}
 アウトプット: ${process?.outputs?.map((o) => o.name).join(", ") || "未設定"}
 使用システム・ツール: ${process?.systemsAndTools?.map((s) => s.name).join(", ") || "未設定"}
-KPI: ${process?.kpis?.map((k) => k.name).join(", ") || "未設定"}
 リスク・課題: ${process?.risksAndIssues?.map((r) => r.description).join(", ") || "未設定"}
-改善提案: ${process?.improvements?.map((i) => i.title).join(", ") || "未設定"}
 `.trim();
 
       const systemPrompt = `あなたは業務分掌の深掘りインタビュアーです。
@@ -1346,9 +1320,8 @@ ${itemTitle}: ${getItemValue(deepDiveItem) || "未設定"}
       businessFlow: `${basePrompt}\n\n出力形式: {"businessFlow": "更新された業務フロー（マークダウン形式）"}`,
       inputOutput: `${basePrompt}\n\n出力形式: {"inputs": [{"name": "入力名", "description": "説明", "source": "入力元"}], "outputs": [{"name": "出力名", "description": "説明", "destination": "出力先"}]}`,
       systemsTools: `${basePrompt}\n\n出力形式: {"systemsAndTools": [{"name": "システム名", "purpose": "用途", "url": "URL"}]}`,
-      kpis: `${basePrompt}\n\n出力形式: {"kpis": [{"name": "KPI名", "target": "目標値", "unit": "単位", "frequency": "測定頻度"}]}`,
+      skillsKnowledge: `${basePrompt}\n\n出力形式: {"skillsKnowledge": [{"name": "スキル/知識名", "level": "レベル（初級/中級/上級）", "description": "習得方法や補足"}]}`,
       risksIssues: `${basePrompt}\n\n出力形式: {"risksAndIssues": [{"type": "種類", "description": "説明", "impact": "影響", "mitigation": "対策"}]}`,
-      improvements: `${basePrompt}\n\n出力形式: {"improvements": [{"title": "タイトル", "description": "説明", "priority": "優先度", "expectedBenefit": "期待効果"}]}`,
     };
 
     return itemPrompts[itemKey];
