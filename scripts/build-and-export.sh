@@ -66,7 +66,7 @@ fi
 
 # Step 5: Copy docker-compose and .env template
 echo -e "\n${YELLOW}Step 5: Copying deployment files...${NC}"
-cp docker-compose.box2.yml "${EXPORT_PATH}/"
+cp docker-compose.yml "${EXPORT_PATH}/"
 
 cat > "${EXPORT_PATH}/.env.template" << 'EOF'
 # BoX2 Environment Variables
@@ -85,7 +85,7 @@ NEXT_PUBLIC_ENABLE_BACKOFFICE=true
 EOF
 
 # Step 6: Create docker-compose without RAG
-cat > "${EXPORT_PATH}/docker-compose.box2.yml" << 'EOF'
+cat > "${EXPORT_PATH}/docker-compose.yml" << 'EOF'
 # ========================================
 # BoX2 Production Docker Compose
 # ポート8888でBoX1と同居
@@ -196,7 +196,7 @@ echo "   # Generate AUTH_SECRET:"
 echo "   openssl rand -base64 32"
 echo ""
 echo "2. Start the containers:"
-echo "   docker-compose -f docker-compose.box2.yml up -d"
+echo "   docker-compose up -d"
 echo ""
 echo "3. Access the application:"
 echo "   http://172.16.2.222:8888"
@@ -224,6 +224,6 @@ echo "2. MacStudioで外部ストレージをマウント"
 echo "3. cd <外部ストレージのパス>/box2-images"
 echo "4. ./load-images.sh"
 echo "5. cp .env.template .env && openssl rand -base64 32 でAUTH_SECRETを設定"
-echo "6. docker-compose -f docker-compose.box2.yml up -d"
+echo "6. docker-compose up -d"
 echo ""
 echo -e "アクセスURL: ${GREEN}http://172.16.2.222:8888${NC}"

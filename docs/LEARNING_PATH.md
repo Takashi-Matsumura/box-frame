@@ -266,8 +266,9 @@ app/api/auth/[...nextauth]/route.ts
 
 **対象ファイル**:
 ```
-docker-compose.yml      ← 開発環境
-Dockerfile             ← コンテナ定義（あれば）
+docker-compose.yml      ← 本番環境
+docker-compose.dev.yml  ← 開発環境
+Dockerfile             ← コンテナ定義
 .env.example           ← 環境変数テンプレート
 ```
 

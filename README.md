@@ -178,7 +178,14 @@ npm run dev
 ## Docker環境
 
 ```yaml
-# docker-compose.yml
+# docker-compose.yml (本番用)
+services:
+  nextjs:        # Next.js (port: 8888 → 3000)
+  postgres:      # PostgreSQL
+  openldap:      # OpenLDAP (port: 3890 → 389)
+  airag-backend: # AI RAG Backend
+
+# docker-compose.dev.yml (開発用)
 services:
   postgres:    # PostgreSQL (port: 5433)
   openldap:    # OpenLDAP (port: 390)
@@ -187,11 +194,17 @@ services:
 ### コンテナ操作
 
 ```bash
-# 起動
+# 本番: 起動
 docker compose up -d
 
-# 停止
+# 本番: 停止
 docker compose down
+
+# 開発: 起動
+docker compose -f docker-compose.dev.yml up -d
+
+# 開発: 停止
+docker compose -f docker-compose.dev.yml down
 
 # ログ確認
 docker compose logs -f
