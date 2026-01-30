@@ -41,6 +41,9 @@ ENV NODE_ENV=production
 ENV NEXT_PUBLIC_APP_NAME=${NEXT_PUBLIC_APP_NAME}
 ENV RAG_BACKEND_URL=${RAG_BACKEND_URL}
 
+# Generate build ID (timestamp-based) for session invalidation on redeploy
+RUN echo "BUILD_$(date +%Y%m%d_%H%M%S)" > /app/build-id
+
 # Build the application
 RUN npm run build
 
@@ -77,6 +80,9 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/ldapts ./node_modules/ldapts
 COPY --from=builder /app/node_modules/asn1 ./node_modules/asn1
 COPY --from=builder /app/node_modules/safer-buffer ./node_modules/safer-buffer
+
+# Copy build ID for session invalidation on redeploy
+COPY --from=builder /app/build-id ./build-id
 
 # Copy prisma directory for schema reference (not used at runtime but useful for debugging)
 COPY --from=builder /app/prisma ./prisma

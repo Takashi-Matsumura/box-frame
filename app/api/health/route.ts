@@ -10,6 +10,7 @@ export async function GET() {
       status: "ok",
       timestamp: new Date().toISOString(),
       version: process.env.npm_package_version || "1.0.0",
+      buildId: process.env.NEXT_BUILD_ID || "dev",
     },
     { status: 200 }
   );

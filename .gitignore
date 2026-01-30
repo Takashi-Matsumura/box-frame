@@ -1,5 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# build ID (generated during Docker build)
+build-id
+
 # dependencies
 **/node_modules/
 /.pnp

@@ -1,9 +1,23 @@
+import { readFileSync } from "fs";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import type { Role } from "@prisma/client";
 import type { NextAuthConfig } from "next-auth";
 import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
 import { prisma } from "@/lib/prisma";
+
+// Read build ID once at startup for JWT embedding
+let _buildId: string | null = null;
+function getBuildId(): string {
+  if (!_buildId) {
+    try {
+      _buildId = readFileSync("build-id", "utf-8").trim();
+    } catch {
+      _buildId = "dev";
+    }
+  }
+  return _buildId;
+}
 
 // Lightweight auth config for middleware (Edge Runtime compatible)
 // Does not include LDAP/OpenLDAP providers to avoid Node.js module dependencies
@@ -140,6 +154,10 @@ export const authConfig = {
       return true;
     },
     async jwt({ token, user, trigger }) {
+      // サインイン時にビルドIDを記録
+      if (user) {
+        token.buildId = getBuildId();
+      }
       // 初回ログイン時またはセッション更新時にDBからユーザ情報を取得
       if (user || trigger === "update" || !token.role) {
         const dbUser = await prisma.user.findUnique({
@@ -182,6 +200,8 @@ export const authConfig = {
         session.user.mustChangePassword =
           (token.mustChangePassword as boolean) || false;
       }
+      // Expose buildId for middleware validation
+      (session as unknown as Record<string, unknown>).buildId = token.buildId;
       return session;
     },
   },

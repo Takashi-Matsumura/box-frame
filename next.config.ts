@@ -1,6 +1,18 @@
+import { readFileSync } from "fs";
 import type { NextConfig } from "next";
 
+// Read build ID generated during Docker build (used for session invalidation on redeploy)
+let buildId = "dev";
+try {
+  buildId = readFileSync("build-id", "utf-8").trim();
+} catch {
+  // File doesn't exist in development - use "dev" as default
+}
+
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_BUILD_ID: buildId,
+  },
   // Docker用のstandaloneビルド出力
   output: "standalone",
 

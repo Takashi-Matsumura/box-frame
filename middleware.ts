@@ -8,6 +8,26 @@ export default auth((req) => {
   const { pathname } = req.nextUrl;
   const session = req.auth;
 
+  // Build ID validation: invalidate sessions from previous deployments
+  if (session) {
+    const currentBuildId = process.env.NEXT_BUILD_ID;
+    const tokenBuildId = (session as unknown as Record<string, unknown>)
+      .buildId as
+      | string
+      | undefined;
+    if (
+      currentBuildId &&
+      currentBuildId !== "dev" &&
+      tokenBuildId &&
+      tokenBuildId !== currentBuildId
+    ) {
+      const response = NextResponse.redirect(new URL("/login", req.url));
+      response.cookies.delete("authjs.session-token");
+      response.cookies.delete("__Secure-authjs.session-token");
+      return response;
+    }
+  }
+
   // Public routes
   const publicRoutes = ["/", "/login"];
   if (publicRoutes.includes(pathname)) {

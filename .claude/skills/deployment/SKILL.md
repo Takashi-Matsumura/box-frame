@@ -69,12 +69,24 @@ docker exec box1-nextjs-prod npx tsx /app/scripts/init-ldap-config.ts
 ```bash
 curl -I http://172.16.2.222/
 docker-compose -f docker-compose.prod.yml logs nextjs | tail -60
+
+# ビルドIDの確認（セッション自動無効化用）
+curl -s http://127.0.0.1:8888/api/health | jq .buildId
 ```
 
 確認メッセージ：
 - ✅ "All migrations have been successfully applied."
 - ✅ "✅ Database seeded successfully!"
 - ✅ "✓ Ready in XXms"
+
+### 5. ビルドIDによるセッション自動無効化
+
+Dockerイメージのビルド時にタイムスタンプベースのビルドID（例: `BUILD_20260130_082049`）が自動生成される。
+このIDはJWTトークンに埋め込まれ、再デプロイ後に旧セッションのユーザーは自動的にログイン画面へリダイレクトされる。
+
+- **開発環境**: `build-id`ファイルが存在しないため、ビルドIDは`"dev"`となり検証はスキップされる
+- **本番環境**: 再デプロイ（`docker build` → `docker compose up -d`）で新しいビルドIDが生成され、旧セッションが無効化される
+- **確認方法**: `/api/health`エンドポイントの`buildId`フィールドで現在のビルドIDを確認可能
 
 ## 運用コマンド
 
