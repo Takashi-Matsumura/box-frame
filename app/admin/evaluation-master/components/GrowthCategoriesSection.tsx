@@ -74,6 +74,7 @@ export default function GrowthCategoriesSection({
     sortOrder: 0,
     isActive: true,
   });
+  const [errorMessage, setErrorMessage] = useState("");
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -128,6 +129,7 @@ export default function GrowthCategoriesSection({
       resetForm();
       setFormData((prev) => ({ ...prev, sortOrder: categories.length + 1 }));
     }
+    setErrorMessage("");
     setIsDialogOpen(true);
   };
 
@@ -135,6 +137,7 @@ export default function GrowthCategoriesSection({
     if (!formData.name) return;
 
     setTranslating(true);
+    setErrorMessage("");
     try {
       const res = await fetch("/api/ai/translate", {
         method: "POST",
@@ -149,11 +152,14 @@ export default function GrowthCategoriesSection({
       if (res.ok) {
         const data = await res.json();
         if (data.translatedText) {
-          setFormData({ ...formData, nameEn: data.translatedText });
+          setFormData((prev) => ({ ...prev, nameEn: data.translatedText }));
         }
+      } else {
+        setErrorMessage(t.translateFailed);
       }
     } catch (error) {
       console.error("Translation failed:", error);
+      setErrorMessage(t.translateFailed);
     } finally {
       setTranslating(false);
     }
@@ -163,6 +169,7 @@ export default function GrowthCategoriesSection({
     if (!formData.name) return;
 
     setSaving(true);
+    setErrorMessage("");
     try {
       const url = editingCategory
         ? `/api/evaluation/growth-categories/${editingCategory.id}`
@@ -178,9 +185,13 @@ export default function GrowthCategoriesSection({
         setIsDialogOpen(false);
         resetForm();
         fetchCategories();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setErrorMessage(data.error || data.errorJa || t.saveFailed);
       }
     } catch (error) {
       console.error("Failed to save growth category:", error);
+      setErrorMessage(t.saveFailed);
     } finally {
       setSaving(false);
     }
@@ -342,8 +353,8 @@ export default function GrowthCategoriesSection({
                     <Input
                       type="number"
                       min={0}
-                      max={10}
-                      step={0.1}
+                      max={200}
+                      step={1}
                       value={formData.scoreT4}
                       onChange={(e) =>
                         setFormData({
@@ -360,8 +371,8 @@ export default function GrowthCategoriesSection({
                     <Input
                       type="number"
                       min={0}
-                      max={10}
-                      step={0.1}
+                      max={200}
+                      step={1}
                       value={formData.scoreT3}
                       onChange={(e) =>
                         setFormData({
@@ -378,8 +389,8 @@ export default function GrowthCategoriesSection({
                     <Input
                       type="number"
                       min={0}
-                      max={10}
-                      step={0.1}
+                      max={200}
+                      step={1}
                       value={formData.scoreT2}
                       onChange={(e) =>
                         setFormData({
@@ -396,8 +407,8 @@ export default function GrowthCategoriesSection({
                     <Input
                       type="number"
                       min={0}
-                      max={10}
-                      step={0.1}
+                      max={200}
+                      step={1}
                       value={formData.scoreT1}
                       onChange={(e) =>
                         setFormData({
@@ -437,8 +448,12 @@ export default function GrowthCategoriesSection({
                   </div>
                 </div>
               </div>
+              {errorMessage && (
+                <p className="text-sm text-destructive">{errorMessage}</p>
+              )}
               <div className="flex justify-end gap-3 mt-6">
                 <Button
+                  type="button"
                   variant="outline"
                   onClick={() => {
                     setIsDialogOpen(false);
@@ -447,7 +462,7 @@ export default function GrowthCategoriesSection({
                 >
                   {t.cancel}
                 </Button>
-                <Button onClick={handleSave} disabled={saving}>
+                <Button type="button" onClick={handleSave} disabled={saving}>
                   {saving ? t.loading : t.save}
                 </Button>
               </div>

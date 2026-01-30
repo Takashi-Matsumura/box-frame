@@ -10,7 +10,7 @@ import { prisma } from "@/lib/prisma";
 export const authConfig = {
   // Type assertion needed due to version mismatch between @auth/prisma-adapter and next-auth
   adapter: PrismaAdapter(prisma) as NextAuthConfig["adapter"],
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -30,6 +30,7 @@ export const authConfig = {
   ],
   session: {
     strategy: "jwt",
+    maxAge: 24 * 60 * 60, // 1日（24時間）
   },
   callbacks: {
     async signIn({ user, account }) {

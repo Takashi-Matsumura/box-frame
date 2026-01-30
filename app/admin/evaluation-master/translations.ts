@@ -202,6 +202,9 @@ export const evaluationMasterTranslations = {
     actions: "Actions",
     selectPeriod: "Select Period",
     refresh: "Refresh",
+    saveFailed: "Failed to save. Please try again.",
+    translateFailed:
+      "AI translation is not available. Please configure an AI provider.",
   },
   ja: {
     title: "評価マスタ",
@@ -402,6 +405,9 @@ export const evaluationMasterTranslations = {
     actions: "操作",
     selectPeriod: "期間を選択",
     refresh: "更新",
+    saveFailed: "保存に失敗しました。もう一度お試しください。",
+    translateFailed:
+      "AI翻訳が利用できません。AIプロバイダーを設定してください。",
   },
 } as const;
 

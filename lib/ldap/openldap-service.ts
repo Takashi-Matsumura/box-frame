@@ -103,6 +103,12 @@ export interface UpdateUserResult {
   error?: string;
 }
 
+export interface ModifyUserDNResult {
+  success: boolean;
+  newDN?: string;
+  error?: string;
+}
+
 export interface ChangeMyPasswordResult {
   success: boolean;
   error?: string;
@@ -723,6 +729,59 @@ export class OpenLdapService {
       return {
         success: false,
         error: error instanceof Error ? error.message : "Failed to update user",
+      };
+    } finally {
+      await this.closeClient(client);
+    }
+  }
+
+  /**
+   * ユーザのDNを変更（UID変更）
+   */
+  async modifyUserDN(
+    oldUid: string,
+    newUid: string,
+  ): Promise<ModifyUserDNResult> {
+    const client = this.createClient();
+    const oldDN = `uid=${oldUid},${this.config.usersOU}`;
+    const newRDN = `uid=${newUid}`;
+    const newDN = `uid=${newUid},${this.config.usersOU}`;
+
+    try {
+      await this.bind(client, this.config.adminDN, this.config.adminPassword);
+
+      // 旧ユーザが存在するか確認
+      const oldExists = await this.userExistsWithClient(client, oldUid);
+      if (!oldExists) {
+        return {
+          success: false,
+          error: "User not found",
+        };
+      }
+
+      // 新UIDが既存でないことを確認
+      const newExists = await this.userExistsWithClient(client, newUid);
+      if (newExists) {
+        return {
+          success: false,
+          error: "New UID already exists",
+        };
+      }
+
+      // modifyDNでUID変更
+      await client.modifyDN(oldDN, newRDN);
+
+      console.log(`[OpenLdapService] User DN modified: ${oldUid} -> ${newUid}`);
+      return {
+        success: true,
+        newDN,
+      };
+    } catch (error) {
+      console.error(`[OpenLdapService] Failed to modify user DN:`, error);
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to modify user DN",
       };
     } finally {
       await this.closeClient(client);

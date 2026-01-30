@@ -242,6 +242,13 @@ const translations = {
     openLdapSettingsSaved: "OpenLDAP settings saved successfully",
     openLdapPasswordPlaceholder:
       "Enter new password (leave blank to keep current)",
+    changeUidTitle: "Change User ID",
+    changeUidMessage:
+      'Employee information has been linked. Would you like to change the User ID from "{oldUid}" to "{newUid}" (local part of the email address)?',
+    yes: "Yes",
+    no: "No",
+    uidChangeSuccess: "User ID has been changed successfully.",
+    uidChangeError: "Failed to change User ID.",
   },
   ja: {
     searchPlaceholder: "ユーザを検索...",
@@ -400,6 +407,13 @@ const translations = {
     openLdapSettingsSaved: "OpenLDAP設定を保存しました",
     openLdapPasswordPlaceholder:
       "新しいパスワードを入力（現在のまま変更しない場合は空白）",
+    changeUidTitle: "ユーザID変更",
+    changeUidMessage:
+      "社員情報と紐付けました。ユーザIDを「{oldUid}」から「{newUid}」（メールアドレスのローカル部分）に変更しますか？",
+    yes: "はい",
+    no: "いいえ",
+    uidChangeSuccess: "ユーザIDを変更しました。",
+    uidChangeError: "ユーザIDの変更に失敗しました。",
   },
 };
 
@@ -434,6 +448,12 @@ export function OpenLdapManagementClient({
   });
   const [formSaving, setFormSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // UID変更確認用
+  const [showChangeUidModal, setShowChangeUidModal] = useState(false);
+  const [changeUidOld, setChangeUidOld] = useState("");
+  const [changeUidNew, setChangeUidNew] = useState("");
+  const [changingUid, setChangingUid] = useState(false);
 
   // パスワードリセット用
   const [resetPassword, setResetPassword] = useState("");
@@ -684,6 +704,21 @@ export function OpenLdapManagementClient({
             data.errorJa || data.error || "Failed to update user",
           );
         }
+
+        const data = await response.json();
+
+        // Employee紐付け成功時、UID変更を提案
+        if (data.employeeLinked && formData.mail) {
+          const localPart = formData.mail.split("@")[0];
+          if (localPart && localPart !== selectedUser.uid) {
+            setChangeUidOld(selectedUser.uid);
+            setChangeUidNew(localPart);
+            setShowUserModal(false);
+            setShowChangeUidModal(true);
+            fetchUsers();
+            return;
+          }
+        }
       } else {
         // 新規作成
         if (!formData.uid || !formData.password) {
@@ -715,6 +750,32 @@ export function OpenLdapManagementClient({
       setMessage(error instanceof Error ? error.message : "Error");
     } finally {
       setFormSaving(false);
+    }
+  };
+
+  // UID変更を実行
+  const handleChangeUid = async () => {
+    try {
+      setChangingUid(true);
+      const response = await fetch(`/api/admin/ldap-users/${changeUidOld}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newUid: changeUidNew }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.errorJa || data.error || "Failed to change UID");
+      }
+
+      setShowChangeUidModal(false);
+      setMessage(t.uidChangeSuccess);
+      fetchUsers();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : t.uidChangeError);
+      setShowChangeUidModal(false);
+    } finally {
+      setChangingUid(false);
     }
   };
 
@@ -2387,6 +2448,32 @@ export function OpenLdapManagementClient({
               disabled={deleting}
             >
               {deleting ? t.loading : t.delete}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* UID変更確認モーダル */}
+      <Dialog open={showChangeUidModal} onOpenChange={setShowChangeUidModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t.changeUidTitle}</DialogTitle>
+            <DialogDescription>
+              {t.changeUidMessage
+                .replace("{oldUid}", changeUidOld)
+                .replace("{newUid}", changeUidNew)}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowChangeUidModal(false)}
+              disabled={changingUid}
+            >
+              {t.no}
+            </Button>
+            <Button onClick={handleChangeUid} disabled={changingUid}>
+              {changingUid ? t.loading : t.yes}
             </Button>
           </DialogFooter>
         </DialogContent>

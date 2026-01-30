@@ -66,9 +66,47 @@ export async function PATCH(
 
     const { uid } = await context.params;
     const body = await request.json();
-    const { displayName, mail, password } = body;
+    const { displayName, mail, password, newUid } = body;
 
     const ldapService = await OpenLdapService.createWithDatabaseConfig();
+
+    // UID変更の場合（独立したコードパス）
+    if (newUid) {
+      const modifyResult = await ldapService.modifyUserDN(uid, newUid);
+      if (!modifyResult.success) {
+        return NextResponse.json(
+          {
+            error: modifyResult.error,
+            errorJa:
+              modifyResult.error === "New UID already exists"
+                ? "新しいユーザIDは既に使用されています"
+                : modifyResult.error === "User not found"
+                  ? "ユーザが見つかりません"
+                  : "ユーザIDの変更に失敗しました",
+          },
+          {
+            status: modifyResult.error === "New UID already exists" ? 400 : 500,
+          },
+        );
+      }
+
+      // LdapUserMappingのldapUsernameとldapDNを更新
+      await prisma.ldapUserMapping.updateMany({
+        where: { ldapUsername: uid },
+        data: {
+          ldapUsername: newUid,
+          ldapDN: modifyResult.newDN,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: "User ID changed successfully",
+        messageJa: "ユーザIDを変更しました",
+        newUid,
+        newDN: modifyResult.newDN,
+      });
+    }
 
     // パスワードリセットの場合
     if (password) {
