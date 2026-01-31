@@ -208,12 +208,22 @@ export default function PeriodsSection({
         method: "POST",
       });
 
+      const data = await res.json();
+
       if (res.ok) {
         fetchPeriods();
-        alert(t.generateSuccess);
+        const generated = data.data?.generatedCount || 0;
+        const skipped = data.data?.skippedCount || 0;
+        const total = data.data?.totalEmployees || 0;
+        alert(
+          `${t.generateSuccess}\n${language === "ja" ? `対象: ${total}名 / 生成: ${generated}名 / スキップ: ${skipped}名` : `Total: ${total} / Generated: ${generated} / Skipped: ${skipped}`}`,
+        );
+      } else {
+        alert(data.error || "Failed to generate evaluations");
       }
     } catch (error) {
       console.error("Failed to generate evaluations:", error);
+      alert("Failed to generate evaluations");
     } finally {
       setGenerating(null);
     }
