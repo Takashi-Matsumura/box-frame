@@ -122,6 +122,10 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
     "publish",
   );
   const [updatingPublish, setUpdatingPublish] = useState(false);
+  const [publishError, setPublishError] = useState<{
+    message: string;
+    unassigned?: string[];
+  } | null>(null);
 
   // Cancel import
   const [cancelStatus, setCancelStatus] = useState<{
@@ -161,7 +165,9 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch("/api/organization");
+      const response = await fetch(
+        `/api/organization?organizationId=${organizationId}`,
+      );
       if (!response.ok) throw new Error("Failed to fetch organization data");
       const data: OrganizationData = await response.json();
       setOrgData(data);
@@ -171,7 +177,7 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [organizationId]);
 
   // Fetch publish settings
   const fetchPublishSettings = useCallback(async () => {
@@ -266,6 +272,7 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
 
     try {
       setUpdatingPublish(true);
+      setPublishError(null);
       const body: {
         organizationId: string;
         action: string;
@@ -286,8 +293,15 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to update publish settings");
+        const errorData = await response.json();
+        if (errorData.error === "MANAGERS_NOT_ASSIGNED") {
+          setPublishError({
+            message: t.managersNotAssigned,
+            unassigned: errorData.unassigned,
+          });
+          return;
+        }
+        throw new Error(errorData.error || "Failed to update publish settings");
       }
 
       await fetchPublishSettings();
@@ -1051,8 +1065,14 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
       </Dialog>
 
       {/* Publish Settings Dialog */}
-      <Dialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
-        <DialogContent className="sm:max-w-[450px]">
+      <Dialog
+        open={showPublishDialog}
+        onOpenChange={(open) => {
+          setShowPublishDialog(open);
+          if (!open) setPublishError(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-[450px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t.setPublishDate}</DialogTitle>
           </DialogHeader>
@@ -1084,6 +1104,26 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
                 ? t.confirmPublishNow
                 : t.confirmSchedule}
             </p>
+
+            {/* Error: managers not assigned */}
+            {publishError && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                <p className="text-sm text-destructive font-medium">
+                  {publishError.message}
+                </p>
+                {publishError.unassigned && (
+                  <ul className="list-disc list-inside text-xs text-destructive/80 space-y-0.5 mt-2 max-h-[150px] overflow-y-auto">
+                    {publishError.unassigned.map((name) => (
+                      <li key={name}>{name}</li>
+                    ))}
+                  </ul>
+                )}
+                <p className="text-xs text-destructive/60 mt-2">
+                  {publishError.unassigned?.length}
+                  {t.managersNotAssignedCount}
+                </p>
+              </div>
+            )}
 
             {/* Date Picker for Schedule */}
             {publishAction === "schedule" && (

@@ -85,6 +85,29 @@ interface MergePreview {
   warnings: string[];
 }
 
+interface DuplicateEmployee {
+  sourceEmployee: {
+    id: string;
+    employeeId: string;
+    name: string;
+    position: string | null;
+    department: string;
+    section: string | null;
+    email: string | null;
+  };
+  targetEmployee: {
+    id: string;
+    employeeId: string;
+    name: string;
+    position: string | null;
+    department: string;
+    section: string | null;
+    email: string | null;
+  };
+}
+
+type DuplicateResolution = "keepTarget" | "keepSource" | "skipSource";
+
 interface MergeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -95,7 +118,7 @@ interface MergeDialogProps {
   onMergeComplete: () => void;
 }
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3 | 4 | 5;
 
 export function MergeDialog({
   open,
@@ -125,10 +148,18 @@ export function MergeDialog({
     DepartmentMapping[]
   >([]);
 
-  // Step 3: Preview
+  // Step 3: Duplicate employees
+  const [duplicateEmployees, setDuplicateEmployees] = useState<
+    DuplicateEmployee[]
+  >([]);
+  const [duplicateResolutions, setDuplicateResolutions] = useState<
+    Record<string, DuplicateResolution>
+  >({});
+
+  // Step 4: Preview
   const [preview, setPreview] = useState<MergePreview | null>(null);
 
-  // Step 4: Confirmation
+  // Step 5: Confirmation
   const [confirmationText, setConfirmationText] = useState("");
   const [executing, setExecuting] = useState(false);
 
@@ -140,6 +171,8 @@ export function MergeDialog({
       setSourceDepartments([]);
       setTargetDepartments([]);
       setDepartmentMappings([]);
+      setDuplicateEmployees([]);
+      setDuplicateResolutions({});
       setPreview(null);
       setConfirmationText("");
       setError(null);
@@ -215,6 +248,34 @@ export function MergeDialog({
     }
   }, [selectedSourceId, targetOrgId, t.mergeError]);
 
+  // Fetch duplicate employees
+  const fetchDuplicateEmployees = useCallback(async () => {
+    if (!selectedSourceId || !targetOrgId) return;
+
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `/api/admin/organization/merge/duplicate-employees?sourceOrgId=${selectedSourceId}&targetOrgId=${targetOrgId}`,
+      );
+      if (!response.ok) throw new Error("Failed to fetch duplicate employees");
+      const data = await response.json();
+      const duplicates: DuplicateEmployee[] = data.duplicates || [];
+      setDuplicateEmployees(duplicates);
+
+      // Initialize resolutions - default to keepTarget
+      const initialResolutions: Record<string, DuplicateResolution> = {};
+      for (const dup of duplicates) {
+        initialResolutions[dup.sourceEmployee.id] = "keepTarget";
+      }
+      setDuplicateResolutions(initialResolutions);
+    } catch (err) {
+      console.error("Error fetching duplicate employees:", err);
+      setError(t.mergeError);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedSourceId, targetOrgId, t.mergeError]);
+
   // Fetch preview
   const fetchPreview = useCallback(async () => {
     if (!selectedSourceId || !targetOrgId || departmentMappings.length === 0)
@@ -229,6 +290,7 @@ export function MergeDialog({
           sourceOrgId: selectedSourceId,
           targetOrgId,
           departmentMappings,
+          duplicateResolutions,
         }),
       });
       if (!response.ok) throw new Error("Failed to generate preview");
@@ -240,7 +302,13 @@ export function MergeDialog({
     } finally {
       setLoading(false);
     }
-  }, [selectedSourceId, targetOrgId, departmentMappings, t.mergeError]);
+  }, [
+    selectedSourceId,
+    targetOrgId,
+    departmentMappings,
+    duplicateResolutions,
+    t.mergeError,
+  ]);
 
   // Execute merge
   const executeMerge = async () => {
@@ -256,6 +324,7 @@ export function MergeDialog({
           sourceOrgId: selectedSourceId,
           targetOrgId,
           departmentMappings,
+          duplicateResolutions,
           confirmationText,
         }),
       });
@@ -278,10 +347,13 @@ export function MergeDialog({
       await fetchDepartmentMapping();
       setStep(2);
     } else if (step === 2) {
-      await fetchPreview();
+      await fetchDuplicateEmployees();
       setStep(3);
     } else if (step === 3) {
+      await fetchPreview();
       setStep(4);
+    } else if (step === 4) {
+      setStep(5);
     }
   };
 
@@ -310,6 +382,17 @@ export function MergeDialog({
     );
   };
 
+  // Update duplicate resolution
+  const updateResolution = (
+    sourceEmployeeId: string,
+    resolution: DuplicateResolution,
+  ) => {
+    setDuplicateResolutions((prev) => ({
+      ...prev,
+      [sourceEmployeeId]: resolution,
+    }));
+  };
+
   const selectedSource = candidates.find((c) => c.id === selectedSourceId);
 
   return (
@@ -321,7 +404,7 @@ export function MergeDialog({
 
         {/* Step indicator */}
         <div className="flex items-center justify-center gap-2 mb-4">
-          {[1, 2, 3, 4].map((s) => (
+          {[1, 2, 3, 4, 5].map((s) => (
             <div key={s} className="flex items-center">
               <div
                 className={cn(
@@ -351,7 +434,7 @@ export function MergeDialog({
                   s
                 )}
               </div>
-              {s < 4 && (
+              {s < 5 && (
                 <div
                   className={cn(
                     "w-8 h-0.5 mx-1",
@@ -541,8 +624,171 @@ export function MergeDialog({
             </div>
           )}
 
-          {/* Step 3: Preview */}
+          {/* Step 3: Duplicate employees */}
           {step === 3 && (
+            <div className="space-y-4">
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                </div>
+              ) : duplicateEmployees.length === 0 ? (
+                <div className="p-4 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    {t.noDuplicateEmployees}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="p-3 bg-orange-100 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-md">
+                    <p className="font-medium text-orange-800 dark:text-orange-200">
+                      {duplicateEmployees.length}
+                      {t.duplicateEmployeesFound}
+                    </p>
+                    <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">
+                      {t.duplicateEmployeesDescription}
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    {duplicateEmployees.map((dup) => (
+                      <div
+                        key={dup.sourceEmployee.id}
+                        className="border rounded-md overflow-hidden"
+                      >
+                        <div className="px-4 py-2 bg-muted font-medium">
+                          {dup.sourceEmployee.name}
+                        </div>
+                        <div className="p-4">
+                          <div className="grid grid-cols-2 gap-4 mb-3">
+                            {/* Target record */}
+                            <div className="p-3 border rounded-md bg-blue-50 dark:bg-blue-900/10">
+                              <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-2">
+                                {t.targetRecord} ({targetOrgName})
+                              </p>
+                              <div className="space-y-1 text-xs">
+                                <p>
+                                  ID: {dup.targetEmployee.employeeId}
+                                </p>
+                                <p>
+                                  {t.position}:{" "}
+                                  {dup.targetEmployee.position || "-"}
+                                </p>
+                                <p>
+                                  {t.department}:{" "}
+                                  {dup.targetEmployee.department}
+                                  {dup.targetEmployee.section &&
+                                    ` / ${dup.targetEmployee.section}`}
+                                </p>
+                                <p>
+                                  {t.email}:{" "}
+                                  {dup.targetEmployee.email || "-"}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Source record */}
+                            <div className="p-3 border rounded-md bg-green-50 dark:bg-green-900/10">
+                              <p className="text-xs font-medium text-green-700 dark:text-green-300 mb-2">
+                                {t.sourceRecord} ({selectedSource?.name})
+                              </p>
+                              <div className="space-y-1 text-xs">
+                                <p>
+                                  ID: {dup.sourceEmployee.employeeId}
+                                </p>
+                                <p>
+                                  {t.position}:{" "}
+                                  {dup.sourceEmployee.position || "-"}
+                                </p>
+                                <p>
+                                  {t.department}:{" "}
+                                  {dup.sourceEmployee.department}
+                                  {dup.sourceEmployee.section &&
+                                    ` / ${dup.sourceEmployee.section}`}
+                                </p>
+                                <p>
+                                  {t.email}:{" "}
+                                  {dup.sourceEmployee.email || "-"}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Resolution options */}
+                          <div className="flex flex-wrap gap-3">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name={`resolution-${dup.sourceEmployee.id}`}
+                                checked={
+                                  duplicateResolutions[
+                                    dup.sourceEmployee.id
+                                  ] === "keepTarget"
+                                }
+                                onChange={() =>
+                                  updateResolution(
+                                    dup.sourceEmployee.id,
+                                    "keepTarget",
+                                  )
+                                }
+                                className="accent-primary"
+                              />
+                              <span className="text-sm">
+                                {t.keepTarget}
+                                <span className="text-xs text-muted-foreground ml-1">
+                                  ({t.recommended})
+                                </span>
+                              </span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name={`resolution-${dup.sourceEmployee.id}`}
+                                checked={
+                                  duplicateResolutions[
+                                    dup.sourceEmployee.id
+                                  ] === "keepSource"
+                                }
+                                onChange={() =>
+                                  updateResolution(
+                                    dup.sourceEmployee.id,
+                                    "keepSource",
+                                  )
+                                }
+                                className="accent-primary"
+                              />
+                              <span className="text-sm">{t.keepSource}</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name={`resolution-${dup.sourceEmployee.id}`}
+                                checked={
+                                  duplicateResolutions[
+                                    dup.sourceEmployee.id
+                                  ] === "skipSource"
+                                }
+                                onChange={() =>
+                                  updateResolution(
+                                    dup.sourceEmployee.id,
+                                    "skipSource",
+                                  )
+                                }
+                                className="accent-primary"
+                              />
+                              <span className="text-sm">{t.skipSource}</span>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Step 4: Preview */}
+          {step === 4 && (
             <div className="space-y-4">
               {loading ? (
                 <div className="flex items-center justify-center py-8">
@@ -642,8 +888,8 @@ export function MergeDialog({
             </div>
           )}
 
-          {/* Step 4: Confirmation */}
-          {step === 4 && (
+          {/* Step 5: Confirmation */}
+          {step === 5 && (
             <div className="space-y-4">
               <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-md">
                 <p className="text-sm text-destructive font-medium">
@@ -701,7 +947,7 @@ export function MergeDialog({
             >
               {t.cancel}
             </Button>
-            {step < 4 ? (
+            {step < 5 ? (
               <Button
                 onClick={handleNext}
                 disabled={

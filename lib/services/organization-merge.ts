@@ -78,6 +78,33 @@ export interface MergeResult {
   };
 }
 
+export interface DuplicateEmployee {
+  sourceEmployee: {
+    id: string;
+    employeeId: string;
+    name: string;
+    position: string | null;
+    department: string;
+    section: string | null;
+    email: string | null;
+  };
+  targetEmployee: {
+    id: string;
+    employeeId: string;
+    name: string;
+    position: string | null;
+    department: string;
+    section: string | null;
+    email: string | null;
+  };
+}
+
+export type DuplicateResolution = "keepTarget" | "keepSource" | "skipSource";
+
+export interface DuplicateResolutionMap {
+  [sourceEmployeeId: string]: DuplicateResolution;
+}
+
 /**
  * Get merge candidate organizations (excluding the target organization)
  */
@@ -268,12 +295,64 @@ export async function getDepartmentMappingData(
 }
 
 /**
+ * Detect duplicate employees between source and target organizations by name matching
+ */
+export async function detectDuplicateEmployees(
+  sourceOrgId: string,
+  targetOrgId: string,
+): Promise<DuplicateEmployee[]> {
+  const [sourceEmployees, targetEmployees] = await Promise.all([
+    prisma.employee.findMany({
+      where: { organizationId: sourceOrgId, isActive: true },
+      include: { department: true, section: true },
+    }),
+    prisma.employee.findMany({
+      where: { organizationId: targetOrgId, isActive: true },
+      include: { department: true, section: true },
+    }),
+  ]);
+
+  const duplicates: DuplicateEmployee[] = [];
+
+  for (const sourceEmp of sourceEmployees) {
+    const matchingTarget = targetEmployees.find(
+      (t) => t.name === sourceEmp.name,
+    );
+    if (matchingTarget) {
+      duplicates.push({
+        sourceEmployee: {
+          id: sourceEmp.id,
+          employeeId: sourceEmp.employeeId,
+          name: sourceEmp.name,
+          position: sourceEmp.position,
+          department: sourceEmp.department.name,
+          section: sourceEmp.section?.name || null,
+          email: sourceEmp.email,
+        },
+        targetEmployee: {
+          id: matchingTarget.id,
+          employeeId: matchingTarget.employeeId,
+          name: matchingTarget.name,
+          position: matchingTarget.position,
+          department: matchingTarget.department.name,
+          section: matchingTarget.section?.name || null,
+          email: matchingTarget.email,
+        },
+      });
+    }
+  }
+
+  return duplicates;
+}
+
+/**
  * Generate merge preview based on department mappings
  */
 export async function generateMergePreview(
   sourceOrgId: string,
   targetOrgId: string,
   departmentMappings: DepartmentMapping[],
+  duplicateResolutions?: DuplicateResolutionMap,
 ): Promise<MergePreview> {
   const warnings: string[] = [];
 
@@ -310,6 +389,18 @@ export async function generateMergePreview(
       `Duplicate employee IDs found: ${duplicates.map((e) => e.employeeId).join(", ")}`,
     );
   }
+
+  // Filter out employees based on duplicate resolutions
+  const filteredSourceEmployees = duplicateResolutions
+    ? sourceEmployees.filter((emp) => {
+        const resolution = duplicateResolutions[emp.id];
+        // keepTarget or skipSource means don't transfer this employee
+        if (resolution === "keepTarget" || resolution === "skipSource") {
+          return false;
+        }
+        return true;
+      })
+    : sourceEmployees;
 
   // Get target departments and their sections/courses
   const targetDepartments = await prisma.department.findMany({
@@ -386,7 +477,7 @@ export async function generateMergePreview(
   }
 
   // Build employee transfer list
-  const employees = sourceEmployees.map((emp) => {
+  const employees = filteredSourceEmployees.map((emp) => {
     const mapping = mappingById.get(emp.departmentId);
     const targetDeptId = mapping?.targetDeptId;
 
@@ -435,7 +526,7 @@ export async function generateMergePreview(
   });
 
   return {
-    employeesToTransfer: sourceEmployees.length,
+    employeesToTransfer: filteredSourceEmployees.length,
     departmentsToMerge,
     departmentsToCreate,
     sectionsToCreate,
@@ -453,6 +544,7 @@ export async function executeMerge(
   targetOrgId: string,
   departmentMappings: DepartmentMapping[],
   changedBy: string,
+  duplicateResolutions?: DuplicateResolutionMap,
 ): Promise<MergeResult> {
   const batchId = randomUUID();
   const now = new Date();
@@ -649,6 +741,48 @@ export async function executeMerge(
 
     // Transfer employees
     for (const emp of sourceOrg.employees) {
+      // Check duplicate resolution
+      const resolution = duplicateResolutions?.[emp.id];
+      if (resolution === "keepTarget" || resolution === "skipSource") {
+        // Don't transfer this employee - deactivate in source
+        await tx.employee.update({
+          where: { id: emp.id },
+          data: { isActive: false },
+        });
+        continue;
+      }
+
+      if (resolution === "keepSource") {
+        // Find and deactivate the target employee with the same name
+        const targetDup = await tx.employee.findFirst({
+          where: {
+            organizationId: targetOrgId,
+            name: emp.name,
+            isActive: true,
+          },
+        });
+        if (targetDup) {
+          await tx.employee.update({
+            where: { id: targetDup.id },
+            data: { isActive: false },
+          });
+          await tx.changeLog.create({
+            data: {
+              entityType: "Employee",
+              entityId: targetDup.id,
+              changeType: ChangeType.UPDATE,
+              fieldName: "isActive",
+              oldValue: "true",
+              newValue: "false",
+              changeDescription: `Deactivated due to merge - replaced by source employee ${emp.employeeId}`,
+              batchId,
+              changedBy,
+              changedAt: now,
+            },
+          });
+        }
+      }
+
       const targetDeptId = deptIdMap.get(emp.departmentId);
       const targetSectionId = emp.sectionId
         ? sectionIdMap.get(emp.sectionId)

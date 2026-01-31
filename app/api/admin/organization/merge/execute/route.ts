@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { sourceOrgId, targetOrgId, departmentMappings, confirmationText } =
+    const { sourceOrgId, targetOrgId, departmentMappings, confirmationText, duplicateResolutions } =
       body;
 
     if (!sourceOrgId || !targetOrgId || !departmentMappings) {
@@ -43,6 +43,7 @@ export async function POST(request: Request) {
       targetOrgId,
       departmentMappings,
       session.user.id || "system",
+      duplicateResolutions,
     );
 
     return NextResponse.json(result);
