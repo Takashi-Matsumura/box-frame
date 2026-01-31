@@ -76,14 +76,78 @@ export default function PeriodsSection({
   const [creating, setCreating] = useState(false);
   const [generating, setGenerating] = useState<string | null>(null);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    name: "",
-    year: new Date().getFullYear(),
-    term: "H1",
-    startDate: "",
-    endDate: "",
+  // 年度・期から開始日・終了日・期間名を算出
+  const computePeriodDefaults = useCallback(
+    (year: number, term: string) => {
+      const termLabel =
+        term === "H1"
+          ? language === "ja"
+            ? "上期"
+            : "H1"
+          : term === "H2"
+            ? language === "ja"
+              ? "下期"
+              : "H2"
+            : language === "ja"
+              ? "通期"
+              : "Annual";
+      const name = `${year}${language === "ja" ? "年度" : ""}　${termLabel}`;
+
+      let startDate: string;
+      let endDate: string;
+      if (term === "H1") {
+        startDate = `${year}-04-01`;
+        endDate = `${year}-09-30`;
+      } else if (term === "H2") {
+        startDate = `${year}-10-01`;
+        endDate = `${year + 1}-03-31`;
+      } else {
+        // ANNUAL
+        startDate = `${year}-04-01`;
+        endDate = `${year + 1}-03-31`;
+      }
+      return { name, startDate, endDate };
+    },
+    [language],
+  );
+
+  // 現在の日付から年度・期を自動判定
+  const getCurrentFiscalPeriod = useCallback(() => {
+    const now = new Date();
+    const month = now.getMonth() + 1; // 1-12
+    // 4月始まりの年度: 1-3月は前年度
+    const fiscalYear = month >= 4 ? now.getFullYear() : now.getFullYear() - 1;
+    // 4-9月: 上期, 10-3月: 下期
+    const term = month >= 4 && month <= 9 ? "H1" : "H2";
+    return { fiscalYear, term };
+  }, []);
+
+  // Form state - 現在の日付から初期値を自動設定
+  const [formData, setFormData] = useState(() => {
+    const { fiscalYear, term } = getCurrentFiscalPeriod();
+    const defaults = computePeriodDefaults(fiscalYear, term);
+    return {
+      name: defaults.name,
+      year: fiscalYear,
+      term,
+      startDate: defaults.startDate,
+      endDate: defaults.endDate,
+    };
   });
+
+  // 年度・期が変更されたら開始日・終了日・期間名を連動更新
+  const updateFormWithDefaults = useCallback(
+    (year: number, term: string) => {
+      const defaults = computePeriodDefaults(year, term);
+      setFormData((prev) => ({
+        ...prev,
+        year,
+        term,
+        ...defaults,
+      }));
+    },
+    [computePeriodDefaults],
+  );
 
   const fetchPeriods = useCallback(async () => {
     try {
@@ -119,12 +183,14 @@ export default function PeriodsSection({
 
       if (res.ok) {
         setIsCreateOpen(false);
+        const { fiscalYear, term } = getCurrentFiscalPeriod();
+        const defaults = computePeriodDefaults(fiscalYear, term);
         setFormData({
-          name: "",
-          year: new Date().getFullYear(),
-          term: "H1",
-          startDate: "",
-          endDate: "",
+          name: defaults.name,
+          year: fiscalYear,
+          term,
+          startDate: defaults.startDate,
+          endDate: defaults.endDate,
         });
         fetchPeriods();
       }
@@ -263,12 +329,12 @@ export default function PeriodsSection({
                   <Input
                     type="number"
                     value={formData.year}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        year: parseInt(e.target.value),
-                      })
-                    }
+                    onChange={(e) => {
+                      const year = parseInt(e.target.value);
+                      if (!isNaN(year)) {
+                        updateFormWithDefaults(year, formData.term);
+                      }
+                    }}
                   />
                 </div>
                 <div className="space-y-2">
@@ -276,7 +342,7 @@ export default function PeriodsSection({
                   <Select
                     value={formData.term}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, term: value })
+                      updateFormWithDefaults(formData.year, value)
                     }
                   >
                     <SelectTrigger>
