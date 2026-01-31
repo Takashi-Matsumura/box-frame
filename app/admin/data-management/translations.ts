@@ -226,6 +226,13 @@ export const dataManagementTranslations = {
     sourceRecord: "Source",
     recommended: "Recommended",
     duplicateResolution: "Duplicate Resolution",
+
+    // Individual Transfer
+    transferEmployee: "Transfer",
+    transferConfirm: "Transfer this employee to the primary organization?",
+    transferSuccess: "Employee transferred successfully",
+    transferError: "Failed to transfer employee",
+    actions: "Actions",
   },
   ja: {
     title: "組織データ管理",
@@ -451,6 +458,13 @@ export const dataManagementTranslations = {
     sourceRecord: "マージ元",
     recommended: "推奨",
     duplicateResolution: "重複解決",
+
+    // Individual Transfer
+    transferEmployee: "転籍",
+    transferConfirm: "この社員をメイン組織に転籍しますか？",
+    transferSuccess: "社員を転籍しました",
+    transferError: "転籍に失敗しました",
+    actions: "操作",
   },
 } as const;
 

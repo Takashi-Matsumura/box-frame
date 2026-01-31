@@ -161,6 +161,10 @@ export function DataManagementClient({
                 organizationId={selectedOrgId}
                 language={language}
                 t={t}
+                primaryOrgId={primaryOrgId}
+                primaryOrgName={
+                  organizations.find((o) => o.id === primaryOrgId)?.name || ""
+                }
               />
             ))}
           {tab === "organize" &&

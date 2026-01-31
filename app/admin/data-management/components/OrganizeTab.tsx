@@ -16,6 +16,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { EXECUTIVES_DEPARTMENT_NAME } from "@/lib/importers/organization/parser";
 import { cn } from "@/lib/utils";
 import type { DataManagementTranslation } from "../translations";
@@ -109,6 +116,7 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
   const [selectedUnit, setSelectedUnit] = useState<SelectedUnit | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [employeeSearch, setEmployeeSearch] = useState("");
+  const [positionFilter, setPositionFilter] = useState("");
   const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [showAllPositions, setShowAllPositions] = useState(false);
@@ -448,6 +456,7 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
   ) => {
     setSelectedUnit({ type, id, name, currentManager });
     setEmployeeSearch("");
+    setPositionFilter("");
     setShowAllPositions(false);
     fetchEmployees(type, id, false);
   };
@@ -530,13 +539,23 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
     setExpandedSects(new Set());
   };
 
-  // Filter employees by search
-  const filteredEmployees = employees.filter(
-    (emp) =>
+  // Get unique positions for filter
+  const uniquePositions = useMemo(() => {
+    const positions = new Set(employees.map((emp) => emp.position).filter(Boolean));
+    return Array.from(positions).sort((a, b) => a.localeCompare(b, "ja"));
+  }, [employees]);
+
+  // Filter employees by search and position
+  const filteredEmployees = employees.filter((emp) => {
+    const matchesSearch =
+      !employeeSearch ||
       emp.name.toLowerCase().includes(employeeSearch.toLowerCase()) ||
       emp.employeeId.toLowerCase().includes(employeeSearch.toLowerCase()) ||
-      emp.position.toLowerCase().includes(employeeSearch.toLowerCase()),
-  );
+      emp.position.toLowerCase().includes(employeeSearch.toLowerCase());
+    const matchesPosition =
+      !positionFilter || emp.position === positionFilter;
+    return matchesSearch && matchesPosition;
+  });
 
   // Sort departments with "役員・顧問" last
   const sortedDepartments = useMemo(() => {
@@ -967,39 +986,65 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
               )}
             </div>
 
-            {/* Search and Toggle */}
+            {/* Search, Position Filter, and Toggle */}
             <div className="space-y-2">
               <Input
                 placeholder={t.searchPlaceholder}
                 value={employeeSearch}
                 onChange={(e) => setEmployeeSearch(e.target.value)}
               />
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={showAllPositions}
-                  onClick={() =>
-                    handleShowAllPositionsToggle(!showAllPositions)
-                  }
-                  className={cn(
-                    "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors",
-                    showAllPositions
-                      ? "bg-primary"
-                      : "bg-gray-200 dark:bg-gray-700",
-                  )}
-                >
-                  <span
+              <div className="flex items-center gap-3">
+                {uniquePositions.length > 1 && (
+                  <Select
+                    value={positionFilter}
+                    onValueChange={(v) =>
+                      setPositionFilter(v === "all" ? "" : v)
+                    }
+                  >
+                    <SelectTrigger className="w-auto">
+                      <SelectValue
+                        placeholder={`${t.position}: ${t.all}`}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">
+                        {t.position}: {t.all}
+                      </SelectItem>
+                      {uniquePositions.map((pos) => (
+                        <SelectItem key={pos} value={pos}>
+                          {pos}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={showAllPositions}
+                    onClick={() =>
+                      handleShowAllPositionsToggle(!showAllPositions)
+                    }
                     className={cn(
-                      "pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform",
-                      showAllPositions ? "translate-x-4" : "translate-x-0",
+                      "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors",
+                      showAllPositions
+                        ? "bg-primary"
+                        : "bg-gray-200 dark:bg-gray-700",
                     )}
-                  />
-                </button>
-                <span className="text-muted-foreground">
-                  {t.showAllPositions}
-                </span>
-              </label>
+                  >
+                    <span
+                      className={cn(
+                        "pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform",
+                        showAllPositions ? "translate-x-4" : "translate-x-0",
+                      )}
+                    />
+                  </button>
+                  <span className="text-muted-foreground">
+                    {t.showAllPositions}
+                  </span>
+                </label>
+              </div>
             </div>
 
             {/* Employee List */}
