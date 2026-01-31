@@ -350,6 +350,8 @@ export function AdminClient({
     message: string;
   } | null>(null);
   const [aiSaving, setAiSaving] = useState(false);
+  const [localEndpointInput, setLocalEndpointInput] = useState("");
+  const [localModelInput, setLocalModelInput] = useState("");
 
   // アナウンス用AI翻訳
   const [aiTranslationAvailable, setAiTranslationAvailable] = useState(false);
@@ -887,6 +889,8 @@ export function AdminClient({
 
       const data = await response.json();
       setAiConfig(data.config);
+      setLocalEndpointInput(data.config.localEndpoint || "");
+      setLocalModelInput(data.config.localModel || "");
       if (data.localLLMDefaults) {
         setLocalLLMDefaults(data.localLLMDefaults);
       }
@@ -919,6 +923,8 @@ export function AdminClient({
 
       const data = await response.json();
       setAiConfig(data.config);
+      setLocalEndpointInput(data.config.localEndpoint || "");
+      setLocalModelInput(data.config.localModel || "");
       setAiApiKeyInput("");
       setConnectionTestResult(null);
     } catch (error) {
@@ -1589,12 +1595,17 @@ export function AdminClient({
                                 {t("Endpoint URL", "エンドポイントURL")}
                               </Label>
                               <Input
-                                value={aiConfig.localEndpoint}
+                                value={localEndpointInput}
                                 onChange={(e) =>
-                                  handleUpdateAiConfig({
-                                    localEndpoint: e.target.value,
-                                  })
+                                  setLocalEndpointInput(e.target.value)
                                 }
+                                onBlur={() => {
+                                  if (localEndpointInput !== aiConfig.localEndpoint) {
+                                    handleUpdateAiConfig({
+                                      localEndpoint: localEndpointInput,
+                                    });
+                                  }
+                                }}
                                 placeholder={
                                   localLLMDefaults?.[aiConfig.localProvider]
                                     ?.endpoint || ""
@@ -1625,12 +1636,17 @@ export function AdminClient({
                             <div className="space-y-2">
                               <Label>{t("Model Name", "モデル名")}</Label>
                               <Input
-                                value={aiConfig.localModel}
+                                value={localModelInput}
                                 onChange={(e) =>
-                                  handleUpdateAiConfig({
-                                    localModel: e.target.value,
-                                  })
+                                  setLocalModelInput(e.target.value)
                                 }
+                                onBlur={() => {
+                                  if (localModelInput !== aiConfig.localModel) {
+                                    handleUpdateAiConfig({
+                                      localModel: localModelInput,
+                                    });
+                                  }
+                                }}
                                 placeholder={
                                   localLLMDefaults?.[aiConfig.localProvider]
                                     ?.model || "default"
