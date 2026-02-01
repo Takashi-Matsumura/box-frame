@@ -26,6 +26,7 @@ import {
 import { EXECUTIVES_DEPARTMENT_NAME } from "@/lib/importers/organization/parser";
 import { cn } from "@/lib/utils";
 import type { DataManagementTranslation } from "../translations";
+import { DeleteOrganizationData } from "@/components/DeleteOrganizationData";
 import { MergeDialog } from "./MergeDialog";
 
 // 型定義
@@ -663,6 +664,30 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
                 <Button size="sm" onClick={() => setShowPublishDialog(true)}>
                   {t.setPublishDate}
                 </Button>
+                <DeleteOrganizationData
+                  organizationId={organizationId}
+                  language={language}
+                  stats={{
+                    totalEmployees:
+                      orgData?.organization?.employeeCount ?? 0,
+                    departments: orgData?.departments?.length ?? 0,
+                    sections:
+                      orgData?.departments?.reduce(
+                        (sum, d) => sum + d.sections.length,
+                        0,
+                      ) ?? 0,
+                    courses:
+                      orgData?.departments?.reduce(
+                        (sum, d) =>
+                          sum +
+                          d.sections.reduce(
+                            (s, sec) => s + sec.courses.length,
+                            0,
+                          ),
+                        0,
+                      ) ?? 0,
+                  }}
+                />
               </>
             )}
             {publishSettings.status === "SCHEDULED" && (
@@ -674,6 +699,32 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
               >
                 {t.cancelSchedule}
               </Button>
+            )}
+            {publishSettings.status === "ARCHIVED" && (
+              <DeleteOrganizationData
+                organizationId={organizationId}
+                language={language}
+                stats={{
+                  totalEmployees:
+                    orgData?.organization?.employeeCount ?? 0,
+                  departments: orgData?.departments?.length ?? 0,
+                  sections:
+                    orgData?.departments?.reduce(
+                      (sum, d) => sum + d.sections.length,
+                      0,
+                    ) ?? 0,
+                  courses:
+                    orgData?.departments?.reduce(
+                      (sum, d) =>
+                        sum +
+                        d.sections.reduce(
+                          (s, sec) => s + sec.courses.length,
+                          0,
+                        ),
+                      0,
+                    ) ?? 0,
+                }}
+              />
             )}
           </div>
         )}

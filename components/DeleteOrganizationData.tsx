@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 
 interface DeleteOrganizationDataProps {
+  organizationId: string;
   language?: string;
   stats: {
     totalEmployees: number;
@@ -14,6 +15,7 @@ interface DeleteOrganizationDataProps {
 }
 
 export function DeleteOrganizationData({
+  organizationId,
   language = "ja",
   stats,
 }: DeleteOrganizationDataProps) {
@@ -39,7 +41,7 @@ export function DeleteOrganizationData({
     setError(null);
 
     try {
-      const response = await fetch("/api/organization-data", {
+      const response = await fetch(`/api/organization-data?organizationId=${organizationId}`, {
         method: "DELETE",
       });
 
@@ -63,10 +65,13 @@ export function DeleteOrganizationData({
     <>
       <button
         onClick={() => setIsConfirmOpen(true)}
-        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        disabled={stats.totalEmployees === 0}
+        className="p-2 text-muted-foreground hover:text-destructive rounded-md hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        disabled={stats.totalEmployees === 0 && stats.departments === 0 && stats.sections === 0 && stats.courses === 0}
+        title={t("Delete All Organization Data", "組織データを全て削除")}
       >
-        {t("Delete All Organization Data", "組織データを全て削除")}
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
       </button>
 
       {/* 確認モーダル */}

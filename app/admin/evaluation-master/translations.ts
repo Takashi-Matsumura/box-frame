@@ -32,6 +32,15 @@ export const evaluationMasterTranslations = {
     generateSuccess: "Evaluations generated successfully",
     changeStatus: "Change Status",
     confirmDelete: "Are you sure you want to delete this period?",
+    resetEvaluations: "Reset Evaluations",
+    confirmReset:
+      "Are you sure you want to delete all evaluation data for this period? This action cannot be undone.",
+    resetSuccess: "Evaluation data has been reset",
+    resetConfirmLabel: 'Type "RESET" to confirm:',
+    deletePeriod: "Delete Period",
+    confirmDeleteDescription:
+      "Are you sure you want to delete this evaluation period? This action cannot be undone.",
+    deleteConfirmLabel: 'Type "DELETE" to confirm:',
     noPeriods: "No evaluation periods found",
     revertToDraft: "Revert to Draft",
     revertToActive: "Revert to Active",
@@ -239,6 +248,15 @@ export const evaluationMasterTranslations = {
     generateSuccess: "評価データを生成しました",
     changeStatus: "ステータス変更",
     confirmDelete: "この評価期間を削除しますか？",
+    resetEvaluations: "評価データをリセット",
+    confirmReset:
+      "この期間の評価データをすべて削除しますか？この操作は元に戻せません。",
+    resetSuccess: "評価データをリセットしました",
+    resetConfirmLabel: '確認のため「RESET」と入力してください:',
+    deletePeriod: "評価期間を削除",
+    confirmDeleteDescription:
+      "この評価期間を削除しますか？この操作は元に戻せません。",
+    deleteConfirmLabel: '確認のため「DELETE」と入力してください:',
     noPeriods: "評価期間がありません",
     revertToDraft: "準備中に戻す",
     revertToActive: "評価中に戻す",

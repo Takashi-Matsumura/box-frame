@@ -6,6 +6,7 @@ import {
   Play,
   Plus,
   RefreshCw,
+  RotateCcw,
   Trash2,
   Undo2,
 } from "lucide-react";
@@ -75,6 +76,15 @@ export default function PeriodsSection({
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [generating, setGenerating] = useState<string | null>(null);
+  const [resetting, setResetting] = useState<string | null>(null);
+  const [resetDialogPeriodId, setResetDialogPeriodId] = useState<string | null>(
+    null,
+  );
+  const [resetConfirmText, setResetConfirmText] = useState("");
+  const [deleteDialogPeriodId, setDeleteDialogPeriodId] = useState<
+    string | null
+  >(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   // 年度・期から開始日・終了日・期間名を算出
   const computePeriodDefaults = useCallback(
@@ -249,8 +259,6 @@ export default function PeriodsSection({
   };
 
   const handleDelete = async (periodId: string) => {
-    if (!confirm(t.confirmDelete)) return;
-
     try {
       const res = await fetch(`/api/evaluation/periods/${periodId}`, {
         method: "DELETE",
@@ -264,6 +272,31 @@ export default function PeriodsSection({
       }
     } catch (error) {
       console.error("Failed to delete period:", error);
+    }
+  };
+
+  const handleReset = async (periodId: string) => {
+    setResetting(periodId);
+    try {
+      const res = await fetch(`/api/evaluation/periods/${periodId}/reset`, {
+        method: "POST",
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        fetchPeriods();
+        alert(
+          `${t.resetSuccess}\n${language === "ja" ? `削除件数: ${data.deletedCount}件` : `Deleted: ${data.deletedCount}`}`,
+        );
+      } else {
+        alert(data.error || "Failed to reset evaluations");
+      }
+    } catch (error) {
+      console.error("Failed to reset evaluations:", error);
+      alert("Failed to reset evaluations");
+    } finally {
+      setResetting(null);
     }
   };
 
@@ -672,6 +705,27 @@ export default function PeriodsSection({
                         </AlertDialog>
                       )}
 
+                      {/* リセットボタン（評価データがある場合） */}
+                      {period._count.evaluations > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setResetConfirmText("");
+                            setResetDialogPeriodId(period.id);
+                          }}
+                          disabled={resetting === period.id}
+                          title={t.resetEvaluations}
+                        >
+                          {resetting === period.id ? (
+                            <RotateCcw className="w-4 h-4 text-destructive animate-spin" />
+                          ) : (
+                            <RotateCcw className="w-4 h-4 text-destructive" />
+                          )}
+                        </Button>
+                      )}
+
                       {/* 削除ボタン（評価が0件の場合のみ） */}
                       {period._count.evaluations === 0 && (
                         <Button
@@ -679,7 +733,8 @@ export default function PeriodsSection({
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDelete(period.id);
+                            setDeleteConfirmText("");
+                            setDeleteDialogPeriodId(period.id);
                           }}
                           title={t.delete}
                         >
@@ -694,6 +749,123 @@ export default function PeriodsSection({
           </Table>
         )}
       </div>
+
+      {/* リセット確認ダイアログ */}
+      <Dialog
+        open={resetDialogPeriodId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setResetDialogPeriodId(null);
+            setResetConfirmText("");
+          }
+        }}
+      >
+        <DialogContent onClick={(e) => e.stopPropagation()}>
+          <DialogHeader>
+            <DialogTitle>{t.resetEvaluations}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">{t.confirmReset}</p>
+            <div>
+              <Label className="text-sm">
+                {t.resetConfirmLabel}
+              </Label>
+              <Input
+                className="mt-2"
+                value={resetConfirmText}
+                onChange={(e) => setResetConfirmText(e.target.value)}
+                placeholder="RESET"
+                autoComplete="off"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setResetDialogPeriodId(null);
+                  setResetConfirmText("");
+                }}
+              >
+                {t.cancel}
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={
+                  resetConfirmText !== "RESET" ||
+                  resetting === resetDialogPeriodId
+                }
+                onClick={() => {
+                  if (resetDialogPeriodId) {
+                    handleReset(resetDialogPeriodId);
+                    setResetDialogPeriodId(null);
+                    setResetConfirmText("");
+                  }
+                }}
+              >
+                {resetting === resetDialogPeriodId
+                  ? t.loading
+                  : t.resetEvaluations}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 削除確認ダイアログ */}
+      <Dialog
+        open={deleteDialogPeriodId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteDialogPeriodId(null);
+            setDeleteConfirmText("");
+          }
+        }}
+      >
+        <DialogContent onClick={(e) => e.stopPropagation()}>
+          <DialogHeader>
+            <DialogTitle>{t.deletePeriod}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {t.confirmDeleteDescription}
+            </p>
+            <div>
+              <Label className="text-sm">{t.deleteConfirmLabel}</Label>
+              <Input
+                className="mt-2"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="DELETE"
+                autoComplete="off"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setDeleteDialogPeriodId(null);
+                  setDeleteConfirmText("");
+                }}
+              >
+                {t.cancel}
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={deleteConfirmText !== "DELETE"}
+                onClick={() => {
+                  if (deleteDialogPeriodId) {
+                    handleDelete(deleteDialogPeriodId);
+                    setDeleteDialogPeriodId(null);
+                    setDeleteConfirmText("");
+                  }
+                }}
+              >
+                {t.deletePeriod}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
