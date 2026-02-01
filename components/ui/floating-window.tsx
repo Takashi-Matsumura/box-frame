@@ -30,6 +30,7 @@ export function FloatingWindow({ language = "en" }: FloatingWindowProps) {
     restore,
     setPosition,
     setSize,
+    headerClassName,
   } = useFloatingWindowStore();
 
   const windowRef = useRef<HTMLDivElement>(null);
@@ -199,11 +200,15 @@ export function FloatingWindow({ language = "en" }: FloatingWindowProps) {
     >
       {/* タイトルバー */}
       <div
-        className="flex-shrink-0 flex items-center justify-between px-4 py-2 bg-muted border-b border-border cursor-move select-none"
+        className={`flex-shrink-0 flex items-center justify-between px-4 py-2 border-b cursor-move select-none ${
+          headerClassName || "bg-muted border-border"
+        }`}
         onMouseDown={handleDragStart}
         onDoubleClick={() => (isMaximized ? restore() : maximize())}
       >
-        <h3 className="text-sm font-semibold text-foreground truncate">
+        <h3
+          className={`text-sm font-semibold truncate ${headerClassName ? "text-white" : "text-foreground"}`}
+        >
           {displayTitle}
         </h3>
         <div className="flex items-center gap-1">
@@ -214,7 +219,7 @@ export function FloatingWindow({ language = "en" }: FloatingWindowProps) {
               e.stopPropagation();
               minimize();
             }}
-            className="p-1 text-muted-foreground hover:text-foreground hover:bg-accent rounded transition-colors"
+            className={`p-1 rounded transition-colors ${headerClassName ? "text-white/70 hover:text-white hover:bg-white/20" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
             aria-label={language === "ja" ? "最小化" : "Minimize"}
           >
             <svg
@@ -233,7 +238,7 @@ export function FloatingWindow({ language = "en" }: FloatingWindowProps) {
               e.stopPropagation();
               isMaximized ? restore() : maximize();
             }}
-            className="p-1 text-muted-foreground hover:text-foreground hover:bg-accent rounded transition-colors"
+            className={`p-1 rounded transition-colors ${headerClassName ? "text-white/70 hover:text-white hover:bg-white/20" : "text-muted-foreground hover:text-foreground hover:bg-accent"}`}
             aria-label={
               language === "ja"
                 ? isMaximized
@@ -276,7 +281,7 @@ export function FloatingWindow({ language = "en" }: FloatingWindowProps) {
               e.stopPropagation();
               close();
             }}
-            className="p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors"
+            className={`p-1 rounded transition-colors ${headerClassName ? "text-white/70 hover:text-white hover:bg-white/20" : "text-muted-foreground hover:text-destructive hover:bg-destructive/10"}`}
             aria-label={language === "ja" ? "閉じる" : "Close"}
           >
             <CloseIcon className="w-4 h-4" />

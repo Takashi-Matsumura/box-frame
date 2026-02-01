@@ -117,6 +117,48 @@ export async function PATCH(request: Request) {
       publishedAt?: Date | null;
     };
 
+    // publish / schedule の場合、責任者未設定チェック
+    if (action === "publish" || action === "schedule") {
+      const departments = await prisma.department.findMany({
+        where: { organizationId },
+        include: {
+          sections: {
+            include: { courses: true },
+          },
+        },
+      });
+
+      const unassigned: string[] = [];
+      for (const dept of departments) {
+        if (!dept.managerId) {
+          unassigned.push(dept.name);
+        }
+        for (const sect of dept.sections) {
+          if (!sect.managerId) {
+            unassigned.push(`${dept.name} / ${sect.name}`);
+          }
+          for (const course of sect.courses) {
+            if (!course.managerId) {
+              unassigned.push(
+                `${dept.name} / ${sect.name} / ${course.name}`,
+              );
+            }
+          }
+        }
+      }
+
+      if (unassigned.length > 0) {
+        return NextResponse.json(
+          {
+            error: "MANAGERS_NOT_ASSIGNED",
+            unassigned,
+            count: unassigned.length,
+          },
+          { status: 400 },
+        );
+      }
+    }
+
     switch (action) {
       case "publish":
         // Immediately publish the organization

@@ -27,12 +27,16 @@ interface EmployeesTabProps {
   organizationId: string;
   language: "en" | "ja";
   t: DataManagementTranslation;
+  primaryOrgId: string;
+  primaryOrgName: string;
 }
 
 export function EmployeesTab({
   organizationId,
   language,
   t,
+  primaryOrgId,
+  primaryOrgName,
 }: EmployeesTabProps) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,7 +45,10 @@ export function EmployeesTab({
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [transferringId, setTransferringId] = useState<string | null>(null);
   const pageSize = 50;
+
+  const isNonPrimaryOrg = organizationId !== primaryOrgId && !!primaryOrgId;
 
   const fetchEmployees = useCallback(async () => {
     setIsLoading(true);
@@ -83,6 +90,36 @@ export function EmployeesTab({
     e.preventDefault();
     setPage(1);
     fetchEmployees();
+  };
+
+  const handleTransfer = async (emp: Employee) => {
+    const confirmMsg = `${t.transferConfirm}\n\n${emp.name} → ${primaryOrgName}`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setTransferringId(emp.id);
+    try {
+      const response = await fetch("/api/admin/organization/transfer-employee", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          employeeId: emp.id,
+          targetOrgId: primaryOrgId,
+        }),
+      });
+
+      if (response.ok) {
+        alert(t.transferSuccess);
+        fetchEmployees();
+      } else {
+        const data = await response.json();
+        alert(`${t.transferError}: ${data.error}`);
+      }
+    } catch (error) {
+      console.error("Transfer failed:", error);
+      alert(t.transferError);
+    } finally {
+      setTransferringId(null);
+    }
   };
 
   return (
@@ -163,6 +200,11 @@ export function EmployeesTab({
                   <th className="px-4 py-3 text-left font-medium text-foreground">
                     {t.status}
                   </th>
+                  {isNonPrimaryOrg && (
+                    <th className="px-4 py-3 text-left font-medium text-foreground">
+                      {t.actions}
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -207,6 +249,20 @@ export function EmployeesTab({
                         {emp.isActive ? t.active : t.inactive}
                       </span>
                     </td>
+                    {isNonPrimaryOrg && (
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
+                          onClick={() => handleTransfer(emp)}
+                          disabled={transferringId === emp.id}
+                          className="px-3 py-1 text-xs font-medium text-blue-600 border border-blue-300 rounded-md hover:bg-blue-50 dark:hover:bg-blue-950 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {transferringId === emp.id
+                            ? t.loading
+                            : t.transferEmployee}
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

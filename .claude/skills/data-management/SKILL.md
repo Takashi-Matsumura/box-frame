@@ -280,6 +280,49 @@ export function adaptAPIResponse(response: ExternalAPIResponse): ProcessedEmploy
 | スラッシュ区切り | `2023/4/1` | ✅ |
 | ハイフン区切り | `2023-04-01` | ✅ |
 
+## 個別社員転籍API
+
+アーカイブ済み組織（マージ元）に残っている社員を、個別にメイン組織へ転籍する。
+
+### エンドポイント
+
+```
+POST /api/admin/organization/transfer-employee
+```
+
+### パラメータ
+
+```json
+{
+  "employeeId": "社員レコードID",
+  "targetOrgId": "転籍先組織ID"
+}
+```
+
+### 処理フロー
+
+1. 社員の所属部門名でマージ先の部門を自動マッチング（部・課も同様）
+2. マッチしない場合は部門/部/課を新規作成
+3. `employee.organizationId`, `departmentId`, `sectionId`, `courseId` を更新
+4. `employee.isActive = true` に設定
+5. `EmployeeHistory` に TRANSFER レコード作成
+6. `ChangeLog` に記録
+
+### UI
+
+社員一覧タブで非メイン組織を選択中に「転籍」ボタンが表示される。
+
+## 責任者候補リストの兼任対応
+
+部・課の責任者候補リストで「全役職者を表示」を選択した場合、親本部の責任者（役員兼任の本部長など）が別本部所属であってもリストに含まれる。
+
+```
+GET /api/admin/organization/manager-candidates?type=section&id={id}&showAll=true
+```
+
+- 通常の本部所属社員に加え、`Department.managerId` に設定されている社員を追加
+- 課（course）の場合も同様に親本部の責任者を追加
+
 ## ベストプラクティス
 
 ### ✅ 推奨

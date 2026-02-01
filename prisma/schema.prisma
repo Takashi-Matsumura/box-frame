@@ -1081,6 +1081,41 @@ model ProcedureImage {
 }
 
 // ========================================
+// AI業務分析（バックオフィスモジュール）
+// ========================================
+
+// AI業務分析ステータス
+enum JobAnalysisStatus {
+  DRAFT       // 下書き
+  GENERATING  // AI生成中
+  EDITING     // 編集中
+  COMPLETED   // 完成
+}
+
+// AI業務分析
+model JobAnalysis {
+  id                String            @id @default(cuid())
+  title             String            // タイトル
+  description       String?           // 説明
+  inputMaterials    String?           // 参考資料テキスト
+  jobDescriptionMd  String?           // AI生成→編集される業務分掌マークダウン
+  flowDiagramData   Json?             // Excalidrawフロー図エレメントJSON
+  chatHistory       Json?             // [{role, content, timestamp}]
+  status            JobAnalysisStatus @default(DRAFT)
+  tags              String?           // タグ（カンマ区切り）
+  version           Int               @default(1)
+  createdBy         String            // 作成者ユーザーID
+  updatedBy         String?           // 最終更新者
+
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([status])
+  @@index([createdBy])
+  @@index([createdAt])
+}
+
+// ========================================
 // 社内チケット販売システム（バックオフィスモジュール）
 // ========================================
 

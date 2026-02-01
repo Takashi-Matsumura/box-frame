@@ -255,6 +255,92 @@ model WorkProcedure {
 
 ---
 
+## AI業務分析メニュー
+
+業務分析の簡易版。参考資料からAIが業務分掌を自動生成し、編集・完成まで3ステップで完結。
+
+### ワークフロー（3ステップ）
+
+| ステップ | タイトル | 内容 |
+|---------|---------|------|
+| 1. ドラフト生成 | AIが参考資料から業務分掌を自動生成 | status=DRAFT時に自動発火 |
+| 2. 業務分掌編集 | 生成されたドラフトを編集・AIサポートで改善 | 分割画面、AI整形 |
+| 3. 完成 | 業務分掌を確定 | ステータスをCOMPLETEDに変更 |
+
+### データモデル
+
+```prisma
+enum JobAnalysisStatus {
+  DRAFT
+  GENERATING
+  EDITING
+  COMPLETED
+}
+
+model JobAnalysis {
+  id                String            @id @default(cuid())
+  title             String
+  description       String?
+  inputMaterials    String?           // 参考資料テキスト
+  jobDescriptionMd  String?           // AI生成→編集される業務分掌マークダウン
+  flowDiagramData   Json?             // Excalidraw フロー図データ
+  chatHistory       Json?             // [{role, content, timestamp}]
+  status            JobAnalysisStatus @default(DRAFT)
+  tags              String?
+  version           Int               @default(1)
+  createdBy         String
+  updatedBy         String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+}
+```
+
+### 業務フロー図（Excalidraw）
+
+- フローティングウィンドウで表示（`headerClassName: "bg-indigo-600 border-indigo-700"`）
+- 業務分掌の「業務フロー」「ステークホルダー」セクションからスイムレーン形式で自動生成
+- AIがExcalidraw JSON要素を直接生成（`convertToExcalidrawElements`で変換）
+- `safeParseJSON()` で途中切断されたJSON出力にも対応
+
+### メニュー専用AI設定（configOverride）
+
+AI業務分析メニュー専用のLLMを設定可能（リーズニングモデル等の利用を想定）。
+
+- 設定場所: システム環境 → モジュール管理 → バックオフィス → AI業務分析の「AI設定」ボタン
+- DB保存: `SystemSetting` テーブルに `job_analysis_ai_*` プレフィックスのキーで保存
+- `configOverride` パラメータで `AIService.generate()` / `AIService.chat()` に渡す
+- 未設定時はアプリ全体のAI設定をフォールバック
+- テスト接続機能あり（ローカルLLM / OpenAI / Anthropic対応）
+
+### APIエンドポイント
+
+| Method | Path | 説明 |
+|--------|------|------|
+| GET | `/api/backoffice/job-analyses` | 一覧取得 |
+| POST | `/api/backoffice/job-analyses` | 新規作成 |
+| GET | `/api/backoffice/job-analyses/[id]` | 詳細取得 |
+| PUT | `/api/backoffice/job-analyses/[id]` | 更新 |
+| DELETE | `/api/backoffice/job-analyses/[id]` | 削除 |
+| GET | `/api/backoffice/job-analyses/ai-config` | 専用AI設定取得 |
+| PUT | `/api/backoffice/job-analyses/ai-config` | 専用AI設定更新 |
+| POST | `/api/backoffice/job-analyses/ai-config` | テスト接続 |
+
+### ファイル構成
+
+```
+app/(menus)/(backoffice)/backoffice/ai-analytics/
+├── page.tsx                        # 一覧サーバーコンポーネント
+├── translations.ts                 # 一覧翻訳
+├── AiAnalyticsClient.tsx           # 一覧クライアント
+└── [id]/
+    ├── page.tsx                    # 詳細サーバーコンポーネント
+    ├── translations.ts             # 詳細翻訳
+    ├── JobAnalysisDetailClient.tsx  # 詳細クライアント
+    └── ExcalidrawFlowEditor.tsx    # Excalidrawフロー図エディタ
+```
+
+---
+
 ## 今後の機能拡張候補
 
 参照: `docs/business-manual-guideline.md`

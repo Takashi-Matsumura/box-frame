@@ -16,9 +16,17 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { EXECUTIVES_DEPARTMENT_NAME } from "@/lib/importers/organization/parser";
 import { cn } from "@/lib/utils";
 import type { DataManagementTranslation } from "../translations";
+import { DeleteOrganizationData } from "@/components/DeleteOrganizationData";
 import { MergeDialog } from "./MergeDialog";
 
 // 型定義
@@ -109,6 +117,7 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
   const [selectedUnit, setSelectedUnit] = useState<SelectedUnit | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [employeeSearch, setEmployeeSearch] = useState("");
+  const [positionFilter, setPositionFilter] = useState("");
   const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [showAllPositions, setShowAllPositions] = useState(false);
@@ -122,6 +131,10 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
     "publish",
   );
   const [updatingPublish, setUpdatingPublish] = useState(false);
+  const [publishError, setPublishError] = useState<{
+    message: string;
+    unassigned?: string[];
+  } | null>(null);
 
   // Cancel import
   const [cancelStatus, setCancelStatus] = useState<{
@@ -161,7 +174,9 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch("/api/organization");
+      const response = await fetch(
+        `/api/organization?organizationId=${organizationId}`,
+      );
       if (!response.ok) throw new Error("Failed to fetch organization data");
       const data: OrganizationData = await response.json();
       setOrgData(data);
@@ -171,7 +186,7 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [organizationId]);
 
   // Fetch publish settings
   const fetchPublishSettings = useCallback(async () => {
@@ -266,6 +281,7 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
 
     try {
       setUpdatingPublish(true);
+      setPublishError(null);
       const body: {
         organizationId: string;
         action: string;
@@ -286,8 +302,15 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to update publish settings");
+        const errorData = await response.json();
+        if (errorData.error === "MANAGERS_NOT_ASSIGNED") {
+          setPublishError({
+            message: t.managersNotAssigned,
+            unassigned: errorData.unassigned,
+          });
+          return;
+        }
+        throw new Error(errorData.error || "Failed to update publish settings");
       }
 
       await fetchPublishSettings();
@@ -434,6 +457,7 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
   ) => {
     setSelectedUnit({ type, id, name, currentManager });
     setEmployeeSearch("");
+    setPositionFilter("");
     setShowAllPositions(false);
     fetchEmployees(type, id, false);
   };
@@ -516,13 +540,23 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
     setExpandedSects(new Set());
   };
 
-  // Filter employees by search
-  const filteredEmployees = employees.filter(
-    (emp) =>
+  // Get unique positions for filter
+  const uniquePositions = useMemo(() => {
+    const positions = new Set(employees.map((emp) => emp.position).filter(Boolean));
+    return Array.from(positions).sort((a, b) => a.localeCompare(b, "ja"));
+  }, [employees]);
+
+  // Filter employees by search and position
+  const filteredEmployees = employees.filter((emp) => {
+    const matchesSearch =
+      !employeeSearch ||
       emp.name.toLowerCase().includes(employeeSearch.toLowerCase()) ||
       emp.employeeId.toLowerCase().includes(employeeSearch.toLowerCase()) ||
-      emp.position.toLowerCase().includes(employeeSearch.toLowerCase()),
-  );
+      emp.position.toLowerCase().includes(employeeSearch.toLowerCase());
+    const matchesPosition =
+      !positionFilter || emp.position === positionFilter;
+    return matchesSearch && matchesPosition;
+  });
 
   // Sort departments with "役員・顧問" last
   const sortedDepartments = useMemo(() => {
@@ -630,6 +664,30 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
                 <Button size="sm" onClick={() => setShowPublishDialog(true)}>
                   {t.setPublishDate}
                 </Button>
+                <DeleteOrganizationData
+                  organizationId={organizationId}
+                  language={language}
+                  stats={{
+                    totalEmployees:
+                      orgData?.organization?.employeeCount ?? 0,
+                    departments: orgData?.departments?.length ?? 0,
+                    sections:
+                      orgData?.departments?.reduce(
+                        (sum, d) => sum + d.sections.length,
+                        0,
+                      ) ?? 0,
+                    courses:
+                      orgData?.departments?.reduce(
+                        (sum, d) =>
+                          sum +
+                          d.sections.reduce(
+                            (s, sec) => s + sec.courses.length,
+                            0,
+                          ),
+                        0,
+                      ) ?? 0,
+                  }}
+                />
               </>
             )}
             {publishSettings.status === "SCHEDULED" && (
@@ -641,6 +699,32 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
               >
                 {t.cancelSchedule}
               </Button>
+            )}
+            {publishSettings.status === "ARCHIVED" && (
+              <DeleteOrganizationData
+                organizationId={organizationId}
+                language={language}
+                stats={{
+                  totalEmployees:
+                    orgData?.organization?.employeeCount ?? 0,
+                  departments: orgData?.departments?.length ?? 0,
+                  sections:
+                    orgData?.departments?.reduce(
+                      (sum, d) => sum + d.sections.length,
+                      0,
+                    ) ?? 0,
+                  courses:
+                    orgData?.departments?.reduce(
+                      (sum, d) =>
+                        sum +
+                        d.sections.reduce(
+                          (s, sec) => s + sec.courses.length,
+                          0,
+                        ),
+                      0,
+                    ) ?? 0,
+                }}
+              />
             )}
           </div>
         )}
@@ -953,39 +1037,65 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
               )}
             </div>
 
-            {/* Search and Toggle */}
+            {/* Search, Position Filter, and Toggle */}
             <div className="space-y-2">
               <Input
                 placeholder={t.searchPlaceholder}
                 value={employeeSearch}
                 onChange={(e) => setEmployeeSearch(e.target.value)}
               />
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={showAllPositions}
-                  onClick={() =>
-                    handleShowAllPositionsToggle(!showAllPositions)
-                  }
-                  className={cn(
-                    "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors",
-                    showAllPositions
-                      ? "bg-primary"
-                      : "bg-gray-200 dark:bg-gray-700",
-                  )}
-                >
-                  <span
+              <div className="flex items-center gap-3">
+                {uniquePositions.length > 1 && (
+                  <Select
+                    value={positionFilter}
+                    onValueChange={(v) =>
+                      setPositionFilter(v === "all" ? "" : v)
+                    }
+                  >
+                    <SelectTrigger className="w-auto">
+                      <SelectValue
+                        placeholder={`${t.position}: ${t.all}`}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">
+                        {t.position}: {t.all}
+                      </SelectItem>
+                      {uniquePositions.map((pos) => (
+                        <SelectItem key={pos} value={pos}>
+                          {pos}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={showAllPositions}
+                    onClick={() =>
+                      handleShowAllPositionsToggle(!showAllPositions)
+                    }
                     className={cn(
-                      "pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform",
-                      showAllPositions ? "translate-x-4" : "translate-x-0",
+                      "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors",
+                      showAllPositions
+                        ? "bg-primary"
+                        : "bg-gray-200 dark:bg-gray-700",
                     )}
-                  />
-                </button>
-                <span className="text-muted-foreground">
-                  {t.showAllPositions}
-                </span>
-              </label>
+                  >
+                    <span
+                      className={cn(
+                        "pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform",
+                        showAllPositions ? "translate-x-4" : "translate-x-0",
+                      )}
+                    />
+                  </button>
+                  <span className="text-muted-foreground">
+                    {t.showAllPositions}
+                  </span>
+                </label>
+              </div>
             </div>
 
             {/* Employee List */}
@@ -1051,8 +1161,14 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
       </Dialog>
 
       {/* Publish Settings Dialog */}
-      <Dialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
-        <DialogContent className="sm:max-w-[450px]">
+      <Dialog
+        open={showPublishDialog}
+        onOpenChange={(open) => {
+          setShowPublishDialog(open);
+          if (!open) setPublishError(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-[450px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t.setPublishDate}</DialogTitle>
           </DialogHeader>
@@ -1084,6 +1200,26 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
                 ? t.confirmPublishNow
                 : t.confirmSchedule}
             </p>
+
+            {/* Error: managers not assigned */}
+            {publishError && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                <p className="text-sm text-destructive font-medium">
+                  {publishError.message}
+                </p>
+                {publishError.unassigned && (
+                  <ul className="list-disc list-inside text-xs text-destructive/80 space-y-0.5 mt-2 max-h-[150px] overflow-y-auto">
+                    {publishError.unassigned.map((name) => (
+                      <li key={name}>{name}</li>
+                    ))}
+                  </ul>
+                )}
+                <p className="text-xs text-destructive/60 mt-2">
+                  {publishError.unassigned?.length}
+                  {t.managersNotAssignedCount}
+                </p>
+              </div>
+            )}
 
             {/* Date Picker for Schedule */}
             {publishAction === "schedule" && (

@@ -222,9 +222,35 @@ export async function GET(request: Request) {
 
       if (showAll) {
         // 全役職者モード: 役職を持つ全社員
-        candidates = sectionCandidates
-          .filter((emp) => hasPosition(emp.positionCode))
-          .sort(sortByPositionCode);
+        const candidateMap = new Map<string, typeof sectionCandidates[0]>();
+        for (const emp of sectionCandidates) {
+          if (hasPosition(emp.positionCode)) {
+            candidateMap.set(emp.id, emp);
+          }
+        }
+
+        // 本部長（役員兼任）が別本部所属の場合もリストに追加
+        const parentDept = await prisma.department.findUnique({
+          where: { id: section.departmentId },
+          select: { managerId: true },
+        });
+        if (parentDept?.managerId && !candidateMap.has(parentDept.managerId)) {
+          const deptManager = await prisma.employee.findUnique({
+            where: { id: parentDept.managerId },
+            select: {
+              id: true,
+              employeeId: true,
+              name: true,
+              position: true,
+              positionCode: true,
+            },
+          });
+          if (deptManager) {
+            candidateMap.set(deptManager.id, deptManager);
+          }
+        }
+
+        candidates = Array.from(candidateMap.values()).sort(sortByPositionCode);
       } else {
         // 通常モード: 役職コードでフィルター（エキスパート未満のみ）してソート
         candidates = sectionCandidates
@@ -266,9 +292,35 @@ export async function GET(request: Request) {
 
       if (showAll) {
         // 全役職者モード: 役職を持つ全社員
-        candidates = courseCandidates
-          .filter((emp) => hasPosition(emp.positionCode))
-          .sort(sortByPositionCode);
+        const candidateMap = new Map<string, typeof courseCandidates[0]>();
+        for (const emp of courseCandidates) {
+          if (hasPosition(emp.positionCode)) {
+            candidateMap.set(emp.id, emp);
+          }
+        }
+
+        // 本部長（役員兼任）が別本部所属の場合もリストに追加
+        const parentDept = await prisma.department.findUnique({
+          where: { id: course.section.departmentId },
+          select: { managerId: true },
+        });
+        if (parentDept?.managerId && !candidateMap.has(parentDept.managerId)) {
+          const deptManager = await prisma.employee.findUnique({
+            where: { id: parentDept.managerId },
+            select: {
+              id: true,
+              employeeId: true,
+              name: true,
+              position: true,
+              positionCode: true,
+            },
+          });
+          if (deptManager) {
+            candidateMap.set(deptManager.id, deptManager);
+          }
+        }
+
+        candidates = Array.from(candidateMap.values()).sort(sortByPositionCode);
       } else {
         // 通常モード: 役職コードでフィルター（エキスパート未満のみ）してソート
         candidates = courseCandidates

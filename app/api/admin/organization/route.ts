@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -93,6 +93,73 @@ export async function POST(request: Request) {
     console.error("Error creating organization:", error);
     return NextResponse.json(
       { error: "Failed to create organization" },
+      { status: 500 },
+    );
+  }
+}
+
+/**
+ * DELETE /api/admin/organization?id=xxx
+ *
+ * 組織レコード自体を削除（データが空の場合のみ）
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await auth();
+
+    if (!session || session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const organizationId = request.nextUrl.searchParams.get("id");
+
+    if (!organizationId) {
+      return NextResponse.json(
+        { error: "Organization id is required" },
+        { status: 400 },
+      );
+    }
+
+    const organization = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      include: {
+        _count: {
+          select: { employees: true, departments: true },
+        },
+      },
+    });
+
+    if (!organization) {
+      return NextResponse.json(
+        { error: "Organization not found" },
+        { status: 404 },
+      );
+    }
+
+    if (organization._count.employees > 0 || organization._count.departments > 0) {
+      return NextResponse.json(
+        { error: "組織にデータが残っています。先に組織データを削除してください。" },
+        { status: 400 },
+      );
+    }
+
+    await prisma.organization.delete({
+      where: { id: organizationId },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `「${organization.name}」を削除しました`,
+    });
+  } catch (error) {
+    console.error("Error deleting organization:", error);
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to delete organization",
+      },
       { status: 500 },
     );
   }

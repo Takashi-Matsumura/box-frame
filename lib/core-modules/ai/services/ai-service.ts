@@ -208,8 +208,14 @@ export class AIService {
   /**
    * チャット
    */
-  static async chat(request: ChatRequest): Promise<ChatResponse> {
-    const config = await AIService.getConfig();
+  static async chat(
+    request: ChatRequest,
+    configOverride?: Partial<AIConfig>,
+  ): Promise<ChatResponse> {
+    const baseConfig = await AIService.getConfig();
+    const config = configOverride
+      ? { ...baseConfig, ...configOverride }
+      : baseConfig;
 
     if (!config.enabled) {
       throw new Error("AI is not enabled");
@@ -246,8 +252,14 @@ export class AIService {
   /**
    * 汎用テキスト生成（外部モジュール向け）
    */
-  static async generate(request: GenerateRequest): Promise<GenerateResponse> {
-    const config = await AIService.getConfig();
+  static async generate(
+    request: GenerateRequest,
+    configOverride?: Partial<AIConfig>,
+  ): Promise<GenerateResponse> {
+    const baseConfig = await AIService.getConfig();
+    const config = configOverride
+      ? { ...baseConfig, ...configOverride }
+      : baseConfig;
 
     if (!config.enabled) {
       throw new Error("AI is not enabled");

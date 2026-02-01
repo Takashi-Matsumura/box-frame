@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { messages, systemPrompt } = body;
+    const { messages, systemPrompt, configOverride } = body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json(
@@ -90,10 +90,13 @@ export async function POST(request: Request) {
       }
     }
 
-    const response = await AIService.chat({
-      messages,
-      systemPrompt,
-    });
+    const response = await AIService.chat(
+      {
+        messages,
+        systemPrompt,
+      },
+      configOverride,
+    );
 
     return NextResponse.json(response);
   } catch (error) {

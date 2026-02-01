@@ -5,8 +5,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Edit3,
+  Loader2,
   Plus,
   Search,
+  Sparkles,
   Trash2,
   X,
 } from "lucide-react";
@@ -221,6 +223,10 @@ export function AdminClient({
   const [modulesLoading, setModulesLoading] = useState(false);
   const [selectedModule, setSelectedModule] = useState<ModuleInfo | null>(null);
 
+  // パネル展開状態
+  const [mcpServerExpanded, setMcpServerExpanded] = useState(false);
+  const [openLdapInfoExpanded, setOpenLdapInfoExpanded] = useState(false);
+
   // OpenLDAPステータス
   const [openLdapStatus, setOpenLdapStatus] = useState<OpenLdapStatus | null>(
     null,
@@ -350,6 +356,28 @@ export function AdminClient({
     message: string;
   } | null>(null);
   const [aiSaving, setAiSaving] = useState(false);
+  const [localEndpointInput, setLocalEndpointInput] = useState("");
+  const [localModelInput, setLocalModelInput] = useState("");
+
+  // AI業務分析専用AI設定
+  const [jaAiConfig, setJaAiConfig] = useState<{
+    enabled: boolean;
+    provider: string;
+    apiKey: string;
+    model: string;
+    localProvider: string;
+    localEndpoint: string;
+    localModel: string;
+  } | null>(null);
+  const [jaAiSaving, setJaAiSaving] = useState(false);
+  const [jaLocalEndpointInput, setJaLocalEndpointInput] = useState("");
+  const [jaLocalModelInput, setJaLocalModelInput] = useState("");
+  const [showJaAiConfigDialog, setShowJaAiConfigDialog] = useState(false);
+  const [jaTestResult, setJaTestResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
+  const [jaTestLoading, setJaTestLoading] = useState(false);
 
   // アナウンス用AI翻訳
   const [aiTranslationAvailable, setAiTranslationAvailable] = useState(false);
@@ -887,6 +915,8 @@ export function AdminClient({
 
       const data = await response.json();
       setAiConfig(data.config);
+      setLocalEndpointInput(data.config.localEndpoint || "");
+      setLocalModelInput(data.config.localModel || "");
       if (data.localLLMDefaults) {
         setLocalLLMDefaults(data.localLLMDefaults);
       }
@@ -919,6 +949,8 @@ export function AdminClient({
 
       const data = await response.json();
       setAiConfig(data.config);
+      setLocalEndpointInput(data.config.localEndpoint || "");
+      setLocalModelInput(data.config.localModel || "");
       setAiApiKeyInput("");
       setConnectionTestResult(null);
     } catch (error) {
@@ -951,6 +983,74 @@ export function AdminClient({
       });
     } finally {
       setTestingConnection(false);
+    }
+  };
+
+  // AI業務分析専用AI設定を取得
+  const fetchJaAiConfig = useCallback(async () => {
+    try {
+      const response = await fetch("/api/backoffice/job-analyses/ai-config");
+      if (response.ok) {
+        const data = await response.json();
+        setJaAiConfig(data);
+        setJaLocalEndpointInput(data.localEndpoint || "");
+        setJaLocalModelInput(data.localModel || "");
+      }
+    } catch (error) {
+      console.error("Error fetching job analysis AI config:", error);
+    }
+  }, []);
+
+  // ダイアログ表示時にフェッチ
+  useEffect(() => {
+    if (showJaAiConfigDialog) {
+      fetchJaAiConfig();
+    }
+  }, [showJaAiConfigDialog, fetchJaAiConfig]);
+
+  // AI業務分析専用AI設定を更新
+  const handleUpdateJaAiConfig = async (
+    updates: Partial<typeof jaAiConfig>,
+  ) => {
+    if (!jaAiConfig) return;
+    try {
+      setJaAiSaving(true);
+      const newConfig = { ...jaAiConfig, ...updates };
+      const response = await fetch("/api/backoffice/job-analyses/ai-config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newConfig),
+      });
+      if (response.ok) {
+        setJaAiConfig(newConfig);
+      }
+    } catch (error) {
+      console.error("Error updating job analysis AI config:", error);
+    } finally {
+      setJaAiSaving(false);
+    }
+  };
+
+  // AI業務分析専用AI設定のテスト接続
+  const handleJaTestConnection = async () => {
+    try {
+      setJaTestLoading(true);
+      setJaTestResult(null);
+      const response = await fetch("/api/backoffice/job-analyses/ai-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "test-connection" }),
+      });
+      const result = await response.json();
+      setJaTestResult(result);
+    } catch (error) {
+      setJaTestResult({
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Connection test failed",
+      });
+    } finally {
+      setJaTestLoading(false);
     }
   };
 
@@ -1378,11 +1478,19 @@ export function AdminClient({
                         </span>
                         <span>Tailwind CSS 4</span>
                       </div>
-                      <div className="flex justify-between items-center py-2">
+                      <div className="flex justify-between items-center py-2 border-b border-border">
                         <span className="font-medium">
                           {t("Language", "言語")}
                         </span>
                         <span>TypeScript</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="font-medium">
+                          {t("Build ID", "ビルドID")}
+                        </span>
+                        <code className="text-sm bg-card px-2 py-1 rounded border border-border">
+                          {process.env.NEXT_BUILD_ID || "dev"}
+                        </code>
                       </div>
                     </div>
                   </div>
@@ -1589,12 +1697,20 @@ export function AdminClient({
                                 {t("Endpoint URL", "エンドポイントURL")}
                               </Label>
                               <Input
-                                value={aiConfig.localEndpoint}
+                                value={localEndpointInput}
                                 onChange={(e) =>
-                                  handleUpdateAiConfig({
-                                    localEndpoint: e.target.value,
-                                  })
+                                  setLocalEndpointInput(e.target.value)
                                 }
+                                onBlur={() => {
+                                  if (
+                                    localEndpointInput !==
+                                    aiConfig.localEndpoint
+                                  ) {
+                                    handleUpdateAiConfig({
+                                      localEndpoint: localEndpointInput,
+                                    });
+                                  }
+                                }}
                                 placeholder={
                                   localLLMDefaults?.[aiConfig.localProvider]
                                     ?.endpoint || ""
@@ -1625,12 +1741,17 @@ export function AdminClient({
                             <div className="space-y-2">
                               <Label>{t("Model Name", "モデル名")}</Label>
                               <Input
-                                value={aiConfig.localModel}
+                                value={localModelInput}
                                 onChange={(e) =>
-                                  handleUpdateAiConfig({
-                                    localModel: e.target.value,
-                                  })
+                                  setLocalModelInput(e.target.value)
                                 }
+                                onBlur={() => {
+                                  if (localModelInput !== aiConfig.localModel) {
+                                    handleUpdateAiConfig({
+                                      localModel: localModelInput,
+                                    });
+                                  }
+                                }}
                                 placeholder={
                                   localLLMDefaults?.[aiConfig.localProvider]
                                     ?.model || "default"
@@ -2522,151 +2643,15 @@ export function AdminClient({
                       </code>
                     </div>
 
-                    {/* OpenLDAPサーバ情報（openldapモジュールのみ） */}
+                    {/* OpenLDAPサーバ情報（openldapモジュールのみ・折りたたみ可能） */}
                     {selectedModule.id === "openldap" && (
-                      <div className="mb-6 p-4 bg-muted border border-border rounded-lg">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-primary-foreground">
-                              <svg
-                                className="w-5 h-5"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"
-                                />
-                              </svg>
-                            </div>
-                            <div>
-                              <h4 className="text-sm font-semibold">
-                                {t(
-                                  "OpenLDAP Server Information",
-                                  "OpenLDAP サーバ情報",
-                                )}
-                              </h4>
-                              <p className="text-xs text-muted-foreground">
-                                {t(
-                                  "OpenLDAP container connection status and settings",
-                                  "OpenLDAPコンテナの接続状態と設定情報",
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={fetchOpenLdapStatus}
-                            disabled={openLdapStatusLoading}
-                            className="px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground text-sm font-medium rounded-lg transition-colors"
-                          >
-                            {openLdapStatusLoading
-                              ? t("Loading...", "読み込み中...")
-                              : t("Refresh Status", "状態を更新")}
-                          </button>
-                        </div>
-
-                        {openLdapStatusLoading && !openLdapStatus ? (
-                          <div className="text-center py-4">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
-                          </div>
-                        ) : openLdapStatus ? (
-                          <div className="space-y-3">
-                            {/* 接続状態 */}
-                            <div className="flex items-center justify-between p-3 bg-card rounded-lg border border-border">
-                              <div>
-                                <p className="text-sm font-medium">
-                                  {t("Connection Status", "接続状態")}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {openLdapStatus.isAvailable
-                                    ? t(
-                                        "Connected to OpenLDAP server",
-                                        "OpenLDAPサーバに接続できます",
-                                      )
-                                    : t(
-                                        "Cannot connect to OpenLDAP server",
-                                        "OpenLDAPサーバに接続できません",
-                                      )}
-                                </p>
-                              </div>
-                              <span
-                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${
-                                  openLdapStatus.isAvailable
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-red-100 text-red-800"
-                                }`}
-                              >
-                                <span
-                                  className={`w-2 h-2 rounded-full ${openLdapStatus.isAvailable ? "bg-green-500" : "bg-red-500"}`}
-                                />
-                                {openLdapStatus.isAvailable
-                                  ? "Available"
-                                  : "Unavailable"}
-                              </span>
-                            </div>
-
-                            {/* 接続URL */}
-                            <div className="p-3 bg-card rounded-lg border border-border">
-                              <p className="text-sm font-medium mb-1">
-                                {t("Connection URL", "接続URL")}
-                              </p>
-                              <code className="text-sm text-primary bg-muted px-2 py-1 rounded">
-                                {openLdapStatus.config.url ||
-                                  t("Not configured", "未設定")}
-                              </code>
-                            </div>
-
-                            {/* ベースDN */}
-                            <div className="p-3 bg-card rounded-lg border border-border">
-                              <p className="text-sm font-medium mb-1">
-                                {t("Base DN", "ベースDN")}
-                              </p>
-                              <code className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded">
-                                {openLdapStatus.config.baseDn ||
-                                  t("Not configured", "未設定")}
-                              </code>
-                            </div>
-
-                            {/* ユーザOU */}
-                            <div className="p-3 bg-card rounded-lg border border-border">
-                              <p className="text-sm font-medium mb-1">
-                                {t("Users OU", "ユーザOU")}
-                              </p>
-                              <code className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded">
-                                {openLdapStatus.config.usersOu ||
-                                  t("Not configured", "未設定")}
-                              </code>
-                            </div>
-
-                            {/* 最終更新 */}
-                            <div className="text-right text-xs text-muted-foreground">
-                              {t("Last updated", "最終更新")}:{" "}
-                              {new Date(
-                                openLdapStatus.timestamp,
-                              ).toLocaleString(
-                                language === "ja" ? "ja-JP" : "en-US",
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-center py-4 text-muted-foreground text-sm">
-                            {t(
-                              "Click 'Refresh Status' to check the server status",
-                              "「状態を更新」をクリックしてサーバの状態を確認してください",
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* OpenLDAPテスト認証（openldapモジュールのみ） */}
-                    {selectedModule.id === "openldap" && (
-                      <div className="mb-6 p-4 bg-muted border border-border rounded-lg">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-primary-foreground">
+                      <div className="mb-6 border border-border rounded-lg overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setOpenLdapInfoExpanded(!openLdapInfoExpanded)}
+                          className="w-full p-4 bg-muted flex items-center gap-3 hover:bg-muted/80 transition-colors text-left"
+                        >
+                          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-primary-foreground shrink-0">
                             <svg
                               className="w-5 h-5"
                               fill="none"
@@ -2677,152 +2662,309 @@ export function AdminClient({
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                                 strokeWidth={2}
-                                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                                d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"
                               />
                             </svg>
                           </div>
-                          <div>
+                          <div className="flex-1 min-w-0">
                             <h4 className="text-sm font-semibold">
-                              {t("Test Authentication", "テスト認証")}
+                              {t(
+                                "OpenLDAP Server Information",
+                                "OpenLDAP サーバ情報",
+                              )}
                             </h4>
                             <p className="text-xs text-muted-foreground">
                               {t(
-                                "Test user authentication without logging in",
-                                "ログインせずにユーザ認証をテストします",
+                                "OpenLDAP container connection status and settings",
+                                "OpenLDAPコンテナの接続状態と設定情報",
                               )}
                             </p>
                           </div>
-                        </div>
-
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-sm font-medium text-muted-foreground mb-1">
-                                {t("Username", "ユーザ名")}
-                              </label>
-                              <input
-                                type="text"
-                                value={testAuthUsername}
-                                onChange={(e) =>
-                                  setTestAuthUsername(e.target.value)
-                                }
-                                placeholder={t(
-                                  "Enter username",
-                                  "ユーザ名を入力",
-                                )}
-                                className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
-                                disabled={testAuthLoading}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-muted-foreground mb-1">
-                                {t("Password", "パスワード")}
-                              </label>
-                              <input
-                                type="password"
-                                value={testAuthPassword}
-                                onChange={(e) =>
-                                  setTestAuthPassword(e.target.value)
-                                }
-                                placeholder={t(
-                                  "Enter password",
-                                  "パスワードを入力",
-                                )}
-                                className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
-                                disabled={testAuthLoading}
-                              />
-                            </div>
-                          </div>
-
-                          <button
-                            onClick={handleTestAuth}
-                            disabled={
-                              testAuthLoading ||
-                              !testAuthUsername ||
-                              !testAuthPassword
-                            }
-                            className="w-full py-2 px-4 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground text-sm font-medium rounded-lg transition-colors"
-                          >
-                            {testAuthLoading
-                              ? t("Testing...", "テスト中...")
-                              : t("Test Authentication", "認証をテスト")}
-                          </button>
-
-                          {/* テスト結果 */}
-                          {testAuthResult && (
-                            <div
-                              className={`p-3 rounded-lg border ${
-                                testAuthResult.success
-                                  ? "bg-green-50 border-green-200"
-                                  : "bg-red-50 border-red-200"
-                              }`}
-                            >
-                              <div className="flex items-center gap-2 mb-2">
-                                {testAuthResult.success ? (
-                                  <svg
-                                    className="w-5 h-5 text-green-600"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                    />
-                                  </svg>
-                                ) : (
-                                  <svg
-                                    className="w-5 h-5 text-red-600"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                    />
-                                  </svg>
-                                )}
+                          <div className="flex items-center gap-2 shrink-0">
+                            {openLdapStatus && (
+                              <span
+                                className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  openLdapStatus.isAvailable
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}
+                              >
                                 <span
-                                  className={`text-sm font-medium ${testAuthResult.success ? "text-green-800" : "text-red-800"}`}
-                                >
-                                  {testAuthResult.success
-                                    ? language === "ja"
-                                      ? testAuthResult.messageJa
-                                      : testAuthResult.message
-                                    : language === "ja"
-                                      ? testAuthResult.errorJa
-                                      : testAuthResult.error}
-                                </span>
+                                  className={`w-1.5 h-1.5 rounded-full ${openLdapStatus.isAvailable ? "bg-green-500" : "bg-red-500"}`}
+                                />
+                                {openLdapStatus.isAvailable
+                                  ? "Available"
+                                  : "Unavailable"}
+                              </span>
+                            )}
+                            <svg
+                              className={`w-5 h-5 text-muted-foreground transition-transform ${openLdapInfoExpanded ? "rotate-180" : ""}`}
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 9l-7 7-7-7"
+                              />
+                            </svg>
+                          </div>
+                        </button>
+
+                        {openLdapInfoExpanded && (
+                          <div className="p-4 bg-muted border-t border-border">
+                            <div className="flex justify-end mb-3">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  fetchOpenLdapStatus();
+                                }}
+                                disabled={openLdapStatusLoading}
+                                className="px-4 py-2 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground text-sm font-medium rounded-lg transition-colors"
+                              >
+                                {openLdapStatusLoading
+                                  ? t("Loading...", "読み込み中...")
+                                  : t("Refresh Status", "状態を更新")}
+                              </button>
+                            </div>
+
+                            {openLdapStatusLoading && !openLdapStatus ? (
+                              <div className="text-center py-4">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
                               </div>
-                              {testAuthResult.success &&
-                                testAuthResult.user && (
-                                  <div className="text-xs text-muted-foreground space-y-1 mt-2 pl-7">
-                                    <p>
-                                      <span className="font-medium">
-                                        {t("Display Name", "表示名")}:
-                                      </span>{" "}
-                                      {testAuthResult.user.displayName || "-"}
+                            ) : openLdapStatus ? (
+                              <div className="space-y-3">
+                                {/* 接続状態 */}
+                                <div className="flex items-center justify-between p-3 bg-card rounded-lg border border-border">
+                                  <div>
+                                    <p className="text-sm font-medium">
+                                      {t("Connection Status", "接続状態")}
                                     </p>
-                                    <p>
-                                      <span className="font-medium">
-                                        {t("Email", "メール")}:
-                                      </span>{" "}
-                                      {testAuthResult.user.email || "-"}
-                                    </p>
-                                    <p className="truncate">
-                                      <span className="font-medium">DN:</span>{" "}
-                                      {testAuthResult.user.userDN || "-"}
+                                    <p className="text-xs text-muted-foreground">
+                                      {openLdapStatus.isAvailable
+                                        ? t(
+                                            "Connected to OpenLDAP server",
+                                            "OpenLDAPサーバに接続できます",
+                                          )
+                                        : t(
+                                            "Cannot connect to OpenLDAP server",
+                                            "OpenLDAPサーバに接続できません",
+                                          )}
                                     </p>
                                   </div>
+                                  <span
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${
+                                      openLdapStatus.isAvailable
+                                        ? "bg-green-100 text-green-800"
+                                        : "bg-red-100 text-red-800"
+                                    }`}
+                                  >
+                                    <span
+                                      className={`w-2 h-2 rounded-full ${openLdapStatus.isAvailable ? "bg-green-500" : "bg-red-500"}`}
+                                    />
+                                    {openLdapStatus.isAvailable
+                                      ? "Available"
+                                      : "Unavailable"}
+                                  </span>
+                                </div>
+
+                                {/* 接続URL */}
+                                <div className="p-3 bg-card rounded-lg border border-border">
+                                  <p className="text-sm font-medium mb-1">
+                                    {t("Connection URL", "接続URL")}
+                                  </p>
+                                  <code className="text-sm text-primary bg-muted px-2 py-1 rounded">
+                                    {openLdapStatus.config.url ||
+                                      t("Not configured", "未設定")}
+                                  </code>
+                                </div>
+
+                                {/* ベースDN */}
+                                <div className="p-3 bg-card rounded-lg border border-border">
+                                  <p className="text-sm font-medium mb-1">
+                                    {t("Base DN", "ベースDN")}
+                                  </p>
+                                  <code className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded">
+                                    {openLdapStatus.config.baseDn ||
+                                      t("Not configured", "未設定")}
+                                  </code>
+                                </div>
+
+                                {/* ユーザOU */}
+                                <div className="p-3 bg-card rounded-lg border border-border">
+                                  <p className="text-sm font-medium mb-1">
+                                    {t("Users OU", "ユーザOU")}
+                                  </p>
+                                  <code className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded">
+                                    {openLdapStatus.config.usersOu ||
+                                      t("Not configured", "未設定")}
+                                  </code>
+                                </div>
+
+                                {/* 最終更新 */}
+                                <div className="text-right text-xs text-muted-foreground">
+                                  {t("Last updated", "最終更新")}:{" "}
+                                  {new Date(
+                                    openLdapStatus.timestamp,
+                                  ).toLocaleString(
+                                    language === "ja" ? "ja-JP" : "en-US",
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-center py-4 text-muted-foreground text-sm">
+                                {t(
+                                  "Click 'Refresh Status' to check the server status",
+                                  "「状態を更新」をクリックしてサーバの状態を確認してください",
                                 )}
+                              </div>
+                            )}
+
+                            {/* テスト認証セクション */}
+                            <div className="mt-4 pt-4 border-t border-border">
+                              <h5 className="text-sm font-semibold mb-1">
+                                {t("Test Authentication", "テスト認証")}
+                              </h5>
+                              <p className="text-xs text-muted-foreground mb-3">
+                                {t(
+                                  "Test user authentication without logging in",
+                                  "ログインせずにユーザ認証をテストします",
+                                )}
+                              </p>
+                              <div className="space-y-3">
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-sm font-medium text-muted-foreground mb-1">
+                                      {t("Username", "ユーザ名")}
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={testAuthUsername}
+                                      onChange={(e) =>
+                                        setTestAuthUsername(e.target.value)
+                                      }
+                                      placeholder={t(
+                                        "Enter username",
+                                        "ユーザ名を入力",
+                                      )}
+                                      className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
+                                      disabled={testAuthLoading}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-muted-foreground mb-1">
+                                      {t("Password", "パスワード")}
+                                    </label>
+                                    <input
+                                      type="password"
+                                      value={testAuthPassword}
+                                      onChange={(e) =>
+                                        setTestAuthPassword(e.target.value)
+                                      }
+                                      placeholder={t(
+                                        "Enter password",
+                                        "パスワードを入力",
+                                      )}
+                                      className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
+                                      disabled={testAuthLoading}
+                                    />
+                                  </div>
+                                </div>
+
+                                <button
+                                  onClick={handleTestAuth}
+                                  disabled={
+                                    testAuthLoading ||
+                                    !testAuthUsername ||
+                                    !testAuthPassword
+                                  }
+                                  className="w-full py-2 px-4 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground text-sm font-medium rounded-lg transition-colors"
+                                >
+                                  {testAuthLoading
+                                    ? t("Testing...", "テスト中...")
+                                    : t("Test Authentication", "認証をテスト")}
+                                </button>
+
+                                {/* テスト結果 */}
+                                {testAuthResult && (
+                                  <div
+                                    className={`p-3 rounded-lg border ${
+                                      testAuthResult.success
+                                        ? "bg-green-50 border-green-200"
+                                        : "bg-red-50 border-red-200"
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2 mb-2">
+                                      {testAuthResult.success ? (
+                                        <svg
+                                          className="w-5 h-5 text-green-600"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                          />
+                                        </svg>
+                                      ) : (
+                                        <svg
+                                          className="w-5 h-5 text-red-600"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                          />
+                                        </svg>
+                                      )}
+                                      <span
+                                        className={`text-sm font-medium ${testAuthResult.success ? "text-green-800" : "text-red-800"}`}
+                                      >
+                                        {testAuthResult.success
+                                          ? language === "ja"
+                                            ? testAuthResult.messageJa
+                                            : testAuthResult.message
+                                          : language === "ja"
+                                            ? testAuthResult.errorJa
+                                            : testAuthResult.error}
+                                      </span>
+                                    </div>
+                                    {testAuthResult.success &&
+                                      testAuthResult.user && (
+                                        <div className="text-xs text-muted-foreground space-y-1 mt-2 pl-7">
+                                          <p>
+                                            <span className="font-medium">
+                                              {t("Display Name", "表示名")}:
+                                            </span>{" "}
+                                            {testAuthResult.user.displayName || "-"}
+                                          </p>
+                                          <p>
+                                            <span className="font-medium">
+                                              {t("Email", "メール")}:
+                                            </span>{" "}
+                                            {testAuthResult.user.email || "-"}
+                                          </p>
+                                          <p className="truncate">
+                                            <span className="font-medium">DN:</span>{" "}
+                                            {testAuthResult.user.userDN || "-"}
+                                          </p>
+                                        </div>
+                                      )}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -3241,11 +3383,15 @@ export function AdminClient({
                         </div>
                       )}
 
-                    {/* MCPサーバー詳細 */}
+                    {/* MCPサーバー詳細（折りたたみ可能） */}
                     {selectedModule.mcpServer && (
-                      <div className="mb-6 p-4 bg-muted border border-border rounded-lg">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                      <div className="mb-6 border border-border rounded-lg overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setMcpServerExpanded(!mcpServerExpanded)}
+                          className="w-full p-4 bg-muted flex items-center gap-3 hover:bg-muted/80 transition-colors text-left"
+                        >
+                          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white shrink-0">
                             <svg
                               className="w-5 h-5"
                               fill="none"
@@ -3260,7 +3406,7 @@ export function AdminClient({
                               />
                             </svg>
                           </div>
-                          <div>
+                          <div className="flex-1 min-w-0">
                             <h4 className="text-sm font-semibold">
                               {language === "ja"
                                 ? selectedModule.mcpServer.nameJa
@@ -3273,76 +3419,84 @@ export function AdminClient({
                               )}
                             </p>
                           </div>
-                        </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                              {selectedModule.mcpServer.toolCount}{" "}
+                              {t("tools", "ツール")}
+                            </span>
+                            {selectedModule.mcpServer.readOnly && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                {t("Read Only", "読み取り専用")}
+                              </span>
+                            )}
+                            <svg
+                              className={`w-5 h-5 text-muted-foreground transition-transform ${mcpServerExpanded ? "rotate-180" : ""}`}
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 9l-7 7-7-7"
+                              />
+                            </svg>
+                          </div>
+                        </button>
 
-                        <div className="space-y-3">
-                          {/* 説明 */}
-                          {(language === "ja"
-                            ? selectedModule.mcpServer.descriptionJa
-                            : selectedModule.mcpServer.description) && (
+                        {mcpServerExpanded && (
+                          <div className="p-4 bg-muted border-t border-border space-y-3">
+                            {/* 説明 */}
+                            {(language === "ja"
+                              ? selectedModule.mcpServer.descriptionJa
+                              : selectedModule.mcpServer.description) && (
+                              <div className="p-3 bg-card rounded-lg border border-border">
+                                <p className="text-sm font-medium mb-1">
+                                  {t("Description", "説明")}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {language === "ja"
+                                    ? selectedModule.mcpServer.descriptionJa
+                                    : selectedModule.mcpServer.description}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* ツール一覧 */}
+                            <div className="p-3 bg-card rounded-lg border border-border">
+                              <p className="text-sm font-medium mb-2">
+                                {t("Tools", "ツール")} (
+                                {selectedModule.mcpServer.toolCount})
+                              </p>
+                              <div className="space-y-1.5">
+                                {selectedModule.mcpServer.tools.map((tool) => (
+                                  <div
+                                    key={tool.name}
+                                    className="flex items-center gap-2 text-xs"
+                                  >
+                                    <code className="text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-mono">
+                                      {tool.name}
+                                    </code>
+                                    <span className="text-muted-foreground">
+                                      {tool.descriptionJa}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* サーバパス */}
                             <div className="p-3 bg-card rounded-lg border border-border">
                               <p className="text-sm font-medium mb-1">
-                                {t("Description", "説明")}
+                                {t("Server Path", "サーバパス")}
                               </p>
-                              <p className="text-sm text-muted-foreground">
-                                {language === "ja"
-                                  ? selectedModule.mcpServer.descriptionJa
-                                  : selectedModule.mcpServer.description}
-                              </p>
-                            </div>
-                          )}
-
-                          {/* ツール一覧 */}
-                          <div className="p-3 bg-card rounded-lg border border-border">
-                            <p className="text-sm font-medium mb-2">
-                              {t("Tools", "ツール")} (
-                              {selectedModule.mcpServer.toolCount})
-                            </p>
-                            <div className="space-y-1.5">
-                              {selectedModule.mcpServer.tools.map((tool) => (
-                                <div
-                                  key={tool.name}
-                                  className="flex items-center gap-2 text-xs"
-                                >
-                                  <code className="text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-mono">
-                                    {tool.name}
-                                  </code>
-                                  <span className="text-muted-foreground">
-                                    {tool.descriptionJa}
-                                  </span>
-                                </div>
-                              ))}
+                              <code className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded">
+                                {selectedModule.mcpServer.path}
+                              </code>
                             </div>
                           </div>
-
-                          {/* アクセスモード */}
-                          <div className="p-3 bg-card rounded-lg border border-border">
-                            <p className="text-sm font-medium mb-1">
-                              {t("Access Mode", "アクセスモード")}
-                            </p>
-                            <span
-                              className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                                selectedModule.mcpServer.readOnly
-                                  ? "bg-blue-100 text-blue-800"
-                                  : "bg-amber-100 text-amber-800"
-                              }`}
-                            >
-                              {selectedModule.mcpServer.readOnly
-                                ? t("Read Only", "読み取り専用")
-                                : t("Read/Write", "読み書き可能")}
-                            </span>
-                          </div>
-
-                          {/* パス */}
-                          <div className="p-3 bg-card rounded-lg border border-border">
-                            <p className="text-sm font-medium mb-1">
-                              {t("Server Path", "サーバパス")}
-                            </p>
-                            <code className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded">
-                              {selectedModule.mcpServer.path}
-                            </code>
-                          </div>
-                        </div>
+                        )}
                       </div>
                     )}
 
@@ -3418,6 +3572,19 @@ export function AdminClient({
                                     min={0}
                                     max={999}
                                   />
+                                  {menu.id === "aiBusinessAnalysis" && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 text-xs gap-1 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                                      onClick={() =>
+                                        setShowJaAiConfigDialog(true)
+                                      }
+                                    >
+                                      <Sparkles className="w-3.5 h-3.5" />
+                                      {t("AI Settings", "AI設定")}
+                                    </Button>
+                                  )}
                                   <div className="flex items-center gap-1">
                                     <Switch
                                       checked={menu.enabled}
@@ -4348,6 +4515,259 @@ export function AdminClient({
                 : t("Delete", "削除")}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI業務分析専用AI設定ダイアログ */}
+      <Dialog
+        open={showJaAiConfigDialog}
+        onOpenChange={setShowJaAiConfigDialog}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-indigo-600" />
+              {t("AI Business Analysis - AI Settings", "AI業務分析 - AI設定")}
+            </DialogTitle>
+            <DialogDescription>
+              {t(
+                "Configure a dedicated AI model for the AI Business Analysis menu. When disabled, the app-wide AI settings will be used.",
+                "AI業務分析メニュー専用のAIモデルを設定します。無効の場合はアプリ全体のAI設定を使用します。",
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {jaAiConfig ? (
+            <div className="space-y-4">
+              {/* Enable toggle */}
+              <div className="flex items-center justify-between p-3 rounded-lg border">
+                <div>
+                  <p className="text-sm font-medium">
+                    {t("Use dedicated AI settings", "専用AI設定を使用")}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {t(
+                      "Override the app-wide AI settings",
+                      "アプリ全体のAI設定をオーバーライド",
+                    )}
+                  </p>
+                </div>
+                <Switch
+                  checked={jaAiConfig.enabled}
+                  onCheckedChange={(checked) =>
+                    handleUpdateJaAiConfig({ enabled: checked })
+                  }
+                />
+              </div>
+
+              {jaAiConfig.enabled && (
+                <div className="space-y-4 pl-4 border-l-2 border-indigo-200 dark:border-indigo-800">
+                  {/* Provider */}
+                  <div className="grid gap-2">
+                    <Label>{t("AI Provider", "AIプロバイダー")}</Label>
+                    <select
+                      value={jaAiConfig.provider}
+                      onChange={(e) =>
+                        handleUpdateJaAiConfig({ provider: e.target.value })
+                      }
+                      className="h-10 px-3 border rounded-md text-sm bg-background"
+                    >
+                      <option value="local">
+                        {t("Local LLM", "ローカルLLM")}
+                      </option>
+                      <option value="openai">OpenAI</option>
+                      <option value="anthropic">Anthropic (Claude)</option>
+                    </select>
+                  </div>
+
+                  {/* Local LLM fields */}
+                  {(!jaAiConfig.provider ||
+                    jaAiConfig.provider === "local") && (
+                    <>
+                      <div className="grid gap-2">
+                        <Label>
+                          {t("Local LLM Server", "ローカルLLMサーバー")}
+                        </Label>
+                        <select
+                          value={jaAiConfig.localProvider}
+                          onChange={(e) =>
+                            handleUpdateJaAiConfig({
+                              localProvider: e.target.value,
+                            })
+                          }
+                          className="h-10 px-3 border rounded-md text-sm bg-background"
+                        >
+                          <option value="">
+                            {t("Same as app-wide", "アプリ全体と同じ")}
+                          </option>
+                          <option value="llama.cpp">llama.cpp</option>
+                          <option value="lm-studio">LM Studio</option>
+                          <option value="ollama">Ollama</option>
+                        </select>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>{t("Endpoint URL", "エンドポイントURL")}</Label>
+                        <Input
+                          type="text"
+                          value={jaLocalEndpointInput}
+                          onChange={(e) =>
+                            setJaLocalEndpointInput(e.target.value)
+                          }
+                          onBlur={() => {
+                            if (
+                              jaLocalEndpointInput !== jaAiConfig.localEndpoint
+                            ) {
+                              handleUpdateJaAiConfig({
+                                localEndpoint: jaLocalEndpointInput,
+                              });
+                            }
+                          }}
+                          placeholder="http://localhost:8080/v1/chat/completions"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>{t("Model Name", "モデル名")}</Label>
+                        <Input
+                          type="text"
+                          value={jaLocalModelInput}
+                          onChange={(e) => setJaLocalModelInput(e.target.value)}
+                          onBlur={() => {
+                            if (jaLocalModelInput !== jaAiConfig.localModel) {
+                              handleUpdateJaAiConfig({
+                                localModel: jaLocalModelInput,
+                              });
+                            }
+                          }}
+                          placeholder="gemma-3n"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>
+                          {t("API Key", "APIキー")}
+                          <span className="text-xs text-muted-foreground ml-1">
+                            ({t("optional", "任意")})
+                          </span>
+                        </Label>
+                        <Input
+                          type="password"
+                          value={jaAiConfig.apiKey}
+                          onChange={(e) =>
+                            setJaAiConfig({
+                              ...jaAiConfig,
+                              apiKey: e.target.value,
+                            })
+                          }
+                          onBlur={() =>
+                            handleUpdateJaAiConfig({
+                              apiKey: jaAiConfig.apiKey,
+                            })
+                          }
+                          placeholder="sk-..."
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Cloud provider fields */}
+                  {(jaAiConfig.provider === "openai" ||
+                    jaAiConfig.provider === "anthropic") && (
+                    <>
+                      <div className="grid gap-2">
+                        <Label>{t("Model", "モデル")}</Label>
+                        <Input
+                          type="text"
+                          value={jaAiConfig.model}
+                          onChange={(e) =>
+                            setJaAiConfig({
+                              ...jaAiConfig,
+                              model: e.target.value,
+                            })
+                          }
+                          onBlur={() =>
+                            handleUpdateJaAiConfig({
+                              model: jaAiConfig.model,
+                            })
+                          }
+                          placeholder={
+                            jaAiConfig.provider === "openai"
+                              ? "gpt-4o"
+                              : "claude-sonnet-4-20250514"
+                          }
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>{t("API Key", "APIキー")}</Label>
+                        <Input
+                          type="password"
+                          value={jaAiConfig.apiKey}
+                          onChange={(e) =>
+                            setJaAiConfig({
+                              ...jaAiConfig,
+                              apiKey: e.target.value,
+                            })
+                          }
+                          onBlur={() =>
+                            handleUpdateJaAiConfig({
+                              apiKey: jaAiConfig.apiKey,
+                            })
+                          }
+                          placeholder="sk-..."
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* テスト接続 */}
+              {jaAiConfig.enabled && (
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleJaTestConnection}
+                    disabled={jaTestLoading}
+                    className="w-full"
+                  >
+                    {jaTestLoading ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : null}
+                    {jaTestLoading
+                      ? t("Testing...", "テスト中...")
+                      : t("Test Connection", "テスト接続")}
+                  </Button>
+                  {jaTestResult && (
+                    <div
+                      className={`p-3 rounded-lg text-sm ${
+                        jaTestResult.success
+                          ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800"
+                          : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"
+                      }`}
+                    >
+                      <p className="font-medium">
+                        {jaTestResult.success
+                          ? t("Connection successful", "接続成功")
+                          : t("Connection failed", "接続失敗")}
+                      </p>
+                      <p className="text-xs mt-1">{jaTestResult.message}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Saving indicator */}
+              {jaAiSaving && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {t("Saving...", "保存中...")}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

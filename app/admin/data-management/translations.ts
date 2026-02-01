@@ -204,6 +204,35 @@ export const dataManagementTranslations = {
     to: "To",
     merging: "Merging organizations...",
     sourceArchived: "Source organization will be archived",
+
+    // Publish validation
+    managersNotAssigned:
+      "Cannot publish: the following units have no manager assigned",
+    managersNotAssignedCount: "units without manager",
+
+    // Duplicate Employees
+    duplicateEmployees: "Duplicate Employees",
+    duplicateEmployeesDescription:
+      "The following employees exist in both organizations (matched by name). Choose how to resolve each duplicate.",
+    duplicateEmployeesFound: "duplicate employees found",
+    noDuplicateEmployees: "No duplicate employees found",
+    keepTarget: "Keep target",
+    keepSource: "Keep source",
+    skipSource: "Don't transfer",
+    keepTargetDesc: "Keep the existing record in the target organization",
+    keepSourceDesc: "Replace with the record from the source organization",
+    skipSourceDesc: "Don't transfer this employee from the source",
+    targetRecord: "Target",
+    sourceRecord: "Source",
+    recommended: "Recommended",
+    duplicateResolution: "Duplicate Resolution",
+
+    // Individual Transfer
+    transferEmployee: "Transfer",
+    transferConfirm: "Transfer this employee to the primary organization?",
+    transferSuccess: "Employee transferred successfully",
+    transferError: "Failed to transfer employee",
+    actions: "Actions",
   },
   ja: {
     title: "組織データ管理",
@@ -407,6 +436,35 @@ export const dataManagementTranslations = {
     to: "移動先",
     merging: "組織をマージ中...",
     sourceArchived: "マージ元組織はアーカイブされます",
+
+    // Publish validation
+    managersNotAssigned:
+      "公開できません: 以下の組織に責任者が設定されていません",
+    managersNotAssignedCount: "件の責任者未設定",
+
+    // Duplicate Employees
+    duplicateEmployees: "重複社員",
+    duplicateEmployeesDescription:
+      "以下の社員が両方の組織に存在します（氏名一致）。各社員の処理方法を選択してください。",
+    duplicateEmployeesFound: "名の重複社員が見つかりました",
+    noDuplicateEmployees: "重複社員はありません",
+    keepTarget: "マージ先を残す",
+    keepSource: "マージ元を残す",
+    skipSource: "移行しない",
+    keepTargetDesc: "マージ先の既存レコードをそのまま維持",
+    keepSourceDesc: "マージ元のレコードでマージ先を上書き",
+    skipSourceDesc: "この社員をマージ元から移行しない",
+    targetRecord: "マージ先",
+    sourceRecord: "マージ元",
+    recommended: "推奨",
+    duplicateResolution: "重複解決",
+
+    // Individual Transfer
+    transferEmployee: "転籍",
+    transferConfirm: "この社員をメイン組織に転籍しますか？",
+    transferSuccess: "社員を転籍しました",
+    transferError: "転籍に失敗しました",
+    actions: "操作",
   },
 } as const;
 

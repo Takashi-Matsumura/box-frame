@@ -1,0 +1,31 @@
+{
+  "name": "@boxframe/mcp-organization",
+  "version": "1.0.0",
+  "description": "MCP server for company organization data access",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "prisma generate && tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch",
+    "postinstall": "prisma generate"
+  },
+  "keywords": [
+    "mcp",
+    "organization",
+    "company",
+    "employees"
+  ],
+  "prisma": {
+    "schema": "../../prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@prisma/client": "^6.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "prisma": "^6.1.0",
+    "typescript": "^5.7.2"
+  }
+}
