@@ -1,6 +1,51 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { OpenLdapService } from "@/lib/ldap/openldap-service";
+import { OpenLdapService, type LdapUser } from "@/lib/ldap/openldap-service";
+import { prisma } from "@/lib/prisma";
+
+/**
+ * LDAPユーザの表示名をEmployeeテーブルの名前で上書きする
+ * LdapUserMapping → User → Employee の経路で名前を取得
+ */
+async function enrichWithEmployeeNames(users: LdapUser[]) {
+  if (users.length === 0) return users;
+
+  const uids = users.map((u) => u.uid);
+  const mappings = await prisma.ldapUserMapping.findMany({
+    where: { ldapUsername: { in: uids }, isActive: true },
+    select: {
+      ldapUsername: true,
+      user: {
+        select: {
+          email: true,
+        },
+      },
+    },
+  });
+
+  // メールアドレスからEmployee名を取得
+  const emails = mappings
+    .map((m) => m.user.email)
+    .filter((e): e is string => !!e);
+  const employees = await prisma.employee.findMany({
+    where: { email: { in: emails }, isActive: true },
+    select: { email: true, name: true },
+  });
+
+  const emailToName = new Map(employees.map((e) => [e.email, e.name]));
+  const uidToEmail = new Map(
+    mappings.map((m) => [m.ldapUsername, m.user.email]),
+  );
+
+  return users.map((user) => {
+    const email = uidToEmail.get(user.uid);
+    const employeeName = email ? emailToName.get(email) : undefined;
+    if (employeeName) {
+      return { ...user, displayName: employeeName };
+    }
+    return user;
+  });
+}
 
 /**
  * GET /api/admin/ldap-users
@@ -55,7 +100,7 @@ export async function GET(request: NextRequest) {
           { status: 500 },
         );
       }
-      const users = result.users || [];
+      const users = await enrichWithEmployeeNames(result.users || []);
       console.log("✅ [API] Search successful, found", users.length, "users");
       return NextResponse.json({
         users,
@@ -81,7 +126,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const users = result.users || [];
+    const users = await enrichWithEmployeeNames(result.users || []);
     const total = result.total || users.length;
     const totalPages = Math.ceil(total / pageSize);
     console.log(
