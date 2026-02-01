@@ -1478,11 +1478,19 @@ export function AdminClient({
                         </span>
                         <span>Tailwind CSS 4</span>
                       </div>
-                      <div className="flex justify-between items-center py-2">
+                      <div className="flex justify-between items-center py-2 border-b border-border">
                         <span className="font-medium">
                           {t("Language", "言語")}
                         </span>
                         <span>TypeScript</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="font-medium">
+                          {t("Build ID", "ビルドID")}
+                        </span>
+                        <code className="text-sm bg-card px-2 py-1 rounded border border-border">
+                          {process.env.NEXT_BUILD_ID || "dev"}
+                        </code>
                       </div>
                     </div>
                   </div>
