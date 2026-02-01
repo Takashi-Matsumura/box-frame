@@ -63,6 +63,13 @@ const result = await AIService.generate({
   temperature: 0.5,
 });
 
+// メニュー専用AI設定でオーバーライド（configOverride）
+const result = await AIService.generate({
+  input: "入力テキスト",
+  systemPrompt: "AIへの指示",
+  configOverride: { provider: "local", localEndpoint: "...", localModel: "..." },
+});
+
 // 要約
 const summary = await AIService.summarize({
   text: "長いテキスト",

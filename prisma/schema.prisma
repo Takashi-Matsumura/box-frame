@@ -1099,6 +1099,7 @@ model JobAnalysis {
   description       String?           // 説明
   inputMaterials    String?           // 参考資料テキスト
   jobDescriptionMd  String?           // AI生成→編集される業務分掌マークダウン
+  flowDiagramData   Json?             // Excalidrawフロー図エレメントJSON
   chatHistory       Json?             // [{role, content, timestamp}]
   status            JobAnalysisStatus @default(DRAFT)
   tags              String?           // タグ（カンマ区切り）

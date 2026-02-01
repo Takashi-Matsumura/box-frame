@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -70,6 +70,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       updateData.inputMaterials = body.inputMaterials?.trim() || null;
     if (body.jobDescriptionMd !== undefined)
       updateData.jobDescriptionMd = body.jobDescriptionMd?.trim() || null;
+    if (body.flowDiagramData !== undefined)
+      updateData.flowDiagramData = body.flowDiagramData;
     if (body.chatHistory !== undefined)
       updateData.chatHistory = body.chatHistory;
     if (body.status !== undefined) updateData.status = body.status;

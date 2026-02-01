@@ -22,6 +22,7 @@ interface OpenOptions {
   content?: ReactNode;
   initialPosition?: FloatingWindowPosition;
   initialSize?: FloatingWindowSize;
+  headerClassName?: string;
 }
 
 interface FloatingWindowStore {
@@ -42,6 +43,7 @@ interface FloatingWindowStore {
   title: string;
   titleJa: string;
   content: ReactNode | null;
+  headerClassName: string;
 
   // アクション
   open: (options?: OpenOptions) => void;
@@ -67,6 +69,7 @@ export const useFloatingWindowStore = create<FloatingWindowStore>(
     title: "Sub Window",
     titleJa: "サブウィンドウ",
     content: null,
+    headerClassName: "",
 
     open: (options) => {
       set({
@@ -78,6 +81,7 @@ export const useFloatingWindowStore = create<FloatingWindowStore>(
         content: options?.content ?? null,
         position: options?.initialPosition ?? DEFAULT_POSITION,
         size: options?.initialSize ?? DEFAULT_SIZE,
+        headerClassName: options?.headerClassName ?? "",
       });
     },
 
@@ -89,6 +93,7 @@ export const useFloatingWindowStore = create<FloatingWindowStore>(
         content: null,
         prevPosition: null,
         prevSize: null,
+        headerClassName: "",
       });
     },
 

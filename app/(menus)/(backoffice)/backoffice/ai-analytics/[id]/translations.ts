@@ -12,7 +12,8 @@ export const jobAnalysisDetailTranslations = {
     // Progress Steps
     progressSteps: "Progress",
     step1Title: "Draft Generation",
-    step1Desc: "AI generates a job description from title and reference materials",
+    step1Desc:
+      "AI generates a job description from title and reference materials",
     step1Action: "Generate Draft",
     step2Title: "Edit Job Description",
     step2Desc: "Edit the AI-generated draft to match your actual business",
@@ -50,7 +51,8 @@ export const jobAnalysisDetailTranslations = {
     formatting: "Formatting...",
     // Job Description
     jobDescription: "Job Description",
-    noJobDescription: "No job description yet. Generate a draft to get started.",
+    noJobDescription:
+      "No job description yet. Generate a draft to get started.",
     editJobDescription: "Edit",
     saveJobDescription: "Save",
     // Reference Materials
@@ -75,6 +77,36 @@ export const jobAnalysisDetailTranslations = {
     statusUpdated: "Status updated",
     markComplete: "Mark as Complete",
     reopen: "Reopen for Editing",
+    // Flow Diagram
+    flowDiagram: "Flow Diagram",
+    flowDiagramDesc:
+      "Generate a visual flow diagram from the business flow section",
+    generateFlowDiagram: "Generate Flow Diagram",
+    generatingFlowDiagram: "Generating...",
+    saveFlowDiagram: "Save Diagram",
+    savingFlowDiagram: "Saving...",
+    flowDiagramSaved: "Flow diagram saved",
+    clearCanvas: "Clear Canvas",
+    clearCanvasConfirm: "Clear the canvas?",
+    flowDiagramChat: "Describe changes to the flow diagram...",
+    noFlowSection:
+      "No '業務フロー' section found in the job description. Please add a business flow section first.",
+    // AI Config
+    aiConfig: "AI Settings",
+    aiConfigDesc: "Configure a dedicated AI model for this menu",
+    aiConfigEnabled: "Use dedicated AI settings",
+    aiConfigEnabledDesc: "Override the app-wide AI settings for this menu",
+    aiConfigProvider: "Provider",
+    aiConfigModel: "Model",
+    aiConfigEndpoint: "Endpoint URL",
+    aiConfigApiKey: "API Key",
+    aiConfigLocalProvider: "Local Provider",
+    aiConfigLocalModel: "Local Model",
+    aiConfigSave: "Save",
+    aiConfigSaved: "Saved",
+    aiConfigSaving: "Saving...",
+    aiConfigUsingDefault: "Using app-wide settings",
+    aiConfigUsingCustom: "Using dedicated settings",
   },
   ja: {
     backToList: "一覧に戻る",
@@ -152,6 +184,35 @@ export const jobAnalysisDetailTranslations = {
     statusUpdated: "ステータスを更新しました",
     markComplete: "完成にする",
     reopen: "編集に戻す",
+    // Flow Diagram
+    flowDiagram: "フロー図",
+    flowDiagramDesc: "業務フローセクションからフロー図を自動生成",
+    generateFlowDiagram: "フロー図を生成",
+    generatingFlowDiagram: "生成中...",
+    saveFlowDiagram: "図を保存",
+    savingFlowDiagram: "保存中...",
+    flowDiagramSaved: "フロー図を保存しました",
+    clearCanvas: "キャンバスをクリア",
+    clearCanvasConfirm: "キャンバスをクリアしますか？",
+    flowDiagramChat: "フロー図の変更を指示...",
+    noFlowSection:
+      "業務分掌に「業務フロー」セクションが見つかりません。先に業務フローセクションを追加してください。",
+    // AI Config
+    aiConfig: "AI設定",
+    aiConfigDesc: "このメニュー専用のAIモデルを設定",
+    aiConfigEnabled: "専用AI設定を使用",
+    aiConfigEnabledDesc: "アプリ全体のAI設定をこのメニュー専用にオーバーライド",
+    aiConfigProvider: "プロバイダー",
+    aiConfigModel: "モデル",
+    aiConfigEndpoint: "エンドポイントURL",
+    aiConfigApiKey: "APIキー",
+    aiConfigLocalProvider: "ローカルプロバイダー",
+    aiConfigLocalModel: "ローカルモデル",
+    aiConfigSave: "保存",
+    aiConfigSaved: "保存しました",
+    aiConfigSaving: "保存中...",
+    aiConfigUsingDefault: "アプリ全体の設定を使用中",
+    aiConfigUsingCustom: "専用設定を使用中",
   },
 } as const;
 

@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Edit2,
   FileText,
+  GitBranch,
   Loader2,
   MessageSquare,
   RotateCcw,
@@ -20,6 +21,8 @@ import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
+import { FloatingWindow } from "@/components/ui/floating-window";
+import { useFloatingWindowStore } from "@/lib/stores/floating-window-store";
 import { jobAnalysisDetailTranslations } from "./translations";
 
 interface JobAnalysis {
@@ -28,6 +31,7 @@ interface JobAnalysis {
   description: string | null;
   inputMaterials: string | null;
   jobDescriptionMd: string | null;
+  flowDiagramData: unknown[] | null;
   chatHistory: ChatMessage[] | null;
   status: string;
   tags: string | null;
@@ -97,6 +101,20 @@ export function JobAnalysisDetailClient({
   // Info panel toggle
   const [showInfoPanel, setShowInfoPanel] = useState(false);
 
+  // AI Config (loaded from admin settings)
+  const [aiConfig, setAiConfig] = useState({
+    enabled: false,
+    provider: "",
+    apiKey: "",
+    model: "",
+    localProvider: "",
+    localEndpoint: "",
+    localModel: "",
+  });
+
+  // FloatingWindow
+  const floatingWindow = useFloatingWindowStore();
+
   // ============================================================
   // Update function
   // ============================================================
@@ -150,11 +168,42 @@ export function JobAnalysisDetailClient({
   }, [analysisId, router]);
 
   // ============================================================
+  // AI Config
+  // ============================================================
+  const fetchAIConfig = useCallback(async () => {
+    try {
+      const response = await fetch("/api/backoffice/job-analyses/ai-config");
+      if (response.ok) {
+        const data = await response.json();
+        setAiConfig(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch AI config:", error);
+    }
+  }, []);
+
+  // Build configOverride for API calls when custom config is enabled
+  const getConfigOverride = useCallback(() => {
+    if (!aiConfig.enabled) return undefined;
+
+    const override: Record<string, unknown> = {};
+    if (aiConfig.provider) override.provider = aiConfig.provider;
+    if (aiConfig.apiKey) override.apiKey = aiConfig.apiKey;
+    if (aiConfig.model) override.model = aiConfig.model;
+    if (aiConfig.localProvider) override.localProvider = aiConfig.localProvider;
+    if (aiConfig.localEndpoint) override.localEndpoint = aiConfig.localEndpoint;
+    if (aiConfig.localModel) override.localModel = aiConfig.localModel;
+
+    return Object.keys(override).length > 0 ? override : undefined;
+  }, [aiConfig]);
+
+  // ============================================================
   // Effects
   // ============================================================
   useEffect(() => {
     fetchAnalysis();
-  }, [fetchAnalysis]);
+    fetchAIConfig();
+  }, [fetchAnalysis, fetchAIConfig]);
 
   // Auto-generate on first load if DRAFT and no jobDescriptionMd
   const hasTriggeredAutoGenerate = useRef(false);
@@ -363,6 +412,7 @@ export function JobAnalysisDetailClient({
 - **[リスク名]**: [説明と対策]`,
           temperature: 0.5,
           maxTokens: 4000,
+          configOverride: getConfigOverride(),
         }),
       });
 
@@ -448,6 +498,7 @@ ${analysis?.inputMaterials ? `## 参考資料\n${analysis.inputMaterials}` : ""}
         body: JSON.stringify({
           systemPrompt,
           messages: apiMessages,
+          configOverride: getConfigOverride(),
         }),
       });
 
@@ -510,6 +561,7 @@ ${analysis.title}
 整形後の業務分掌全体（マークダウン形式）`,
           temperature: 0.3,
           maxTokens: 4000,
+          configOverride: getConfigOverride(),
         }),
       });
 
@@ -564,6 +616,75 @@ ${analysis.title}
   };
 
   // ============================================================
+  // Flow Diagram
+  // ============================================================
+  const extractSection = useCallback(
+    (sectionName: RegExp): string => {
+      const md = analysis?.jobDescriptionMd || "";
+      const match = md.match(
+        new RegExp(
+          `##\\s*(?:${sectionName.source})[^\\n]*\\n([\\s\\S]*?)(?=\\n##\\s|\\n#\\s|$)`,
+          "i",
+        ),
+      );
+      return match ? match[1].trim() : "";
+    },
+    [analysis?.jobDescriptionMd],
+  );
+
+  const handleOpenFlowDiagram = useCallback(async () => {
+    const flowSection = extractSection(/業務フロー|Business Flow/);
+    if (!flowSection) {
+      alert(t.noFlowSection);
+      return;
+    }
+    const stakeholderSection = extractSection(/ステークホルダー|Stakeholder/);
+
+    // Dynamically import the editor to avoid SSR issues
+    const { default: ExcalidrawFlowEditor } = await import(
+      "./ExcalidrawFlowEditor"
+    );
+
+    const handleSave = async (elements: unknown[]) => {
+      await updateAnalysis({ flowDiagramData: elements });
+    };
+
+    floatingWindow.open({
+      title: "Flow Diagram",
+      titleJa: "フロー図",
+      headerClassName: "bg-indigo-600 border-indigo-700",
+      content: (
+        <ExcalidrawFlowEditor
+          language={language}
+          flowSection={flowSection}
+          stakeholderSection={stakeholderSection}
+          initialData={analysis?.flowDiagramData || null}
+          configOverride={getConfigOverride()}
+          onSave={handleSave}
+          translations={{
+            generateFlowDiagram: t.generateFlowDiagram,
+            generatingFlowDiagram: t.generatingFlowDiagram,
+            saveFlowDiagram: t.saveFlowDiagram,
+            savingFlowDiagram: t.savingFlowDiagram,
+            clearCanvas: t.clearCanvas,
+            clearCanvasConfirm: t.clearCanvasConfirm,
+            flowDiagramChat: t.flowDiagramChat,
+          }}
+        />
+      ),
+      initialSize: { width: 900, height: 650 },
+      initialPosition: { x: 80, y: 60 },
+    });
+  }, [
+    analysis?.flowDiagramData,
+    extractSection,
+    floatingWindow,
+    language,
+    t,
+    updateAnalysis,
+  ]);
+
+  // ============================================================
   // Render
   // ============================================================
   if (isLoading) {
@@ -615,6 +736,18 @@ ${analysis.title}
               ))}
             </div>
           </div>
+          {/* Flow diagram button - available when job description exists */}
+          {hasJobDescription() && analysis.status !== "COMPLETED" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleOpenFlowDiagram}
+              className="text-indigo-600 border-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+            >
+              <GitBranch className="w-4 h-4 mr-1" />
+              {t.flowDiagram}
+            </Button>
+          )}
           {analysis.status === "COMPLETED" && (
             <Button
               variant="outline"
@@ -635,8 +768,12 @@ ${analysis.title}
               className={`w-4 h-4 mr-1 transition-transform duration-200 ${showInfoPanel ? "rotate-180" : ""}`}
             />
             {showInfoPanel
-              ? (language === "ja" ? "情報を隠す" : "Hide Info")
-              : (language === "ja" ? "情報を表示" : "Show Info")}
+              ? language === "ja"
+                ? "情報を隠す"
+                : "Hide Info"
+              : language === "ja"
+                ? "情報を表示"
+                : "Show Info"}
           </Button>
         </div>
       </div>
@@ -885,11 +1022,7 @@ ${analysis.title}
               </Button>
             )}
             {hasJobDescription() && !isEditMode && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleStartEditMode}
-              >
+              <Button variant="outline" size="sm" onClick={handleStartEditMode}>
                 <Edit2 className="w-4 h-4 mr-1" />
                 {t.editModeOn}
               </Button>
@@ -982,7 +1115,9 @@ ${analysis.title}
                 <div className="w-1/2 p-4 flex flex-col">
                   <div className="mb-2 pb-2 border-b flex items-center justify-between">
                     <span className="text-xs text-muted-foreground font-medium">
-                      {language === "ja" ? "マークダウン編集" : "Markdown Editor"}
+                      {language === "ja"
+                        ? "マークダウン編集"
+                        : "Markdown Editor"}
                     </span>
                     <Button
                       variant="ghost"
@@ -1177,6 +1312,9 @@ ${analysis.title}
           )}
         </div>
       </div>
+
+      {/* FloatingWindow for flow diagram */}
+      <FloatingWindow language={language} />
     </div>
   );
 }

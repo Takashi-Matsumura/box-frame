@@ -38,7 +38,8 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { input, systemPrompt, temperature, maxTokens } = body;
+    const { input, systemPrompt, temperature, maxTokens, configOverride } =
+      body;
 
     // バリデーション
     if (!input || typeof input !== "string") {
@@ -75,12 +76,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const response = await AIService.generate({
-      input,
-      systemPrompt,
-      temperature,
-      maxTokens,
-    });
+    const response = await AIService.generate(
+      {
+        input,
+        systemPrompt,
+        temperature,
+        maxTokens,
+      },
+      configOverride,
+    );
 
     return NextResponse.json(response);
   } catch (error) {

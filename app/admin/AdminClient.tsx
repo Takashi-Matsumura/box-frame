@@ -5,8 +5,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Edit3,
+  Loader2,
   Plus,
   Search,
+  Sparkles,
   Trash2,
   X,
 } from "lucide-react";
@@ -352,6 +354,26 @@ export function AdminClient({
   const [aiSaving, setAiSaving] = useState(false);
   const [localEndpointInput, setLocalEndpointInput] = useState("");
   const [localModelInput, setLocalModelInput] = useState("");
+
+  // AI業務分析専用AI設定
+  const [jaAiConfig, setJaAiConfig] = useState<{
+    enabled: boolean;
+    provider: string;
+    apiKey: string;
+    model: string;
+    localProvider: string;
+    localEndpoint: string;
+    localModel: string;
+  } | null>(null);
+  const [jaAiSaving, setJaAiSaving] = useState(false);
+  const [jaLocalEndpointInput, setJaLocalEndpointInput] = useState("");
+  const [jaLocalModelInput, setJaLocalModelInput] = useState("");
+  const [showJaAiConfigDialog, setShowJaAiConfigDialog] = useState(false);
+  const [jaTestResult, setJaTestResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
+  const [jaTestLoading, setJaTestLoading] = useState(false);
 
   // アナウンス用AI翻訳
   const [aiTranslationAvailable, setAiTranslationAvailable] = useState(false);
@@ -957,6 +979,74 @@ export function AdminClient({
       });
     } finally {
       setTestingConnection(false);
+    }
+  };
+
+  // AI業務分析専用AI設定を取得
+  const fetchJaAiConfig = useCallback(async () => {
+    try {
+      const response = await fetch("/api/backoffice/job-analyses/ai-config");
+      if (response.ok) {
+        const data = await response.json();
+        setJaAiConfig(data);
+        setJaLocalEndpointInput(data.localEndpoint || "");
+        setJaLocalModelInput(data.localModel || "");
+      }
+    } catch (error) {
+      console.error("Error fetching job analysis AI config:", error);
+    }
+  }, []);
+
+  // ダイアログ表示時にフェッチ
+  useEffect(() => {
+    if (showJaAiConfigDialog) {
+      fetchJaAiConfig();
+    }
+  }, [showJaAiConfigDialog, fetchJaAiConfig]);
+
+  // AI業務分析専用AI設定を更新
+  const handleUpdateJaAiConfig = async (
+    updates: Partial<typeof jaAiConfig>,
+  ) => {
+    if (!jaAiConfig) return;
+    try {
+      setJaAiSaving(true);
+      const newConfig = { ...jaAiConfig, ...updates };
+      const response = await fetch("/api/backoffice/job-analyses/ai-config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newConfig),
+      });
+      if (response.ok) {
+        setJaAiConfig(newConfig);
+      }
+    } catch (error) {
+      console.error("Error updating job analysis AI config:", error);
+    } finally {
+      setJaAiSaving(false);
+    }
+  };
+
+  // AI業務分析専用AI設定のテスト接続
+  const handleJaTestConnection = async () => {
+    try {
+      setJaTestLoading(true);
+      setJaTestResult(null);
+      const response = await fetch("/api/backoffice/job-analyses/ai-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "test-connection" }),
+      });
+      const result = await response.json();
+      setJaTestResult(result);
+    } catch (error) {
+      setJaTestResult({
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Connection test failed",
+      });
+    } finally {
+      setJaTestLoading(false);
     }
   };
 
@@ -1600,7 +1690,10 @@ export function AdminClient({
                                   setLocalEndpointInput(e.target.value)
                                 }
                                 onBlur={() => {
-                                  if (localEndpointInput !== aiConfig.localEndpoint) {
+                                  if (
+                                    localEndpointInput !==
+                                    aiConfig.localEndpoint
+                                  ) {
                                     handleUpdateAiConfig({
                                       localEndpoint: localEndpointInput,
                                     });
@@ -3434,6 +3527,19 @@ export function AdminClient({
                                     min={0}
                                     max={999}
                                   />
+                                  {menu.id === "aiBusinessAnalysis" && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 text-xs gap-1 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                                      onClick={() =>
+                                        setShowJaAiConfigDialog(true)
+                                      }
+                                    >
+                                      <Sparkles className="w-3.5 h-3.5" />
+                                      {t("AI Settings", "AI設定")}
+                                    </Button>
+                                  )}
                                   <div className="flex items-center gap-1">
                                     <Switch
                                       checked={menu.enabled}
@@ -4364,6 +4470,259 @@ export function AdminClient({
                 : t("Delete", "削除")}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI業務分析専用AI設定ダイアログ */}
+      <Dialog
+        open={showJaAiConfigDialog}
+        onOpenChange={setShowJaAiConfigDialog}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-indigo-600" />
+              {t("AI Business Analysis - AI Settings", "AI業務分析 - AI設定")}
+            </DialogTitle>
+            <DialogDescription>
+              {t(
+                "Configure a dedicated AI model for the AI Business Analysis menu. When disabled, the app-wide AI settings will be used.",
+                "AI業務分析メニュー専用のAIモデルを設定します。無効の場合はアプリ全体のAI設定を使用します。",
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {jaAiConfig ? (
+            <div className="space-y-4">
+              {/* Enable toggle */}
+              <div className="flex items-center justify-between p-3 rounded-lg border">
+                <div>
+                  <p className="text-sm font-medium">
+                    {t("Use dedicated AI settings", "専用AI設定を使用")}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {t(
+                      "Override the app-wide AI settings",
+                      "アプリ全体のAI設定をオーバーライド",
+                    )}
+                  </p>
+                </div>
+                <Switch
+                  checked={jaAiConfig.enabled}
+                  onCheckedChange={(checked) =>
+                    handleUpdateJaAiConfig({ enabled: checked })
+                  }
+                />
+              </div>
+
+              {jaAiConfig.enabled && (
+                <div className="space-y-4 pl-4 border-l-2 border-indigo-200 dark:border-indigo-800">
+                  {/* Provider */}
+                  <div className="grid gap-2">
+                    <Label>{t("AI Provider", "AIプロバイダー")}</Label>
+                    <select
+                      value={jaAiConfig.provider}
+                      onChange={(e) =>
+                        handleUpdateJaAiConfig({ provider: e.target.value })
+                      }
+                      className="h-10 px-3 border rounded-md text-sm bg-background"
+                    >
+                      <option value="local">
+                        {t("Local LLM", "ローカルLLM")}
+                      </option>
+                      <option value="openai">OpenAI</option>
+                      <option value="anthropic">Anthropic (Claude)</option>
+                    </select>
+                  </div>
+
+                  {/* Local LLM fields */}
+                  {(!jaAiConfig.provider ||
+                    jaAiConfig.provider === "local") && (
+                    <>
+                      <div className="grid gap-2">
+                        <Label>
+                          {t("Local LLM Server", "ローカルLLMサーバー")}
+                        </Label>
+                        <select
+                          value={jaAiConfig.localProvider}
+                          onChange={(e) =>
+                            handleUpdateJaAiConfig({
+                              localProvider: e.target.value,
+                            })
+                          }
+                          className="h-10 px-3 border rounded-md text-sm bg-background"
+                        >
+                          <option value="">
+                            {t("Same as app-wide", "アプリ全体と同じ")}
+                          </option>
+                          <option value="llama.cpp">llama.cpp</option>
+                          <option value="lm-studio">LM Studio</option>
+                          <option value="ollama">Ollama</option>
+                        </select>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>{t("Endpoint URL", "エンドポイントURL")}</Label>
+                        <Input
+                          type="text"
+                          value={jaLocalEndpointInput}
+                          onChange={(e) =>
+                            setJaLocalEndpointInput(e.target.value)
+                          }
+                          onBlur={() => {
+                            if (
+                              jaLocalEndpointInput !== jaAiConfig.localEndpoint
+                            ) {
+                              handleUpdateJaAiConfig({
+                                localEndpoint: jaLocalEndpointInput,
+                              });
+                            }
+                          }}
+                          placeholder="http://localhost:8080/v1/chat/completions"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>{t("Model Name", "モデル名")}</Label>
+                        <Input
+                          type="text"
+                          value={jaLocalModelInput}
+                          onChange={(e) => setJaLocalModelInput(e.target.value)}
+                          onBlur={() => {
+                            if (jaLocalModelInput !== jaAiConfig.localModel) {
+                              handleUpdateJaAiConfig({
+                                localModel: jaLocalModelInput,
+                              });
+                            }
+                          }}
+                          placeholder="gemma-3n"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>
+                          {t("API Key", "APIキー")}
+                          <span className="text-xs text-muted-foreground ml-1">
+                            ({t("optional", "任意")})
+                          </span>
+                        </Label>
+                        <Input
+                          type="password"
+                          value={jaAiConfig.apiKey}
+                          onChange={(e) =>
+                            setJaAiConfig({
+                              ...jaAiConfig,
+                              apiKey: e.target.value,
+                            })
+                          }
+                          onBlur={() =>
+                            handleUpdateJaAiConfig({
+                              apiKey: jaAiConfig.apiKey,
+                            })
+                          }
+                          placeholder="sk-..."
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Cloud provider fields */}
+                  {(jaAiConfig.provider === "openai" ||
+                    jaAiConfig.provider === "anthropic") && (
+                    <>
+                      <div className="grid gap-2">
+                        <Label>{t("Model", "モデル")}</Label>
+                        <Input
+                          type="text"
+                          value={jaAiConfig.model}
+                          onChange={(e) =>
+                            setJaAiConfig({
+                              ...jaAiConfig,
+                              model: e.target.value,
+                            })
+                          }
+                          onBlur={() =>
+                            handleUpdateJaAiConfig({
+                              model: jaAiConfig.model,
+                            })
+                          }
+                          placeholder={
+                            jaAiConfig.provider === "openai"
+                              ? "gpt-4o"
+                              : "claude-sonnet-4-20250514"
+                          }
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>{t("API Key", "APIキー")}</Label>
+                        <Input
+                          type="password"
+                          value={jaAiConfig.apiKey}
+                          onChange={(e) =>
+                            setJaAiConfig({
+                              ...jaAiConfig,
+                              apiKey: e.target.value,
+                            })
+                          }
+                          onBlur={() =>
+                            handleUpdateJaAiConfig({
+                              apiKey: jaAiConfig.apiKey,
+                            })
+                          }
+                          placeholder="sk-..."
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* テスト接続 */}
+              {jaAiConfig.enabled && (
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleJaTestConnection}
+                    disabled={jaTestLoading}
+                    className="w-full"
+                  >
+                    {jaTestLoading ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : null}
+                    {jaTestLoading
+                      ? t("Testing...", "テスト中...")
+                      : t("Test Connection", "テスト接続")}
+                  </Button>
+                  {jaTestResult && (
+                    <div
+                      className={`p-3 rounded-lg text-sm ${
+                        jaTestResult.success
+                          ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800"
+                          : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"
+                      }`}
+                    >
+                      <p className="font-medium">
+                        {jaTestResult.success
+                          ? t("Connection successful", "接続成功")
+                          : t("Connection failed", "接続失敗")}
+                      </p>
+                      <p className="text-xs mt-1">{jaTestResult.message}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Saving indicator */}
+              {jaAiSaving && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {t("Saving...", "保存中...")}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
