@@ -102,6 +102,38 @@ export const organizationModule: AppModule = {
       allowAccessKey: true,
     },
   ],
+  mcpServer: {
+    id: "organization-mcp",
+    name: "Organization MCP Server",
+    nameJa: "会社組織MCPサーバ",
+    description:
+      "Provides read-only access to organization structure and employee data for external AI",
+    descriptionJa:
+      "外部AIから組織構造と社員データへの読み取り専用アクセスを提供",
+    path: "mcp-servers/organization",
+    toolCount: 6,
+    readOnly: true,
+    tools: [
+      { name: "org_check_status", descriptionJa: "DB接続状態を確認" },
+      {
+        name: "org_get_structure",
+        descriptionJa: "組織階層ツリーを取得",
+      },
+      {
+        name: "org_list_departments",
+        descriptionJa: "本部一覧を取得",
+      },
+      {
+        name: "org_list_employees",
+        descriptionJa: "社員一覧を取得",
+      },
+      { name: "org_get_employee", descriptionJa: "社員詳細を取得" },
+      {
+        name: "org_search_employees",
+        descriptionJa: "社員を検索",
+      },
+    ],
+  },
   services: [
     {
       id: "organizationImport",
