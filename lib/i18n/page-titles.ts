@@ -290,6 +290,11 @@ export function getPageTitle(pathname: string, language: "en" | "ja"): string {
     return language === "ja" ? "わたしのカレンダー" : "My Calendar";
   }
 
+  // /backoffice/ai-analytics/* -> "AI業務分析"
+  if (pathname.startsWith("/backoffice/ai-analytics")) {
+    return language === "ja" ? "AI業務分析" : "AI Business Analysis";
+  }
+
   // /backoffice/analytics/* -> "業務分析"
   if (pathname.startsWith("/backoffice/analytics")) {
     return language === "ja" ? "業務分析" : "Business Process Analysis";
