@@ -36,6 +36,7 @@ interface EmployeeDetail {
   employmentType: string | null;
   employmentTypeCode: string | null;
   organization: { id: string; name: string } | null;
+  originalOrganization: { id: string; name: string } | null;
   department: {
     id: string;
     name: string;
@@ -542,7 +543,9 @@ export function EmployeeDetailDialog({
                       <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                         <dt className="text-muted-foreground">{t.company}</dt>
                         <dd className="text-foreground">
-                          {employee.organization?.name || "-"}
+                          {employee.originalOrganization?.name ||
+                            employee.organization?.name ||
+                            "-"}
                         </dd>
                         <dt className="text-muted-foreground">{t.joinDate}</dt>
                         <dd className="text-foreground">

@@ -26,6 +26,9 @@ export async function GET(
         organization: {
           select: { id: true, name: true },
         },
+        originalOrganization: {
+          select: { id: true, name: true },
+        },
         department: {
           select: {
             id: true,
@@ -81,6 +84,7 @@ export async function GET(
         employmentType: employee.employmentType,
         employmentTypeCode: employee.employmentTypeCode,
         organization: employee.organization,
+        originalOrganization: employee.originalOrganization,
         department: employee.department,
         section: employee.section,
         course: employee.course,

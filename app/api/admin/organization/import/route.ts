@@ -350,6 +350,7 @@ export async function POST(request: Request) {
                   position: processed.position,
                   positionCode: processed.positionCode,
                   organizationId,
+                  originalOrganizationId: organizationId,
                   departmentId: department.id,
                   sectionId: section?.id || null,
                   courseId: course?.id || null,
