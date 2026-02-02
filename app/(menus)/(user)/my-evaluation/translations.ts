@@ -6,6 +6,25 @@ export const myEvaluationTranslations = {
     // Tabs
     tabCurrentPeriod: "Current Period",
     tabHistory: "Evaluation History",
+    tabCycle: "Evaluation Cycle",
+    tabCareer: "Career History",
+
+    // Phases
+    phaseReview: "Previous Review",
+    phaseGoals: "Goal Setting",
+    phaseProgress: "In-Progress",
+    phaseSelfEval: "Self Evaluation",
+    phaseReviewDescription:
+      "Previous period evaluation results and evaluator comments",
+    phaseGoalsDescription: "Set process and growth goals for this period",
+    phaseProgressDescription: "Interview calendar and progress notes",
+    phaseSelfEvalDescription: "Star rating self evaluation and submit",
+
+    // Phase statuses
+    phaseCompleted: "Completed",
+    phaseCurrent: "Current",
+    phaseUpcoming: "Upcoming",
+    noPreviousReview: "No previous evaluation results available",
 
     // Period
     selectPeriod: "Select Period",
@@ -106,12 +125,30 @@ export const myEvaluationTranslations = {
       "Your evaluation has been completed. Review the results below.",
   },
   ja: {
-    title: "マイ評価",
+    title: "わたしの評価",
     description: "あなたの評価結果を確認",
 
     // Tabs
     tabCurrentPeriod: "今期の評価",
     tabHistory: "評価履歴",
+    tabCycle: "評価サイクル",
+    tabCareer: "キャリアの軌跡",
+
+    // Phases
+    phaseReview: "前期の振り返り",
+    phaseGoals: "目標設定",
+    phaseProgress: "期中の活動",
+    phaseSelfEval: "自己評価",
+    phaseReviewDescription: "前期の評価結果サマリーと評価者コメント",
+    phaseGoalsDescription: "プロセス目標と成長目標を設定",
+    phaseProgressDescription: "面談カレンダーと進捗メモ",
+    phaseSelfEvalDescription: "星採点による自己評価と提出",
+
+    // Phase statuses
+    phaseCompleted: "完了",
+    phaseCurrent: "現在",
+    phaseUpcoming: "未着手",
+    noPreviousReview: "前期の評価結果はありません",
 
     // Period
     selectPeriod: "評価期間を選択",

@@ -69,7 +69,7 @@ export function StarRating({
             className={cn(
               "p-0.5 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 rounded",
               !disabled && "cursor-pointer hover:scale-110",
-              disabled && "cursor-default"
+              disabled && "cursor-default",
             )}
             aria-label={`${rating} stars`}
           >
@@ -79,7 +79,7 @@ export function StarRating({
                 "transition-colors",
                 value !== null && rating <= value
                   ? "fill-yellow-400 text-yellow-400"
-                  : "fill-transparent text-muted-foreground/40"
+                  : "fill-transparent text-muted-foreground/40",
               )}
             />
           </button>

@@ -21,11 +21,17 @@ export async function GET() {
     let providerName: string;
     let modelName: string;
 
+    let contextSize: number | null = null;
+
     if (config.provider === "local") {
       providerName = config.localProvider;
-      // ローカルLLMの場合、実際のモデル名を取得
-      const actualModelName = await AIService.getLocalModelName();
+      // ローカルLLMの場合、実際のモデル名とコンテキストサイズを取得
+      const [actualModelName, actualContextSize] = await Promise.all([
+        AIService.getLocalModelName(),
+        AIService.getLocalContextSize(),
+      ]);
       modelName = actualModelName || config.localModel;
+      contextSize = actualContextSize;
     } else if (config.provider === "openai") {
       providerName = "OpenAI";
       modelName = config.model;
@@ -42,6 +48,7 @@ export async function GET() {
       provider: config.provider,
       providerName,
       modelName,
+      ...(contextSize != null && { contextSize }),
     });
   } catch (error) {
     console.error("Error checking AI availability:", error);

@@ -87,6 +87,8 @@ export function getContextWindowSize(provider: string, model: string): number {
     provider === "lm-studio"
   ) {
     if (model.toLowerCase().includes("gemma")) {
+      if (model.includes("3n") || model.includes("3-"))
+        return CONTEXT_WINDOW_SIZES["gemma-3"];
       return CONTEXT_WINDOW_SIZES.gemma;
     }
     if (model.toLowerCase().includes("llama")) {

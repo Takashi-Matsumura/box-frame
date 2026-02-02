@@ -21,6 +21,7 @@ import {
 import {
   chatWithLocal,
   generateWithLocal,
+  getLocalContextSize,
   getLocalModelName,
   testLocalConnection,
   translateWithLocal,
@@ -165,6 +166,14 @@ export class AIService {
   static async getLocalModelName(): Promise<string | null> {
     const config = await AIService.getConfig();
     return getLocalModelName(config);
+  }
+
+  /**
+   * ローカルLLMの実際のコンテキストサイズを取得
+   */
+  static async getLocalContextSize(): Promise<number | null> {
+    const config = await AIService.getConfig();
+    return getLocalContextSize(config);
   }
 
   // ============================================

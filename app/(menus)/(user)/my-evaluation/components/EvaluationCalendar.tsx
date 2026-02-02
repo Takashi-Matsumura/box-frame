@@ -80,12 +80,32 @@ const translations = {
 
 const monthNames = {
   en: [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ],
   ja: [
-    "1月", "2月", "3月", "4月", "5月", "6月",
-    "7月", "8月", "9月", "10月", "11月", "12月",
+    "1月",
+    "2月",
+    "3月",
+    "4月",
+    "5月",
+    "6月",
+    "7月",
+    "8月",
+    "9月",
+    "10月",
+    "11月",
+    "12月",
   ],
 };
 
@@ -104,7 +124,8 @@ export function EvaluationCalendar({
   const t = translations[language];
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingInterview, setEditingInterview] = useState<InterviewDate | null>(null);
+  const [editingInterview, setEditingInterview] =
+    useState<InterviewDate | null>(null);
   const [interviewNote, setInterviewNote] = useState("");
 
   // Get months to display based on period
@@ -145,16 +166,24 @@ export function EvaluationCalendar({
   }, []);
 
   // Check if a date has an interview
-  const getInterviewForDate = useCallback((dateStr: string) => {
-    return interviewDates.find((d) => d.date === dateStr);
-  }, [interviewDates]);
+  const getInterviewForDate = useCallback(
+    (dateStr: string) => {
+      return interviewDates.find((d) => d.date === dateStr);
+    },
+    [interviewDates],
+  );
 
   // Check if self evaluation was completed on this date
-  const isSelfEvaluationDate = useCallback((dateStr: string) => {
-    if (!selfEvaluationSubmittedAt) return false;
-    const submittedDate = new Date(selfEvaluationSubmittedAt).toISOString().split("T")[0];
-    return submittedDate === dateStr;
-  }, [selfEvaluationSubmittedAt]);
+  const isSelfEvaluationDate = useCallback(
+    (dateStr: string) => {
+      if (!selfEvaluationSubmittedAt) return false;
+      const submittedDate = new Date(selfEvaluationSubmittedAt)
+        .toISOString()
+        .split("T")[0];
+      return submittedDate === dateStr;
+    },
+    [selfEvaluationSubmittedAt],
+  );
 
   // Format date string
   const formatDateStr = (year: number, month: number, day: number) => {
@@ -188,8 +217,8 @@ export function EvaluationCalendar({
       // Update existing
       onInterviewDatesChange(
         interviewDates.map((d) =>
-          d.id === editingInterview.id ? { ...d, note: interviewNote } : d
-        )
+          d.id === editingInterview.id ? { ...d, note: interviewNote } : d,
+        ),
       );
     } else {
       // Add new
@@ -211,7 +240,9 @@ export function EvaluationCalendar({
   const handleDeleteInterview = () => {
     if (!editingInterview) return;
 
-    onInterviewDatesChange(interviewDates.filter((d) => d.id !== editingInterview.id));
+    onInterviewDatesChange(
+      interviewDates.filter((d) => d.id !== editingInterview.id),
+    );
     setDialogOpen(false);
     setSelectedDate(null);
     setEditingInterview(null);
@@ -234,8 +265,12 @@ export function EvaluationCalendar({
               {t.calendar}
             </CardTitle>
             <Badge
-              variant={selfEvaluationStatus === "SUBMITTED" ? "default" : "secondary"}
-              className={selfEvaluationStatus === "SUBMITTED" ? "bg-green-600" : ""}
+              variant={
+                selfEvaluationStatus === "SUBMITTED" ? "default" : "secondary"
+              }
+              className={
+                selfEvaluationStatus === "SUBMITTED" ? "bg-green-600" : ""
+              }
             >
               {selfEvaluationStatus === "SUBMITTED" ? t.submitted : t.draft}
             </Badge>
@@ -276,7 +311,7 @@ export function EvaluationCalendar({
                       className={cn(
                         "text-center text-xs font-medium py-1",
                         i === 0 && "text-red-500",
-                        i === 6 && "text-blue-500"
+                        i === 6 && "text-blue-500",
                       )}
                     >
                       {day}
@@ -296,13 +331,16 @@ export function EvaluationCalendar({
                     const interview = getInterviewForDate(dateStr);
                     const isSelfEvalDay = isSelfEvaluationDate(dateStr);
                     const dayOfWeek = new Date(year, month, day).getDay();
-                    const isToday = dateStr === new Date().toISOString().split("T")[0];
+                    const isToday =
+                      dateStr === new Date().toISOString().split("T")[0];
 
                     return (
                       <button
                         key={day}
                         type="button"
-                        onClick={() => isInPeriod && handleDateClick(year, month, day)}
+                        onClick={() =>
+                          isInPeriod && handleDateClick(year, month, day)
+                        }
                         disabled={!isInPeriod || !canEdit}
                         className={cn(
                           "h-8 w-full rounded text-sm relative transition-colors",
@@ -312,7 +350,7 @@ export function EvaluationCalendar({
                           dayOfWeek === 0 && isInPeriod && "text-red-500",
                           dayOfWeek === 6 && isInPeriod && "text-blue-500",
                           isToday && "ring-2 ring-primary ring-offset-1",
-                          (interview || isSelfEvalDay) && "font-bold"
+                          (interview || isSelfEvalDay) && "font-bold",
                         )}
                       >
                         {day}
@@ -357,7 +395,9 @@ export function EvaluationCalendar({
                       <MessageSquare className="w-3 h-3 text-blue-500" />
                       <span>{interview.date}</span>
                       {interview.note && (
-                        <span className="text-muted-foreground">: {interview.note}</span>
+                        <span className="text-muted-foreground">
+                          : {interview.note}
+                        </span>
                       )}
                     </Badge>
                   ))}

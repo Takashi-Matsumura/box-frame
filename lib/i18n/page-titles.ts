@@ -84,7 +84,7 @@ export const pageTitles = {
     "/admin/access-keys": "アクセスキー管理",
     "/data-import": "データインポート",
     "/evaluation-master": "評価環境管理",
-    "/my-evaluation": "自分の評価",
+    "/my-evaluation": "わたしの評価",
     "/user/my-evaluation": "わたしの評価",
     "/user/my-evaluation/[periodId]/detail": "評価詳細",
     "/organization-chart": "組織図",

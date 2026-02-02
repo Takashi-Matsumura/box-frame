@@ -80,7 +80,7 @@ export default async function LoginPage() {
 
         {/* フッター */}
         <p className="text-center text-sm text-muted-foreground mt-8">
-          © 2025 MatsBACCANO
+          © 2025 TED, OCC Corporation
         </p>
       </div>
     </div>

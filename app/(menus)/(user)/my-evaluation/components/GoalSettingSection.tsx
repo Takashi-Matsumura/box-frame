@@ -120,7 +120,8 @@ const translations = {
     aiAssistant: "AI Assistant",
     // Self Evaluation
     selfEvaluationLabel: "How well did you achieve this goal?",
-    selfEvaluationCommentPlaceholder: "Describe the reasons or evidence for your evaluation...",
+    selfEvaluationCommentPlaceholder:
+      "Describe the reasons or evidence for your evaluation...",
     submitConfirm:
       "Once submitted, you cannot edit your self evaluation. Are you sure?",
     submitSuccess: "Self evaluation submitted successfully",
@@ -154,8 +155,7 @@ const translations = {
     // Self Evaluation
     selfEvaluationLabel: "この目標をどの程度達成できましたか？",
     selfEvaluationCommentPlaceholder: "評価の理由や根拠を記入してください...",
-    submitConfirm:
-      "提出すると自己評価は編集できなくなります。よろしいですか？",
+    submitConfirm: "提出すると自己評価は編集できなくなります。よろしいですか？",
     submitSuccess: "自己評価を提出しました",
     submitError: "自己評価の提出に失敗しました",
   },
@@ -168,9 +168,9 @@ export default function GoalSettingSection({
   const t = translations[language];
 
   const [loading, setLoading] = useState(true);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">(
-    "idle",
-  );
+  const [saveStatus, setSaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
   const [error, setError] = useState<string | null>(null);
   const [period, setPeriod] = useState<Period | null>(null);
   const [goals, setGoals] = useState<GoalsData>({
@@ -195,13 +195,22 @@ export default function GoalSettingSection({
   const [showAIAssistant, setShowAIAssistant] = useState(false);
 
   // Self evaluation state
-  const [selfProcessScores, setSelfProcessScores] = useState<Record<string, number>>({});
-  const [selfProcessComments, setSelfProcessComments] = useState<Record<string, string>>({});
-  const [selfGrowthCategoryId, setSelfGrowthCategoryId] = useState<string | null>(null);
+  const [selfProcessScores, setSelfProcessScores] = useState<
+    Record<string, number>
+  >({});
+  const [selfProcessComments, setSelfProcessComments] = useState<
+    Record<string, string>
+  >({});
+  const [selfGrowthCategoryId, setSelfGrowthCategoryId] = useState<
+    string | null
+  >(null);
   const [selfGrowthLevel, setSelfGrowthLevel] = useState<number | null>(null);
   const [selfGrowthComment, setSelfGrowthComment] = useState<string>("");
-  const [selfEvaluationStatus, setSelfEvaluationStatus] = useState<"DRAFT" | "SUBMITTED">("DRAFT");
-  const [selfEvaluationSubmittedAt, setSelfEvaluationSubmittedAt] = useState<Date | null>(null);
+  const [selfEvaluationStatus, setSelfEvaluationStatus] = useState<
+    "DRAFT" | "SUBMITTED"
+  >("DRAFT");
+  const [selfEvaluationSubmittedAt, setSelfEvaluationSubmittedAt] =
+    useState<Date | null>(null);
   const [canEditSelfEvaluation, setCanEditSelfEvaluation] = useState(true);
 
   // Auto-save refs
@@ -250,7 +259,11 @@ export default function GoalSettingSection({
           setSelfGrowthLevel(data.selfEvaluation.growthLevel);
           setSelfGrowthComment(data.selfEvaluation.growthComment || "");
           setSelfEvaluationStatus(data.selfEvaluation.status || "DRAFT");
-          setSelfEvaluationSubmittedAt(data.selfEvaluation.submittedAt ? new Date(data.selfEvaluation.submittedAt) : null);
+          setSelfEvaluationSubmittedAt(
+            data.selfEvaluation.submittedAt
+              ? new Date(data.selfEvaluation.submittedAt)
+              : null,
+          );
         } else {
           setSelfProcessScores({});
           setSelfProcessComments({});
@@ -293,8 +306,14 @@ export default function GoalSettingSection({
           growthGoal: goals.growthGoal,
           interviewDates: interviewDates,
           // Self evaluation data
-          selfProcessScores: Object.keys(selfProcessScores).length > 0 ? selfProcessScores : undefined,
-          selfProcessComments: Object.keys(selfProcessComments).length > 0 ? selfProcessComments : undefined,
+          selfProcessScores:
+            Object.keys(selfProcessScores).length > 0
+              ? selfProcessScores
+              : undefined,
+          selfProcessComments:
+            Object.keys(selfProcessComments).length > 0
+              ? selfProcessComments
+              : undefined,
           selfGrowthCategoryId: selfGrowthCategoryId,
           selfGrowthLevel: selfGrowthLevel,
           selfGrowthComment: selfGrowthComment || undefined,
@@ -315,7 +334,17 @@ export default function GoalSettingSection({
       setSaveStatus("error");
       setTimeout(() => setSaveStatus("idle"), 5000);
     }
-  }, [periodId, goals, interviewDates, selfProcessScores, selfProcessComments, selfGrowthCategoryId, selfGrowthLevel, selfGrowthComment, t.saveError]);
+  }, [
+    periodId,
+    goals,
+    interviewDates,
+    selfProcessScores,
+    selfProcessComments,
+    selfGrowthCategoryId,
+    selfGrowthLevel,
+    selfGrowthComment,
+    t.saveError,
+  ]);
 
   // Debounced auto-save effect
   useEffect(() => {
@@ -338,7 +367,19 @@ export default function GoalSettingSection({
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [goals, interviewDates, selfProcessScores, selfProcessComments, selfGrowthCategoryId, selfGrowthLevel, selfGrowthComment, saveGoals, loading, canEditSelfEvaluation, selfEvaluationStatus]);
+  }, [
+    goals,
+    interviewDates,
+    selfProcessScores,
+    selfProcessComments,
+    selfGrowthCategoryId,
+    selfGrowthLevel,
+    selfGrowthComment,
+    saveGoals,
+    loading,
+    canEditSelfEvaluation,
+    selfEvaluationStatus,
+  ]);
 
   const addProcessGoal = () => {
     const newOrder = goals.processGoals.length + 1;
@@ -436,7 +477,7 @@ export default function GoalSettingSection({
   const canSubmitSelfEvaluation = () => {
     // 全てのプロセス目標に星評価が入力されているか
     const allProcessScoresEntered = goals.processGoals.every(
-      (process) => selfProcessScores[process.id] !== undefined
+      (process) => selfProcessScores[process.id] !== undefined,
     );
     // 成長目標があれば、星評価が入力されているか
     const growthEvaluationEntered =
@@ -703,7 +744,9 @@ export default function GoalSettingSection({
                               setSelfGrowthLevel(value);
                               // 成長目標のカテゴリIDも同期
                               if (goals.growthGoal?.categoryId) {
-                                setSelfGrowthCategoryId(goals.growthGoal.categoryId);
+                                setSelfGrowthCategoryId(
+                                  goals.growthGoal.categoryId,
+                                );
                               }
                             }}
                             disabled={!canEditSelfEvaluation}

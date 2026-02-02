@@ -1,14 +1,17 @@
-# BoxFrame
+# BoX2
 
-バックオフィス業務を支援するモジュラーフレームワーク。Next.js 15 App Routerベースの権限管理とプラグイン形式の機能拡張を提供します。
+組織管理・人事評価を支援するモジュラーフレームワーク。Next.js 15 App Routerベースの権限管理とプラグイン形式の機能拡張を提供します。
 
 ## 特徴
 
-- **モジュラーアーキテクチャ**: プラグイン形式でメニューと機能を拡張
+- **モジュラーアーキテクチャ**: コアモジュールとアドオンモジュールによる機能拡張
 - **権限ベースのルーティング**: ロールに応じたページアクセス制御
 - **OpenLDAP統合**: エンタープライズ向け認証基盤
 - **多言語対応**: 日本語・英語切り替え
 - **ダークモード**: システム設定に連動したテーマ切り替え
+- **AI機能**: AIチャット、RAGバックエンド連携、評価AIサポート
+- **人事評価**: 3軸評価（結果・プロセス・成長）、目標設定、自己評価
+- **バックオフィス**: 業務分析、AIヒアリング、チケット販売管理
 
 ## 技術スタック
 
@@ -17,9 +20,9 @@
 | Next.js | 15 (App Router) |
 | React | 19 |
 | 認証 | NextAuth.js v5 (Auth.js) |
-| ORM | Prisma (PostgreSQL) |
+| ORM | Prisma 6 (PostgreSQL) |
 | CSS | Tailwind CSS 4 |
-| 言語 | TypeScript |
+| 言語 | TypeScript 5 |
 | 状態管理 | Zustand |
 | UI | shadcn/ui |
 | Linter | Biome |
@@ -35,14 +38,14 @@
 
 ```bash
 # リポジトリをクローン
-git clone https://github.com/your-username/box-frame.git
-cd box-frame
+git clone https://github.com/your-username/ted-box2.git
+cd ted-box2
 
 # 依存関係のインストール
 npm install
 
 # Dockerコンテナを起動（PostgreSQL + OpenLDAP）
-docker compose up -d
+docker compose -f docker-compose.dev.yml up -d
 
 # 環境変数を設定
 cp .env.example .env
@@ -66,31 +69,88 @@ npm run dev
 
 ## アーキテクチャ
 
+```
+┌─────────────────────────────────────────────┐
+│              フレーム基盤                    │
+│  ┌─────────┐ ┌─────────┐ ┌───────┐ ┌─────┐ │
+│  │ 認証    │ │ 通知    │ │ i18n  │ │Prisma│ │
+│  └─────────┘ └─────────┘ └───────┘ └─────┘ │
+└─────────────────────────────────────────────┘
+                    ↑
+               使用する
+                    │
+┌───────────────────┴─────────────────────────┐
+│       コアモジュール / アドオンモジュール     │
+│    (system, ai, organization, evaluation,   │
+│     backoffice, openldap, ldap-migration)   │
+└─────────────────────────────────────────────┘
+```
+
 ### ディレクトリ構造
 
 ```
-box-frame/
+ted-box2/
 ├── app/
-│   ├── (menus)/              # メニューページ（ルートグループ）
-│   │   ├── (user)/           # 全ユーザ向け
-│   │   ├── (manager)/        # 管理職向け
-│   │   └── (admin)/          # システム管理者向け
-│   ├── admin/                # 管理画面
-│   ├── login/                # ログインページ
-│   └── api/                  # APIルート
+│   ├── (menus)/                # メニューページ（ルートグループ）
+│   │   ├── (user)/             # 全ユーザ向け
+│   │   │   ├── ai-chat/        #   AIチャット
+│   │   │   ├── dashboard/      #   ダッシュボード
+│   │   │   ├── my-evaluation/  #   わたしの評価
+│   │   │   └── organization-chart/ # 組織図
+│   │   ├── (manager)/          # 管理職向け
+│   │   │   └── manager/
+│   │   │       ├── evaluations/        # 人事評価
+│   │   │       └── evaluator-settings/ # 評価者設定
+│   │   ├── (admin)/            # システム管理者向け
+│   │   │   └── admin/          #   管理画面（タブ形式）
+│   │   └── (backoffice)/       # バックオフィス（アクセスキー必須）
+│   │       └── backoffice/
+│   │           ├── analytics/      # 業務分析
+│   │           ├── ai-analytics/   # AI業務分析
+│   │           └── ticket-sales/   # チケット販売
+│   ├── login/                  # ログインページ
+│   └── api/                    # APIルート
 ├── components/
-│   ├── ui/                   # shadcn/ui コンポーネント
-│   └── sidebar/              # サイドバーコンポーネント
+│   ├── ui/                     # shadcn/ui コンポーネント
+│   ├── sidebar/                # サイドバー
+│   ├── notifications/          # 通知システム
+│   ├── modals/                 # モーダル
+│   └── business/               # 業務コンポーネント
 ├── lib/
-│   ├── modules/              # モジュールレジストリ
-│   ├── core-modules/         # コアモジュール
-│   ├── addon-modules/        # アドオンモジュール
-│   └── ldap/                 # LDAP認証
+│   ├── modules/                # モジュールレジストリ
+│   ├── core-modules/           # コアモジュール (system, ai)
+│   ├── addon-modules/          # アドオンモジュール
+│   │   ├── evaluation/         #   人事評価
+│   │   ├── organization/       #   組織管理
+│   │   ├── backoffice/         #   バックオフィス
+│   │   ├── openldap/           #   OpenLDAP
+│   │   └── ldap-migration/     #   LDAP移行
+│   ├── services/               # フレーム基盤サービス
+│   ├── i18n/                   # 多言語対応
+│   ├── auth/                   # 認証ユーティリティ
+│   ├── history/                # 履歴管理
+│   ├── importers/              # データインポート
+│   ├── stores/                 # Zustandストア
+│   └── ldap/                   # LDAP認証
 ├── prisma/
-│   └── schema.prisma         # データベーススキーマ
-└── docker/
-    └── openldap/             # OpenLDAP初期設定
+│   └── schema.prisma           # データベーススキーマ
+├── docker/
+│   └── openldap/               # OpenLDAP初期設定
+├── docs/                       # ドキュメント
+└── __tests__/                  # テスト
 ```
+
+### モジュール一覧
+
+| モジュール | 種別 | 説明 |
+|-----------|------|------|
+| system | コア | システム設定・ユーザ管理 |
+| ai | コア | AIプロバイダー・チャット・RAG連携 |
+| organization | アドオン | 組織管理・社員情報・組織図 |
+| evaluation | アドオン | 人事評価（3軸評価・目標設定・自己評価） |
+| backoffice | アドオン | 業務分析・AI分析・チケット販売 |
+| openldap | アドオン | OpenLDAP認証統合 |
+| ldap-migration | アドオン | LDAP移行ユーティリティ |
 
 ### モジュールシステム
 
@@ -118,31 +178,29 @@ export const exampleModule: AppModule = {
 
 ### カスタムモジュールの作成
 
-テンプレートモジュールをコピーして独自のモジュールを作成できます。
-
-#### 1. モジュール定義をコピー
+#### 1. モジュール定義を作成
 
 ```bash
-cp -r lib/addon-modules/template lib/addon-modules/mymodule
+mkdir lib/addon-modules/mymodule
 ```
 
-#### 2. モジュールIDと名前を変更
+#### 2. モジュールIDと名前を設定
 
-`lib/addon-modules/mymodule/module.tsx` を編集:
+`lib/addon-modules/mymodule/module.tsx` を作成:
 
 ```typescript
 export const myModule: AppModule = {
-  id: "mymodule",           // 変更
-  name: "My Module",        // 変更
-  nameJa: "マイモジュール",  // 変更
+  id: "mymodule",
+  name: "My Module",
+  nameJa: "マイモジュール",
   // ...
 };
 ```
 
-#### 3. ページをコピー
+#### 3. ページを作成
 
 ```bash
-cp -r app/(menus)/(user)/template app/(menus)/(user)/mypage
+mkdir -p app/(menus)/(user)/mypage
 ```
 
 #### 4. モジュールを登録
@@ -153,8 +211,7 @@ cp -r app/(menus)/(user)/template app/(menus)/(user)/mypage
 import { myModule } from "@/lib/addon-modules/mymodule";
 
 export const moduleRegistry: ModuleRegistry = {
-  system: systemModule,
-  openldap: openldapModule,
+  // ...既存モジュール
   mymodule: myModule,  // 追加
 };
 ```
@@ -169,11 +226,12 @@ npm run dev
 
 ### ロール
 
-| ロール | 説明 |
-|-------|-----|
-| USER | 一般ユーザ |
-| MANAGER | 管理職 |
-| ADMIN | システム管理者 |
+| ロール | 説明 | メニューグループ |
+|-------|------|----------------|
+| USER | 一般ユーザ | user |
+| MANAGER | 管理職 | user, manager |
+| EXECUTIVE | 経営層 | user, manager |
+| ADMIN | システム管理者 | user, manager, admin |
 
 ## Docker環境
 
@@ -213,13 +271,18 @@ docker compose logs -f
 ## 開発コマンド
 
 ```bash
-npm run dev          # 開発サーバ起動
-npm run build        # 本番ビルド
-npm run start        # 本番サーバ起動
-npm run lint         # Biomeチェック
-npm run format       # コードフォーマット
-npm run test         # テスト実行
-npx prisma studio    # Prisma Studio起動
+npm run dev              # 開発サーバ起動
+npm run build            # 本番ビルド
+npm run start            # 本番サーバ起動
+npm run lint             # Biomeチェック
+npm run format           # コードフォーマット
+npm run db:seed          # データベース初期投入
+npm run test             # テスト実行
+npm run test:watch       # テスト（ウォッチモード）
+npm run test:coverage    # テスト（カバレッジ付き）
+npx prisma studio        # Prisma Studio起動
+npx prisma generate      # Prismaクライアント生成
+npx prisma db push       # スキーマをDBに反映
 ```
 
 ## 認証
@@ -318,20 +381,6 @@ await NotificationService.broadcast({
   message: "LDAP configuration has been changed.",
   messageJa: "LDAP設定が変更されました。",
   source: "LDAP",
-});
-
-// カスタム通知
-await NotificationService.create({
-  userId: "user-id",
-  type: "ACTION",
-  priority: "NORMAL",
-  title: "Approval required",
-  titleJa: "承認が必要です",
-  message: "Please review the pending request.",
-  messageJa: "保留中のリクエストを確認してください。",
-  actionUrl: "/approvals/123",
-  actionLabel: "Review",
-  actionLabelJa: "確認する",
 });
 ```
 

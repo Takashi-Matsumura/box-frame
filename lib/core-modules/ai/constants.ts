@@ -156,6 +156,7 @@ export const CONTEXT_WINDOW_SIZES = {
   "claude-3": 200000,
   "claude-2": 100000,
   // Local LLMs
+  "gemma-3": 4096,
   gemma: 8192,
   "llama-3.2": 128000,
   "llama-3.1": 128000,

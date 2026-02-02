@@ -128,6 +128,53 @@ function parseModelName(rawName: string): string {
   return name;
 }
 
+/**
+ * ローカルLLMの実際のコンテキストサイズを取得
+ * llama.cpp: /props の n_ctx
+ * Ollama: /api/show の num_ctx (パラメータ) or model_info
+ */
+export async function getLocalContextSize(
+  config: AIConfig,
+): Promise<number | null> {
+  if (config.provider !== "local") {
+    return null;
+  }
+
+  try {
+    if (config.localProvider === "ollama") {
+      // Ollama: /api/show でモデル情報を取得
+      const baseUrl = config.localEndpoint.replace("/api/chat", "");
+      const response = await fetch(`${baseUrl}/api/show`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: config.localModel || "llama3.2" }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // model_info から context_length を取得
+        const ctxLength =
+          data.model_info?.["general.context_length"] ||
+          data.model_info?.["llama.context_length"];
+        if (typeof ctxLength === "number") return ctxLength;
+      }
+    } else {
+      // llama.cpp / LM Studio: /props から n_ctx を取得
+      const baseUrl = config.localEndpoint.replace("/v1/chat/completions", "");
+      const response = await fetch(`${baseUrl}/props`, {
+        method: "GET",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const nCtx = data.default_generation_settings?.n_ctx;
+        if (typeof nCtx === "number") return nCtx;
+      }
+    }
+  } catch {
+    // エラー時は null を返す（フォールバックでハードコード値を使用）
+  }
+  return null;
+}
+
 // ============================================
 // 翻訳
 // ============================================
