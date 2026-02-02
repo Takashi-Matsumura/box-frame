@@ -136,15 +136,16 @@ export async function updatePeriodStatus(
  */
 export async function initializeProcessCategories(): Promise<void> {
   for (const category of DEFAULT_PROCESS_CATEGORIES) {
-    const existing = await prisma.processCategory.findFirst({
-      where: { name: category.name },
+    await prisma.processCategory.upsert({
+      where: { categoryCode: category.categoryCode },
+      update: {
+        name: category.name,
+        nameEn: category.nameEn,
+        description: category.description,
+        sortOrder: category.sortOrder,
+      },
+      create: category,
     });
-
-    if (!existing) {
-      await prisma.processCategory.create({
-        data: category,
-      });
-    }
   }
 }
 
