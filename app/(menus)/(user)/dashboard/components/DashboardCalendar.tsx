@@ -1,0 +1,258 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  RiArrowLeftSLine,
+  RiArrowRightSLine,
+  RiCalendarLine,
+} from "react-icons/ri";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { dashboardTranslations } from "../translations";
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  endDate?: string; // 期間イベント用
+  category: "evaluation" | "interview" | "company" | "personal" | "birthday";
+  color: string;
+  description?: string;
+  actionUrl?: string;
+}
+
+const categoryColors: Record<CalendarEvent["category"], string> = {
+  evaluation: "bg-yellow-400",
+  interview: "bg-purple-500",
+  company: "bg-blue-500",
+  personal: "bg-green-500",
+  birthday: "bg-pink-400",
+};
+
+interface DashboardCalendarProps {
+  language: "en" | "ja";
+  events: CalendarEvent[];
+  onDateSelect?: (date: string) => void;
+  selectedDate: string | null;
+  onMonthChange?: (year: number, month: number) => void;
+}
+
+export function DashboardCalendar({
+  language,
+  events,
+  onDateSelect,
+  selectedDate,
+  onMonthChange,
+}: DashboardCalendarProps) {
+  const t = dashboardTranslations[language];
+  const today = new Date();
+  const todayStr = formatDateStr(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+
+  const [currentYear, setCurrentYear] = useState(today.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(today.getMonth());
+
+  // Notify parent of month changes via useEffect to avoid setState-during-render
+  useEffect(() => {
+    onMonthChange?.(currentYear, currentMonth);
+  }, [currentYear, currentMonth, onMonthChange]);
+
+  const weekDays = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat];
+
+  const goToPrevMonth = useCallback(() => {
+    setCurrentMonth((prev) => {
+      if (prev === 0) {
+        setCurrentYear((y) => y - 1);
+        return 11;
+      }
+      return prev - 1;
+    });
+  }, []);
+
+  const goToNextMonth = useCallback(() => {
+    setCurrentMonth((prev) => {
+      if (prev === 11) {
+        setCurrentYear((y) => y + 1);
+        return 0;
+      }
+      return prev + 1;
+    });
+  }, []);
+
+  const goToToday = useCallback(() => {
+    const now = new Date();
+    setCurrentYear(now.getFullYear());
+    setCurrentMonth(now.getMonth());
+    onDateSelect?.(
+      formatDateStr(now.getFullYear(), now.getMonth(), now.getDate()),
+    );
+  }, [onDateSelect]);
+
+  const days = useMemo(() => {
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDay = firstDay.getDay();
+
+    const result: (number | null)[] = [];
+    for (let i = 0; i < startingDay; i++) {
+      result.push(null);
+    }
+    for (let i = 1; i <= daysInMonth; i++) {
+      result.push(i);
+    }
+    return result;
+  }, [currentYear, currentMonth]);
+
+  const eventsMap = useMemo(() => {
+    const map = new Map<string, CalendarEvent[]>();
+    for (const event of events) {
+      const existing = map.get(event.date) || [];
+      existing.push(event);
+      map.set(event.date, existing);
+
+      // Handle range events
+      if (event.endDate && event.endDate > event.date) {
+        const start = new Date(event.date);
+        const end = new Date(event.endDate);
+        const cursor = new Date(start);
+        cursor.setDate(cursor.getDate() + 1);
+        while (cursor <= end) {
+          const dateStr = formatDateStr(
+            cursor.getFullYear(),
+            cursor.getMonth(),
+            cursor.getDate(),
+          );
+          const dayEvents = map.get(dateStr) || [];
+          dayEvents.push(event);
+          map.set(dateStr, dayEvents);
+          cursor.setDate(cursor.getDate() + 1);
+        }
+      }
+    }
+    return map;
+  }, [events]);
+
+  const handleDateClick = useCallback(
+    (day: number) => {
+      const dateStr = formatDateStr(currentYear, currentMonth, day);
+      onDateSelect?.(dateStr);
+    },
+    [currentYear, currentMonth, onDateSelect],
+  );
+
+  const monthLabel =
+    language === "ja"
+      ? `${currentYear}年 ${t.monthNames[currentMonth]}`
+      : `${t.monthNames[currentMonth]} ${currentYear}`;
+
+  return (
+    <div>
+      {/* Navigation */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={goToPrevMonth}>
+            <RiArrowLeftSLine className="w-4 h-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={goToNextMonth}>
+            <RiArrowRightSLine className="w-4 h-4" />
+          </Button>
+          <h2 className="text-lg font-semibold ml-2">{monthLabel}</h2>
+        </div>
+        <Button variant="outline" size="sm" onClick={goToToday}>
+          <RiCalendarLine className="w-4 h-4 mr-1" />
+          {t.todayButton}
+        </Button>
+      </div>
+
+      {/* Week days header */}
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {weekDays.map((day, i) => (
+          <div
+            key={day}
+            className={cn(
+              "text-center text-xs font-medium py-2",
+              i === 0 && "text-red-500",
+              i === 6 && "text-blue-500",
+            )}
+          >
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Days grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((day, index) => {
+          if (day === null) {
+            return <div key={`empty-${index}`} className="h-20" />;
+          }
+
+          const dateStr = formatDateStr(currentYear, currentMonth, day);
+          const dayOfWeek = new Date(currentYear, currentMonth, day).getDay();
+          const isToday = dateStr === todayStr;
+          const isSelected = dateStr === selectedDate;
+          const dayEvents = eventsMap.get(dateStr) || [];
+          // Deduplicate by category for dots
+          const uniqueCategories = [
+            ...new Set(dayEvents.map((e) => e.category)),
+          ];
+
+          return (
+            <button
+              key={day}
+              type="button"
+              onClick={() => handleDateClick(day)}
+              className={cn(
+                "h-20 w-full rounded-lg text-sm relative transition-colors p-1 text-left flex flex-col",
+                "hover:bg-accent/50 cursor-pointer",
+                "border border-transparent",
+                dayOfWeek === 0 && "text-red-500",
+                dayOfWeek === 6 && "text-blue-500",
+                isToday && "bg-primary/5 border-primary",
+                isSelected && !isToday && "bg-accent border-accent-foreground/20",
+                isSelected && isToday && "bg-primary/10 border-primary",
+              )}
+            >
+              <span
+                className={cn(
+                  "inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium",
+                  isToday &&
+                    "bg-primary text-primary-foreground",
+                )}
+              >
+                {day}
+              </span>
+              {/* Event dots */}
+              {uniqueCategories.length > 0 && (
+                <div className="flex flex-wrap gap-0.5 mt-auto">
+                  {uniqueCategories.slice(0, 4).map((category) => (
+                    <div
+                      key={category}
+                      className={cn(
+                        "w-2 h-2 rounded-full",
+                        categoryColors[category],
+                      )}
+                    />
+                  ))}
+                  {uniqueCategories.length > 4 && (
+                    <span className="text-[10px] text-muted-foreground leading-none">
+                      +{uniqueCategories.length - 4}
+                    </span>
+                  )}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function formatDateStr(year: number, month: number, day: number): string {
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}

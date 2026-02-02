@@ -68,6 +68,7 @@ model User {
   auditLogs     AuditLog[]
   announcements Announcement[]
   personalGoals PersonalGoal[]
+  externalCalendarConnections ExternalCalendarConnection[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }
@@ -1229,6 +1230,32 @@ model TicketSalesApiLog {
   @@index([endpoint])
   @@index([statusCode])
   @@index([apiKeyId])
+}
+
+// ========================================
+// RAG（生成AIモジュール - 汎用）
+// ========================================
+
+// ========================================
+// 外部カレンダー連携
+// ========================================
+
+model ExternalCalendarConnection {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider      String    // "google" | "outlook"
+  accessToken   String
+  refreshToken  String?
+  expiresAt     DateTime
+  scope         String?
+  isActive      Boolean   @default(true)
+  email         String?   // 接続先カレンダーのメールアドレス
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, provider])
+  @@index([userId])
 }
 
 // ========================================

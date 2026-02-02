@@ -1,46 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import type { ExternalCalendarEvent } from "@/lib/addon-modules/calendar-integration/types";
 import {
-  RiAlertLine,
-  RiCheckboxCircleLine,
-  RiInformationLine,
-  RiPlugLine,
-  RiServerLine,
-  RiShieldUserLine,
-  RiTranslate2,
-  RiWindowLine,
-} from "react-icons/ri";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  CollapsiblePanel,
-  CollapsiblePanelContent,
-  CollapsiblePanelDescription,
-  CollapsiblePanelHeader,
-  CollapsiblePanelTitle,
-} from "@/components/ui/collapsible-panel";
-import { FloatingWindow } from "@/components/ui/floating-window";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { useFloatingWindowStore } from "@/lib/stores/floating-window-store";
+  DashboardCalendar,
+  type CalendarEvent,
+} from "./components/DashboardCalendar";
+import { ExternalCalendarPanel } from "./components/ExternalCalendarPanel";
 import { dashboardTranslations } from "./translations";
 
 interface DashboardClientProps {
@@ -49,92 +17,220 @@ interface DashboardClientProps {
   userName: string;
 }
 
+// ダミーイベント（後でAPIデータに置き換え）
+const DEMO_EVENTS: CalendarEvent[] = (() => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const dateStr = (month: number, day: number) =>
+    `${y}-${pad(month + 1)}-${pad(day)}`;
+
+  return [
+    {
+      id: "demo-1",
+      title: "Mid-year evaluation deadline",
+      date: dateStr(m, 15),
+      category: "evaluation",
+      color: "#eab308",
+      description: "Submit your mid-year self-evaluation",
+    },
+    {
+      id: "demo-2",
+      title: "1-on-1 meeting",
+      date: dateStr(m, 18),
+      category: "interview",
+      color: "#a855f7",
+      description: "Manager 1-on-1",
+    },
+    {
+      id: "demo-3",
+      title: "All-hands meeting",
+      date: dateStr(m, 10),
+      category: "company",
+      color: "#3b82f6",
+      description: "Monthly all-hands",
+    },
+    {
+      id: "demo-4",
+      title: "Team lunch",
+      date: dateStr(m, 22),
+      category: "personal",
+      color: "#22c55e",
+    },
+    {
+      id: "demo-5",
+      title: "Tanaka-san's birthday",
+      date: dateStr(m, 25),
+      category: "birthday",
+      color: "#f472b6",
+    },
+    {
+      id: "demo-6",
+      title: "Evaluation period",
+      date: dateStr(m, 1),
+      endDate: dateStr(m, 5),
+      category: "evaluation",
+      color: "#eab308",
+      description: "Evaluation review period",
+    },
+  ];
+})();
+
+const categoryConfig: {
+  key: CalendarEvent["category"];
+  colorClass: string;
+}[] = [
+  { key: "evaluation", colorClass: "bg-yellow-400" },
+  { key: "interview", colorClass: "bg-purple-500" },
+  { key: "company", colorClass: "bg-blue-500" },
+  { key: "personal", colorClass: "bg-green-500" },
+  { key: "birthday", colorClass: "bg-pink-400" },
+];
+
+const categoryTranslationKeys: Record<CalendarEvent["category"], string> = {
+  evaluation: "categoryEvaluation",
+  interview: "categoryInterview",
+  company: "categoryCompany",
+  personal: "categoryPersonal",
+  birthday: "categoryBirthday",
+};
+
+// Convert external calendar events to CalendarEvent format for display
+function externalToCalendarEvents(
+  events: ExternalCalendarEvent[],
+): CalendarEvent[] {
+  return events.map((e) => {
+    const startDate = e.allDay
+      ? e.start
+      : e.start.split("T")[0];
+    const endDate = e.allDay && e.end
+      ? // Google all-day events have exclusive end date, subtract 1 day
+        (() => {
+          const d = new Date(e.end);
+          d.setDate(d.getDate() - 1);
+          const yy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, "0");
+          const dd = String(d.getDate()).padStart(2, "0");
+          return `${yy}-${mm}-${dd}`;
+        })()
+      : e.end
+        ? e.end.split("T")[0]
+        : undefined;
+
+    return {
+      id: `ext-${e.id}`,
+      title: e.title,
+      date: startDate,
+      endDate: endDate !== startDate ? endDate : undefined,
+      category: "company" as const,
+      color: "#4285f4", // Google blue
+      description: e.description || (e.location ? `📍 ${e.location}` : undefined),
+    };
+  });
+}
+
 export function DashboardClient({
   language,
   userRole,
   userName,
 }: DashboardClientProps) {
   const t = dashboardTranslations[language];
-  const [switchValue, setSwitchValue] = useState(false);
-  const [checkboxValue, setCheckboxValue] = useState(false);
-  const { open, isOpen } = useFloatingWindowStore();
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [calendarTab, setCalendarTab] = useState<"app" | "google">("app");
+  const [externalEvents, setExternalEvents] = useState<ExternalCalendarEvent[]>(
+    [],
+  );
+  const [calendarMonth, setCalendarMonth] = useState(() => ({
+    year: new Date().getFullYear(),
+    month: new Date().getMonth(),
+  }));
 
-  const handleOpenFloatingWindow = () => {
-    open({
-      title: "Demo Window",
-      titleJa: "デモウィンドウ",
-      content: (
-        <div className="space-y-4">
-          <p className="text-muted-foreground">{t.floatingWindowDescription}</p>
-          <div className="p-4 bg-muted rounded-lg">
-            <h4 className="font-semibold mb-2">{t.floatingWindowFeatures}</h4>
-            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-              <li>{t.floatingWindowFeature1}</li>
-              <li>{t.floatingWindowFeature2}</li>
-              <li>{t.floatingWindowFeature3}</li>
-              <li>{t.floatingWindowFeature4}</li>
-              <li>{t.floatingWindowFeature5}</li>
-            </ul>
-          </div>
-          <div className="p-4 bg-accent/50 rounded-lg">
-            <h4 className="font-semibold mb-2">{t.floatingWindowNote}</h4>
-            <p className="text-sm text-muted-foreground">
-              {t.floatingWindowNoteText}
-            </p>
-          </div>
-        </div>
-      ),
-      initialPosition: { x: 200, y: 150 },
-      initialSize: { width: 450, height: 400 },
+  const handleExternalEventsChange = useCallback(
+    (events: ExternalCalendarEvent[]) => {
+      setExternalEvents(events);
+    },
+    [],
+  );
+
+  const handleMonthChange = useCallback((year: number, month: number) => {
+    setCalendarMonth({ year, month });
+  }, []);
+
+  const convertedExternalEvents = useMemo(
+    () => externalToCalendarEvents(externalEvents),
+    [externalEvents],
+  );
+
+  const displayEvents =
+    calendarTab === "app" ? DEMO_EVENTS : convertedExternalEvents;
+
+  const selectedDayEvents = useMemo(() => {
+    if (!selectedDate) return [];
+    return displayEvents.filter((event) => {
+      if (event.date === selectedDate) return true;
+      if (
+        event.endDate &&
+        selectedDate >= event.date &&
+        selectedDate <= event.endDate
+      )
+        return true;
+      return false;
+    });
+  }, [selectedDate, displayEvents]);
+
+  const selectedDayExternalDetails = useMemo(() => {
+    if (!selectedDate || calendarTab !== "google") return [];
+    return externalEvents.filter((e) => {
+      const startDate = e.allDay ? e.start : e.start.split("T")[0];
+      const endDate = e.end
+        ? e.allDay
+          ? (() => {
+              const d = new Date(e.end);
+              d.setDate(d.getDate() - 1);
+              return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+            })()
+          : e.end.split("T")[0]
+        : startDate;
+      return selectedDate >= startDate && selectedDate <= endDate;
+    });
+  }, [selectedDate, calendarTab, externalEvents]);
+
+  const formatSelectedDate = (dateStr: string) => {
+    const date = new Date(`${dateStr}T00:00:00`);
+    return date.toLocaleDateString(language === "ja" ? "ja-JP" : "en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
     });
   };
 
-  const features = [
-    {
-      icon: RiPlugLine,
-      title: t.featureModular,
-      description: t.featureModularDesc,
-    },
-    {
-      icon: RiShieldUserLine,
-      title: t.featureRoles,
-      description: t.featureRolesDesc,
-    },
-    {
-      icon: RiServerLine,
-      title: t.featureLdap,
-      description: t.featureLdapDesc,
-    },
-    {
-      icon: RiTranslate2,
-      title: t.featureI18n,
-      description: t.featureI18nDesc,
-    },
-    {
-      icon: RiWindowLine,
-      title: t.floatingWindowTitle,
-      description: t.floatingWindowDescription,
-    },
-  ];
+  const formatTime = (isoStr: string) => {
+    const date = new Date(isoStr);
+    return date.toLocaleTimeString(language === "ja" ? "ja-JP" : "en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Banner */}
+    <div className="space-y-4">
+      {/* Welcome Banner (compact) */}
       <Card className="bg-primary border-0">
-        <CardContent className="py-6">
+        <CardContent className="py-4">
           <div className="flex items-center justify-between text-primary-foreground">
             <div>
-              <h1 className="text-2xl font-bold mb-2">
+              <h1 className="text-xl font-bold">
                 {t.welcomeBack}, {userName}!
               </h1>
-              <p className="opacity-80">
+              <p className="opacity-80 text-sm">
                 {t.roleLabel}: <span className="font-semibold">{userRole}</span>
               </p>
             </div>
             <div className="hidden md:block">
               <div className="text-right">
-                <p className="opacity-70 text-sm">{t.today}</p>
-                <p className="text-xl font-semibold">
+                <p className="opacity-70 text-xs">{t.today}</p>
+                <p className="text-base font-semibold">
                   {new Date().toLocaleDateString(
                     language === "ja" ? "ja-JP" : "en-US",
                     {
@@ -151,197 +247,159 @@ export function DashboardClient({
         </CardContent>
       </Card>
 
-      {/* About This Application */}
-      <CollapsiblePanel defaultOpen={false}>
-        <CollapsiblePanelHeader>
-          <CollapsiblePanelTitle>{t.messageTitle}</CollapsiblePanelTitle>
-          <CollapsiblePanelDescription>
-            {t.messageDescription}
-          </CollapsiblePanelDescription>
-        </CollapsiblePanelHeader>
-        <CollapsiblePanelContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {features.map((feature) => (
-              <div
-                key={feature.title}
-                className="flex items-start gap-3 p-4 rounded-lg bg-muted/50"
-              >
-                <div className="p-2 rounded-md bg-primary/10">
-                  <feature.icon className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm">{feature.title}</h4>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {feature.description}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CollapsiblePanelContent>
-      </CollapsiblePanel>
+      {/* Calendar Tab + External Calendar Panel */}
+      <div className="flex items-center justify-between">
+        <ExternalCalendarPanel
+          language={language}
+          activeTab={calendarTab}
+          onTabChange={setCalendarTab}
+          externalEvents={externalEvents}
+          onExternalEventsChange={handleExternalEventsChange}
+          currentYear={calendarMonth.year}
+          currentMonth={calendarMonth.month}
+        />
+      </div>
 
-      {/* Component Demo Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t.componentDemoTitle}</CardTitle>
-          <CardDescription>{t.componentDemoDescription}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-8">
-          {/* Buttons */}
-          <div>
-            <h4 className="font-medium mb-3">{t.demoButtons}</h4>
-            <div className="flex flex-wrap gap-2">
-              <Button>Default</Button>
-              <Button variant="secondary">Secondary</Button>
-              <Button variant="destructive">Destructive</Button>
-              <Button variant="outline">Outline</Button>
-              <Button variant="ghost">Ghost</Button>
-              <Button variant="link">Link</Button>
-              <Button size="sm">Small</Button>
-              <Button size="lg">Large</Button>
-              <Button disabled>Disabled</Button>
-            </div>
-          </div>
+      {/* Calendar + Event Detail */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
+        {/* Calendar */}
+        <Card>
+          <CardContent className="pt-6">
+            <DashboardCalendar
+              language={language}
+              events={displayEvents}
+              onDateSelect={setSelectedDate}
+              selectedDate={selectedDate}
+              onMonthChange={handleMonthChange}
+            />
+          </CardContent>
+        </Card>
 
-          {/* Badges */}
-          <div>
-            <h4 className="font-medium mb-3">{t.demoBadges}</h4>
-            <div className="flex flex-wrap gap-2">
-              <Badge>Default</Badge>
-              <Badge variant="secondary">Secondary</Badge>
-              <Badge variant="destructive">Destructive</Badge>
-              <Badge variant="outline">Outline</Badge>
-              <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                Success
-              </Badge>
-              <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                Warning
-              </Badge>
-              <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                Info
-              </Badge>
-            </div>
-          </div>
-
-          {/* Alerts */}
-          <div>
-            <h4 className="font-medium mb-3">{t.demoAlerts}</h4>
-            <div className="space-y-3">
-              <Alert>
-                <RiInformationLine className="h-4 w-4" />
-                <AlertTitle>{t.alertInfoTitle}</AlertTitle>
-                <AlertDescription>{t.alertInfoDesc}</AlertDescription>
-              </Alert>
-              <Alert className="border-yellow-200 bg-yellow-50 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200">
-                <RiAlertLine className="h-4 w-4" />
-                <AlertTitle>{t.alertWarningTitle}</AlertTitle>
-                <AlertDescription>{t.alertWarningDesc}</AlertDescription>
-              </Alert>
-              <Alert className="border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
-                <RiCheckboxCircleLine className="h-4 w-4" />
-                <AlertTitle>{t.alertSuccessTitle}</AlertTitle>
-                <AlertDescription>{t.alertSuccessDesc}</AlertDescription>
-              </Alert>
-            </div>
-          </div>
-
-          {/* Cards */}
-          <div>
-            <h4 className="font-medium mb-3">{t.demoCards}</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t.cardTitle}</CardTitle>
-                  <CardDescription>{t.cardDescription}</CardDescription>
-                </CardHeader>
-                <CardContent>
+        {/* Selected day events panel */}
+        <Card>
+          <CardContent className="pt-6">
+            {selectedDate ? (
+              <div>
+                <h3 className="font-semibold text-sm mb-1">
+                  {formatSelectedDate(selectedDate)}
+                </h3>
+                <p className="text-xs text-muted-foreground mb-4">
+                  {t.selectedDayEvents}
+                </p>
+                {calendarTab === "google" && selectedDayExternalDetails.length > 0 ? (
+                  <div className="space-y-3">
+                    {selectedDayExternalDetails.map((event) => (
+                      <div
+                        key={event.id}
+                        className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
+                      >
+                        <div className="w-2 h-2 rounded-full mt-1.5 shrink-0 bg-blue-500" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium leading-tight">
+                            {event.htmlLink ? (
+                              <a
+                                href={event.htmlLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="hover:underline"
+                              >
+                                {event.title}
+                              </a>
+                            ) : (
+                              event.title
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {event.allDay
+                              ? t.calendarAllDay
+                              : `${formatTime(event.start)} - ${formatTime(event.end)}`}
+                          </p>
+                          {event.location && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              📍 {event.location}
+                            </p>
+                          )}
+                          {event.description && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              {event.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : calendarTab === "app" && selectedDayEvents.length > 0 ? (
+                  <div className="space-y-3">
+                    {selectedDayEvents.map((event) => (
+                      <div
+                        key={event.id}
+                        className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
+                      >
+                        <div
+                          className={cn(
+                            "w-2 h-2 rounded-full mt-1.5 shrink-0",
+                            categoryConfig.find((c) => c.key === event.category)
+                              ?.colorClass,
+                          )}
+                        />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium leading-tight">
+                            {event.title}
+                          </p>
+                          {event.description && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {event.description}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground/70 mt-1">
+                            {
+                              t[
+                                categoryTranslationKeys[
+                                  event.category
+                                ] as keyof typeof t
+                              ]
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
                   <p className="text-sm text-muted-foreground">
-                    {t.cardContent}
+                    {t.noEvents}
                   </p>
-                </CardContent>
-              </Card>
-              <Card className="bg-muted/50">
-                <CardHeader>
-                  <CardTitle className="text-base">Muted Card</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    This card has a muted background for visual hierarchy.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Form Inputs */}
-          <div>
-            <h4 className="font-medium mb-3">{t.demoInputs}</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="demo-input">Input</Label>
-                  <Input id="demo-input" placeholder="Type something..." />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="demo-select">Select</Label>
-                  <Select>
-                    <SelectTrigger id="demo-select">
-                      <SelectValue placeholder="Select an option" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="option1">Option 1</SelectItem>
-                      <SelectItem value="option2">Option 2</SelectItem>
-                      <SelectItem value="option3">Option 3</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                )}
               </div>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="demo-switch"
-                    checked={switchValue}
-                    onCheckedChange={setSwitchValue}
-                  />
-                  <Label htmlFor="demo-switch">
-                    Switch ({switchValue ? "ON" : "OFF"})
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="demo-checkbox"
-                    checked={checkboxValue}
-                    onCheckedChange={(checked) =>
-                      setCheckboxValue(checked === true)
-                    }
-                  />
-                  <Label htmlFor="demo-checkbox">
-                    Checkbox ({checkboxValue ? "Checked" : "Unchecked"})
-                  </Label>
-                </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-muted-foreground">
+                <p className="text-sm">{t.selectDatePrompt}</p>
               </div>
-            </div>
-          </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
-          {/* Floating Window Demo */}
-          <div>
-            <h4 className="font-medium mb-3">{t.floatingWindowTitle}</h4>
-            <div className="flex items-center gap-4">
-              <Button onClick={handleOpenFloatingWindow} disabled={isOpen}>
-                <RiWindowLine className="w-4 h-4 mr-2" />
-                {isOpen ? t.floatingWindowOpened : t.floatingWindowOpen}
-              </Button>
-              <p className="text-sm text-muted-foreground">
-                {t.floatingWindowHint}
-              </p>
+      {/* Legend */}
+      {calendarTab === "app" && (
+        <div className="flex flex-wrap items-center gap-4 px-2 text-xs text-muted-foreground">
+          {categoryConfig.map(({ key, colorClass }) => (
+            <div key={key} className="flex items-center gap-1.5">
+              <div className={cn("w-2.5 h-2.5 rounded-full", colorClass)} />
+              <span>
+                {t[categoryTranslationKeys[key] as keyof typeof t]}
+              </span>
             </div>
+          ))}
+        </div>
+      )}
+      {calendarTab === "google" && (
+        <div className="flex flex-wrap items-center gap-4 px-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+            <span>Google Calendar</span>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* FloatingWindow Component */}
-      <FloatingWindow language={language} />
+        </div>
+      )}
     </div>
   );
 }
