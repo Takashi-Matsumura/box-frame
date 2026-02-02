@@ -83,6 +83,7 @@ export async function GET(
         qualificationGradeCode: employee.qualificationGradeCode,
         employmentType: employee.employmentType,
         employmentTypeCode: employee.employmentTypeCode,
+        profileImage: employee.profileImage,
         organization: employee.organization,
         originalOrganization: employee.originalOrganization,
         department: employee.department,

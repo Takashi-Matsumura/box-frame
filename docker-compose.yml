@@ -31,6 +31,8 @@ services:
       # Module Configuration
       NEXT_PUBLIC_ENABLE_HR_EVALUATION: ${NEXT_PUBLIC_ENABLE_HR_EVALUATION:-true}
       NEXT_PUBLIC_ENABLE_BACKOFFICE: ${NEXT_PUBLIC_ENABLE_BACKOFFICE:-true}
+    volumes:
+      - box2_uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -125,6 +127,12 @@ networks:
     driver: bridge
 
 volumes:
+  box2_uploads:
+    driver: local
+    driver_opts:
+      type: none
+      device: /Users/matsumura/docker-volumes/box2/uploads
+      o: bind
   box2_postgres_data:
   box2_openldap_data:
   box2_openldap_config:

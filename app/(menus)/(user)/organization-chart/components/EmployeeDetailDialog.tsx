@@ -55,6 +55,7 @@ interface EmployeeDetail {
     code: string | null;
     manager: Manager | null;
   } | null;
+  profileImage: string | null;
   joinDate: string | null;
   birthDate: string | null;
   isActive: boolean;
@@ -305,7 +306,7 @@ export function EmployeeDetailDialog({
                   {getInitials(employee.name)}
                 </AvatarFallback>
               </Avatar>
-              <div>
+              <div className="flex-1">
                 <h2 className="text-xl font-semibold text-foreground">
                   {employee.name}
                 </h2>
@@ -331,6 +332,13 @@ export function EmployeeDetailDialog({
                   </Badge>
                 </div>
               </div>
+              {employee.profileImage && (
+                <img
+                  src={employee.profileImage}
+                  alt={employee.name}
+                  className="w-16 h-20 object-cover rounded border border-border"
+                />
+              )}
             </div>
 
             {/* タブ */}
