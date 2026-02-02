@@ -87,6 +87,7 @@ Dockerイメージのビルド時にタイムスタンプベースのビルドID
 - **開発環境**: `build-id`ファイルが存在しないため、ビルドIDは`"dev"`となり検証はスキップされる
 - **本番環境**: 再デプロイ（`docker build` → `docker compose up -d`）で新しいビルドIDが生成され、旧セッションが無効化される
 - **確認方法**: `/api/health`エンドポイントの`buildId`フィールドで現在のビルドIDを確認可能
+- **読み込み方式**: `next.config.ts`（Node.js Runtime）が`build-id`ファイルを読み込み`NEXT_BUILD_ID`環境変数にセット → `auth.config.ts`（Edge Runtime）は`process.env.NEXT_BUILD_ID`を参照。Edge Runtimeでは`fs`モジュールが使用不可のため、環境変数経由で受け渡す
 - **重要**: ビルドID検証はmiddleware.tsで`/login`のパブリックルート判定の中でも行う必要がある。保護ルートでのみCookie削除＋`/login`リダイレクトを行うと、`/login`側で「セッションあり→`/dashboard`へ」→「ビルドID不一致→`/login`へ」の無限ループが発生する
 
 ## 運用コマンド

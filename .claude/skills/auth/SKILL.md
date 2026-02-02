@@ -17,10 +17,17 @@ Next.js 15のmiddlewareはEdge Runtimeで動作するため、認証設定を分
 
 ```typescript
 // auth.config.ts - Edge Runtime用
-// ldaptsを含まない
+// ldaptsを含まない、Node.js専用モジュール（fs等）も使用不可
+// ビルドIDはprocess.env.NEXT_BUILD_ID経由で取得（next.config.tsでセット済み）
 export default {
   providers: [Google, GitHub],
-  // ...
+  callbacks: {
+    jwt({ token, user }) {
+      if (user) {
+        token.buildId = process.env.NEXT_BUILD_ID || "dev";
+      }
+    }
+  }
 }
 
 // auth.ts - Node.js Runtime用
@@ -28,6 +35,8 @@ export default {
 import ldapConfig from "./auth.config";
 // LDAP/OpenLDAPプロバイダーを追加
 ```
+
+**注意**: `auth.config.ts`はEdge Runtimeで実行されるため、`fs`モジュール等のNode.js専用APIは使用不可。ビルドIDの読み込みは`next.config.ts`（Node.js Runtime）が`build-id`ファイルから読み込み`NEXT_BUILD_ID`環境変数にセットする方式を採用。
 
 ---
 
