@@ -27,6 +27,40 @@ export const aiChatTranslations = {
       "Help me write a document",
       "What features are available?",
     ],
+    // DLP mode
+    dlp: {
+      label: "DLP",
+      welcomeTitle: "DLP Mode Active",
+      welcomeDescription:
+        "Data Loss Prevention mode is enabled. Before sending, your message will be scanned for sensitive information such as personal data and confidential business information.",
+      detectsLabel: "Detects:",
+      detectsItems: [
+        "Email",
+        "Phone",
+        "Address",
+        "My Number",
+        "Bank Account",
+        "Credit Card",
+        "Trade Secrets",
+        "Financial Data",
+      ],
+      tryLabel: "Try sending a message with sample data to see DLP in action:",
+      samples: [
+        "Please send to tanaka@example.co.jp, phone: 090-1234-5678",
+        "Revenue for Q3 was $12M with 23% profit margin",
+        "Credit card: 4111-1111-1111-1111",
+      ],
+    },
+    // PDF
+    attachPdf: "Attach PDF",
+    pdfUploading: "Uploading PDF...",
+    pdfAttached: "PDF attached",
+    pdfPages: "pages",
+    pdfRemove: "Remove",
+    pdfTooLarge: "File is too large. Maximum size is 10MB.",
+    pdfInvalidType: "Invalid file type. Please select a PDF file.",
+    pdfExtractError: "Failed to extract text from PDF.",
+    pdfTruncated: "truncated",
     // Stats labels
     stats: {
       contextUsage: "Context Usage",
@@ -38,6 +72,39 @@ export const aiChatTranslations = {
       remaining: "Remaining",
       tokensUnit: "tokens",
       tpsUnit: "tok/s",
+    },
+    // Sensitive data detection
+    sensitiveData: {
+      warningTitle: "Sensitive Information Detected",
+      warningDescription:
+        "Your message may contain the following sensitive information. Please review before sending.",
+      categories: {
+        email: "Email Address",
+        phone: "Phone Number",
+        address: "Address",
+        myNumber: "My Number (Individual Number)",
+        bankAccount: "Bank Account",
+        creditCard: "Credit Card Number",
+        personalFinance: "Personal Financial Info",
+        financialData: "Financial Data",
+        compensation: "Compensation / Salary Table",
+      },
+      itemsFound: "items found",
+      llmChecking: "Checking for confidential business information...",
+      llmCategories: {
+        trade_secret: "Trade Secret",
+        financial_data: "Financial Data",
+        personal_info: "Personal Information",
+        credentials: "Credentials",
+        legal: "Legal Information",
+      },
+      proceed: "Send Anyway",
+      cancel: "Edit Message",
+      severity: {
+        high: "High",
+        medium: "Medium",
+        low: "Low",
+      },
     },
   },
   ja: {
@@ -69,6 +136,41 @@ export const aiChatTranslations = {
       "ドキュメントの作成を手伝って",
       "どんな機能がありますか？",
     ],
+    // DLP mode
+    dlp: {
+      label: "DLP",
+      welcomeTitle: "DLPモード ON",
+      welcomeDescription:
+        "情報漏洩防止モードが有効です。送信前にメッセージ内の個人情報や機密ビジネス情報を自動でスキャンし、検出時に警告を表示します。",
+      detectsLabel: "検出対象:",
+      detectsItems: [
+        "メールアドレス",
+        "電話番号",
+        "住所",
+        "マイナンバー",
+        "銀行口座",
+        "クレジットカード",
+        "営業秘密",
+        "財務データ",
+      ],
+      tryLabel:
+        "以下のサンプルを送信して、DLPの動作を確認できます:",
+      samples: [
+        "田中太郎さんの連絡先は tanaka@example.co.jp、電話は 090-1234-5678 です",
+        "第3四半期の売上は12億円、利益率は23%でした",
+        "クレジットカード番号: 4111-1111-1111-1111",
+      ],
+    },
+    // PDF
+    attachPdf: "PDF添付",
+    pdfUploading: "PDFをアップロード中...",
+    pdfAttached: "PDF添付済み",
+    pdfPages: "ページ",
+    pdfRemove: "削除",
+    pdfTooLarge: "ファイルが大きすぎます。最大サイズは10MBです。",
+    pdfInvalidType: "無効なファイル形式です。PDFファイルを選択してください。",
+    pdfExtractError: "PDFからテキストを抽出できませんでした。",
+    pdfTruncated: "一部省略",
     // Stats labels
     stats: {
       contextUsage: "コンテキスト使用量",
@@ -80,6 +182,39 @@ export const aiChatTranslations = {
       remaining: "残り",
       tokensUnit: "トークン",
       tpsUnit: "トークン/秒",
+    },
+    // Sensitive data detection
+    sensitiveData: {
+      warningTitle: "機密情報の検出",
+      warningDescription:
+        "メッセージに以下の機密情報が含まれている可能性があります。送信前にご確認ください。",
+      categories: {
+        email: "メールアドレス",
+        phone: "電話番号",
+        address: "住所",
+        myNumber: "マイナンバー",
+        bankAccount: "銀行口座",
+        creditCard: "クレジットカード番号",
+        personalFinance: "個人の金融情報",
+        financialData: "財務データ",
+        compensation: "報酬・給与テーブル",
+      },
+      itemsFound: "件検出",
+      llmChecking: "機密ビジネス情報をチェック中...",
+      llmCategories: {
+        trade_secret: "営業秘密",
+        financial_data: "財務データ",
+        personal_info: "個人情報",
+        credentials: "認証情報",
+        legal: "法的情報",
+      },
+      proceed: "送信する",
+      cancel: "修正する",
+      severity: {
+        high: "高",
+        medium: "中",
+        low: "低",
+      },
     },
   },
 };

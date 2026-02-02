@@ -15,3 +15,12 @@ export {
   formatTokenCount,
   getContextWindowSize,
 } from "./token-utils";
+
+// 機密情報チェッカー
+export { checkSensitiveData } from "./sensitive-data-checker";
+export type {
+  LlmCheckItem,
+  LlmCheckResult,
+  SensitiveDataMatch,
+  SensitiveDataResult,
+} from "./sensitive-data-checker";

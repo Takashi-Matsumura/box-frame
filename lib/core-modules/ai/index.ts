@@ -26,11 +26,20 @@ export * from "./providers";
 export {
   AIService,
   calculateContextUsage,
+  checkSensitiveData,
   estimateMessagesTokens,
   estimateTokens,
   formatTokenCount,
   getContextWindowSize,
 } from "./services";
+// 機密情報チェッカー型
+export type {
+  LlmCheckItem,
+  LlmCheckResult,
+  SensitiveDataMatch,
+  SensitiveDataResult,
+} from "./services";
+
 // 型定義
 export type {
   AIConfig,
