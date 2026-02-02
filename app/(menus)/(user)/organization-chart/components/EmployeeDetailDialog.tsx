@@ -154,6 +154,32 @@ function getInitials(name: string): string {
   return name.slice(0, 2);
 }
 
+// 勤続年数を計算
+function calcYearsOfService(
+  joinDateStr: string | null,
+  t: Translations,
+): string {
+  if (!joinDateStr) return "-";
+  const joinDate = new Date(joinDateStr);
+  const now = new Date();
+  let years = now.getFullYear() - joinDate.getFullYear();
+  let months = now.getMonth() - joinDate.getMonth();
+  if (now.getDate() < joinDate.getDate()) {
+    months--;
+  }
+  if (months < 0) {
+    years--;
+    months += 12;
+  }
+  if (years < 1) {
+    return `${months}${t.monthsUnit}`;
+  }
+  if (months === 0) {
+    return `${years}${t.yearsUnit}`;
+  }
+  return `${years}${t.yearsUnit}${months}${t.monthsUnit}`;
+}
+
 // 日付フォーマット
 function formatDate(dateStr: string | null, language: Language): string {
   if (!dateStr) return "-";
@@ -514,9 +540,19 @@ export function EmployeeDetailDialog({
                         {t.otherInfo}
                       </h3>
                       <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                        <dt className="text-muted-foreground">{t.company}</dt>
+                        <dd className="text-foreground">
+                          {employee.organization?.name || "-"}
+                        </dd>
                         <dt className="text-muted-foreground">{t.joinDate}</dt>
                         <dd className="text-foreground">
                           {formatDate(employee.joinDate, language)}
+                        </dd>
+                        <dt className="text-muted-foreground">
+                          {t.yearsOfService}
+                        </dt>
+                        <dd className="text-foreground">
+                          {calcYearsOfService(employee.joinDate, t)}
                         </dd>
                       </dl>
                     </div>
