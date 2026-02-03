@@ -42,8 +42,45 @@
 | 機能 | 説明 |
 |------|------|
 | カレンダー | 月表示・日表示の切替、イベント表示 |
+| アプリカレンダー | イベントの作成・編集・削除（CRUD） |
 | 外部カレンダー連携 | Google Calendar連携（OAuth） |
 | AIコンシェルジュ | カレンダーデータをコンテキストとしたAIチャット |
+
+### アプリカレンダー（イベント管理）
+
+アプリ内でイベントを管理する機能:
+
+- **イベント作成**: 日表示でドラッグ選択、または月表示の「+」ボタン
+- **イベント編集**: イベントにホバーして編集アイコンをクリック
+- **イベント削除**: イベントにホバーして削除アイコンをクリック
+- **15分単位スナップ**: ドラッグ選択は15分単位に自動調整
+
+#### データモデル（CalendarEvent）
+
+```prisma
+model CalendarEvent {
+  id          String    @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  location    String?
+  startTime   DateTime
+  endTime     DateTime
+  allDay      Boolean   @default(false)
+  category    String    @default("personal")  // evaluation, interview, company, personal, birthday
+  color       String?
+}
+```
+
+#### API エンドポイント
+
+| メソッド | パス | 説明 |
+|---------|------|------|
+| GET | `/api/calendar/app-events` | イベント一覧取得（startDate, endDate指定可） |
+| POST | `/api/calendar/app-events` | イベント作成 |
+| GET | `/api/calendar/app-events/[id]` | イベント詳細取得 |
+| PUT | `/api/calendar/app-events/[id]` | イベント更新 |
+| DELETE | `/api/calendar/app-events/[id]` | イベント削除 |
 
 ### AIコンシェルジュ
 
@@ -55,8 +92,8 @@
 
 ### レイアウト
 
-- **月表示**: 右パネルに「イベント」/「コンシェルジュ」タブ切替
-- **日表示**: 左=DayView + 右=AIコンシェルジュ常時表示（2カラム）
+- **月表示**: 右パネルに「イベント」/「コンシェルジュ」タブ切替、イベント追加ボタン
+- **日表示**: 左=DayView（ドラッグでイベント作成） + 右=AIコンシェルジュ常時表示（2カラム）
 
 ## ディレクトリ構造
 

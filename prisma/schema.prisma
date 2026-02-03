@@ -69,6 +69,7 @@ model User {
   announcements Announcement[]
   personalGoals PersonalGoal[]
   externalCalendarConnections ExternalCalendarConnection[]
+  calendarEvents CalendarEvent[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }
@@ -1256,6 +1257,35 @@ model ExternalCalendarConnection {
 
   @@unique([userId, provider])
   @@index([userId])
+}
+
+// ========================================
+// アプリカレンダーイベント
+// ========================================
+
+model CalendarEvent {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  location    String?
+
+  // 日時（ISO 8601形式で保存）
+  startTime   DateTime
+  endTime     DateTime
+  allDay      Boolean   @default(false)
+
+  // カテゴリ（アプリ固有）
+  category    String    @default("personal")  // evaluation, interview, company, personal, birthday
+  color       String?                         // カスタムカラー（オプション）
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([userId, startTime, endTime])
 }
 
 // ========================================

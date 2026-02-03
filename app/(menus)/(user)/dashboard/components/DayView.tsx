@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   RiArrowLeftLine,
   RiArrowLeftSLine,
@@ -18,14 +18,29 @@ const HOUR_HEIGHT = 60; // px per hour
 const WORK_START = 9;
 const WORK_END = 18;
 
+interface AppCalendarEvent {
+  id: string;
+  title: string;
+  description?: string;
+  location?: string;
+  startTime: string;
+  endTime: string;
+  allDay: boolean;
+  category: string;
+  color?: string;
+}
+
 interface DayViewProps {
   language: "en" | "ja";
   date: string; // YYYY-MM-DD
   events: CalendarEvent[];
   externalEvents?: ExternalCalendarEvent[];
+  appEvents?: AppCalendarEvent[];
   calendarTab: "app" | "google";
   onBackToMonth: () => void;
   onDateChange: (date: string) => void;
+  onCreateEvent?: (startHour: number, endHour: number) => void;
+  onEventClick?: (event: AppCalendarEvent) => void;
 }
 
 interface TimeEvent {
@@ -37,6 +52,7 @@ interface TimeEvent {
   location?: string;
   htmlLink?: string;
   color: string;
+  isAppEvent?: boolean;
 }
 
 function formatDateLabel(date: string, language: "en" | "ja"): string {
@@ -66,21 +82,39 @@ function todayStr(): string {
   return `${y}-${m}-${d}`;
 }
 
+// Category color mapping
+const categoryColors: Record<string, string> = {
+  evaluation: "#eab308",
+  interview: "#a855f7",
+  company: "#3b82f6",
+  personal: "#22c55e",
+  birthday: "#f472b6",
+};
+
 export function DayView({
   language,
   date,
   events,
   externalEvents = [],
+  appEvents = [],
   calendarTab,
   onBackToMonth,
   onDateChange,
+  onCreateEvent,
+  onEventClick,
 }: DayViewProps) {
   const t = dashboardTranslations[language];
   const timelineRef = useRef<HTMLDivElement>(null);
+  const timelineContainerRef = useRef<HTMLDivElement>(null);
   const [currentMinute, setCurrentMinute] = useState(() => {
     const now = new Date();
     return now.getHours() * 60 + now.getMinutes();
   });
+
+  // Drag selection state
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<number | null>(null);
+  const [dragEnd, setDragEnd] = useState<number | null>(null);
 
   // Update current time every minute
   useEffect(() => {
@@ -105,6 +139,73 @@ export function DayView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
+  // 15-minute snap function
+  const snapToQuarter = useCallback((hour: number): number => {
+    return Math.round(hour * 4) / 4; // 0.25 increments
+  }, []);
+
+  // Get hour from Y position
+  const getHourFromY = useCallback((clientY: number): number => {
+    if (!timelineRef.current) return START_HOUR;
+    // Use the outer scrollable container for both rect and scrollTop
+    // rect.top is stable (doesn't change with scroll)
+    // scrollTop converts visible position to content position
+    const rect = timelineRef.current.getBoundingClientRect();
+    const scrollTop = timelineRef.current.scrollTop;
+    const relativeY = clientY - rect.top + scrollTop;
+    const hour = START_HOUR + relativeY / HOUR_HEIGHT;
+    return Math.max(START_HOUR, Math.min(END_HOUR, hour));
+  }, []);
+
+  // Mouse event handlers for drag selection
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      // Only respond to left click on the timeline area (not on events)
+      if (e.button !== 0 || calendarTab !== "app") return;
+      const target = e.target as HTMLElement;
+      if (target.closest("[data-event]")) return;
+
+      const hour = getHourFromY(e.clientY);
+      const snappedHour = snapToQuarter(hour);
+      setIsDragging(true);
+      setDragStart(snappedHour);
+      setDragEnd(snappedHour + 0.25); // Minimum 15 minutes
+      e.preventDefault();
+    },
+    [calendarTab, getHourFromY, snapToQuarter],
+  );
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isDragging) return;
+      const hour = getHourFromY(e.clientY);
+      setDragEnd(snapToQuarter(hour));
+    },
+    [isDragging, getHourFromY, snapToQuarter],
+  );
+
+  const handleMouseUp = useCallback(() => {
+    if (isDragging && dragStart !== null && dragEnd !== null) {
+      const start = Math.min(dragStart, dragEnd);
+      const end = Math.max(dragStart, dragEnd);
+      // Ensure minimum 15 minutes
+      const adjustedEnd = end <= start ? start + 0.25 : end;
+      onCreateEvent?.(start, adjustedEnd);
+    }
+    setIsDragging(false);
+    setDragStart(null);
+    setDragEnd(null);
+  }, [isDragging, dragStart, dragEnd, onCreateEvent]);
+
+  // Handle mouse leave to cancel drag
+  const handleMouseLeave = useCallback(() => {
+    if (isDragging) {
+      setIsDragging(false);
+      setDragStart(null);
+      setDragEnd(null);
+    }
+  }, [isDragging]);
+
   // Separate events into all-day and timed
   const { allDayEvents, timedEvents } = useMemo(() => {
     const allDay: {
@@ -116,7 +217,7 @@ export function DayView({
     const timed: TimeEvent[] = [];
 
     if (calendarTab === "app") {
-      // App events have no time info -> all treated as all-day
+      // Demo events (no time info -> all treated as all-day)
       for (const ev of events) {
         if (
           ev.date === date ||
@@ -127,6 +228,41 @@ export function DayView({
             title: ev.title,
             color: ev.color,
             description: ev.description,
+          });
+        }
+      }
+
+      // App calendar events (database events with time)
+      for (const ev of appEvents) {
+        // Parse date from ISO string (handle both "2026-02-03T16:00:00" and "2026-02-03T16:00:00.000Z")
+        const evDate = ev.startTime.split("T")[0];
+        if (evDate !== date) continue;
+
+        if (ev.allDay) {
+          allDay.push({
+            id: ev.id,
+            title: ev.title,
+            color: ev.color || categoryColors[ev.category] || "#22c55e",
+            description: ev.description,
+          });
+        } else {
+          // Extract hours/minutes directly from ISO string to avoid timezone conversion
+          // Format: "2026-02-03T16:30:00" or "2026-02-03T16:30:00.000Z"
+          const startTimePart = ev.startTime.split("T")[1];
+          const endTimePart = ev.endTime.split("T")[1];
+          const [startH, startM] = startTimePart.split(":").map(Number);
+          const [endH, endM] = endTimePart.split(":").map(Number);
+          const startHour = startH + startM / 60;
+          const endHour = endH + endM / 60;
+          timed.push({
+            id: ev.id,
+            title: ev.title,
+            startHour,
+            endHour: endHour > startHour ? endHour : startHour + 0.5,
+            description: ev.description,
+            location: ev.location,
+            color: ev.color || categoryColors[ev.category] || "#22c55e",
+            isAppEvent: true,
           });
         }
       }
@@ -174,7 +310,7 @@ export function DayView({
     }
 
     return { allDayEvents: allDay, timedEvents: timed };
-  }, [date, events, externalEvents, calendarTab]);
+  }, [date, events, externalEvents, appEvents, calendarTab]);
 
   const isToday = date === todayStr();
   const currentHourFraction = currentMinute / 60;
@@ -256,10 +392,18 @@ export function DayView({
         ref={timelineRef}
         className="relative overflow-y-auto"
         style={{ maxHeight: "calc(100vh - 430px)" }}
+        onMouseLeave={handleMouseLeave}
       >
         <div
-          className="relative"
+          ref={timelineContainerRef}
+          className={cn(
+            "relative",
+            calendarTab === "app" && "cursor-crosshair",
+          )}
           style={{ height: `${(END_HOUR - START_HOUR) * HOUR_HEIGHT}px` }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
         >
           {/* Hour lines */}
           {hours.map((hour) => {
@@ -310,10 +454,25 @@ export function DayView({
             const endMin = Math.floor((ev.endHour % 1) * 60);
             const timeLabel = `${Math.floor(ev.startHour)}:${String(startMin).padStart(2, "0")} - ${Math.floor(ev.endHour)}:${String(endMin).padStart(2, "0")}`;
 
+            const handleEventClick = () => {
+              if (ev.isAppEvent && onEventClick) {
+                const appEvent = appEvents.find((e) => e.id === ev.id);
+                if (appEvent) {
+                  onEventClick(appEvent);
+                }
+              }
+            };
+
             return (
               <div
                 key={ev.id}
-                className="absolute left-18 right-2 z-10 rounded px-2 py-1 text-white text-xs overflow-hidden cursor-default"
+                data-event="true"
+                className={cn(
+                  "absolute left-18 right-2 z-10 rounded px-2 py-1 text-white text-xs overflow-hidden",
+                  ev.isAppEvent
+                    ? "cursor-pointer hover:opacity-90"
+                    : "cursor-default",
+                )}
                 style={{
                   top: `${top}px`,
                   height: `${height}px`,
@@ -321,6 +480,14 @@ export function DayView({
                   minHeight: "24px",
                 }}
                 title={`${ev.title}\n${timeLabel}${ev.location ? `\n📍 ${ev.location}` : ""}`}
+                onClick={handleEventClick}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    handleEventClick();
+                  }
+                }}
+                role={ev.isAppEvent ? "button" : undefined}
+                tabIndex={ev.isAppEvent ? 0 : undefined}
               >
                 <div className="font-medium truncate">
                   {ev.htmlLink ? (
@@ -345,8 +512,46 @@ export function DayView({
               </div>
             );
           })}
+
+          {/* Drag selection highlight */}
+          {isDragging &&
+            dragStart !== null &&
+            dragEnd !== null &&
+            (() => {
+              const selStart = Math.min(dragStart, dragEnd);
+              const selEnd = Math.max(dragStart, dragEnd);
+              const top = (selStart - START_HOUR) * HOUR_HEIGHT;
+              const height = Math.max(
+                (selEnd - selStart) * HOUR_HEIGHT,
+                HOUR_HEIGHT / 4,
+              );
+              const startMin = Math.floor((selStart % 1) * 60);
+              const endMin = Math.floor((selEnd % 1) * 60);
+              const timeLabel = `${Math.floor(selStart)}:${String(startMin).padStart(2, "0")} - ${Math.floor(selEnd)}:${String(endMin).padStart(2, "0")}`;
+
+              return (
+                <div
+                  className="absolute left-18 right-2 z-30 rounded border-2 border-blue-500 bg-blue-500/30 pointer-events-none"
+                  style={{
+                    top: `${top}px`,
+                    height: `${height}px`,
+                  }}
+                >
+                  <div className="absolute -top-5 left-0 text-xs font-medium text-blue-600 bg-white/90 px-1 rounded shadow-sm">
+                    {timeLabel}
+                  </div>
+                </div>
+              );
+            })()}
         </div>
       </div>
+
+      {/* Drag hint (app tab only) */}
+      {calendarTab === "app" && (
+        <div className="text-xs text-muted-foreground text-center mt-2">
+          {t.dragToCreate}
+        </div>
+      )}
     </div>
   );
 }

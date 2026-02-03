@@ -1,7 +1,13 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import { RiCalendarEventLine, RiSparklingLine } from "react-icons/ri";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  RiAddLine,
+  RiCalendarEventLine,
+  RiDeleteBinLine,
+  RiEdit2Line,
+  RiSparklingLine,
+} from "react-icons/ri";
 import { Card, CardContent } from "@/components/ui/card";
 import type { ExternalCalendarEvent } from "@/lib/addon-modules/calendar-integration/types";
 import { cn } from "@/lib/utils";
@@ -12,8 +18,30 @@ import {
   DashboardCalendar,
 } from "./components/DashboardCalendar";
 import { DayView } from "./components/DayView";
+import {
+  type CreateEventData,
+  EventCreateDialog,
+} from "./components/EventCreateDialog";
+import {
+  type EditEventData,
+  type EventToEdit,
+  EventEditDialog,
+} from "./components/EventEditDialog";
 import { ExternalCalendarPanel } from "./components/ExternalCalendarPanel";
 import { dashboardTranslations } from "./translations";
+
+// App calendar event type from database
+interface AppCalendarEvent {
+  id: string;
+  title: string;
+  description?: string;
+  location?: string;
+  startTime: string;
+  endTime: string;
+  allDay: boolean;
+  category: string;
+  color?: string;
+}
 
 interface DashboardClientProps {
   language: "en" | "ja";
@@ -28,66 +56,6 @@ function todayStr(): string {
   const d = String(now.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
-
-// ダミーイベント（後でAPIデータに置き換え）
-const DEMO_EVENTS: CalendarEvent[] = (() => {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const dateStr = (month: number, day: number) =>
-    `${y}-${pad(month + 1)}-${pad(day)}`;
-
-  return [
-    {
-      id: "demo-1",
-      title: "Mid-year evaluation deadline",
-      date: dateStr(m, 15),
-      category: "evaluation",
-      color: "#eab308",
-      description: "Submit your mid-year self-evaluation",
-    },
-    {
-      id: "demo-2",
-      title: "1-on-1 meeting",
-      date: dateStr(m, 18),
-      category: "interview",
-      color: "#a855f7",
-      description: "Manager 1-on-1",
-    },
-    {
-      id: "demo-3",
-      title: "All-hands meeting",
-      date: dateStr(m, 10),
-      category: "company",
-      color: "#3b82f6",
-      description: "Monthly all-hands",
-    },
-    {
-      id: "demo-4",
-      title: "Team lunch",
-      date: dateStr(m, 22),
-      category: "personal",
-      color: "#22c55e",
-    },
-    {
-      id: "demo-5",
-      title: "Tanaka-san's birthday",
-      date: dateStr(m, 25),
-      category: "birthday",
-      color: "#f472b6",
-    },
-    {
-      id: "demo-6",
-      title: "Evaluation period",
-      date: dateStr(m, 1),
-      endDate: dateStr(m, 5),
-      category: "evaluation",
-      color: "#eab308",
-      description: "Evaluation review period",
-    },
-  ];
-})();
 
 const categoryConfig: {
   key: CalendarEvent["category"];
@@ -142,6 +110,25 @@ function externalToCalendarEvents(
   });
 }
 
+// Convert app calendar events to CalendarEvent format for month view
+function appToCalendarEvents(events: AppCalendarEvent[]): CalendarEvent[] {
+  return events.map((e) => {
+    // Extract date from ISO string (YYYY-MM-DD part)
+    const startDate = e.startTime.split("T")[0];
+    const endDate = e.endTime.split("T")[0];
+
+    return {
+      id: e.id,
+      title: e.title,
+      date: startDate,
+      endDate: endDate !== startDate ? endDate : undefined,
+      category: (e.category as CalendarEvent["category"]) || "personal",
+      color: e.color || "#22c55e",
+      description: e.description,
+    };
+  });
+}
+
 export function DashboardClient({
   language,
   userRole,
@@ -162,11 +149,149 @@ export function DashboardClient({
     month: new Date().getMonth(),
   }));
 
+  // App calendar events from database
+  const [appEvents, setAppEvents] = useState<AppCalendarEvent[]>([]);
+  const [, setIsLoadingEvents] = useState(false);
+
+  // Event creation dialog state
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createDialogStartHour, setCreateDialogStartHour] = useState(9);
+  const [createDialogEndHour, setCreateDialogEndHour] = useState(10);
+
+  // Event edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [eventToEdit, setEventToEdit] = useState<EventToEdit | null>(null);
+
   const handleExternalEventsChange = useCallback(
     (events: ExternalCalendarEvent[]) => {
       setExternalEvents(events);
     },
     [],
+  );
+
+  // Fetch app calendar events
+  const fetchAppEvents = useCallback(async () => {
+    setIsLoadingEvents(true);
+    try {
+      // Fetch events for current month +/- 1 month
+      const startDate = new Date(
+        calendarMonth.year,
+        calendarMonth.month - 1,
+        1,
+      );
+      const endDate = new Date(calendarMonth.year, calendarMonth.month + 2, 0);
+      const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}-01`;
+      const endStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`;
+
+      const res = await fetch(
+        `/api/calendar/app-events?startDate=${startStr}&endDate=${endStr}`,
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setAppEvents(data.events || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch app events:", error);
+    } finally {
+      setIsLoadingEvents(false);
+    }
+  }, [calendarMonth.year, calendarMonth.month]);
+
+  // Fetch events when month changes
+  useEffect(() => {
+    fetchAppEvents();
+  }, [fetchAppEvents]);
+
+  // Handle event creation from DayView drag
+  const handleCreateEvent = useCallback(
+    (startHour: number, endHour: number) => {
+      setCreateDialogStartHour(startHour);
+      setCreateDialogEndHour(endHour);
+      setCreateDialogOpen(true);
+    },
+    [],
+  );
+
+  // Save event to database
+  const handleSaveEvent = useCallback(
+    async (eventData: CreateEventData) => {
+      const res = await fetch("/api/calendar/app-events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(eventData),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to create event");
+      }
+
+      // Refresh events
+      await fetchAppEvents();
+    },
+    [fetchAppEvents],
+  );
+
+  // Handle event click (for editing - future feature)
+  const handleEventClick = useCallback((event: AppCalendarEvent) => {
+    // TODO: Open edit dialog
+    console.log("Event clicked:", event);
+  }, []);
+
+  // Delete event
+  const handleDeleteEvent = useCallback(
+    async (eventId: string) => {
+      if (!confirm(t.eventDeleteConfirm)) return;
+
+      try {
+        const res = await fetch(`/api/calendar/app-events/${eventId}`, {
+          method: "DELETE",
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to delete event");
+        }
+
+        // Refresh events
+        await fetchAppEvents();
+      } catch (error) {
+        console.error("Failed to delete event:", error);
+      }
+    },
+    [t.eventDeleteConfirm, fetchAppEvents],
+  );
+
+  // Open edit dialog
+  const handleEditEvent = useCallback((event: AppCalendarEvent) => {
+    setEventToEdit({
+      id: event.id,
+      title: event.title,
+      description: event.description,
+      location: event.location,
+      startTime: event.startTime,
+      endTime: event.endTime,
+      allDay: event.allDay,
+      category: event.category,
+    });
+    setEditDialogOpen(true);
+  }, []);
+
+  // Save edited event
+  const handleSaveEditedEvent = useCallback(
+    async (eventId: string, eventData: EditEventData) => {
+      const res = await fetch(`/api/calendar/app-events/${eventId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(eventData),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to update event");
+      }
+
+      // Refresh events
+      await fetchAppEvents();
+    },
+    [fetchAppEvents],
   );
 
   const handleMonthChange = useCallback((year: number, month: number) => {
@@ -186,8 +311,13 @@ export function DashboardClient({
     [externalEvents],
   );
 
+  const convertedAppEvents = useMemo(
+    () => appToCalendarEvents(appEvents),
+    [appEvents],
+  );
+
   const displayEvents =
-    calendarTab === "app" ? DEMO_EVENTS : convertedExternalEvents;
+    calendarTab === "app" ? convertedAppEvents : convertedExternalEvents;
 
   const selectedDayEvents = useMemo(() => {
     if (!selectedDate) return [];
@@ -305,9 +435,12 @@ export function DashboardClient({
                 date={selectedDate || todayStr()}
                 events={displayEvents}
                 externalEvents={externalEvents}
+                appEvents={appEvents}
                 calendarTab={calendarTab}
                 onBackToMonth={handleBackToMonth}
                 onDateChange={handleDayChange}
+                onCreateEvent={handleCreateEvent}
+                onEventClick={handleEventClick}
               />
             )}
           </CardContent>
@@ -351,9 +484,25 @@ export function DashboardClient({
                 <div className="flex-1 overflow-y-auto">
                   {selectedDate ? (
                     <div>
-                      <h3 className="font-semibold text-sm mb-1">
-                        {formatSelectedDate(selectedDate)}
-                      </h3>
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="font-semibold text-sm">
+                          {formatSelectedDate(selectedDate)}
+                        </h3>
+                        {calendarTab === "app" && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCreateDialogStartHour(9);
+                              setCreateDialogEndHour(10);
+                              setCreateDialogOpen(true);
+                            }}
+                            className="p-1 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                            title={t.createEvent}
+                          >
+                            <RiAddLine className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground mb-4">
                         {t.selectedDayEvents}
                       </p>
@@ -403,40 +552,77 @@ export function DashboardClient({
                       ) : calendarTab === "app" &&
                         selectedDayEvents.length > 0 ? (
                         <div className="space-y-3">
-                          {selectedDayEvents.map((event) => (
-                            <div
-                              key={event.id}
-                              className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
-                            >
+                          {selectedDayEvents.map((event) => {
+                            // Get the original app event for time info
+                            const appEvent = appEvents.find(
+                              (e) => e.id === event.id,
+                            );
+                            const timeDisplay = appEvent
+                              ? appEvent.allDay
+                                ? t.calendarAllDay
+                                : `${appEvent.startTime.split("T")[1]?.slice(0, 5)} - ${appEvent.endTime.split("T")[1]?.slice(0, 5)}`
+                              : null;
+
+                            return (
                               <div
-                                className={cn(
-                                  "w-2 h-2 rounded-full mt-1.5 shrink-0",
-                                  categoryConfig.find(
-                                    (c) => c.key === event.category,
-                                  )?.colorClass,
-                                )}
-                              />
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium leading-tight">
-                                  {event.title}
-                                </p>
-                                {event.description && (
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    {event.description}
+                                key={event.id}
+                                className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 group"
+                              >
+                                <div
+                                  className={cn(
+                                    "w-2 h-2 rounded-full mt-1.5 shrink-0",
+                                    categoryConfig.find(
+                                      (c) => c.key === event.category,
+                                    )?.colorClass,
+                                  )}
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium leading-tight">
+                                    {event.title}
                                   </p>
-                                )}
-                                <p className="text-xs text-muted-foreground/70 mt-1">
-                                  {
-                                    t[
-                                      categoryTranslationKeys[
-                                        event.category
-                                      ] as keyof typeof t
-                                    ]
-                                  }
-                                </p>
+                                  {timeDisplay && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {timeDisplay}
+                                    </p>
+                                  )}
+                                  {event.description && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {event.description}
+                                    </p>
+                                  )}
+                                  <p className="text-xs text-muted-foreground/70 mt-1">
+                                    {
+                                      t[
+                                        categoryTranslationKeys[
+                                          event.category
+                                        ] as keyof typeof t
+                                      ]
+                                    }
+                                  </p>
+                                </div>
+                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (appEvent) handleEditEvent(appEvent);
+                                    }}
+                                    className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+                                    title={t.eventEdit}
+                                  >
+                                    <RiEdit2Line className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteEvent(event.id)}
+                                    className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                                    title={t.eventDelete}
+                                  >
+                                    <RiDeleteBinLine className="w-4 h-4" />
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       ) : (
                         <p className="text-sm text-muted-foreground">
@@ -454,7 +640,7 @@ export function DashboardClient({
                 <div className="flex-1 min-h-0">
                   <CalendarConcierge
                     language={language}
-                    events={DEMO_EVENTS}
+                    events={convertedAppEvents}
                     externalEvents={externalEvents}
                     selectedDate={selectedDate}
                   />
@@ -468,7 +654,7 @@ export function DashboardClient({
             <CardContent className="pt-4 flex flex-col flex-1 min-h-0">
               <CalendarConcierge
                 language={language}
-                events={DEMO_EVENTS}
+                events={convertedAppEvents}
                 externalEvents={externalEvents}
                 selectedDate={selectedDate}
               />
@@ -496,6 +682,26 @@ export function DashboardClient({
           </div>
         </div>
       )}
+
+      {/* Event Create Dialog */}
+      <EventCreateDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        date={selectedDate || todayStr()}
+        startHour={createDialogStartHour}
+        endHour={createDialogEndHour}
+        language={language}
+        onSave={handleSaveEvent}
+      />
+
+      {/* Event Edit Dialog */}
+      <EventEditDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        event={eventToEdit}
+        language={language}
+        onSave={handleSaveEditedEvent}
+      />
     </div>
   );
 }

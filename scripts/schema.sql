@@ -1289,3 +1289,30 @@ ALTER TABLE "TicketSale" ADD CONSTRAINT "TicketSale_customerId_fkey" FOREIGN KEY
 -- AddForeignKey
 ALTER TABLE "TicketSale" ADD CONSTRAINT "TicketSale_productId_fkey" FOREIGN KEY ("productId") REFERENCES "TicketProduct"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
+
+-- CreateTable
+CREATE TABLE "CalendarEvent" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "location" TEXT,
+    "startTime" TIMESTAMP(3) NOT NULL,
+    "endTime" TIMESTAMP(3) NOT NULL,
+    "allDay" BOOLEAN NOT NULL DEFAULT false,
+    "category" TEXT NOT NULL DEFAULT 'personal',
+    "color" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "CalendarEvent_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE INDEX "CalendarEvent_userId_idx" ON "CalendarEvent"("userId");
+
+-- CreateIndex
+CREATE INDEX "CalendarEvent_userId_startTime_endTime_idx" ON "CalendarEvent"("userId", "startTime", "endTime");
+
+-- AddForeignKey
+ALTER TABLE "CalendarEvent" ADD CONSTRAINT "CalendarEvent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
