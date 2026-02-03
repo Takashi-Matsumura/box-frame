@@ -3,6 +3,7 @@
 import { LockKeyhole } from "lucide-react";
 // アドオンモジュール
 import { backofficeModule } from "@/lib/addon-modules/backoffice";
+import { calendarModule } from "@/lib/addon-modules/calendar";
 import { evaluationModule } from "@/lib/addon-modules/evaluation/module";
 import { ldapMigrationModule } from "@/lib/addon-modules/ldap-migration";
 import { openldapModule } from "@/lib/addon-modules/openldap";
@@ -121,6 +122,7 @@ export const moduleRegistry: ModuleRegistry = {
 
   // アドオンモジュール
   backoffice: backofficeModule,
+  calendar: calendarModule,
   evaluation: evaluationModule,
   "ldap-migration": ldapMigrationModule,
   openldap: openldapModule,
