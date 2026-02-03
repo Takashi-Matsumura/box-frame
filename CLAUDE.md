@@ -67,7 +67,7 @@ model CalendarEvent {
   startTime   DateTime
   endTime     DateTime
   allDay      Boolean   @default(false)
-  category    String    @default("personal")  // evaluation, interview, company, personal, birthday
+  category    String    @default("personal")  // personal, visitor, meeting, vacation, travel
   color       String?
 }
 ```

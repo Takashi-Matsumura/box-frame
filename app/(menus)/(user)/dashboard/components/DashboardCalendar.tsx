@@ -15,18 +15,18 @@ export interface CalendarEvent {
   title: string;
   date: string; // YYYY-MM-DD
   endDate?: string; // 期間イベント用
-  category: "evaluation" | "interview" | "company" | "personal" | "birthday";
+  category: "personal" | "visitor" | "meeting" | "vacation" | "travel";
   color: string;
   description?: string;
   actionUrl?: string;
 }
 
 const categoryColors: Record<CalendarEvent["category"], string> = {
-  evaluation: "bg-yellow-400",
-  interview: "bg-purple-500",
-  company: "bg-blue-500",
   personal: "bg-green-500",
-  birthday: "bg-pink-400",
+  visitor: "bg-purple-500",
+  meeting: "bg-blue-500",
+  vacation: "bg-yellow-400",
+  travel: "bg-pink-400",
 };
 
 export type CalendarViewMode = "month" | "day";

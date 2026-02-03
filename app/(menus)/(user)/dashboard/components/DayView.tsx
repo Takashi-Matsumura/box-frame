@@ -87,11 +87,11 @@ function todayStr(): string {
 
 // Category color mapping
 const categoryColors: Record<string, string> = {
-  evaluation: "#eab308",
-  interview: "#a855f7",
-  company: "#3b82f6",
   personal: "#22c55e",
-  birthday: "#f472b6",
+  visitor: "#a855f7",
+  meeting: "#3b82f6",
+  vacation: "#eab308",
+  travel: "#f472b6",
 };
 
 export function DayView({

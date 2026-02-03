@@ -45,10 +45,10 @@ interface EventCreateDialogProps {
 
 const CATEGORIES = [
   { value: "personal", colorClass: "bg-green-500" },
-  { value: "evaluation", colorClass: "bg-yellow-400" },
-  { value: "interview", colorClass: "bg-purple-500" },
-  { value: "company", colorClass: "bg-blue-500" },
-  { value: "birthday", colorClass: "bg-pink-400" },
+  { value: "visitor", colorClass: "bg-purple-500" },
+  { value: "meeting", colorClass: "bg-blue-500" },
+  { value: "vacation", colorClass: "bg-yellow-400" },
+  { value: "travel", colorClass: "bg-pink-400" },
 ];
 
 function hourToTimeString(hour: number): string {
@@ -127,11 +127,11 @@ export function EventCreateDialog({
   ]);
 
   const categoryTranslationKeys: Record<string, string> = {
-    evaluation: "categoryEvaluation",
-    interview: "categoryInterview",
-    company: "categoryCompany",
     personal: "categoryPersonal",
-    birthday: "categoryBirthday",
+    visitor: "categoryVisitor",
+    meeting: "categoryMeeting",
+    vacation: "categoryVacation",
+    travel: "categoryTravel",
   };
 
   return (

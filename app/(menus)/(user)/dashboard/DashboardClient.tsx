@@ -61,19 +61,19 @@ const categoryConfig: {
   key: CalendarEvent["category"];
   colorClass: string;
 }[] = [
-  { key: "evaluation", colorClass: "bg-yellow-400" },
-  { key: "interview", colorClass: "bg-purple-500" },
-  { key: "company", colorClass: "bg-blue-500" },
   { key: "personal", colorClass: "bg-green-500" },
-  { key: "birthday", colorClass: "bg-pink-400" },
+  { key: "visitor", colorClass: "bg-purple-500" },
+  { key: "meeting", colorClass: "bg-blue-500" },
+  { key: "vacation", colorClass: "bg-yellow-400" },
+  { key: "travel", colorClass: "bg-pink-400" },
 ];
 
 const categoryTranslationKeys: Record<CalendarEvent["category"], string> = {
-  evaluation: "categoryEvaluation",
-  interview: "categoryInterview",
-  company: "categoryCompany",
   personal: "categoryPersonal",
-  birthday: "categoryBirthday",
+  visitor: "categoryVisitor",
+  meeting: "categoryMeeting",
+  vacation: "categoryVacation",
+  travel: "categoryTravel",
 };
 
 // Convert external calendar events to CalendarEvent format for display
@@ -102,7 +102,7 @@ function externalToCalendarEvents(
       title: e.title,
       date: startDate,
       endDate: endDate !== startDate ? endDate : undefined,
-      category: "company" as const,
+      category: "meeting" as const,
       color: "#4285f4", // Google blue
       description:
         e.description || (e.location ? `📍 ${e.location}` : undefined),

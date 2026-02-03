@@ -1278,7 +1278,7 @@ model CalendarEvent {
   allDay      Boolean   @default(false)
 
   // カテゴリ（アプリ固有）
-  category    String    @default("personal")  // evaluation, interview, company, personal, birthday
+  category    String    @default("personal")  // personal, visitor, meeting, vacation, travel
   color       String?                         // カスタムカラー（オプション）
 
   createdAt   DateTime  @default(now())

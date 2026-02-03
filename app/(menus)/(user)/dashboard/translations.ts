@@ -29,11 +29,11 @@ export const dashboardTranslations = {
       "December",
     ] as readonly string[],
     // Event categories
-    categoryEvaluation: "Evaluation",
-    categoryInterview: "Interview",
-    categoryCompany: "Company",
     categoryPersonal: "Personal",
-    categoryBirthday: "Birthday",
+    categoryVisitor: "Visitor",
+    categoryMeeting: "Meeting",
+    categoryVacation: "Vacation",
+    categoryTravel: "Business Trip",
     // Selected day panel
     selectedDayEvents: "Events",
     noEvents: "No events for this day",
@@ -123,11 +123,11 @@ export const dashboardTranslations = {
       "12月",
     ] as readonly string[],
     // Event categories
-    categoryEvaluation: "評価",
-    categoryInterview: "面談",
-    categoryCompany: "全社",
     categoryPersonal: "個人",
-    categoryBirthday: "誕生日",
+    categoryVisitor: "来客",
+    categoryMeeting: "会議",
+    categoryVacation: "休暇",
+    categoryTravel: "出張",
     // Selected day panel
     selectedDayEvents: "イベント",
     noEvents: "この日のイベントはありません",
