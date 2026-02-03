@@ -21,25 +21,41 @@ interface Message {
   content: string;
 }
 
+interface AppCalendarEvent {
+  id: string;
+  title: string;
+  description?: string;
+  location?: string;
+  startTime: string;
+  endTime: string;
+  allDay: boolean;
+  category: string;
+}
+
 interface CalendarConciergeProps {
   language: "en" | "ja";
   events: CalendarEvent[];
+  appEvents?: AppCalendarEvent[];
   externalEvents?: ExternalCalendarEvent[];
   selectedDate?: string | null;
 }
 
 function buildSystemPrompt(
   language: "en" | "ja",
-  events: CalendarEvent[],
+  appEvents: AppCalendarEvent[],
   externalEvents: ExternalCalendarEvent[],
   selectedDate?: string | null,
 ): string {
-  // App events
+  // App events with full time information
   const appLines: string[] = [];
-  for (const ev of events) {
-    const range = ev.endDate ? `${ev.date} ~ ${ev.endDate}` : ev.date;
+  for (const ev of appEvents) {
+    const startDate = ev.startTime.split("T")[0];
+    const startTimePart = ev.startTime.split("T")[1]?.slice(0, 5) || "";
+    const endTimePart = ev.endTime.split("T")[1]?.slice(0, 5) || "";
+    const timeInfo = ev.allDay ? "（終日）" : ` ${startTimePart}-${endTimePart}`;
+    const loc = ev.location ? ` [${ev.location}]` : "";
     const desc = ev.description ? `（${ev.description}）` : "";
-    appLines.push(`- ${range}: ${ev.title}${desc}`);
+    appLines.push(`- ${startDate}${timeInfo}: ${ev.title}${loc}${desc}`);
   }
 
   // Google Calendar events
@@ -109,6 +125,7 @@ ${eventData}${selectedInfo}`;
 export function CalendarConcierge({
   language,
   events,
+  appEvents = [],
   externalEvents = [],
   selectedDate,
 }: CalendarConciergeProps) {
@@ -158,7 +175,7 @@ export function CalendarConcierge({
 
     const systemPrompt = buildSystemPrompt(
       language,
-      events,
+      appEvents,
       externalEvents,
       selectedDate,
     );
@@ -255,7 +272,7 @@ export function CalendarConcierge({
     isLoading,
     messages,
     language,
-    events,
+    appEvents,
     externalEvents,
     selectedDate,
     t.conciergeError,

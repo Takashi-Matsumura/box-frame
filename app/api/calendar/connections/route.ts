@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { CalendarService } from "@/lib/addon-modules/calendar-integration/calendar-service";
 import type { CalendarProviderName } from "@/lib/addon-modules/calendar-integration/types";
+import { GOOGLE_CALENDAR_WRITE_SCOPE } from "@/lib/addon-modules/calendar-integration/types";
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   const session = await auth();
@@ -10,7 +12,29 @@ export async function GET() {
   }
 
   try {
-    const connections = await CalendarService.getConnections(session.user.id);
+    // Get connections with scope info for permission checking
+    const rawConnections = await prisma.externalCalendarConnection.findMany({
+      where: { userId: session.user.id, isActive: true },
+      select: {
+        id: true,
+        provider: true,
+        email: true,
+        isActive: true,
+        createdAt: true,
+        scope: true,
+      },
+    });
+
+    // Add hasWritePermission flag to each connection
+    const connections = rawConnections.map((conn) => ({
+      id: conn.id,
+      provider: conn.provider,
+      email: conn.email,
+      isActive: conn.isActive,
+      createdAt: conn.createdAt,
+      hasWritePermission: (conn.scope || "").includes(GOOGLE_CALENDAR_WRITE_SCOPE),
+    }));
+
     return NextResponse.json({ connections });
   } catch (error) {
     console.error("[Calendar] Failed to get connections:", error);

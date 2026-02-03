@@ -153,6 +153,10 @@ export function DashboardClient({
   const [appEvents, setAppEvents] = useState<AppCalendarEvent[]>([]);
   const [, setIsLoadingEvents] = useState(false);
 
+  // Google Calendar write permission state
+  const [googleHasWritePermission, setGoogleHasWritePermission] =
+    useState(false);
+
   // Event creation dialog state
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createDialogStartHour, setCreateDialogStartHour] = useState(9);
@@ -162,12 +166,49 @@ export function DashboardClient({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [eventToEdit, setEventToEdit] = useState<EventToEdit | null>(null);
 
+  // Google event edit state (reuse same dialog with different handler)
+  const [isEditingGoogleEvent, setIsEditingGoogleEvent] = useState(false);
+
   const handleExternalEventsChange = useCallback(
     (events: ExternalCalendarEvent[]) => {
       setExternalEvents(events);
     },
     [],
   );
+
+  const handleGoogleWritePermissionChange = useCallback(
+    (hasPermission: boolean) => {
+      setGoogleHasWritePermission(hasPermission);
+    },
+    [],
+  );
+
+  // Refetch Google events
+  const refetchGoogleEvents = useCallback(async () => {
+    const firstDay = new Date(calendarMonth.year, calendarMonth.month, 1);
+    const lastDay = new Date(calendarMonth.year, calendarMonth.month + 1, 0);
+    const timeMin = firstDay.toISOString();
+    const timeMax = new Date(
+      lastDay.getFullYear(),
+      lastDay.getMonth(),
+      lastDay.getDate(),
+      23,
+      59,
+      59,
+    ).toISOString();
+
+    try {
+      const res = await fetch(
+        `/api/calendar/events?provider=google&timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`,
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setExternalEvents(data.events);
+      }
+    } catch {
+      // ignore
+    }
+  }, [calendarMonth.year, calendarMonth.month]);
 
   // Fetch app calendar events
   const fetchAppEvents = useCallback(async () => {
@@ -262,6 +303,7 @@ export function DashboardClient({
 
   // Open edit dialog
   const handleEditEvent = useCallback((event: AppCalendarEvent) => {
+    setIsEditingGoogleEvent(false);
     setEventToEdit({
       id: event.id,
       title: event.title,
@@ -278,20 +320,98 @@ export function DashboardClient({
   // Save edited event
   const handleSaveEditedEvent = useCallback(
     async (eventId: string, eventData: EditEventData) => {
-      const res = await fetch(`/api/calendar/app-events/${eventId}`, {
-        method: "PUT",
+      if (isEditingGoogleEvent) {
+        // Google event update
+        const res = await fetch(`/api/calendar/google-events/${eventId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(eventData),
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to update Google event");
+        }
+
+        // Refresh Google events
+        await refetchGoogleEvents();
+      } else {
+        // App event update
+        const res = await fetch(`/api/calendar/app-events/${eventId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(eventData),
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to update event");
+        }
+
+        // Refresh events
+        await fetchAppEvents();
+      }
+    },
+    [fetchAppEvents, refetchGoogleEvents, isEditingGoogleEvent],
+  );
+
+  // Create Google event
+  const handleSaveGoogleEvent = useCallback(
+    async (eventData: CreateEventData) => {
+      const res = await fetch("/api/calendar/google-events", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(eventData),
       });
 
       if (!res.ok) {
-        throw new Error("Failed to update event");
+        throw new Error("Failed to create Google event");
       }
 
-      // Refresh events
-      await fetchAppEvents();
+      // Refresh Google events
+      await refetchGoogleEvents();
     },
-    [fetchAppEvents],
+    [refetchGoogleEvents],
+  );
+
+  // Delete Google event
+  const handleDeleteGoogleEvent = useCallback(
+    async (eventId: string) => {
+      if (!confirm(t.googleEventDeleteConfirm)) return;
+
+      try {
+        const res = await fetch(`/api/calendar/google-events/${eventId}`, {
+          method: "DELETE",
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to delete Google event");
+        }
+
+        // Refresh Google events
+        await refetchGoogleEvents();
+      } catch (error) {
+        console.error("Failed to delete Google event:", error);
+      }
+    },
+    [t.googleEventDeleteConfirm, refetchGoogleEvents],
+  );
+
+  // Edit Google event
+  const handleEditGoogleEvent = useCallback(
+    (event: ExternalCalendarEvent) => {
+      setIsEditingGoogleEvent(true);
+      setEventToEdit({
+        id: event.id,
+        title: event.title,
+        description: event.description,
+        location: event.location,
+        startTime: event.start,
+        endTime: event.end,
+        allDay: event.allDay,
+        category: "personal", // Google events don't have categories
+      });
+      setEditDialogOpen(true);
+    },
+    [],
   );
 
   const handleMonthChange = useCallback((year: number, month: number) => {
@@ -404,6 +524,7 @@ export function DashboardClient({
           onExternalEventsChange={handleExternalEventsChange}
           currentYear={calendarMonth.year}
           currentMonth={calendarMonth.month}
+          onHasWritePermissionChange={handleGoogleWritePermissionChange}
         />
       </div>
 
@@ -441,6 +562,8 @@ export function DashboardClient({
                 onDateChange={handleDayChange}
                 onCreateEvent={handleCreateEvent}
                 onEventClick={handleEventClick}
+                onGoogleEventClick={handleEditGoogleEvent}
+                googleHasWritePermission={googleHasWritePermission}
               />
             )}
           </CardContent>
@@ -488,7 +611,9 @@ export function DashboardClient({
                         <h3 className="font-semibold text-sm">
                           {formatSelectedDate(selectedDate)}
                         </h3>
-                        {calendarTab === "app" && (
+                        {(calendarTab === "app" ||
+                          (calendarTab === "google" &&
+                            googleHasWritePermission)) && (
                           <button
                             type="button"
                             onClick={() => {
@@ -512,7 +637,7 @@ export function DashboardClient({
                           {selectedDayExternalDetails.map((event) => (
                             <div
                               key={event.id}
-                              className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
+                              className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 group"
                             >
                               <div className="w-2 h-2 rounded-full mt-1.5 shrink-0 bg-blue-500" />
                               <div className="min-w-0 flex-1">
@@ -546,6 +671,28 @@ export function DashboardClient({
                                   </p>
                                 )}
                               </div>
+                              {googleHasWritePermission && (
+                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleEditGoogleEvent(event)}
+                                    className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
+                                    title={t.googleEventEdit}
+                                  >
+                                    <RiEdit2Line className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleDeleteGoogleEvent(event.id)
+                                    }
+                                    className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                                    title={t.googleEventDelete}
+                                  >
+                                    <RiDeleteBinLine className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -641,6 +788,7 @@ export function DashboardClient({
                   <CalendarConcierge
                     language={language}
                     events={convertedAppEvents}
+                    appEvents={appEvents}
                     externalEvents={externalEvents}
                     selectedDate={selectedDate}
                   />
@@ -655,6 +803,7 @@ export function DashboardClient({
               <CalendarConcierge
                 language={language}
                 events={convertedAppEvents}
+                appEvents={appEvents}
                 externalEvents={externalEvents}
                 selectedDate={selectedDate}
               />
@@ -691,16 +840,27 @@ export function DashboardClient({
         startHour={createDialogStartHour}
         endHour={createDialogEndHour}
         language={language}
-        onSave={handleSaveEvent}
+        onSave={
+          calendarTab === "google" && googleHasWritePermission
+            ? handleSaveGoogleEvent
+            : handleSaveEvent
+        }
+        isGoogleEvent={calendarTab === "google" && googleHasWritePermission}
       />
 
       {/* Event Edit Dialog */}
       <EventEditDialog
         open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
+        onOpenChange={(open) => {
+          setEditDialogOpen(open);
+          if (!open) {
+            setIsEditingGoogleEvent(false);
+          }
+        }}
         event={eventToEdit}
         language={language}
         onSave={handleSaveEditedEvent}
+        isGoogleEvent={isEditingGoogleEvent}
       />
     </div>
   );

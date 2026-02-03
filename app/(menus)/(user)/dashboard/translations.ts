@@ -84,6 +84,14 @@ export const dashboardTranslations = {
     eventDeleting: "Deleting...",
     eventDeleteConfirm: "Delete this event?",
     dragToCreate: "Drag to create an event",
+    // Google Calendar CRUD
+    googleEventEdit: "Edit Google event",
+    googleEventDelete: "Delete Google event",
+    googleEventDeleteConfirm: "Delete this event from Google Calendar?",
+    upgradePermissions: "Upgrade permissions",
+    upgradePermissionsDesc: "To create, edit, or delete events, you need to grant write access.",
+    readOnlyMode: "Read-only mode",
+    googleDragToCreate: "Drag to create an event on Google Calendar",
   },
   ja: {
     title: "ダッシュボード",
@@ -170,6 +178,14 @@ export const dashboardTranslations = {
     eventDeleting: "削除中...",
     eventDeleteConfirm: "このイベントを削除しますか？",
     dragToCreate: "ドラッグしてイベントを作成",
+    // Google Calendar CRUD
+    googleEventEdit: "Googleイベントを編集",
+    googleEventDelete: "Googleイベントを削除",
+    googleEventDeleteConfirm: "このイベントをGoogleカレンダーから削除しますか？",
+    upgradePermissions: "権限を拡張",
+    upgradePermissionsDesc: "イベントの作成・編集・削除には書き込み権限が必要です。",
+    readOnlyMode: "読み取り専用",
+    googleDragToCreate: "ドラッグしてGoogleカレンダーにイベントを作成",
   },
 } as const;
 

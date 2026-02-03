@@ -43,7 +43,7 @@
 |------|------|
 | カレンダー | 月表示・日表示の切替、イベント表示 |
 | アプリカレンダー | イベントの作成・編集・削除（CRUD） |
-| 外部カレンダー連携 | Google Calendar連携（OAuth） |
+| 外部カレンダー連携 | Google Calendar連携（OAuth、CRUD対応） |
 | AIコンシェルジュ | カレンダーデータをコンテキストとしたAIチャット |
 
 ### アプリカレンダー（イベント管理）
@@ -81,6 +81,37 @@ model CalendarEvent {
 | GET | `/api/calendar/app-events/[id]` | イベント詳細取得 |
 | PUT | `/api/calendar/app-events/[id]` | イベント更新 |
 | DELETE | `/api/calendar/app-events/[id]` | イベント削除 |
+
+### Google Calendar連携（CRUD対応）
+
+Google Calendarとの連携機能。読み取りに加え、イベントの作成・編集・削除が可能。
+
+#### OAuthスコープ
+
+| スコープ | 用途 |
+|---------|------|
+| `calendar.events` | イベントのCRUD操作 |
+| `calendar.readonly` | カレンダーリストの読み取り |
+
+#### 権限管理
+
+- DBの `scope` フィールドで権限を判定
+- 旧スコープ（読み取り専用）の場合、UIに「権限を拡張」ボタンを表示
+- クリックで再認証フロー開始（新スコープで）
+
+#### API エンドポイント
+
+| メソッド | パス | 説明 |
+|---------|------|------|
+| POST | `/api/calendar/google-events` | Googleイベント作成 |
+| PUT | `/api/calendar/google-events/[id]` | Googleイベント更新 |
+| DELETE | `/api/calendar/google-events/[id]` | Googleイベント削除 |
+
+#### UI操作
+
+- **イベント作成**: 日表示でドラッグ選択、または月表示の「+」ボタン（書き込み権限必要）
+- **イベント編集**: イベントにホバーして編集アイコンをクリック
+- **イベント削除**: イベントにホバーして削除アイコンをクリック
 
 ### AIコンシェルジュ
 

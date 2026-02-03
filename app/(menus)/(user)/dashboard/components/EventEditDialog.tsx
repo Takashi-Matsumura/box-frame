@@ -49,6 +49,7 @@ interface EventEditDialogProps {
   event: EventToEdit | null;
   language: "en" | "ja";
   onSave: (eventId: string, event: EditEventData) => Promise<void>;
+  isGoogleEvent?: boolean;
 }
 
 const CATEGORIES = [
@@ -65,6 +66,7 @@ export function EventEditDialog({
   event,
   language,
   onSave,
+  isGoogleEvent = false,
 }: EventEditDialogProps) {
   const t = dashboardTranslations[language];
   const [title, setTitle] = useState("");
@@ -206,33 +208,35 @@ export function EventEditDialog({
             </div>
           )}
 
-          {/* Category */}
-          <div className="grid gap-2">
-            <Label>{t.eventCategory}</Label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`w-3 h-3 rounded-full ${cat.colorClass}`}
-                      />
-                      <span>
-                        {
-                          t[
-                            categoryTranslationKeys[cat.value] as keyof typeof t
-                          ]
-                        }
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Category (not shown for Google events) */}
+          {!isGoogleEvent && (
+            <div className="grid gap-2">
+              <Label>{t.eventCategory}</Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`w-3 h-3 rounded-full ${cat.colorClass}`}
+                        />
+                        <span>
+                          {
+                            t[
+                              categoryTranslationKeys[cat.value] as keyof typeof t
+                            ]
+                          }
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Location */}
           <div className="grid gap-2">

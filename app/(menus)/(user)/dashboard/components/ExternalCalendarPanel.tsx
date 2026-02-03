@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { RiGoogleFill, RiLinkUnlinkM, RiSettings3Line } from "react-icons/ri";
+import {
+  RiGoogleFill,
+  RiLinkUnlinkM,
+  RiLock2Line,
+  RiSettings3Line,
+} from "react-icons/ri";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ExternalCalendarEvent } from "@/lib/addon-modules/calendar-integration/types";
@@ -12,6 +17,7 @@ interface Connection {
   provider: string;
   email: string | null;
   isActive: boolean;
+  hasWritePermission?: boolean;
 }
 
 interface ExternalCalendarPanelProps {
@@ -22,6 +28,7 @@ interface ExternalCalendarPanelProps {
   onExternalEventsChange: (events: ExternalCalendarEvent[]) => void;
   currentYear: number;
   currentMonth: number;
+  onHasWritePermissionChange?: (hasPermission: boolean) => void;
 }
 
 export function ExternalCalendarPanel({
@@ -32,14 +39,22 @@ export function ExternalCalendarPanel({
   onExternalEventsChange,
   currentYear,
   currentMonth,
+  onHasWritePermissionChange,
 }: ExternalCalendarPanelProps) {
   const t = dashboardTranslations[language];
   const [connections, setConnections] = useState<Connection[]>([]);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
 
   const googleConnection = connections.find((c) => c.provider === "google");
+  const hasWritePermission = googleConnection?.hasWritePermission ?? false;
+
+  // Notify parent of permission changes
+  useEffect(() => {
+    onHasWritePermissionChange?.(hasWritePermission);
+  }, [hasWritePermission, onHasWritePermissionChange]);
 
   const fetchConnections = useCallback(async () => {
     try {
@@ -111,6 +126,8 @@ export function ExternalCalendarPanel({
     try {
       const res = await fetch("/api/calendar/connect/google", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
       });
       if (res.ok) {
         const data = await res.json();
@@ -120,6 +137,25 @@ export function ExternalCalendarPanel({
       // ignore
     } finally {
       setConnecting(false);
+    }
+  }, []);
+
+  const handleUpgradePermissions = useCallback(async () => {
+    setUpgrading(true);
+    try {
+      const res = await fetch("/api/calendar/connect/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ upgradePermissions: true }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        window.location.href = data.url;
+      }
+    } catch {
+      // ignore
+    } finally {
+      setUpgrading(false);
     }
   }, []);
 
@@ -203,10 +239,30 @@ export function ExternalCalendarPanel({
             <RiSettings3Line className="w-3.5 h-3.5" />
           </Button>
           {showSettings && (
-            <div className="absolute right-0 top-full mt-1 z-10 bg-popover border rounded-lg shadow-md p-3 min-w-[200px]">
+            <div className="absolute left-0 top-full mt-1 z-50 bg-popover border rounded-lg shadow-md p-3 min-w-[220px]">
               <div className="text-xs text-muted-foreground mb-2">
                 {googleConnection.email || "Google Calendar"}
               </div>
+              {!hasWritePermission && (
+                <div className="mb-2">
+                  <div className="flex items-center gap-1 text-xs text-amber-600 mb-1">
+                    <RiLock2Line className="w-3.5 h-3.5" />
+                    {t.readOnlyMode}
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {t.upgradePermissionsDesc}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleUpgradePermissions}
+                    disabled={upgrading}
+                    className="w-full text-xs gap-1 mb-2"
+                  >
+                    {upgrading ? t.calendarConnecting : t.upgradePermissions}
+                  </Button>
+                </div>
+              )}
               <Button
                 variant="outline"
                 size="sm"

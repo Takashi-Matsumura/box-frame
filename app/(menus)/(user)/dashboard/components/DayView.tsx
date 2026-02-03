@@ -41,6 +41,8 @@ interface DayViewProps {
   onDateChange: (date: string) => void;
   onCreateEvent?: (startHour: number, endHour: number) => void;
   onEventClick?: (event: AppCalendarEvent) => void;
+  onGoogleEventClick?: (event: ExternalCalendarEvent) => void;
+  googleHasWritePermission?: boolean;
 }
 
 interface TimeEvent {
@@ -53,6 +55,7 @@ interface TimeEvent {
   htmlLink?: string;
   color: string;
   isAppEvent?: boolean;
+  isGoogleEvent?: boolean;
 }
 
 function formatDateLabel(date: string, language: "en" | "ja"): string {
@@ -102,6 +105,8 @@ export function DayView({
   onDateChange,
   onCreateEvent,
   onEventClick,
+  onGoogleEventClick,
+  googleHasWritePermission = false,
 }: DayViewProps) {
   const t = dashboardTranslations[language];
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -157,11 +162,16 @@ export function DayView({
     return Math.max(START_HOUR, Math.min(END_HOUR, hour));
   }, []);
 
+  // Check if drag selection is allowed
+  const canCreateByDrag =
+    calendarTab === "app" ||
+    (calendarTab === "google" && googleHasWritePermission);
+
   // Mouse event handlers for drag selection
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       // Only respond to left click on the timeline area (not on events)
-      if (e.button !== 0 || calendarTab !== "app") return;
+      if (e.button !== 0 || !canCreateByDrag) return;
       const target = e.target as HTMLElement;
       if (target.closest("[data-event]")) return;
 
@@ -172,7 +182,7 @@ export function DayView({
       setDragEnd(snappedHour + 0.25); // Minimum 15 minutes
       e.preventDefault();
     },
-    [calendarTab, getHourFromY, snapToQuarter],
+    [canCreateByDrag, getHourFromY, snapToQuarter],
   );
 
   const handleMouseMove = useCallback(
@@ -304,6 +314,7 @@ export function DayView({
             location: ev.location,
             htmlLink: ev.htmlLink,
             color: "#4285f4",
+            isGoogleEvent: true,
           });
         }
       }
@@ -398,7 +409,7 @@ export function DayView({
           ref={timelineContainerRef}
           className={cn(
             "relative",
-            calendarTab === "app" && "cursor-crosshair",
+            canCreateByDrag && "cursor-crosshair",
           )}
           style={{ height: `${(END_HOUR - START_HOUR) * HOUR_HEIGHT}px` }}
           onMouseDown={handleMouseDown}
@@ -460,8 +471,21 @@ export function DayView({
                 if (appEvent) {
                   onEventClick(appEvent);
                 }
+              } else if (
+                ev.isGoogleEvent &&
+                googleHasWritePermission &&
+                onGoogleEventClick
+              ) {
+                const googleEvent = externalEvents.find((e) => e.id === ev.id);
+                if (googleEvent) {
+                  onGoogleEventClick(googleEvent);
+                }
               }
             };
+
+            const isClickable =
+              ev.isAppEvent ||
+              (ev.isGoogleEvent && googleHasWritePermission);
 
             return (
               <div
@@ -469,7 +493,7 @@ export function DayView({
                 data-event="true"
                 className={cn(
                   "absolute left-18 right-2 z-10 rounded px-2 py-1 text-white text-xs overflow-hidden",
-                  ev.isAppEvent
+                  isClickable
                     ? "cursor-pointer hover:opacity-90"
                     : "cursor-default",
                 )}
@@ -486,11 +510,11 @@ export function DayView({
                     handleEventClick();
                   }
                 }}
-                role={ev.isAppEvent ? "button" : undefined}
-                tabIndex={ev.isAppEvent ? 0 : undefined}
+                role={isClickable ? "button" : undefined}
+                tabIndex={isClickable ? 0 : undefined}
               >
                 <div className="font-medium truncate">
-                  {ev.htmlLink ? (
+                  {ev.htmlLink && !googleHasWritePermission ? (
                     <a
                       href={ev.htmlLink}
                       target="_blank"
@@ -546,10 +570,10 @@ export function DayView({
         </div>
       </div>
 
-      {/* Drag hint (app tab only) */}
-      {calendarTab === "app" && (
+      {/* Drag hint (app tab or google with write permission) */}
+      {canCreateByDrag && (
         <div className="text-xs text-muted-foreground text-center mt-2">
-          {t.dragToCreate}
+          {calendarTab === "google" ? t.googleDragToCreate : t.dragToCreate}
         </div>
       )}
     </div>

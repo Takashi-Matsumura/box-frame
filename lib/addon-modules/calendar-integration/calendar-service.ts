@@ -3,7 +3,9 @@ import { googleCalendarProvider } from "./providers/google-calendar";
 import type {
   CalendarProvider,
   CalendarProviderName,
+  CreateExternalEventData,
   ExternalCalendarEvent,
+  UpdateExternalEventData,
 } from "./types";
 
 const providers: Record<CalendarProviderName, CalendarProvider> = {
@@ -71,5 +73,114 @@ export const CalendarService = {
 
   async disconnect(userId: string, provider: CalendarProviderName) {
     return getProvider(provider).disconnect(userId);
+  },
+
+  async hasWritePermission(
+    userId: string,
+    provider: CalendarProviderName,
+  ): Promise<boolean> {
+    const connection = await prisma.externalCalendarConnection.findUnique({
+      where: {
+        userId_provider: {
+          userId,
+          provider,
+        },
+      },
+    });
+
+    if (!connection || !connection.isActive) {
+      return false;
+    }
+
+    const p = getProvider(provider);
+    return p.hasWritePermission?.(connection) ?? false;
+  },
+
+  async createEvent(
+    userId: string,
+    provider: CalendarProviderName,
+    data: CreateExternalEventData,
+  ): Promise<ExternalCalendarEvent> {
+    const connection = await prisma.externalCalendarConnection.findUnique({
+      where: {
+        userId_provider: {
+          userId,
+          provider,
+        },
+      },
+    });
+
+    if (!connection || !connection.isActive) {
+      throw new Error("No active connection found");
+    }
+
+    const p = getProvider(provider);
+    if (!p.createEvent) {
+      throw new Error(`Provider "${provider}" does not support event creation`);
+    }
+
+    // Refresh token if needed
+    const refreshedConnection = await p.refreshTokenIfNeeded(connection);
+
+    return p.createEvent(refreshedConnection, data);
+  },
+
+  async updateEvent(
+    userId: string,
+    provider: CalendarProviderName,
+    eventId: string,
+    data: UpdateExternalEventData,
+  ): Promise<ExternalCalendarEvent> {
+    const connection = await prisma.externalCalendarConnection.findUnique({
+      where: {
+        userId_provider: {
+          userId,
+          provider,
+        },
+      },
+    });
+
+    if (!connection || !connection.isActive) {
+      throw new Error("No active connection found");
+    }
+
+    const p = getProvider(provider);
+    if (!p.updateEvent) {
+      throw new Error(`Provider "${provider}" does not support event updates`);
+    }
+
+    // Refresh token if needed
+    const refreshedConnection = await p.refreshTokenIfNeeded(connection);
+
+    return p.updateEvent(refreshedConnection, eventId, data);
+  },
+
+  async deleteEvent(
+    userId: string,
+    provider: CalendarProviderName,
+    eventId: string,
+  ): Promise<void> {
+    const connection = await prisma.externalCalendarConnection.findUnique({
+      where: {
+        userId_provider: {
+          userId,
+          provider,
+        },
+      },
+    });
+
+    if (!connection || !connection.isActive) {
+      throw new Error("No active connection found");
+    }
+
+    const p = getProvider(provider);
+    if (!p.deleteEvent) {
+      throw new Error(`Provider "${provider}" does not support event deletion`);
+    }
+
+    // Refresh token if needed
+    const refreshedConnection = await p.refreshTokenIfNeeded(connection);
+
+    await p.deleteEvent(refreshedConnection, eventId);
   },
 };

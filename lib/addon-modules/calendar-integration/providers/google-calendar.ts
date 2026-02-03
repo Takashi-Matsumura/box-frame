@@ -2,11 +2,19 @@ import { google } from "googleapis";
 import { prisma } from "@/lib/prisma";
 import type {
   CalendarProvider,
+  CreateExternalEventData,
   ExternalCalendarEvent,
+  UpdateExternalEventData,
+} from "../types";
+import {
+  GOOGLE_CALENDAR_READ_SCOPE,
+  GOOGLE_CALENDAR_WRITE_SCOPE,
 } from "../types";
 import type { ExternalCalendarConnection } from "@prisma/client";
 
-const SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"];
+// Default to write scope + read scope for new connections
+// calendar.events allows CRUD on events, calendar.readonly allows listing calendars
+const SCOPES = [GOOGLE_CALENDAR_WRITE_SCOPE, GOOGLE_CALENDAR_READ_SCOPE];
 
 function getOAuth2Client() {
   return new google.auth.OAuth2(
@@ -19,11 +27,17 @@ function getOAuth2Client() {
 export const googleCalendarProvider: CalendarProvider = {
   name: "google",
 
-  async getAuthUrl(userId: string): Promise<string> {
+  async getAuthUrl(
+    userId: string,
+    forceWriteScope?: boolean,
+  ): Promise<string> {
     const oauth2Client = getOAuth2Client();
+    // Always use both scopes (write + read) for full functionality
+    // forceWriteScope parameter is kept for API compatibility but not used differently
+    const scopes = [GOOGLE_CALENDAR_WRITE_SCOPE, GOOGLE_CALENDAR_READ_SCOPE];
     const url = oauth2Client.generateAuthUrl({
       access_type: "offline",
-      scope: SCOPES,
+      scope: scopes,
       prompt: "consent",
       state: userId,
     });
@@ -189,5 +203,162 @@ export const googleCalendarProvider: CalendarProvider = {
         where: { id: connection.id },
       });
     }
+  },
+
+  hasWritePermission(connection: ExternalCalendarConnection): boolean {
+    // Check if the connection's scope includes write permission
+    const scope = connection.scope || "";
+    return scope.includes(GOOGLE_CALENDAR_WRITE_SCOPE);
+  },
+
+  async createEvent(
+    connection: ExternalCalendarConnection,
+    data: CreateExternalEventData,
+  ): Promise<ExternalCalendarEvent> {
+    const oauth2Client = getOAuth2Client();
+    oauth2Client.setCredentials({
+      access_token: connection.accessToken,
+      refresh_token: connection.refreshToken,
+    });
+
+    const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+
+    const requestBody = data.allDay
+      ? {
+          summary: data.title,
+          description: data.description,
+          location: data.location,
+          start: { date: data.startTime.split("T")[0] },
+          end: {
+            // Google all-day events use exclusive end date
+            date: (() => {
+              const d = new Date(data.endTime.split("T")[0]);
+              d.setDate(d.getDate() + 1);
+              return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+            })(),
+          },
+        }
+      : {
+          summary: data.title,
+          description: data.description,
+          location: data.location,
+          start: { dateTime: data.startTime, timeZone: "Asia/Tokyo" },
+          end: { dateTime: data.endTime, timeZone: "Asia/Tokyo" },
+        };
+
+    const response = await calendar.events.insert({
+      calendarId: "primary",
+      requestBody,
+    });
+
+    const item = response.data;
+    const isAllDay = !!item.start?.date;
+
+    return {
+      id: item.id || "",
+      title: item.summary || "(No title)",
+      description: item.description || undefined,
+      start: item.start?.dateTime || item.start?.date || "",
+      end: item.end?.dateTime || item.end?.date || "",
+      allDay: isAllDay,
+      location: item.location || undefined,
+      htmlLink: item.htmlLink || undefined,
+    };
+  },
+
+  async updateEvent(
+    connection: ExternalCalendarConnection,
+    eventId: string,
+    data: UpdateExternalEventData,
+  ): Promise<ExternalCalendarEvent> {
+    const oauth2Client = getOAuth2Client();
+    oauth2Client.setCredentials({
+      access_token: connection.accessToken,
+      refresh_token: connection.refreshToken,
+    });
+
+    const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+
+    // Build the patch request body
+    const patchBody: {
+      summary?: string;
+      description?: string;
+      location?: string;
+      start?: { date?: string; dateTime?: string; timeZone?: string };
+      end?: { date?: string; dateTime?: string; timeZone?: string };
+    } = {};
+
+    if (data.title !== undefined) {
+      patchBody.summary = data.title;
+    }
+    if (data.description !== undefined) {
+      patchBody.description = data.description;
+    }
+    if (data.location !== undefined) {
+      patchBody.location = data.location;
+    }
+
+    // Handle time updates
+    if (data.allDay !== undefined || data.startTime || data.endTime) {
+      // If changing to/from all-day, we need to handle the format
+      if (data.allDay) {
+        if (data.startTime) {
+          patchBody.start = { date: data.startTime.split("T")[0] };
+        }
+        if (data.endTime) {
+          // Google all-day events use exclusive end date
+          const d = new Date(data.endTime.split("T")[0]);
+          d.setDate(d.getDate() + 1);
+          patchBody.end = {
+            date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
+          };
+        }
+      } else {
+        if (data.startTime) {
+          patchBody.start = { dateTime: data.startTime, timeZone: "Asia/Tokyo" };
+        }
+        if (data.endTime) {
+          patchBody.end = { dateTime: data.endTime, timeZone: "Asia/Tokyo" };
+        }
+      }
+    }
+
+    const response = await calendar.events.patch({
+      calendarId: "primary",
+      eventId,
+      requestBody: patchBody,
+    });
+
+    const item = response.data;
+    const isAllDay = !!item.start?.date;
+
+    return {
+      id: item.id || "",
+      title: item.summary || "(No title)",
+      description: item.description || undefined,
+      start: item.start?.dateTime || item.start?.date || "",
+      end: item.end?.dateTime || item.end?.date || "",
+      allDay: isAllDay,
+      location: item.location || undefined,
+      htmlLink: item.htmlLink || undefined,
+    };
+  },
+
+  async deleteEvent(
+    connection: ExternalCalendarConnection,
+    eventId: string,
+  ): Promise<void> {
+    const oauth2Client = getOAuth2Client();
+    oauth2Client.setCredentials({
+      access_token: connection.accessToken,
+      refresh_token: connection.refreshToken,
+    });
+
+    const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+
+    await calendar.events.delete({
+      calendarId: "primary",
+      eventId,
+    });
   },
 };
