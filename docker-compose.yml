@@ -13,8 +13,8 @@ services:
     image: box2-nextjs:latest
     container_name: box2-nextjs
     restart: unless-stopped
-    ports:
-      - "8888:3000"
+    expose:
+      - "3000"
     environment:
       # Database
       DATABASE_URL: postgresql://box2:box2password@postgres:5432/box2?schema=public
@@ -44,6 +44,25 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  # ----------------------------------------
+  # nginx reverse proxy (HTTPS)
+  # ----------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: box2-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      nextjs:
+        condition: service_healthy
+    networks:
+      - box2-network
 
   # ----------------------------------------
   # PostgreSQL Database (BoX2専用)

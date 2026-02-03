@@ -45,6 +45,19 @@ services:
       - ./docker/openldap/bootstrap:/container/service/slapd/assets/config/bootstrap/ldif/custom
     command: --copy-service
 
+  # nginx reverse proxy (HTTPS)
+  nginx:
+    image: nginx:alpine
+    container_name: boxframe-nginx
+    restart: unless-stopped
+    ports:
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/certs:/etc/nginx/certs:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
   # AI RAG Backend (ChromaDB + sentence-transformers)
   airag-backend:
     build:

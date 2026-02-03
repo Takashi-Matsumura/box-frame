@@ -8,6 +8,15 @@ export default auth((req) => {
   const { pathname } = req.nextUrl;
   const session = req.auth;
 
+  // Reverse proxy support: construct correct redirect base URL
+  const forwardedProto = req.headers.get("x-forwarded-proto");
+  const forwardedHost = req.headers.get("x-forwarded-host");
+  const baseUrl =
+    forwardedProto && forwardedHost
+      ? `${forwardedProto}://${forwardedHost}`
+      : req.nextUrl.origin;
+  const redirectUrl = (path: string) => new URL(path, baseUrl);
+
   // Build ID mismatch helper
   const hasBuildIdMismatch = (s: typeof session): boolean => {
     if (!s) return false;
@@ -38,16 +47,16 @@ export default auth((req) => {
       if (session.user.twoFactorEnabled) {
         const verified = req.cookies.get("2fa_verified");
         if (verified?.value !== session.user.id) {
-          return NextResponse.redirect(new URL("/auth/verify-totp", req.url));
+          return NextResponse.redirect(redirectUrl("/auth/verify-totp"));
         }
       }
       // Check if password change is required
       if (session.user.mustChangePassword) {
         return NextResponse.redirect(
-          new URL("/settings?passwordReset=true", req.url),
+          redirectUrl("/settings?passwordReset=true"),
         );
       }
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+      return NextResponse.redirect(redirectUrl("/dashboard"));
     }
     return NextResponse.next();
   }
@@ -55,22 +64,22 @@ export default auth((req) => {
   // 2FA verification page - allow access if logged in but not verified
   if (pathname === "/auth/verify-totp") {
     if (!session) {
-      return NextResponse.redirect(new URL("/login", req.url));
+      return NextResponse.redirect(redirectUrl("/login"));
     }
     // If 2FA is not enabled or already verified, redirect to dashboard
     if (!session.user.twoFactorEnabled) {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+      return NextResponse.redirect(redirectUrl("/dashboard"));
     }
     const verified = req.cookies.get("2fa_verified");
     if (verified?.value === session.user.id) {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+      return NextResponse.redirect(redirectUrl("/dashboard"));
     }
     return NextResponse.next();
   }
 
   // Build ID validation: invalidate sessions from previous deployments
   if (session && hasBuildIdMismatch(session)) {
-    const response = NextResponse.redirect(new URL("/login", req.url));
+    const response = NextResponse.redirect(redirectUrl("/login"));
     response.cookies.delete("authjs.session-token");
     response.cookies.delete("__Secure-authjs.session-token");
     return response;
@@ -78,14 +87,14 @@ export default auth((req) => {
 
   // Protected routes - require authentication
   if (!session) {
-    return NextResponse.redirect(new URL("/login", req.url));
+    return NextResponse.redirect(redirectUrl("/login"));
   }
 
   // Check 2FA verification for protected routes
   if (session.user.twoFactorEnabled) {
     const verified = req.cookies.get("2fa_verified");
     if (verified?.value !== session.user.id) {
-      return NextResponse.redirect(new URL("/auth/verify-totp", req.url));
+      return NextResponse.redirect(redirectUrl("/auth/verify-totp"));
     }
   }
 
@@ -93,7 +102,7 @@ export default auth((req) => {
   // Allow access to /settings for password change
   if (session.user.mustChangePassword && !pathname.startsWith("/settings")) {
     return NextResponse.redirect(
-      new URL("/settings?passwordReset=true", req.url),
+      redirectUrl("/settings?passwordReset=true"),
     );
   }
 
@@ -103,14 +112,14 @@ export default auth((req) => {
   // ここでは /admin のトップページのみ ADMIN 専用として制限
   if (pathname === "/admin") {
     if (session.user.role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+      return NextResponse.redirect(redirectUrl("/dashboard"));
     }
   }
 
   // Executive routes - accessible by EXECUTIVE and ADMIN only
   if (pathname.startsWith("/executive")) {
     if (session.user.role !== "EXECUTIVE" && session.user.role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+      return NextResponse.redirect(redirectUrl("/dashboard"));
     }
   }
 
@@ -125,7 +134,7 @@ export default auth((req) => {
         session.user.role !== "EXECUTIVE" &&
         session.user.role !== "ADMIN"
       ) {
-        return NextResponse.redirect(new URL("/dashboard", req.url));
+        return NextResponse.redirect(redirectUrl("/dashboard"));
       }
     } else {
       // Other /manager routes require MANAGER, EXECUTIVE, or ADMIN
@@ -134,7 +143,7 @@ export default auth((req) => {
         session.user.role !== "EXECUTIVE" &&
         session.user.role !== "ADMIN"
       ) {
-        return NextResponse.redirect(new URL("/dashboard", req.url));
+        return NextResponse.redirect(redirectUrl("/dashboard"));
       }
     }
   }
@@ -147,7 +156,7 @@ export default auth((req) => {
       session.user.role !== "EXECUTIVE" &&
       session.user.role !== "ADMIN"
     ) {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+      return NextResponse.redirect(redirectUrl("/dashboard"));
     }
   }
 

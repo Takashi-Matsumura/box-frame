@@ -73,6 +73,9 @@ prisma/fix-*.ts
 prisma/create-*-employee.ts
 prisma/check-*.ts
 
+# nginx SSL certificates
+docker/nginx/certs/
+
 # Docker volumes
 docker-volumes/
 

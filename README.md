@@ -44,12 +44,20 @@ cd ted-box2
 # 依存関係のインストール
 npm install
 
-# Dockerコンテナを起動（PostgreSQL + OpenLDAP）
-docker compose -f docker-compose.dev.yml up -d
-
 # 環境変数を設定
 cp .env.example .env
 # AUTH_SECRETを生成: npx auth secret
+
+# SSL証明書の生成（HTTPS開発環境用・初回のみ）
+brew install mkcert
+sudo mkcert -install
+bash docker/nginx/generate-cert.sh
+
+# /etc/hosts に追加（初回のみ）
+echo "127.0.0.1 box2.occ.co.jp" | sudo tee -a /etc/hosts
+
+# Dockerコンテナを起動（PostgreSQL + OpenLDAP + nginx）
+docker compose -f docker-compose.dev.yml up -d
 
 # データベースを初期化
 npx prisma db push
@@ -63,7 +71,7 @@ npm run dev
 
 | 項目 | 値 |
 |-----|-----|
-| URL | http://localhost:3000 |
+| URL | https://box2.occ.co.jp |
 | ユーザ名 | admin |
 | パスワード | admin |
 
@@ -135,6 +143,7 @@ ted-box2/
 ├── prisma/
 │   └── schema.prisma           # データベーススキーマ
 ├── docker/
+│   ├── nginx/                  # nginx リバースプロキシ設定
 │   └── openldap/               # OpenLDAP初期設定
 ├── docs/                       # ドキュメント
 └── __tests__/                  # テスト
@@ -238,15 +247,28 @@ npm run dev
 ```yaml
 # docker-compose.yml (本番用)
 services:
-  nextjs:        # Next.js (port: 8888 → 3000)
+  nextjs:        # Next.js (内部通信のみ)
+  nginx:         # nginx リバースプロキシ (port: 80, 443)
   postgres:      # PostgreSQL
   openldap:      # OpenLDAP (port: 3890 → 389)
   airag-backend: # AI RAG Backend
 
 # docker-compose.dev.yml (開発用)
 services:
+  nginx:       # nginx リバースプロキシ (port: 443 → host:3000)
   postgres:    # PostgreSQL (port: 5433)
   openldap:    # OpenLDAP (port: 390)
+  airag-backend: # AI RAG Backend
+```
+
+### ネットワーク構成
+
+```
+開発環境:
+  ブラウザ → https://box2.occ.co.jp:443 → nginx (Docker) → host.docker.internal:3000 (npm run dev)
+
+本番環境:
+  ブラウザ → https://ドメイン:443 → nginx (Docker) → nextjs:3000 (Docker内部通信)
 ```
 
 ### コンテナ操作
