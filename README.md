@@ -290,6 +290,52 @@ docker compose -f docker-compose.dev.yml down
 docker compose logs -f
 ```
 
+### クライアントPCからのアクセス設定（本番環境）
+
+社内LANに接続されたPCから本番環境（`172.16.2.222`）にアクセスするための設定です。
+
+#### Windows
+
+1. **hosts ファイルの編集**
+   - メモ帳を**管理者として実行**（スタートメニューで「メモ帳」→ 右クリック →「管理者として実行」）
+   - ファイル → 開く → `C:\Windows\System32\drivers\etc\hosts`（ファイルの種類を「すべてのファイル」に変更）
+   - 末尾に以下を追加して保存:
+     ```
+     172.16.2.222 box2.occ.co.jp
+     ```
+
+2. **プロキシバイパスの設定**（社内プロキシ環境の場合）
+   - 設定 → ネットワークとインターネット → プロキシ
+   - 「次のエントリで始まるアドレス以外にプロキシサーバーを使う」に `box2.occ.co.jp` を追加（既存エントリとはセミコロン `;` で区切る）
+
+3. **ブラウザでアクセス**: `https://box2.occ.co.jp`
+   - 自己署名証明書のため証明書警告が表示される →「詳細設定」→「続行」で進む
+
+#### macOS / Linux
+
+```bash
+# hosts 設定
+sudo sh -c 'echo "172.16.2.222 box2.occ.co.jp" >> /etc/hosts'
+
+# プロキシバイパス（macOS Ethernetの場合）
+sudo networksetup -setproxybypassdomains "Ethernet" \
+  "*.local" "169.254/16" "localhost" "127.0.0.1" "box2.occ.co.jp"
+```
+
+#### 接続確認
+
+```powershell
+# Windows (PowerShell)
+ping box2.occ.co.jp
+curl -k https://box2.occ.co.jp/api/health
+```
+
+```bash
+# macOS / Linux
+ping box2.occ.co.jp
+NO_PROXY=box2.occ.co.jp curl -sk https://box2.occ.co.jp/api/health
+```
+
 ## 開発コマンド
 
 ```bash
