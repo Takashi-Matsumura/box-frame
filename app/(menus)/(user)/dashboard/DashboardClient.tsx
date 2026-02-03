@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   RiAddLine,
   RiCalendarEventLine,
+  RiCalendarScheduleLine,
   RiDeleteBinLine,
   RiEdit2Line,
   RiSparklingLine,
@@ -24,10 +25,11 @@ import {
 } from "./components/EventCreateDialog";
 import {
   type EditEventData,
-  type EventToEdit,
   EventEditDialog,
+  type EventToEdit,
 } from "./components/EventEditDialog";
 import { ExternalCalendarPanel } from "./components/ExternalCalendarPanel";
+import { MeetingSchedulerDialog } from "./components/MeetingSchedulerDialog";
 import { dashboardTranslations } from "./translations";
 
 // App calendar event type from database
@@ -168,6 +170,9 @@ export function DashboardClient({
 
   // Google event edit state (reuse same dialog with different handler)
   const [isEditingGoogleEvent, setIsEditingGoogleEvent] = useState(false);
+
+  // Meeting scheduler dialog state
+  const [meetingSchedulerOpen, setMeetingSchedulerOpen] = useState(false);
 
   const handleExternalEventsChange = useCallback(
     (events: ExternalCalendarEvent[]) => {
@@ -396,22 +401,43 @@ export function DashboardClient({
   );
 
   // Edit Google event
-  const handleEditGoogleEvent = useCallback(
-    (event: ExternalCalendarEvent) => {
-      setIsEditingGoogleEvent(true);
-      setEventToEdit({
-        id: event.id,
-        title: event.title,
-        description: event.description,
-        location: event.location,
-        startTime: event.start,
-        endTime: event.end,
-        allDay: event.allDay,
-        category: "personal", // Google events don't have categories
+  const handleEditGoogleEvent = useCallback((event: ExternalCalendarEvent) => {
+    setIsEditingGoogleEvent(true);
+    setEventToEdit({
+      id: event.id,
+      title: event.title,
+      description: event.description,
+      location: event.location,
+      startTime: event.start,
+      endTime: event.end,
+      allDay: event.allDay,
+      category: "personal", // Google events don't have categories
+    });
+    setEditDialogOpen(true);
+  }, []);
+
+  // Create meeting from scheduler
+  const handleCreateMeetingEvent = useCallback(
+    async (eventData: {
+      title: string;
+      startTime: string;
+      endTime: string;
+      category: string;
+    }) => {
+      const res = await fetch("/api/calendar/app-events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(eventData),
       });
-      setEditDialogOpen(true);
+
+      if (!res.ok) {
+        throw new Error("Failed to create meeting event");
+      }
+
+      // Refresh events
+      await fetchAppEvents();
     },
-    [],
+    [fetchAppEvents],
   );
 
   const handleMonthChange = useCallback((year: number, month: number) => {
@@ -526,6 +552,17 @@ export function DashboardClient({
           currentMonth={calendarMonth.month}
           onHasWritePermissionChange={handleGoogleWritePermissionChange}
         />
+        {/* Meeting Scheduler Button */}
+        {calendarTab === "app" && (
+          <button
+            type="button"
+            onClick={() => setMeetingSchedulerOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            <RiCalendarScheduleLine className="w-4 h-4" />
+            {t.meetingSchedulerButton}
+          </button>
+        )}
       </div>
 
       {/* Calendar + Right Panel */}
@@ -861,6 +898,15 @@ export function DashboardClient({
         language={language}
         onSave={handleSaveEditedEvent}
         isGoogleEvent={isEditingGoogleEvent}
+      />
+
+      {/* Meeting Scheduler Dialog */}
+      <MeetingSchedulerDialog
+        open={meetingSchedulerOpen}
+        onOpenChange={setMeetingSchedulerOpen}
+        language={language}
+        selectedDate={selectedDate}
+        onCreateEvent={handleCreateMeetingEvent}
       />
     </div>
   );
