@@ -89,10 +89,10 @@ export function ExternalCalendarPanel({
   }, [googleConnection, currentYear, currentMonth, onExternalEventsChange]);
 
   useEffect(() => {
-    if (activeTab === "google" && googleConnection) {
+    if (googleConnection) {
       fetchExternalEvents();
     }
-  }, [activeTab, googleConnection, fetchExternalEvents]);
+  }, [googleConnection, fetchExternalEvents]);
 
   // Check URL params for connection result
   useEffect(() => {

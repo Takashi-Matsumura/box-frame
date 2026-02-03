@@ -29,12 +29,16 @@ const categoryColors: Record<CalendarEvent["category"], string> = {
   birthday: "bg-pink-400",
 };
 
+export type CalendarViewMode = "month" | "day";
+
 interface DashboardCalendarProps {
   language: "en" | "ja";
   events: CalendarEvent[];
   onDateSelect?: (date: string) => void;
   selectedDate: string | null;
   onMonthChange?: (year: number, month: number) => void;
+  viewMode?: CalendarViewMode;
+  onViewModeChange?: (mode: CalendarViewMode) => void;
 }
 
 export function DashboardCalendar({
@@ -43,6 +47,8 @@ export function DashboardCalendar({
   onDateSelect,
   selectedDate,
   onMonthChange,
+  viewMode = "month",
+  onViewModeChange,
 }: DashboardCalendarProps) {
   const t = dashboardTranslations[language];
   const today = new Date();
@@ -144,6 +150,15 @@ export function DashboardCalendar({
     [currentYear, currentMonth, onDateSelect],
   );
 
+  const handleDateDoubleClick = useCallback(
+    (day: number) => {
+      const dateStr = formatDateStr(currentYear, currentMonth, day);
+      onDateSelect?.(dateStr);
+      onViewModeChange?.("day");
+    },
+    [currentYear, currentMonth, onDateSelect, onViewModeChange],
+  );
+
   const monthLabel =
     language === "ja"
       ? `${currentYear}年 ${t.monthNames[currentMonth]}`
@@ -157,15 +172,53 @@ export function DashboardCalendar({
           <Button variant="outline" size="sm" onClick={goToPrevMonth}>
             <RiArrowLeftSLine className="w-4 h-4" />
           </Button>
+          <h2 className="text-lg font-semibold">{monthLabel}</h2>
           <Button variant="outline" size="sm" onClick={goToNextMonth}>
             <RiArrowRightSLine className="w-4 h-4" />
           </Button>
-          <h2 className="text-lg font-semibold ml-2">{monthLabel}</h2>
         </div>
-        <Button variant="outline" size="sm" onClick={goToToday}>
-          <RiCalendarLine className="w-4 h-4 mr-1" />
-          {t.todayButton}
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-md border overflow-hidden">
+            <button
+              type="button"
+              onClick={() => onViewModeChange?.("month")}
+              className={cn(
+                "px-2.5 py-1 text-xs font-medium transition-colors",
+                viewMode === "month"
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-accent",
+              )}
+            >
+              {t.viewMonth}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const dateToUse =
+                  selectedDate ||
+                  formatDateStr(
+                    today.getFullYear(),
+                    today.getMonth(),
+                    today.getDate(),
+                  );
+                onDateSelect?.(dateToUse);
+                onViewModeChange?.("day");
+              }}
+              className={cn(
+                "px-2.5 py-1 text-xs font-medium transition-colors border-l",
+                viewMode === "day"
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-accent",
+              )}
+            >
+              {t.viewDay}
+            </button>
+          </div>
+          <Button variant="outline" size="sm" onClick={goToToday}>
+            <RiCalendarLine className="w-4 h-4 mr-1" />
+            {t.todayButton}
+          </Button>
+        </div>
       </div>
 
       {/* Week days header */}
@@ -206,22 +259,24 @@ export function DashboardCalendar({
               key={day}
               type="button"
               onClick={() => handleDateClick(day)}
+              onDoubleClick={() => handleDateDoubleClick(day)}
               className={cn(
                 "h-20 w-full rounded-lg text-sm relative transition-colors p-1 text-left flex flex-col",
                 "hover:bg-accent/50 cursor-pointer",
-                "border border-transparent",
+                "border border-gray-200 dark:border-transparent",
                 dayOfWeek === 0 && "text-red-500",
                 dayOfWeek === 6 && "text-blue-500",
                 isToday && "bg-primary/5 border-primary",
-                isSelected && !isToday && "bg-accent border-accent-foreground/20",
+                isSelected &&
+                  !isToday &&
+                  "bg-accent border-accent-foreground/20",
                 isSelected && isToday && "bg-primary/10 border-primary",
               )}
             >
               <span
                 className={cn(
                   "inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium",
-                  isToday &&
-                    "bg-primary text-primary-foreground",
+                  isToday && "bg-primary text-primary-foreground",
                 )}
               >
                 {day}

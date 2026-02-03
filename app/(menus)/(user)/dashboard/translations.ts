@@ -45,6 +45,23 @@ export const dashboardTranslations = {
     calendarDisconnect: "Disconnect",
     calendarExternal: "External",
     calendarAllDay: "All day",
+    // Day view
+    viewMonth: "Month",
+    viewDay: "Day",
+    backToMonth: "Back to month",
+    prevDay: "Previous day",
+    nextDay: "Next day",
+    allDaySection: "All day",
+    // Concierge
+    tabEvents: "Events",
+    tabConcierge: "Concierge",
+    conciergeTitle: "AI Concierge",
+    conciergePlaceholder: "Ask anything...",
+    conciergeSend: "Send",
+    conciergeStop: "Stop",
+    conciergeWelcome:
+      "I'm your calendar concierge. Ask me anything about your schedule!",
+    conciergeError: "An error occurred. Please try again.",
   },
   ja: {
     title: "ダッシュボード",
@@ -92,6 +109,23 @@ export const dashboardTranslations = {
     calendarDisconnect: "接続解除",
     calendarExternal: "外部",
     calendarAllDay: "終日",
+    // Day view
+    viewMonth: "月",
+    viewDay: "日",
+    backToMonth: "月表示に戻る",
+    prevDay: "前日",
+    nextDay: "翌日",
+    allDaySection: "終日",
+    // Concierge
+    tabEvents: "イベント",
+    tabConcierge: "コンシェルジュ",
+    conciergeTitle: "AIコンシェルジュ",
+    conciergePlaceholder: "質問を入力...",
+    conciergeSend: "送信",
+    conciergeStop: "停止",
+    conciergeWelcome:
+      "カレンダーコンシェルジュです。スケジュールに関することは何でもお聞きください！",
+    conciergeError: "エラーが発生しました。もう一度お試しください。",
   },
 } as const;
 
