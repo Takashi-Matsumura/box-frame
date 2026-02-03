@@ -28,6 +28,7 @@ export const authConfig = {
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
     }),
   ],
+  useSecureCookies: false, // HTTP (port 80) でも認証を可能にする
   session: {
     strategy: "jwt",
     maxAge: 24 * 60 * 60, // 1日（24時間）

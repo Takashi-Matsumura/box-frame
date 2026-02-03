@@ -50,13 +50,14 @@ services:
       start_period: 40s
 
   # ----------------------------------------
-  # nginx reverse proxy (HTTPS)
+  # nginx reverse proxy (HTTP/HTTPS)
   # ----------------------------------------
   nginx:
     image: nginx:alpine
     container_name: box2-nginx
     restart: unless-stopped
     ports:
+      - "80:80"
       - "443:443"
     volumes:
       - ./docker/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
