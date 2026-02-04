@@ -647,19 +647,19 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={() => setShowMergeDialog(true)}
+                >
+                  {t.merge}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => {
                     setShowAutoAssignDialog(true);
                     fetchAutoAssignPreview();
                   }}
                 >
                   {t.autoAssign}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowMergeDialog(true)}
-                >
-                  {t.merge}
                 </Button>
                 <Button size="sm" onClick={() => setShowPublishDialog(true)}>
                   {t.setPublishDate}
@@ -1328,7 +1328,7 @@ export function OrganizeTab({ organizationId, language, t }: OrganizeTabProps) {
         open={showAutoAssignDialog}
         onOpenChange={setShowAutoAssignDialog}
       >
-        <DialogContent className="sm:max-w-[550px]">
+        <DialogContent className="sm:max-w-[650px]">
           <DialogHeader>
             <DialogTitle>{t.autoAssignTitle}</DialogTitle>
           </DialogHeader>

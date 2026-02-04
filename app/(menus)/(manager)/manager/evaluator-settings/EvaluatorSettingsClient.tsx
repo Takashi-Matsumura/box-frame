@@ -178,6 +178,8 @@ export default function EvaluatorSettingsClient({
 
   // 評価者検索用
   const [evaluatorSearchTerm, setEvaluatorSearchTerm] = useState("");
+  // 自部門のみフィルター（デフォルトON）
+  const [sameDeptOnly, setSameDeptOnly] = useState(true);
 
   const fetchData = useCallback(async (showLoading = true) => {
     if (showLoading) {
@@ -752,7 +754,7 @@ export default function EvaluatorSettingsClient({
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>{t.changeEvaluator}</DialogTitle>
+            <DialogTitle>{t.customEvaluatorSettings}</DialogTitle>
           </DialogHeader>
 
           {selectedEmployee && (
@@ -851,25 +853,61 @@ export default function EvaluatorSettingsClient({
                   const selectedEvaluator = managers.find(
                     (m) => m.id === formData.evaluatorId,
                   );
+
+                  // sameDeptOnlyがONの場合は自部門のみ表示
+                  // 役員は自部門フィルター時は非表示
+                  const filteredExecutives = sameDeptOnly ? [] : executives;
+                  // 自部門の管理職（otherByDeptから同じ部門のみ抽出）
+                  const filteredOtherByDept = sameDeptOnly
+                    ? new Map(
+                        Array.from(otherByDept.entries()).filter(
+                          ([_, deptManagers]) =>
+                            deptManagers.some(
+                              (m) =>
+                                m.departmentId ===
+                                selectedEmployee.departmentId,
+                            ),
+                        ),
+                      )
+                    : otherByDept;
+
                   const hasResults =
-                    executives.length > 0 ||
+                    filteredExecutives.length > 0 ||
                     sameDeptManagers.length > 0 ||
-                    otherByDept.size > 0;
+                    filteredOtherByDept.size > 0;
 
                   return (
                     <div className="border rounded-md">
-                      {/* 検索入力 */}
+                      {/* 検索入力とフィルタートグル */}
                       <div className="p-2 border-b">
-                        <div className="relative">
-                          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                          <Input
-                            placeholder={t.searchEmployee}
-                            value={evaluatorSearchTerm}
-                            onChange={(e) =>
-                              setEvaluatorSearchTerm(e.target.value)
-                            }
-                            className="pl-8 h-8"
-                          />
+                        <div className="flex items-center gap-2">
+                          {/* 自部門のみトグル */}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Switch
+                              id="sameDeptOnly"
+                              checked={sameDeptOnly}
+                              onCheckedChange={setSameDeptOnly}
+                              className="scale-75"
+                            />
+                            <Label
+                              htmlFor="sameDeptOnly"
+                              className="text-xs text-muted-foreground cursor-pointer whitespace-nowrap"
+                            >
+                              {t.sameDepartmentOnly}
+                            </Label>
+                          </div>
+                          {/* 検索入力 */}
+                          <div className="relative flex-1">
+                            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Input
+                              placeholder={t.searchEmployee}
+                              value={evaluatorSearchTerm}
+                              onChange={(e) =>
+                                setEvaluatorSearchTerm(e.target.value)
+                              }
+                              className="pl-8 h-8"
+                            />
+                          </div>
                         </div>
                       </div>
 
@@ -941,7 +979,7 @@ export default function EvaluatorSettingsClient({
                               </div>
                             )}
                             {/* その他の部門グループ */}
-                            {Array.from(otherByDept.entries()).map(
+                            {Array.from(filteredOtherByDept.entries()).map(
                               ([deptName, deptManagers]) => (
                                 <div key={deptName} className="mb-2">
                                   <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
@@ -977,12 +1015,12 @@ export default function EvaluatorSettingsClient({
                               ),
                             )}
                             {/* 役員グループ（最下部に表示） */}
-                            {executives.length > 0 && (
+                            {filteredExecutives.length > 0 && (
                               <div className="mb-2">
                                 <div className="px-2 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
                                   {t.executives}
                                 </div>
-                                {executives.map((manager) => (
+                                {filteredExecutives.map((manager) => (
                                   <button
                                     key={manager.id}
                                     type="button"

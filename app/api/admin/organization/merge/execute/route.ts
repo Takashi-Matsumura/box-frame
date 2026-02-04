@@ -30,8 +30,7 @@ export async function POST(request: Request) {
     }
 
     // Verify confirmation text
-    const validConfirmations = ["Merge", "マージ実行"];
-    if (!validConfirmations.includes(confirmationText)) {
+    if (confirmationText !== "MERGE") {
       return NextResponse.json(
         { error: "Invalid confirmation text" },
         { status: 400 },

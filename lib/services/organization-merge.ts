@@ -99,7 +99,7 @@ export interface DuplicateEmployee {
   };
 }
 
-export type DuplicateResolution = "keepTarget" | "keepSource" | "skipSource";
+export type DuplicateResolution = "keepTarget" | "keepSource" | "skipSource" | "keepBoth";
 
 export interface DuplicateResolutionMap {
   [sourceEmployeeId: string]: DuplicateResolution;
@@ -395,6 +395,7 @@ export async function generateMergePreview(
     ? sourceEmployees.filter((emp) => {
         const resolution = duplicateResolutions[emp.id];
         // keepTarget or skipSource means don't transfer this employee
+        // keepSource or keepBoth means transfer this employee
         if (resolution === "keepTarget" || resolution === "skipSource") {
           return false;
         }
@@ -752,6 +753,8 @@ export async function executeMerge(
         continue;
       }
 
+      // keepBoth: transfer as-is (both employees remain active)
+      // keepSource: deactivate target employee, then transfer
       if (resolution === "keepSource") {
         // Find and deactivate the target employee with the same name
         const targetDup = await tx.employee.findFirst({

@@ -106,7 +106,7 @@ interface DuplicateEmployee {
   };
 }
 
-type DuplicateResolution = "keepTarget" | "keepSource" | "skipSource";
+type DuplicateResolution = "keepTarget" | "keepSource" | "skipSource" | "keepBoth";
 
 interface MergeDialogProps {
   open: boolean;
@@ -312,7 +312,7 @@ export function MergeDialog({
 
   // Execute merge
   const executeMerge = async () => {
-    const expectedText = language === "ja" ? "マージ実行" : "Merge";
+    const expectedText = "MERGE";
     if (confirmationText !== expectedText) return;
 
     try {
@@ -777,6 +777,25 @@ export function MergeDialog({
                               />
                               <span className="text-sm">{t.skipSource}</span>
                             </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name={`resolution-${dup.sourceEmployee.id}`}
+                                checked={
+                                  duplicateResolutions[
+                                    dup.sourceEmployee.id
+                                  ] === "keepBoth"
+                                }
+                                onChange={() =>
+                                  updateResolution(
+                                    dup.sourceEmployee.id,
+                                    "keepBoth",
+                                  )
+                                }
+                                className="accent-primary"
+                              />
+                              <span className="text-sm">{t.keepBoth}</span>
+                            </label>
                           </div>
                         </div>
                       </div>
@@ -904,7 +923,7 @@ export function MergeDialog({
                 <Input
                   value={confirmationText}
                   onChange={(e) => setConfirmationText(e.target.value)}
-                  placeholder={language === "ja" ? "マージ実行" : "Merge"}
+                  placeholder="MERGE"
                   className="text-center"
                 />
               </div>
@@ -961,11 +980,7 @@ export function MergeDialog({
             ) : (
               <Button
                 onClick={executeMerge}
-                disabled={
-                  executing ||
-                  confirmationText !==
-                    (language === "ja" ? "マージ実行" : "Merge")
-                }
+                disabled={executing || confirmationText !== "MERGE"}
                 className="bg-destructive hover:bg-destructive/90"
               >
                 {executing ? t.merging : t.executeMerge}

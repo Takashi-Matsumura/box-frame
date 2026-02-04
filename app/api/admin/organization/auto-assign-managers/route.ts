@@ -192,13 +192,12 @@ export async function POST(request: Request) {
               )
               .sort(sortByPositionCode);
 
-            // 見つからない場合は、部全体から探す
+            // 見つからない場合は、部（Section）全体から探す（課に所属していなくても）
             if (courseHeadCandidates.length === 0) {
               courseHeadCandidates = employees
                 .filter(
                   (emp) =>
                     emp.sectionId === section.id &&
-                    emp.courseId === course.id &&
                     matchesKeywords(emp.position, courseHeadKeywords),
                 )
                 .sort(sortByPositionCode);
@@ -439,6 +438,18 @@ export async function GET(request: Request) {
             )
             .sort(sortByPositionCode);
 
+          // 見つからない場合は、部（Section）全体から探す
+          if (courseHeadCandidates.length === 0) {
+            courseHeadCandidates = employees
+              .filter(
+                (emp) =>
+                  emp.sectionId === section.id &&
+                  matchesKeywords(emp.position, courseHeadKeywords),
+              )
+              .sort(sortByPositionCode);
+          }
+
+          // 課の名前と役職名が一致するか確認
           if (courseHeadCandidates.length === 0) {
             const courseBaseName = course.name
               .replace(/課$/, "")

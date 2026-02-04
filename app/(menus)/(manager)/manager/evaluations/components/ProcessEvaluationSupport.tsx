@@ -142,7 +142,7 @@ export function ProcessEvaluationSupport({
         id: "1",
         name: defaultProcessName,
         checks: {},
-        achievement: "T2",
+        achievement: "", // 初期状態では未選択
       },
     ],
   );
@@ -185,7 +185,7 @@ export function ProcessEvaluationSupport({
         id: String(Date.now()),
         name: "",
         checks: {},
-        achievement: "T2",
+        achievement: "", // 初期状態では未選択
       },
     ]);
   };
@@ -234,7 +234,10 @@ export function ProcessEvaluationSupport({
         const scores = category
           ? parseScores(category.scores)
           : { T4: 5.0, T3: 3.5, T2: 2.5, T1: 1.0 };
-        const processScore = scores[process.achievement] || 2.5;
+        // 達成度未選択の場合はスコア0
+        const processScore = process.achievement
+          ? scores[process.achievement] || 0
+          : 0;
         const isExpanded = expandedChecks[process.id] ?? false;
 
         return (
@@ -403,7 +406,7 @@ export function ProcessEvaluationSupport({
                   {language === "ja" ? "プロセススコア:" : "Process Score:"}
                 </span>
                 <span className="text-xl font-bold text-green-600 dark:text-green-400">
-                  {processScore.toFixed(1)}
+                  {process.achievement ? processScore.toFixed(1) : "-"}
                 </span>
               </div>
             </CardContent>
