@@ -6,6 +6,7 @@ import { useSidebarStore } from "@/lib/stores/sidebar-store";
 import type { AppMenu } from "@/types/module";
 import { SidebarHeaderContent } from "./sidebar/SidebarHeaderContent";
 import { SidebarMenuGroup } from "./sidebar/SidebarMenuGroup";
+import { SidebarNavigationProvider } from "./sidebar/SidebarNavigationContext";
 import { SidebarUserSection } from "./sidebar/SidebarUserSection";
 
 interface AppSidebarProps {
@@ -33,39 +34,41 @@ export function AppSidebar({
   const isAdmin = session.user.role === "ADMIN";
 
   return (
-    <Sidebar
-      collapsible="icon"
-      className="border-r border-sidebar-border"
-      style={
-        {
-          "--sidebar-width": `${width}px`,
-        } as React.CSSProperties
-      }
-    >
-      <SidebarHeaderContent language={language} />
+    <SidebarNavigationProvider>
+      <Sidebar
+        collapsible="icon"
+        className="border-r border-sidebar-border"
+        style={
+          {
+            "--sidebar-width": `${width}px`,
+          } as React.CSSProperties
+        }
+      >
+        <SidebarHeaderContent language={language} />
 
-      <SidebarContent>
-        {menuGroups.map((group) => {
-          const menus = groupedMenus[group.id] || [];
-          return (
-            <SidebarMenuGroup
-              key={group.id}
-              group={group}
-              menus={menus}
-              language={language}
-              isAdmin={isAdmin}
-            />
-          );
-        })}
-      </SidebarContent>
+        <SidebarContent>
+          {menuGroups.map((group) => {
+            const menus = groupedMenus[group.id] || [];
+            return (
+              <SidebarMenuGroup
+                key={group.id}
+                group={group}
+                menus={menus}
+                language={language}
+                isAdmin={isAdmin}
+              />
+            );
+          })}
+        </SidebarContent>
 
-      <SidebarUserSection
-        session={session}
-        language={language}
-        mustChangePassword={mustChangePassword}
-      />
+        <SidebarUserSection
+          session={session}
+          language={language}
+          mustChangePassword={mustChangePassword}
+        />
 
-      <SidebarRail />
-    </Sidebar>
+        <SidebarRail />
+      </Sidebar>
+    </SidebarNavigationProvider>
   );
 }

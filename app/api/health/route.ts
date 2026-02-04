@@ -12,6 +12,6 @@ export async function GET() {
       version: process.env.npm_package_version || "1.0.0",
       buildId: process.env.NEXT_BUILD_ID || "dev",
     },
-    { status: 200 }
+    { status: 200 },
   );
 }

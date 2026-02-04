@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Key } from "lucide-react";
+import { ChevronRight, Key, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -17,6 +17,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import type { AppMenu } from "@/types/module";
+import { useSidebarNavigation } from "./SidebarNavigationContext";
 
 // TailwindクラスからHEX値へのマッピング
 const colorMap: Record<string, string> = {
@@ -42,15 +43,36 @@ export function SidebarMenuItemComponent({
 }: SidebarMenuItemComponentProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const pathname = usePathname();
+  const { loadingPath, setLoadingPath } = useSidebarNavigation();
 
   const hasChildren = menu.children && menu.children.length > 0;
   const label = language === "ja" ? menu.nameJa : menu.name;
   const isImplemented = menu.isImplemented !== false;
   const isAccessKeyGranted = menu.isAccessKeyGranted === true;
   const isActive = pathname === menu.path;
+  const isLoading = loadingPath === menu.path;
+
+  // メニュークリック時のハンドラ
+  const handleMenuClick = (path: string) => {
+    // 現在のパスと同じ場合はローディング表示しない
+    if (pathname !== path) {
+      setLoadingPath(path);
+    }
+  };
 
   // メニューアイコンのレンダリング
-  const renderIcon = () => {
+  const renderIcon = (forPath?: string) => {
+    const isItemLoading = forPath ? loadingPath === forPath : isLoading;
+
+    // ローディング中はスピナーを表示
+    if (isItemLoading) {
+      return (
+        <div className="relative flex items-center justify-center size-5">
+          <Loader2 className="size-4 animate-spin text-primary" />
+        </div>
+      );
+    }
+
     if (!menu.icon) return null;
 
     // TailwindクラスをHEX値に変換
@@ -101,20 +123,29 @@ export function SidebarMenuItemComponent({
           </CollapsibleTrigger>
           <CollapsibleContent>
             <SidebarMenuSub>
-              {menu.children?.map((child) => (
-                <SidebarMenuSubItem key={child.id}>
-                  <SidebarMenuSubButton
-                    asChild
-                    isActive={pathname === child.path}
-                  >
-                    <Link href={child.path}>
-                      <span>
-                        {language === "ja" ? child.nameJa : child.name}
-                      </span>
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-              ))}
+              {menu.children?.map((child) => {
+                const isChildLoading = loadingPath === child.path;
+                return (
+                  <SidebarMenuSubItem key={child.id}>
+                    <SidebarMenuSubButton
+                      asChild
+                      isActive={pathname === child.path}
+                    >
+                      <Link
+                        href={child.path}
+                        onClick={() => handleMenuClick(child.path)}
+                      >
+                        {isChildLoading && (
+                          <Loader2 className="size-3 animate-spin text-primary mr-1" />
+                        )}
+                        <span>
+                          {language === "ja" ? child.nameJa : child.name}
+                        </span>
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                );
+              })}
             </SidebarMenuSub>
           </CollapsibleContent>
         </SidebarMenuItem>
@@ -131,7 +162,7 @@ export function SidebarMenuItemComponent({
         isActive={isActive}
         className={!isImplemented ? "opacity-60" : ""}
       >
-        <Link href={menu.path}>
+        <Link href={menu.path} onClick={() => handleMenuClick(menu.path)}>
           {renderIcon()}
           <span className="truncate">{label}</span>
           {isAccessKeyGranted && (
