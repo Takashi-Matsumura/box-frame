@@ -1316,3 +1316,26 @@ CREATE INDEX "CalendarEvent_userId_startTime_endTime_idx" ON "CalendarEvent"("us
 
 -- AddForeignKey
 ALTER TABLE "CalendarEvent" ADD CONSTRAINT "CalendarEvent_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- CreateTable
+CREATE TABLE "Holiday" (
+    "id" TEXT NOT NULL,
+    "date" DATE NOT NULL,
+    "name" TEXT NOT NULL,
+    "nameEn" TEXT,
+    "type" TEXT NOT NULL DEFAULT 'national',
+    "description" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Holiday_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Holiday_date_type_name_key" ON "Holiday"("date", "type", "name");
+
+-- CreateIndex
+CREATE INDEX "Holiday_date_idx" ON "Holiday"("date");
+
+-- CreateIndex
+CREATE INDEX "Holiday_type_idx" ON "Holiday"("type");
