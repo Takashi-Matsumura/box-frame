@@ -75,6 +75,7 @@ export function HolidayManagerDialog({
   });
   const [saving, setSaving] = useState(false);
   const [translating, setTranslating] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   // Fetch holidays for selected year
   const fetchHolidays = useCallback(async () => {
@@ -219,6 +220,29 @@ export function HolidayManagerDialog({
     [language, fetchHolidays]
   );
 
+  // Auto-generate holidays using AI
+  const handleGenerateHolidays = useCallback(async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/calendar/holidays/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ year: selectedYear }),
+      });
+
+      if (res.ok) {
+        fetchHolidays();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to generate holidays");
+      }
+    } catch (error) {
+      console.error("Failed to generate holidays:", error);
+    } finally {
+      setGenerating(false);
+    }
+  }, [selectedYear, fetchHolidays]);
+
   const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i - 2);
 
   return (
@@ -234,12 +258,11 @@ export function HolidayManagerDialog({
 
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Label>{t("Year", "年", language)}</Label>
               <Select
                 value={String(selectedYear)}
                 onValueChange={(v) => setSelectedYear(Number(v))}
               >
-                <SelectTrigger className="w-[120px]">
+                <SelectTrigger className="w-[100px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -250,11 +273,31 @@ export function HolidayManagerDialog({
                   ))}
                 </SelectContent>
               </Select>
+              <Label className="text-muted-foreground">{t("Year", "年", language)}</Label>
             </div>
-            <Button onClick={handleCreate} size="sm">
-              <Plus className="h-4 w-4 mr-1" />
-              {t("Add Holiday", "祝日を追加", language)}
-            </Button>
+            <div className="flex items-center gap-2">
+              {holidays.length === 0 && !loading && (
+                <Button
+                  onClick={handleGenerateHolidays}
+                  size="sm"
+                  variant="outline"
+                  disabled={generating}
+                >
+                  {generating ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Calendar className="h-4 w-4 mr-1" />
+                  )}
+                  {generating
+                    ? t("Generating...", "生成中...", language)
+                    : t("Auto-generate", "祝日自動生成", language)}
+                </Button>
+              )}
+              <Button onClick={handleCreate} size="sm">
+                <Plus className="h-4 w-4 mr-1" />
+                {t("Add Holiday", "祝日を追加", language)}
+              </Button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-auto">
@@ -291,11 +334,11 @@ export function HolidayManagerDialog({
                     <TableRow key={holiday.id}>
                       <TableCell className="font-mono">{holiday.date}</TableCell>
                       <TableCell>
-                        <div>
+                        <div className="flex flex-col">
                           <span className="font-medium">{holiday.name}</span>
                           {holiday.nameEn && (
-                            <span className="text-muted-foreground text-sm ml-2">
-                              ({holiday.nameEn})
+                            <span className="text-muted-foreground text-xs">
+                              {holiday.nameEn}
                             </span>
                           )}
                         </div>
