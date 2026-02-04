@@ -244,8 +244,12 @@ export function DayView({
 
       // App calendar events (database events with time)
       for (const ev of appEvents) {
-        // Parse date from ISO string (handle both "2026-02-03T16:00:00" and "2026-02-03T16:00:00.000Z")
-        const evDate = ev.startTime.split("T")[0];
+        // Use Date object for proper timezone handling
+        const startDateObj = new Date(ev.startTime);
+        const evYear = startDateObj.getFullYear();
+        const evMonth = String(startDateObj.getMonth() + 1).padStart(2, "0");
+        const evDay = String(startDateObj.getDate()).padStart(2, "0");
+        const evDate = `${evYear}-${evMonth}-${evDay}`;
         if (evDate !== date) continue;
 
         if (ev.allDay) {
@@ -256,12 +260,12 @@ export function DayView({
             description: ev.description,
           });
         } else {
-          // Extract hours/minutes directly from ISO string to avoid timezone conversion
-          // Format: "2026-02-03T16:30:00" or "2026-02-03T16:30:00.000Z"
-          const startTimePart = ev.startTime.split("T")[1];
-          const endTimePart = ev.endTime.split("T")[1];
-          const [startH, startM] = startTimePart.split(":").map(Number);
-          const [endH, endM] = endTimePart.split(":").map(Number);
+          // Use Date object for proper timezone handling
+          const endDateObj = new Date(ev.endTime);
+          const startH = startDateObj.getHours();
+          const startM = startDateObj.getMinutes();
+          const endH = endDateObj.getHours();
+          const endM = endDateObj.getMinutes();
           const startHour = startH + startM / 60;
           const endHour = endH + endM / 60;
           timed.push({

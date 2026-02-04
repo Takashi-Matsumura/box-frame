@@ -85,10 +85,17 @@ export function EventEditDialog({
       setTitle(event.title);
       setDescription(event.description || "");
       setLocation(event.location || "");
-      // Extract date and time from ISO string
-      const startDate = event.startTime.split("T")[0];
-      const startTimeStr = event.startTime.split("T")[1]?.slice(0, 5) || "09:00";
-      const endTimeStr = event.endTime.split("T")[1]?.slice(0, 5) || "10:00";
+      // Extract date and time from ISO string using Date object for proper timezone handling
+      const startDateObj = new Date(event.startTime);
+      const endDateObj = new Date(event.endTime);
+      // Get local date in YYYY-MM-DD format
+      const year = startDateObj.getFullYear();
+      const month = String(startDateObj.getMonth() + 1).padStart(2, "0");
+      const day = String(startDateObj.getDate()).padStart(2, "0");
+      const startDate = `${year}-${month}-${day}`;
+      // Get local time in HH:MM format
+      const startTimeStr = `${String(startDateObj.getHours()).padStart(2, "0")}:${String(startDateObj.getMinutes()).padStart(2, "0")}`;
+      const endTimeStr = `${String(endDateObj.getHours()).padStart(2, "0")}:${String(endDateObj.getMinutes()).padStart(2, "0")}`;
       setDate(startDate);
       setStartTime(startTimeStr);
       setEndTime(endTimeStr);
@@ -102,17 +109,24 @@ export function EventEditDialog({
 
     setIsSaving(true);
     try {
-      const startDateTime = allDay
-        ? `${date}T00:00:00`
-        : `${date}T${startTime}:00`;
-      const endDateTime = allDay ? `${date}T23:59:59` : `${date}T${endTime}:00`;
+      // Create Date objects from local date and time, then convert to ISO string
+      const [startHour, startMin] = startTime.split(":").map(Number);
+      const [endHour, endMin] = endTime.split(":").map(Number);
+      const [year, month, day] = date.split("-").map(Number);
+
+      const startDateObj = allDay
+        ? new Date(year, month - 1, day, 0, 0, 0)
+        : new Date(year, month - 1, day, startHour, startMin, 0);
+      const endDateObj = allDay
+        ? new Date(year, month - 1, day, 23, 59, 59)
+        : new Date(year, month - 1, day, endHour, endMin, 0);
 
       await onSave(event.id, {
         title: title.trim(),
         description: description.trim() || undefined,
         location: location.trim() || undefined,
-        startTime: startDateTime,
-        endTime: endDateTime,
+        startTime: startDateObj.toISOString(),
+        endTime: endDateObj.toISOString(),
         allDay,
         category,
       });

@@ -42,6 +42,7 @@
 | 機能 | 説明 |
 |------|------|
 | カレンダー | 月表示・日表示の切替、イベント表示 |
+| 祝日表示 | 日本の祝日・会社休日をカレンダーに表示 |
 | アプリカレンダー | イベントの作成・編集・削除（CRUD） |
 | 外部カレンダー連携 | Google Calendar連携（OAuth、CRUD対応） |
 | AIコンシェルジュ | カレンダーデータをコンテキストとしたAIチャット |
@@ -214,6 +215,45 @@ lib/addon-modules/calendar/
   ├── module.tsx            # カレンダーモジュール定義
   └── index.ts              # エクスポート
 ```
+
+## 祝日管理
+
+カレンダーに祝日を表示し、システム環境から管理する機能。
+
+### 機能概要
+
+| 機能 | 説明 |
+|------|------|
+| 祝日表示 | 月表示カレンダーに祝日名を赤色で表示 |
+| 祝日管理 | システム環境から祝日の追加・編集・削除 |
+| AI翻訳 | 祝日名の日本語→英語翻訳 |
+
+### データモデル（Holiday）
+
+```prisma
+model Holiday {
+  id          String   @id @default(cuid())
+  date        DateTime @db.Date
+  name        String   // 日本語名
+  nameEn      String?  // 英語名
+  type        String   @default("national") // national: 国の祝日, company: 会社休日
+  description String?
+}
+```
+
+### API エンドポイント
+
+| メソッド | パス | 説明 |
+|---------|------|------|
+| GET | `/api/calendar/holidays` | 祝日一覧取得（startDate, endDate指定可） |
+| POST | `/api/calendar/holidays` | 祝日作成（ADMIN only） |
+| PUT | `/api/calendar/holidays/[id]` | 祝日更新（ADMIN only） |
+| DELETE | `/api/calendar/holidays/[id]` | 祝日削除（ADMIN only） |
+
+### 管理画面
+
+- 場所: システム環境 (`/admin?tab=system`) → 祝日管理セクション
+- 機能: 年別表示、祝日の追加・編集・削除、AI翻訳ボタン
 
 ## ディレクトリ構造
 

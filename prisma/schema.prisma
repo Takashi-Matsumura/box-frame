@@ -1289,6 +1289,26 @@ model CalendarEvent {
 }
 
 // ========================================
+// 祝日・休日マスタ
+// ========================================
+
+model Holiday {
+  id          String   @id @default(cuid())
+  date        DateTime @db.Date // 日付のみ
+  name        String   // 祝日名（日本語）
+  nameEn      String?  // 英語名（オプション）
+  type        String   @default("national") // national: 国の祝日, company: 会社休日
+  description String?  // 説明
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([date, type, name]) // 同じ日・タイプ・名前の重複防止
+  @@index([date])
+  @@index([type])
+}
+
+// ========================================
 // RAG（生成AIモジュール - 汎用）
 // ========================================
 

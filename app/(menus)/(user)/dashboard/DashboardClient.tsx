@@ -115,9 +115,11 @@ function externalToCalendarEvents(
 // Convert app calendar events to CalendarEvent format for month view
 function appToCalendarEvents(events: AppCalendarEvent[]): CalendarEvent[] {
   return events.map((e) => {
-    // Extract date from ISO string (YYYY-MM-DD part)
-    const startDate = e.startTime.split("T")[0];
-    const endDate = e.endTime.split("T")[0];
+    // Use Date object for proper timezone handling
+    const startDateObj = new Date(e.startTime);
+    const endDateObj = new Date(e.endTime);
+    const startDate = `${startDateObj.getFullYear()}-${String(startDateObj.getMonth() + 1).padStart(2, "0")}-${String(startDateObj.getDate()).padStart(2, "0")}`;
+    const endDate = `${endDateObj.getFullYear()}-${String(endDateObj.getMonth() + 1).padStart(2, "0")}-${String(endDateObj.getDate()).padStart(2, "0")}`;
 
     return {
       id: e.id,
@@ -154,6 +156,11 @@ export function DashboardClient({
   // App calendar events from database
   const [appEvents, setAppEvents] = useState<AppCalendarEvent[]>([]);
   const [, setIsLoadingEvents] = useState(false);
+
+  // Holidays from database
+  const [holidays, setHolidays] = useState<
+    { id: string; date: string; name: string; nameEn?: string; type: string }[]
+  >([]);
 
   // Google Calendar write permission state
   const [googleHasWritePermission, setGoogleHasWritePermission] =
@@ -243,10 +250,36 @@ export function DashboardClient({
     }
   }, [calendarMonth.year, calendarMonth.month]);
 
-  // Fetch events when month changes
+  // Fetch holidays
+  const fetchHolidays = useCallback(async () => {
+    try {
+      // Fetch holidays for current month +/- 1 month
+      const startDate = new Date(
+        calendarMonth.year,
+        calendarMonth.month - 1,
+        1,
+      );
+      const endDate = new Date(calendarMonth.year, calendarMonth.month + 2, 0);
+      const startStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}-01`;
+      const endStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`;
+
+      const res = await fetch(
+        `/api/calendar/holidays?startDate=${startStr}&endDate=${endStr}`,
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setHolidays(data.holidays || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch holidays:", error);
+    }
+  }, [calendarMonth.year, calendarMonth.month]);
+
+  // Fetch events and holidays when month changes
   useEffect(() => {
     fetchAppEvents();
-  }, [fetchAppEvents]);
+    fetchHolidays();
+  }, [fetchAppEvents, fetchHolidays]);
 
   // Handle event creation from DayView drag
   const handleCreateEvent = useCallback(
@@ -581,6 +614,7 @@ export function DashboardClient({
               <DashboardCalendar
                 language={language}
                 events={displayEvents}
+                holidays={holidays}
                 onDateSelect={setSelectedDate}
                 selectedDate={selectedDate}
                 onMonthChange={handleMonthChange}
@@ -744,7 +778,13 @@ export function DashboardClient({
                             const timeDisplay = appEvent
                               ? appEvent.allDay
                                 ? t.calendarAllDay
-                                : `${appEvent.startTime.split("T")[1]?.slice(0, 5)} - ${appEvent.endTime.split("T")[1]?.slice(0, 5)}`
+                                : (() => {
+                                    const start = new Date(appEvent.startTime);
+                                    const end = new Date(appEvent.endTime);
+                                    const startStr = `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`;
+                                    const endStr = `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`;
+                                    return `${startStr} - ${endStr}`;
+                                  })()
                               : null;
 
                             return (

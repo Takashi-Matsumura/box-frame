@@ -49,9 +49,11 @@ function buildSystemPrompt(
   // App events with full time information
   const appLines: string[] = [];
   for (const ev of appEvents) {
-    const startDate = ev.startTime.split("T")[0];
-    const startTimePart = ev.startTime.split("T")[1]?.slice(0, 5) || "";
-    const endTimePart = ev.endTime.split("T")[1]?.slice(0, 5) || "";
+    const startDateObj = new Date(ev.startTime);
+    const endDateObj = new Date(ev.endTime);
+    const startDate = `${startDateObj.getFullYear()}-${String(startDateObj.getMonth() + 1).padStart(2, "0")}-${String(startDateObj.getDate()).padStart(2, "0")}`;
+    const startTimePart = `${String(startDateObj.getHours()).padStart(2, "0")}:${String(startDateObj.getMinutes()).padStart(2, "0")}`;
+    const endTimePart = `${String(endDateObj.getHours()).padStart(2, "0")}:${String(endDateObj.getMinutes()).padStart(2, "0")}`;
     const timeInfo = ev.allDay ? "（終日）" : ` ${startTimePart}-${endTimePart}`;
     const loc = ev.location ? ` [${ev.location}]` : "";
     const desc = ev.description ? `（${ev.description}）` : "";

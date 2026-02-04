@@ -184,6 +184,46 @@ async function main() {
     },
   });
 
+  // Create Japanese National Holidays for 2026
+  const holidays2026 = [
+    { date: "2026-01-01", name: "元日", nameEn: "New Year's Day" },
+    { date: "2026-01-12", name: "成人の日", nameEn: "Coming of Age Day" },
+    { date: "2026-02-11", name: "建国記念の日", nameEn: "National Foundation Day" },
+    { date: "2026-02-23", name: "天皇誕生日", nameEn: "Emperor's Birthday" },
+    { date: "2026-03-20", name: "春分の日", nameEn: "Vernal Equinox Day" },
+    { date: "2026-04-29", name: "昭和の日", nameEn: "Showa Day" },
+    { date: "2026-05-03", name: "憲法記念日", nameEn: "Constitution Memorial Day" },
+    { date: "2026-05-04", name: "みどりの日", nameEn: "Greenery Day" },
+    { date: "2026-05-05", name: "こどもの日", nameEn: "Children's Day" },
+    { date: "2026-05-06", name: "振替休日", nameEn: "Substitute Holiday" },
+    { date: "2026-07-20", name: "海の日", nameEn: "Marine Day" },
+    { date: "2026-08-11", name: "山の日", nameEn: "Mountain Day" },
+    { date: "2026-09-21", name: "敬老の日", nameEn: "Respect for the Aged Day" },
+    { date: "2026-09-22", name: "国民の休日", nameEn: "Citizens' Holiday" },
+    { date: "2026-09-23", name: "秋分の日", nameEn: "Autumnal Equinox Day" },
+    { date: "2026-10-12", name: "スポーツの日", nameEn: "Sports Day" },
+    { date: "2026-11-03", name: "文化の日", nameEn: "Culture Day" },
+    { date: "2026-11-23", name: "勤労感謝の日", nameEn: "Labor Thanksgiving Day" },
+  ];
+
+  // Check if any holidays exist
+  const existingHolidayCount = await prisma.holiday.count();
+  if (existingHolidayCount === 0) {
+    for (const holiday of holidays2026) {
+      await prisma.holiday.create({
+        data: {
+          date: new Date(holiday.date),
+          name: holiday.name,
+          nameEn: holiday.nameEn,
+          type: "national",
+        },
+      });
+    }
+    console.log(`\n🎌 Japanese Holidays: ${holidays2026.length} items created for 2026`);
+  } else {
+    console.log(`\n🎌 Japanese Holidays: Skipped (${existingHolidayCount} items already exist)`);
+  }
+
   console.log("✅ Database seeded successfully!");
   console.log("Created admin user:");
   console.log(`  - ${admin.email} (${admin.role})`);

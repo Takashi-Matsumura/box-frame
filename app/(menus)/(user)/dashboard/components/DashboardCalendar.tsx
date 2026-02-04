@@ -21,6 +21,14 @@ export interface CalendarEvent {
   actionUrl?: string;
 }
 
+export interface HolidayData {
+  id: string;
+  date: string; // YYYY-MM-DD
+  name: string;
+  nameEn?: string;
+  type: string; // national, company
+}
+
 const categoryColors: Record<CalendarEvent["category"], string> = {
   personal: "bg-green-500",
   visitor: "bg-purple-500",
@@ -34,6 +42,7 @@ export type CalendarViewMode = "month" | "day";
 interface DashboardCalendarProps {
   language: "en" | "ja";
   events: CalendarEvent[];
+  holidays?: HolidayData[];
   onDateSelect?: (date: string) => void;
   selectedDate: string | null;
   onMonthChange?: (year: number, month: number) => void;
@@ -44,6 +53,7 @@ interface DashboardCalendarProps {
 export function DashboardCalendar({
   language,
   events,
+  holidays = [],
   onDateSelect,
   selectedDate,
   onMonthChange,
@@ -141,6 +151,15 @@ export function DashboardCalendar({
     }
     return map;
   }, [events]);
+
+  // Build holidays map for quick lookup
+  const holidaysMap = useMemo(() => {
+    const map = new Map<string, HolidayData>();
+    for (const holiday of holidays) {
+      map.set(holiday.date, holiday);
+    }
+    return map;
+  }, [holidays]);
 
   const handleDateClick = useCallback(
     (day: number) => {
@@ -249,6 +268,8 @@ export function DashboardCalendar({
           const isToday = dateStr === todayStr;
           const isSelected = dateStr === selectedDate;
           const dayEvents = eventsMap.get(dateStr) || [];
+          const holiday = holidaysMap.get(dateStr);
+          const isHoliday = !!holiday;
           // Deduplicate by category for dots
           const uniqueCategories = [
             ...new Set(dayEvents.map((e) => e.category)),
@@ -264,8 +285,8 @@ export function DashboardCalendar({
                 "h-20 w-full rounded-lg text-sm relative transition-colors p-1 text-left flex flex-col",
                 "hover:bg-accent/50 cursor-pointer",
                 "border border-gray-200 dark:border-transparent",
-                dayOfWeek === 0 && "text-red-500",
-                dayOfWeek === 6 && "text-blue-500",
+                (dayOfWeek === 0 || isHoliday) && "text-red-500",
+                dayOfWeek === 6 && !isHoliday && "text-blue-500",
                 isToday && "bg-primary/5 border-primary",
                 isSelected &&
                   !isToday &&
@@ -281,6 +302,12 @@ export function DashboardCalendar({
               >
                 {day}
               </span>
+              {/* Holiday name */}
+              {holiday && (
+                <span className="text-[10px] text-red-500 leading-tight truncate w-full">
+                  {language === "ja" ? holiday.name : (holiday.nameEn || holiday.name)}
+                </span>
+              )}
               {/* Event dots */}
               {uniqueCategories.length > 0 && (
                 <div className="flex flex-wrap gap-0.5 mt-auto">

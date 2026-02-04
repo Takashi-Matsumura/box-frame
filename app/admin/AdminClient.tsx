@@ -2,10 +2,14 @@
 
 import type { AccessKey, Role } from "@prisma/client";
 import {
+  Calendar,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Edit3,
+  Info,
   Loader2,
+  Lock,
   Plus,
   Search,
   Sparkles,
@@ -21,6 +25,11 @@ import { UserRoleChanger } from "@/components/UserRoleChanger";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -58,6 +67,7 @@ import { useIsTabletOrMobile } from "@/hooks/use-mobile";
 import { getModuleIcon } from "@/lib/modules/icons";
 import { useSidebarStore } from "@/lib/stores/sidebar-store";
 import type { AppMenu, AppModule } from "@/types/module";
+import { HolidayManagerDialog } from "./components/HolidayManagerDialog";
 
 interface User {
   id: string;
@@ -358,6 +368,9 @@ export function AdminClient({
   const [aiSaving, setAiSaving] = useState(false);
   const [localEndpointInput, setLocalEndpointInput] = useState("");
   const [localModelInput, setLocalModelInput] = useState("");
+
+  // Holiday management dialog
+  const [holidayDialogOpen, setHolidayDialogOpen] = useState(false);
 
   // AI業務分析専用AI設定
   const [jaAiConfig, setJaAiConfig] = useState<{
@@ -1441,134 +1454,154 @@ export function AdminClient({
                 </div>
 
                 {/* システム情報 */}
-                <div className="space-y-4">
-                  <h2 className="text-2xl font-semibold">
-                    {t("System Information", "システム情報")}
-                  </h2>
-
-                  <div className="p-6 bg-muted rounded-lg">
-                    <div className="space-y-3 text-muted-foreground">
-                      <div className="flex justify-between items-center py-2 border-b border-border">
-                        <span className="font-medium">
-                          {t("Framework", "フレームワーク")}
-                        </span>
-                        <span>Next.js 15 (App Router)</span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b border-border">
-                        <span className="font-medium">
-                          {t("Database", "データベース")}
-                        </span>
-                        <span>PostgreSQL (Prisma ORM)</span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b border-border">
-                        <span className="font-medium">
-                          {t("Authentication", "認証")}
-                        </span>
-                        <span>Auth.js (NextAuth.js v5)</span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b border-border">
-                        <span className="font-medium">
-                          {t("Auth Providers", "認証プロバイダー")}
-                        </span>
-                        <span>Google OAuth / OpenLDAP</span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b border-border">
-                        <span className="font-medium">
-                          {t("Styling", "スタイリング")}
-                        </span>
-                        <span>Tailwind CSS 4</span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b border-border">
-                        <span className="font-medium">
-                          {t("Language", "言語")}
-                        </span>
-                        <span>TypeScript</span>
-                      </div>
-                      <div className="flex justify-between items-center py-2">
-                        <span className="font-medium">
-                          {t("Build ID", "ビルドID")}
-                        </span>
-                        <code className="text-sm bg-card px-2 py-1 rounded border border-border">
-                          {process.env.NEXT_BUILD_ID || "dev"}
-                        </code>
+                <Collapsible defaultOpen={false}>
+                  <CollapsibleTrigger className="flex items-center justify-between w-full py-3 px-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors group">
+                    <div className="flex items-center gap-2">
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-base font-medium">
+                        {t("System Information", "システム情報")}
+                      </span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="p-6 bg-muted rounded-lg mt-4">
+                      <div className="space-y-3 text-muted-foreground">
+                        <div className="flex justify-between items-center py-2 border-b border-border">
+                          <span className="font-medium">
+                            {t("Framework", "フレームワーク")}
+                          </span>
+                          <span>Next.js 15 (App Router)</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b border-border">
+                          <span className="font-medium">
+                            {t("Database", "データベース")}
+                          </span>
+                          <span>PostgreSQL (Prisma ORM)</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b border-border">
+                          <span className="font-medium">
+                            {t("Authentication", "認証")}
+                          </span>
+                          <span>Auth.js (NextAuth.js v5)</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b border-border">
+                          <span className="font-medium">
+                            {t("Auth Providers", "認証プロバイダー")}
+                          </span>
+                          <span>Google OAuth / OpenLDAP</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b border-border">
+                          <span className="font-medium">
+                            {t("Styling", "スタイリング")}
+                          </span>
+                          <span>Tailwind CSS 4</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b border-border">
+                          <span className="font-medium">
+                            {t("Language", "言語")}
+                          </span>
+                          <span>TypeScript</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2">
+                          <span className="font-medium">
+                            {t("Build ID", "ビルドID")}
+                          </span>
+                          <code className="text-sm bg-card px-2 py-1 rounded border border-border">
+                            {process.env.NEXT_BUILD_ID || "dev"}
+                          </code>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
+                  </CollapsibleContent>
+                </Collapsible>
 
                 {/* 認証設定 */}
-                <div className="space-y-4 mt-8">
-                  <h2 className="text-2xl font-semibold">
-                    {t("Authentication Settings", "認証設定")}
-                  </h2>
-
-                  <div className="p-6 bg-muted rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-foreground">
-                          Google OAuth
-                        </h3>
-                        <p className="text-sm text-muted-foreground mt-1">
+                <Collapsible defaultOpen={false} className="mt-3">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full py-3 px-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors group">
+                    <div className="flex items-center gap-2">
+                      <Lock className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-base font-medium">
+                        {t("Authentication Settings", "認証設定")}
+                      </span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-4 mt-4">
+                    <div className="p-6 bg-muted rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-medium text-foreground">
+                            Google OAuth
+                          </h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {t(
+                              "Enable Google OAuth login on the login page",
+                              "ログイン画面でGoogle OAuthログインを有効にする",
+                            )}
+                          </p>
+                        </div>
+                        <Switch
+                          checked={googleOAuthEnabled}
+                          onCheckedChange={handleGoogleOAuthToggle}
+                          disabled={googleOAuthLoading}
+                        />
+                      </div>
+                      {!googleOAuthEnabled && (
+                        <p className="text-sm text-amber-600 dark:text-amber-400 mt-3">
                           {t(
-                            "Enable Google OAuth login on the login page",
-                            "ログイン画面でGoogle OAuthログインを有効にする",
+                            "To enable Google OAuth, configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in the environment variables.",
+                            "Google OAuthを有効にするには、環境変数にGOOGLE_CLIENT_IDとGOOGLE_CLIENT_SECRETを設定してください。",
                           )}
                         </p>
-                      </div>
-                      <Switch
-                        checked={googleOAuthEnabled}
-                        onCheckedChange={handleGoogleOAuthToggle}
-                        disabled={googleOAuthLoading}
-                      />
+                      )}
                     </div>
-                    {!googleOAuthEnabled && (
-                      <p className="text-sm text-amber-600 dark:text-amber-400 mt-3">
-                        {t(
-                          "To enable Google OAuth, configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in the environment variables.",
-                          "Google OAuthを有効にするには、環境変数にGOOGLE_CLIENT_IDとGOOGLE_CLIENT_SECRETを設定してください。",
-                        )}
-                      </p>
-                    )}
-                  </div>
 
-                  {/* GitHub OAuth */}
-                  <div className="p-6 bg-muted rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-foreground">
-                          GitHub OAuth
-                        </h3>
-                        <p className="text-sm text-muted-foreground mt-1">
+                    {/* GitHub OAuth */}
+                    <div className="p-6 bg-muted rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-medium text-foreground">
+                            GitHub OAuth
+                          </h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {t(
+                              "Enable GitHub OAuth login on the login page",
+                              "ログイン画面でGitHub OAuthログインを有効にする",
+                            )}
+                          </p>
+                        </div>
+                        <Switch
+                          checked={gitHubOAuthEnabled}
+                          onCheckedChange={handleGitHubOAuthToggle}
+                          disabled={gitHubOAuthLoading}
+                        />
+                      </div>
+                      {!gitHubOAuthEnabled && (
+                        <p className="text-sm text-amber-600 dark:text-amber-400 mt-3">
                           {t(
-                            "Enable GitHub OAuth login on the login page",
-                            "ログイン画面でGitHub OAuthログインを有効にする",
+                            "To enable GitHub OAuth, configure GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in the environment variables.",
+                            "GitHub OAuthを有効にするには、環境変数にGITHUB_CLIENT_IDとGITHUB_CLIENT_SECRETを設定してください。",
                           )}
                         </p>
-                      </div>
-                      <Switch
-                        checked={gitHubOAuthEnabled}
-                        onCheckedChange={handleGitHubOAuthToggle}
-                        disabled={gitHubOAuthLoading}
-                      />
+                      )}
                     </div>
-                    {!gitHubOAuthEnabled && (
-                      <p className="text-sm text-amber-600 dark:text-amber-400 mt-3">
-                        {t(
-                          "To enable GitHub OAuth, configure GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in the environment variables.",
-                          "GitHub OAuthを有効にするには、環境変数にGITHUB_CLIENT_IDとGITHUB_CLIENT_SECRETを設定してください。",
-                        )}
-                      </p>
-                    )}
-                  </div>
-                </div>
+                  </CollapsibleContent>
+                </Collapsible>
 
                 {/* AI設定 */}
-                <div className="space-y-4 mt-8">
-                  <h2 className="text-2xl font-semibold">
-                    {t("AI Settings", "AI設定")}
-                  </h2>
-
-                  {aiConfigLoading && (
+                <Collapsible defaultOpen={false} className="mt-3">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full py-3 px-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors group">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-base font-medium">
+                        {t("AI Settings", "AI設定")}
+                      </span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-4 mt-4">
+                    {aiConfigLoading && (
                     <div className="text-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
                       <p className="mt-2 text-sm text-muted-foreground">
@@ -1981,7 +2014,41 @@ export function AdminClient({
                       </div>
                     </div>
                   )}
-                </div>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                {/* 祝日管理 */}
+                <Collapsible defaultOpen={false} className="mt-3">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full py-3 px-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors group">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-base font-medium">
+                        {t("Holiday Management", "祝日管理")}
+                      </span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-4">
+                    <div className="p-6 bg-muted rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-medium text-foreground">
+                            {t("Manage Holidays", "祝日マスタ管理")}
+                          </h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {t(
+                              "Manage national holidays and company holidays displayed on the calendar.",
+                              "カレンダーに表示する国の祝日や会社休日を管理します。",
+                            )}
+                          </p>
+                        </div>
+                        <Button onClick={() => setHolidayDialogOpen(true)}>
+                          {t("Manage Holidays", "祝日を管理")}
+                        </Button>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               </CardContent>
             </Card>
           )}
@@ -4770,6 +4837,13 @@ export function AdminClient({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Holiday Manager Dialog */}
+      <HolidayManagerDialog
+        open={holidayDialogOpen}
+        onOpenChange={setHolidayDialogOpen}
+        language={language}
+      />
     </div>
   );
 }
