@@ -197,7 +197,8 @@ export function DashboardCalendar({
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex rounded-md border overflow-hidden">
+          {/* 月/日切り替え - デスクトップのみ */}
+          <div className="hidden lg:flex rounded-md border overflow-hidden">
             <button
               type="button"
               onClick={() => onViewModeChange?.("month")}

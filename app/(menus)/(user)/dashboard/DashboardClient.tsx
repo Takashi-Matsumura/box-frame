@@ -956,19 +956,12 @@ export function DashboardClient({
       <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
         <DrawerContent className="max-h-[85vh]">
           <DrawerHeader className="pb-2">
-            <DrawerTitle className="flex items-center gap-2">
-              {rightPanelTab === "events" ? (
-                <>
-                  <RiCalendarEventLine className="w-4 h-4" />
-                  {selectedDate ? formatSelectedDate(selectedDate) : t.tabEvents}
-                </>
-              ) : (
-                <>
-                  <RiSparklingLine className="w-4 h-4" />
-                  {t.conciergeTitle}
-                </>
-              )}
-            </DrawerTitle>
+            {rightPanelTab === "events" && (
+              <DrawerTitle className="flex items-center gap-2">
+                <RiCalendarEventLine className="w-4 h-4" />
+                {selectedDate ? formatSelectedDate(selectedDate) : t.tabEvents}
+              </DrawerTitle>
+            )}
             {/* Tab switcher in drawer */}
             <div className="flex border-b mt-2">
               <button
