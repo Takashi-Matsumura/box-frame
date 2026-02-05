@@ -301,7 +301,7 @@ export function CalendarConcierge({
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-3 mb-3 min-h-0">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2 py-8">
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2 py-4 lg:py-8">
             <RiRobot2Line className="w-8 h-8" />
             <p className="text-xs text-center">{t.conciergeWelcome}</p>
           </div>
@@ -387,7 +387,7 @@ export function CalendarConcierge({
             isComposingRef.current = false;
           }}
           placeholder={t.conciergePlaceholder}
-          className="flex-1 resize-none rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary min-h-[36px] max-h-[80px]"
+          className="flex-1 resize-none rounded-md border bg-background px-3 py-2 text-base focus:outline-none focus:ring-1 focus:ring-primary min-h-[36px] max-h-[80px]"
           rows={1}
           disabled={isLoading}
         />

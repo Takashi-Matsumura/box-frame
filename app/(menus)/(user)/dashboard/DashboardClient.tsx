@@ -10,6 +10,13 @@ import {
   RiSparklingLine,
 } from "react-icons/ri";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { useIsTabletOrMobile } from "@/hooks/use-mobile";
 import type { ExternalCalendarEvent } from "@/lib/addon-modules/calendar-integration/types";
 import { cn } from "@/lib/utils";
 import { CalendarConcierge } from "./components/CalendarConcierge";
@@ -148,6 +155,8 @@ export function DashboardClient({
   const [rightPanelTab, setRightPanelTab] = useState<"events" | "concierge">(
     "events",
   );
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const isTabletOrMobile = useIsTabletOrMobile();
   const [calendarMonth, setCalendarMonth] = useState(() => ({
     year: new Date().getFullYear(),
     month: new Date().getMonth(),
@@ -548,8 +557,8 @@ export function DashboardClient({
 
   return (
     <div className="space-y-2">
-      {/* Welcome Banner (compact) */}
-      <Card className="bg-primary border-0">
+      {/* Welcome Banner (compact) - デスクトップのみ表示 */}
+      <Card className="bg-primary border-0 hidden lg:block">
         <CardContent className="py-2">
           <div className="flex items-center justify-between text-primary-foreground">
             <p className="text-sm font-bold flex items-center gap-2">
@@ -558,7 +567,7 @@ export function DashboardClient({
                 {userRole}
               </span>
             </p>
-            <p className="hidden md:block text-sm opacity-80">
+            <p className="text-sm opacity-80">
               {new Date().toLocaleDateString(
                 language === "ja" ? "ja-JP" : "en-US",
                 {
@@ -609,13 +618,19 @@ export function DashboardClient({
       >
         {/* Calendar / DayView */}
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 lg:pt-6">
             {viewMode === "month" ? (
               <DashboardCalendar
                 language={language}
                 events={displayEvents}
                 holidays={holidays}
-                onDateSelect={setSelectedDate}
+                onDateSelect={(date) => {
+                  setSelectedDate(date);
+                  if (isTabletOrMobile) {
+                    setRightPanelTab("events");
+                    setDrawerOpen(true);
+                  }
+                }}
                 selectedDate={selectedDate}
                 onMonthChange={handleMonthChange}
                 viewMode={viewMode}
@@ -640,10 +655,10 @@ export function DashboardClient({
           </CardContent>
         </Card>
 
-        {/* Right Panel */}
+        {/* Right Panel - デスクトップのみ */}
         {viewMode === "month" ? (
-          <Card className="flex flex-col">
-            <CardContent className="pt-4 flex flex-col flex-1 min-h-0">
+          <Card className="hidden lg:flex flex-col">
+            <CardContent className="pt-4 flex flex-col flex-1 min-h-0 overflow-hidden">
               {/* Tab switcher */}
               <div className="flex border-b mb-3">
                 <button
@@ -908,6 +923,194 @@ export function DashboardClient({
           </div>
         </div>
       )}
+
+      {/* Mobile/Tablet: Floating buttons to open drawer */}
+      {viewMode === "month" && isTabletOrMobile && (
+        <div className="fixed bottom-4 right-4 flex flex-col gap-2 z-40 lg:hidden">
+          <button
+            type="button"
+            onClick={() => {
+              setRightPanelTab("concierge");
+              setDrawerOpen(true);
+            }}
+            className="p-3 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
+            title={t.tabConcierge}
+          >
+            <RiSparklingLine className="w-5 h-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setRightPanelTab("events");
+              setDrawerOpen(true);
+            }}
+            className="p-3 rounded-full bg-secondary text-secondary-foreground shadow-lg hover:bg-secondary/90 transition-colors"
+            title={t.tabEvents}
+          >
+            <RiCalendarEventLine className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
+      {/* Mobile/Tablet: Drawer for events/concierge */}
+      <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <DrawerContent className="max-h-[85vh]">
+          <DrawerHeader className="pb-2">
+            <DrawerTitle className="flex items-center gap-2">
+              {rightPanelTab === "events" ? (
+                <>
+                  <RiCalendarEventLine className="w-4 h-4" />
+                  {selectedDate ? formatSelectedDate(selectedDate) : t.tabEvents}
+                </>
+              ) : (
+                <>
+                  <RiSparklingLine className="w-4 h-4" />
+                  {t.conciergeTitle}
+                </>
+              )}
+            </DrawerTitle>
+            {/* Tab switcher in drawer */}
+            <div className="flex border-b mt-2">
+              <button
+                type="button"
+                className={cn(
+                  "flex-1 text-xs font-medium py-2 border-b-2 transition-colors",
+                  rightPanelTab === "events"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                )}
+                onClick={() => setRightPanelTab("events")}
+              >
+                <RiCalendarEventLine className="w-3.5 h-3.5 inline-block mr-1 -mt-0.5" />
+                {t.tabEvents}
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  "flex-1 text-xs font-medium py-2 border-b-2 transition-colors",
+                  rightPanelTab === "concierge"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                )}
+                onClick={() => setRightPanelTab("concierge")}
+              >
+                <RiSparklingLine className="w-3.5 h-3.5 inline-block mr-1 -mt-0.5" />
+                {t.tabConcierge}
+              </button>
+            </div>
+          </DrawerHeader>
+          <div className="px-4 pb-4 flex-1 overflow-y-auto">
+            {rightPanelTab === "events" ? (
+              <div className="space-y-3">
+                {selectedDate && (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">
+                        {t.selectedDayEvents}
+                      </p>
+                      {(calendarTab === "app" ||
+                        (calendarTab === "google" && googleHasWritePermission)) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCreateDialogStartHour(9);
+                            setCreateDialogEndHour(10);
+                            setCreateDialogOpen(true);
+                          }}
+                          className="p-1 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                          title={t.createEvent}
+                        >
+                          <RiAddLine className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                    {calendarTab === "google" && selectedDayExternalDetails.length > 0 ? (
+                      selectedDayExternalDetails.map((event) => (
+                        <div
+                          key={event.id}
+                          className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
+                        >
+                          <div className="w-2 h-2 rounded-full mt-1.5 shrink-0 bg-blue-500" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium">{event.title}</p>
+                            {!event.allDay && event.start.includes("T") && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {new Date(event.start).toLocaleTimeString(
+                                  language === "ja" ? "ja-JP" : "en-US",
+                                  { hour: "2-digit", minute: "2-digit" },
+                                )}{" "}
+                                -{" "}
+                                {new Date(event.end).toLocaleTimeString(
+                                  language === "ja" ? "ja-JP" : "en-US",
+                                  { hour: "2-digit", minute: "2-digit" },
+                                )}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : calendarTab === "app" && selectedDayEvents.length > 0 ? (
+                      selectedDayEvents.map((event) => {
+                        const appEvent = appEvents.find((e) => e.id === event.id);
+                        const timeDisplay = appEvent
+                          ? appEvent.allDay
+                            ? t.calendarAllDay
+                            : (() => {
+                                const start = new Date(appEvent.startTime);
+                                const end = new Date(appEvent.endTime);
+                                const startStr = `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`;
+                                const endStr = `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`;
+                                return `${startStr} - ${endStr}`;
+                              })()
+                          : null;
+                        return (
+                          <div
+                            key={event.id}
+                            className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 group"
+                          >
+                            <div
+                              className={cn(
+                                "w-2 h-2 rounded-full mt-1.5 shrink-0",
+                                categoryConfig.find((c) => c.key === event.category)
+                                  ?.colorClass || "bg-gray-400",
+                              )}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium">{event.title}</p>
+                              {timeDisplay && (
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {timeDisplay}
+                                </p>
+                              )}
+                              <p className="text-xs text-muted-foreground">
+                                {t[categoryTranslationKeys[event.category] as keyof typeof t]}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <p className="text-sm text-muted-foreground py-4 text-center">
+                        {t.noEvents}
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="h-[50vh]">
+                <CalendarConcierge
+                  language={language}
+                  events={convertedAppEvents}
+                  appEvents={appEvents}
+                  externalEvents={externalEvents}
+                  selectedDate={selectedDate}
+                />
+              </div>
+            )}
+          </div>
+        </DrawerContent>
+      </Drawer>
 
       {/* Event Create Dialog */}
       <EventCreateDialog
