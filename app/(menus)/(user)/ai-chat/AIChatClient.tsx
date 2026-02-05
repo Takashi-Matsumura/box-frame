@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import {
   checkSensitiveData,
@@ -754,11 +755,43 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
     );
   }
 
-  // Loading state
+  // Loading state - Skeleton表示
   if (aiEnabled === null) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full overflow-hidden min-h-0">
+        {/* Header skeleton */}
+        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-5 w-5 rounded" />
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-6 w-32 rounded-full" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-20" />
+            <Skeleton className="h-8 w-8" />
+          </div>
+        </div>
+
+        {/* Welcome area skeleton */}
+        <div className="flex-1 flex flex-col items-center justify-center px-4">
+          <Skeleton className="w-16 h-16 rounded-full mb-6" />
+          <Skeleton className="h-8 w-64 mb-2" />
+          <Skeleton className="h-4 w-48 mb-8" />
+          <div className="flex flex-wrap gap-2 justify-center max-w-lg">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-10 w-32 rounded-full" />
+            ))}
+          </div>
+        </div>
+
+        {/* Input area skeleton */}
+        <div className="flex-shrink-0 border-t px-4 py-4">
+          <div className="flex gap-2 items-center">
+            <Skeleton className="h-12 w-12 rounded-xl" />
+            <Skeleton className="flex-1 h-12 rounded-xl" />
+            <Skeleton className="h-12 w-12 rounded-xl" />
+          </div>
+        </div>
       </div>
     );
   }

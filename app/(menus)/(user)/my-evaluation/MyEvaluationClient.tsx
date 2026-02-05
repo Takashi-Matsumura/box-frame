@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import EvaluationCycleStepper from "./components/EvaluationCycleStepper";
 import { useGoalData } from "./hooks/useGoalData";
 import { myEvaluationTranslations } from "./translations";
@@ -237,11 +238,47 @@ export default function MyEvaluationClient({
     );
   };
 
+  // 初期ローディング - Skeleton表示
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto pt-12">
-        <div className="text-center py-8 text-muted-foreground">
-          {t.loading}
+      <div className="max-w-4xl mx-auto pt-12 space-y-6">
+        {/* Period Selector skeleton */}
+        <Card className="bg-muted/30">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-4 w-4" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+              <Skeleton className="h-10 w-[250px]" />
+            </div>
+            <div className="flex items-center gap-6 mt-3 pt-3 border-t">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Stepper skeleton */}
+        <div className="space-y-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="flex gap-4">
+              <div className="flex flex-col items-center w-8">
+                <Skeleton className="h-8 w-8 rounded-full" />
+                {i < 3 && <Skeleton className="w-0.5 flex-1 min-h-8 mt-1" />}
+              </div>
+              <div className="flex-1 pb-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                  <Skeleton className="h-5 w-5" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -327,8 +364,31 @@ export default function MyEvaluationClient({
           </CardHeader>
           <CardContent>
             {historyLoading ? (
-              <div className="text-center py-8 text-muted-foreground">
-                {t.loading}
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <Card key={i} className="border">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="space-y-2">
+                            <Skeleton className="h-5 w-40" />
+                            <div className="flex items-center gap-2">
+                              <Skeleton className="h-5 w-16 rounded-full" />
+                              <Skeleton className="h-5 w-20" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right space-y-1">
+                            <Skeleton className="h-3 w-12" />
+                            <Skeleton className="h-6 w-16" />
+                          </div>
+                          <Skeleton className="h-8 w-20" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             ) : historyEvaluations.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
