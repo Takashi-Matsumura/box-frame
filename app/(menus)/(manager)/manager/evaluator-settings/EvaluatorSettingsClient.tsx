@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -559,9 +560,67 @@ export default function EvaluatorSettingsClient({
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto h-[calc(100vh-128px)] overflow-hidden">
-        <Card className="h-full">
-          <CardContent className="p-6 h-full flex items-center justify-center">
-            <div className="text-center text-muted-foreground">{t.loading}</div>
+        <Card className="h-full flex flex-col">
+          <CardContent className="p-6 flex flex-col h-full overflow-hidden">
+            {/* Header Skeleton */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <Skeleton className="w-6 h-6 rounded" />
+                <div>
+                  <Skeleton className="h-6 w-32 mb-1" />
+                  <Skeleton className="h-4 w-48" />
+                </div>
+              </div>
+              <Skeleton className="h-4 w-24" />
+            </div>
+
+            {/* Search and Filter Skeleton */}
+            <div className="flex items-center gap-4 mb-6">
+              <Skeleton className="h-10 flex-1 max-w-sm" />
+              <Skeleton className="h-10 w-[280px]" />
+            </div>
+
+            {/* Table Skeleton */}
+            <div className="flex-1 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t.currentEvaluator}</TableHead>
+                    <TableHead>{t.employeeNumber}</TableHead>
+                    <TableHead>{t.employeeName}</TableHead>
+                    <TableHead>{t.position}</TableHead>
+                    <TableHead>{t.department}</TableHead>
+                    <TableHead className="text-center">{t.exclusionColumn}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell>
+                        <Skeleton className="h-6 w-24 rounded-full" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-16" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-20" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-16" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-32" />
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center">
+                          <Skeleton className="h-5 w-9 rounded-full" />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </div>
