@@ -11,6 +11,12 @@ import {
 } from "react-icons/ri";
 import { Card, CardContent } from "@/components/ui/card";
 import {
+  Carousel,
+  CarouselContent,
+  CarouselDots,
+  CarouselItem,
+} from "@/components/ui/carousel";
+import {
   Drawer,
   DrawerContent,
   DrawerHeader,
@@ -567,7 +573,7 @@ export function DashboardClient({
                 {userRole}
               </span>
             </p>
-            <p className="text-sm opacity-80">
+            <p className="text-sm opacity-80" suppressHydrationWarning>
               {new Date().toLocaleDateString(
                 language === "ja" ? "ja-JP" : "en-US",
                 {
@@ -607,12 +613,93 @@ export function DashboardClient({
         )}
       </div>
 
-      {/* Calendar + Right Panel */}
+      {/* Mobile: Swipeable Dashboard Pages (CSS-based visibility to avoid hydration mismatch) */}
+      {viewMode === "month" && (
+        <div className="lg:hidden">
+          <Carousel opts={{ loop: false }}>
+            <CarouselContent className="ml-0">
+              {/* Page 1: Calendar */}
+              <CarouselItem className="pl-0">
+                <Card>
+                  <CardContent className="pt-4">
+                    <DashboardCalendar
+                      language={language}
+                      events={displayEvents}
+                      holidays={holidays}
+                      onDateSelect={(date) => {
+                        setSelectedDate(date);
+                        setRightPanelTab("events");
+                        setDrawerOpen(true);
+                      }}
+                      selectedDate={selectedDate}
+                      onMonthChange={handleMonthChange}
+                      viewMode={viewMode}
+                      onViewModeChange={setViewMode}
+                    />
+                    {/* Mobile Legend */}
+                    {calendarTab === "app" && (
+                      <div className="flex flex-wrap items-center gap-4 px-2 pt-3 text-xs text-muted-foreground">
+                        {categoryConfig.map(({ key, colorClass }) => (
+                          <div key={key} className="flex items-center gap-1.5">
+                            <div className={cn("w-2.5 h-2.5 rounded-full", colorClass)} />
+                            <span>{t[categoryTranslationKeys[key] as keyof typeof t]}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {calendarTab === "google" && (
+                      <div className="flex flex-wrap items-center gap-4 px-2 pt-3 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                          <span>Google Calendar</span>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </CarouselItem>
+              {/* Page 2: Analytics (Coming Soon) */}
+              <CarouselItem className="pl-0">
+                <Card className="h-full min-h-[400px]">
+                  <CardContent className="pt-4 h-full flex flex-col items-center justify-center text-muted-foreground">
+                    <div className="text-center space-y-3">
+                      <div className="w-16 h-16 mx-auto rounded-full bg-muted flex items-center justify-center">
+                        <svg
+                          className="w-8 h-8"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                          />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {t.pageAnalytics}
+                        </p>
+                        <p className="text-sm">{t.pageComingSoon}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </CarouselItem>
+            </CarouselContent>
+            <CarouselDots className="mt-3" />
+          </Carousel>
+        </div>
+      )}
+
+      {/* Desktop: Calendar + Right Panel / Mobile DayView only */}
       <div
         className={cn(
-          "grid gap-4",
+          "gap-4 grid",
           viewMode === "month"
-            ? "grid-cols-1 lg:grid-cols-[1fr_320px]"
+            ? "hidden lg:grid grid-cols-1 lg:grid-cols-[1fr_320px]"
             : "grid-cols-1 lg:grid-cols-[1fr_360px]",
         )}
       >
@@ -694,7 +781,7 @@ export function DashboardClient({
                   {selectedDate ? (
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <h3 className="font-semibold text-sm">
+                        <h3 className="font-semibold text-sm" suppressHydrationWarning>
                           {formatSelectedDate(selectedDate)}
                         </h3>
                         {(calendarTab === "app" ||
@@ -741,7 +828,7 @@ export function DashboardClient({
                                     event.title
                                   )}
                                 </p>
-                                <p className="text-xs text-muted-foreground mt-1">
+                                <p className="text-xs text-muted-foreground mt-1" suppressHydrationWarning>
                                   {event.allDay
                                     ? t.calendarAllDay
                                     : `${formatTime(event.start)} - ${formatTime(event.end)}`}
@@ -904,9 +991,9 @@ export function DashboardClient({
         )}
       </div>
 
-      {/* Legend (month view only) */}
+      {/* Legend (month view only, desktop only) */}
       {viewMode === "month" && calendarTab === "app" && (
-        <div className="flex flex-wrap items-center gap-4 px-2 text-xs text-muted-foreground">
+        <div className="hidden lg:flex flex-wrap items-center gap-4 px-2 text-xs text-muted-foreground">
           {categoryConfig.map(({ key, colorClass }) => (
             <div key={key} className="flex items-center gap-1.5">
               <div className={cn("w-2.5 h-2.5 rounded-full", colorClass)} />
@@ -916,7 +1003,7 @@ export function DashboardClient({
         </div>
       )}
       {viewMode === "month" && calendarTab === "google" && (
-        <div className="flex flex-wrap items-center gap-4 px-2 text-xs text-muted-foreground">
+        <div className="hidden lg:flex flex-wrap items-center gap-4 px-2 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
             <span>Google Calendar</span>
@@ -925,7 +1012,7 @@ export function DashboardClient({
       )}
 
       {/* Mobile/Tablet: Floating buttons to open drawer */}
-      {viewMode === "month" && isTabletOrMobile && (
+      {viewMode === "month" && (
         <div className="fixed bottom-4 right-4 flex flex-col gap-2 z-40 lg:hidden">
           <button
             type="button"
@@ -956,11 +1043,13 @@ export function DashboardClient({
       <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
         <DrawerContent className="max-h-[85vh]">
           <DrawerHeader className="pb-2">
-            {rightPanelTab === "events" && (
-              <DrawerTitle className="flex items-center gap-2">
+            {rightPanelTab === "events" ? (
+              <DrawerTitle className="flex items-center gap-2" suppressHydrationWarning>
                 <RiCalendarEventLine className="w-4 h-4" />
                 {selectedDate ? formatSelectedDate(selectedDate) : t.tabEvents}
               </DrawerTitle>
+            ) : (
+              <DrawerTitle className="sr-only">{t.conciergeTitle}</DrawerTitle>
             )}
             {/* Tab switcher in drawer */}
             <div className="flex border-b mt-2">
@@ -1027,7 +1116,7 @@ export function DashboardClient({
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium">{event.title}</p>
                             {!event.allDay && event.start.includes("T") && (
-                              <p className="text-xs text-muted-foreground mt-0.5">
+                              <p className="text-xs text-muted-foreground mt-0.5" suppressHydrationWarning>
                                 {new Date(event.start).toLocaleTimeString(
                                   language === "ja" ? "ja-JP" : "en-US",
                                   { hour: "2-digit", minute: "2-digit" },

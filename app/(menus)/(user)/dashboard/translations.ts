@@ -115,6 +115,10 @@ export const dashboardTranslations = {
     meetingTitle: "Meeting title",
     meetingTitlePlaceholder: "Enter meeting title",
     meetingCreate: "Create Meeting",
+    // Dashboard pages (mobile carousel)
+    pageCalendar: "Calendar",
+    pageAnalytics: "Analytics",
+    pageComingSoon: "Coming soon",
   },
   ja: {
     title: "ダッシュボード",
@@ -233,6 +237,10 @@ export const dashboardTranslations = {
     meetingTitle: "会議名",
     meetingTitlePlaceholder: "会議名を入力",
     meetingCreate: "会議を作成",
+    // Dashboard pages (mobile carousel)
+    pageCalendar: "カレンダー",
+    pageAnalytics: "分析",
+    pageComingSoon: "準備中",
   },
 } as const;
 

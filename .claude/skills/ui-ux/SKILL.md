@@ -619,6 +619,94 @@ const isMobile = useIsMobile();
 
 ---
 
+## 日付・時刻のロケール表示（Hydrationエラー対策）
+
+### 問題
+
+`toLocaleDateString()` / `toLocaleTimeString()` は、同じロケール設定でもNode.js（サーバー）とブラウザ（クライアント）で出力が異なる場合がある。
+
+```
+Server (Node.js): "2026年2月5日木曜日"  // スペースなし
+Client (Safari):  "2026年2月5日 木曜日" // スペースあり
+```
+
+これによりReact Hydrationエラーが発生する。
+
+### 解決策
+
+`components/ui/locale-date.tsx` の専用コンポーネントを使用する。内部で `suppressHydrationWarning` を適用済み。
+
+### 使用方法
+
+```tsx
+import {
+  LocaleDate,
+  LocaleTime,
+  LocaleDateTime,
+  LocaleTimeRange,
+} from "@/components/ui/locale-date";
+
+// 日付表示
+<LocaleDate
+  date={new Date()}
+  locale={language === "ja" ? "ja-JP" : "en-US"}
+  options={{ year: "numeric", month: "long", day: "numeric", weekday: "long" }}
+/>
+
+// 時刻表示
+<LocaleTime
+  date={event.startTime}
+  locale="ja-JP"
+  options={{ hour: "2-digit", minute: "2-digit" }}
+/>
+
+// 日時表示
+<LocaleDateTime
+  date={event.startTime}
+  locale="ja-JP"
+  dateOptions={{ month: "short", day: "numeric" }}
+  timeOptions={{ hour: "2-digit", minute: "2-digit" }}
+/>
+
+// 時間範囲表示
+<LocaleTimeRange
+  start={event.startTime}
+  end={event.endTime}
+  locale="ja-JP"
+/>
+// Output: "09:00 - 10:30"
+```
+
+### コンポーネント一覧
+
+| コンポーネント | 用途 | 出力例 |
+|--------------|------|--------|
+| `LocaleDate` | 日付のみ | "2026年2月5日 木曜日" |
+| `LocaleTime` | 時刻のみ | "09:00" |
+| `LocaleDateTime` | 日時 | "2月5日 09:00" |
+| `LocaleTimeRange` | 時間範囲 | "09:00 - 10:30" |
+
+### 共通Props
+
+| Prop | 型 | デフォルト | 説明 |
+|------|-----|---------|------|
+| `locale` | string | "ja-JP" | ロケール文字列 |
+| `as` | string | "span" | レンダリングするHTML要素 |
+| `className` | string | - | 追加CSSクラス |
+
+### 直接 `toLocaleDateString` を使う場合
+
+どうしても直接使う必要がある場合は、必ず `suppressHydrationWarning` を追加する:
+
+```tsx
+// ⚠️ 必ず suppressHydrationWarning を追加
+<p suppressHydrationWarning>
+  {new Date().toLocaleDateString("ja-JP", { ... })}
+</p>
+```
+
+---
+
 ## チェックリスト
 
 新しいUIを作成する際:
@@ -631,3 +719,4 @@ const isMobile = useIsMobile();
 - [ ] 空状態を実装
 - [ ] モバイル対応を考慮（useIsTabletOrMobile）
 - [ ] ローディング状態を実装（200ms以上かかる場合はSkeleton）
+- [ ] 日付・時刻表示には `LocaleDate` / `LocaleTime` コンポーネントを使用（Hydrationエラー対策）
