@@ -307,7 +307,6 @@ export function OrganizationChartClient({
   // ページ変更ハンドラ
   const handlePageChange = useCallback((newPage: number) => {
     setPage(newPage);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   // Sort departments with "役員・顧問" last
@@ -338,11 +337,11 @@ export function OrganizationChartClient({
   );
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <Card>
-        <CardContent className="p-6">
+    <div className="max-w-7xl mx-auto h-[calc(100vh-128px)] overflow-hidden">
+      <Card className="h-full flex flex-col">
+        <CardContent className="p-6 flex flex-col h-full overflow-hidden">
           {/* 検索・フィルターバー */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6 flex-shrink-0">
             {/* モバイル: 組織選択ボタン */}
             {isTabletOrMobile && (
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -413,7 +412,7 @@ export function OrganizationChartClient({
           </div>
 
           {/* メインコンテンツ */}
-          <div className="flex gap-6">
+          <div className="flex gap-6 flex-1 min-h-0 overflow-hidden">
             {/* デスクトップ: 左パネル（ツリービュー） */}
             {!isTabletOrMobile && (
               <div
@@ -426,7 +425,7 @@ export function OrganizationChartClient({
                   <button
                     type="button"
                     onClick={() => setSidebarCollapsed(false)}
-                    className="w-full h-full min-h-[300px] flex flex-col items-center justify-start pt-4 hover:bg-muted/50 transition-colors rounded-lg bg-muted/30"
+                    className="w-full h-full flex flex-col items-center justify-start pt-4 hover:bg-muted/50 transition-colors rounded-lg bg-muted/30"
                     title={t.expandSidebar}
                   >
                     <div className="p-1.5 rounded-md hover:bg-muted">
@@ -447,8 +446,8 @@ export function OrganizationChartClient({
                   </button>
                 ) : (
                   // 展開時: ツリービューを表示
-                  <div className="p-4 h-full">
-                    <div className="flex items-center justify-end mb-2">
+                  <div className="p-4 h-full flex flex-col">
+                    <div className="flex items-center justify-end mb-2 flex-shrink-0">
                       <button
                         type="button"
                         onClick={() => setSidebarCollapsed(true)}
@@ -470,7 +469,7 @@ export function OrganizationChartClient({
                         </svg>
                       </button>
                     </div>
-                    <ScrollArea className="h-[calc(100vh-340px)]">
+                    <ScrollArea className="flex-1 min-h-0">
                       {treeView}
                     </ScrollArea>
                   </div>
@@ -479,9 +478,9 @@ export function OrganizationChartClient({
             )}
 
             {/* 右パネル（メンバーグリッド） */}
-            <div className="flex-1 min-w-0 border rounded-lg p-4">
+            <div className="flex-1 min-w-0 border rounded-lg p-4 flex flex-col overflow-hidden">
               {/* パンくずリスト & 表示モード切替 */}
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-2 flex-shrink-0">
                 <OrgBreadcrumb
                   organization={orgData?.organization || null}
                   selection={selection}
@@ -565,7 +564,7 @@ export function OrganizationChartClient({
               </div>
 
               {/* 合計表示 & ページネーション */}
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-4 flex-shrink-0">
                 <div className="text-sm text-muted-foreground">
                   {t.total}: {total}
                   {language === "ja" ? t.employees : ` ${t.employees}`}
@@ -622,14 +621,16 @@ export function OrganizationChartClient({
               </div>
 
               {/* メンバーグリッド */}
-              <MemberGrid
-                employees={employees}
-                loading={employeesLoading}
-                onSelectEmployee={setSelectedEmployeeId}
-                t={t}
-                language={language}
-                viewMode={viewMode}
-              />
+              <div className="flex-1 min-h-0 overflow-auto">
+                <MemberGrid
+                  employees={employees}
+                  loading={employeesLoading}
+                  onSelectEmployee={setSelectedEmployeeId}
+                  t={t}
+                  language={language}
+                  viewMode={viewMode}
+                />
+              </div>
             </div>
           </div>
         </CardContent>
