@@ -639,7 +639,7 @@ export default function EvaluationCycleStepper({
                     type="button"
                     onClick={() => togglePhase(phase.id)}
                     className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center z-10 shrink-0 transition-colors",
+                      "w-8 h-8 rounded-full flex items-center justify-center relative shrink-0 transition-colors",
                       status.completed
                         ? "bg-green-500 text-white"
                         : status.current
