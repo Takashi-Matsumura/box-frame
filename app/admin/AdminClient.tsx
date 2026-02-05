@@ -48,6 +48,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useSidebar } from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import {
   Table,
@@ -2119,11 +2120,52 @@ export function AdminClient({
 
                 {/* ローディング */}
                 {loading && (
-                  <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-                    <p className="mt-4 text-muted-foreground">
-                      {t("Loading...", "読み込み中...")}
-                    </p>
+                  <div className="rounded-lg border overflow-hidden">
+                    <div className="overflow-y-auto max-h-[calc(100vh-32rem)]">
+                      <Table>
+                        <TableHeader className="sticky top-0 bg-muted/50 z-10">
+                          <TableRow>
+                            <TableHead className="w-[250px]">
+                              {t("User", "ユーザ")}
+                            </TableHead>
+                            <TableHead className="w-[150px]">
+                              {t("Role", "ロール")}
+                            </TableHead>
+                            <TableHead className="w-[180px]">
+                              {t("Login / Created", "ログイン / 作成日")}
+                            </TableHead>
+                            <TableHead className="w-[80px] text-right">
+                              {t("Actions", "操作")}
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {Array.from({ length: 10 }).map((_, i) => (
+                            <TableRow key={i}>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <Skeleton className="w-10 h-10 rounded-full" />
+                                  <div>
+                                    <Skeleton className="h-4 w-24 mb-1" />
+                                    <Skeleton className="h-3 w-32" />
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Skeleton className="h-8 w-24" />
+                              </TableCell>
+                              <TableCell>
+                                <Skeleton className="h-4 w-20 mb-1" />
+                                <Skeleton className="h-3 w-24" />
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Skeleton className="h-8 w-8 ml-auto" />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
                 )}
 
@@ -2413,12 +2455,36 @@ export function AdminClient({
 
                   {/* ローディング */}
                   {modulesLoading && (
-                    <div className="flex-1 flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-                        <p className="mt-4 text-muted-foreground">
-                          {t("Loading...", "読み込み中...")}
-                        </p>
+                    <div className="flex-1 overflow-y-auto p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {Array.from({ length: 6 }).map((_, i) => (
+                          <Card key={i} className="hover:shadow-md transition-all">
+                            <CardHeader className="pb-3">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <Skeleton className="h-5 w-9 rounded-full" />
+                                  <Skeleton className="h-4 w-12" />
+                                </div>
+                                <Skeleton className="h-5 w-14 rounded-full" />
+                              </div>
+                              <div className="flex items-start gap-3">
+                                <Skeleton className="w-10 h-10 rounded-lg" />
+                                <div>
+                                  <Skeleton className="h-5 w-28 mb-1" />
+                                  <Skeleton className="h-4 w-20" />
+                                </div>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <Skeleton className="h-4 w-full mb-2" />
+                              <Skeleton className="h-4 w-3/4 mb-4" />
+                              <div className="flex items-center justify-between">
+                                <Skeleton className="h-4 w-20" />
+                                <Skeleton className="h-4 w-8" />
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
                       </div>
                     </div>
                   )}
@@ -3817,11 +3883,51 @@ export function AdminClient({
 
                 {/* ローディング */}
                 {auditLogsLoading && (
-                  <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-                    <p className="mt-4 text-muted-foreground">
-                      {t("Loading...", "読み込み中...")}
-                    </p>
+                  <div className="rounded-lg border overflow-hidden">
+                    <div className="overflow-y-auto max-h-[calc(100vh-28rem)]">
+                      <Table>
+                        <TableHeader className="sticky top-0 bg-muted/50 z-10">
+                          <TableRow>
+                            <TableHead className="w-[160px]">
+                              {t("Date/Time", "日時")}
+                            </TableHead>
+                            <TableHead className="w-[140px]">
+                              {t("Category", "カテゴリ")}
+                            </TableHead>
+                            <TableHead className="w-[160px]">
+                              {t("Action", "アクション")}
+                            </TableHead>
+                            <TableHead className="w-[180px]">
+                              {t("User", "ユーザ")}
+                            </TableHead>
+                            <TableHead>{t("Details", "詳細")}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {Array.from({ length: 10 }).map((_, i) => (
+                            <TableRow key={i}>
+                              <TableCell>
+                                <Skeleton className="h-4 w-28" />
+                              </TableCell>
+                              <TableCell>
+                                <Skeleton className="h-5 w-16 rounded-full" />
+                              </TableCell>
+                              <TableCell>
+                                <Skeleton className="h-5 w-24 rounded-full" />
+                              </TableCell>
+                              <TableCell>
+                                <Skeleton className="h-4 w-20 mb-1" />
+                                <Skeleton className="h-3 w-28" />
+                              </TableCell>
+                              <TableCell>
+                                <Skeleton className="h-3 w-32 mb-1" />
+                                <Skeleton className="h-3 w-24" />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
                 )}
 
@@ -4067,11 +4173,35 @@ export function AdminClient({
 
                 {/* ローディング */}
                 {announcementsLoading && (
-                  <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
-                    <p className="mt-4 text-muted-foreground">
-                      {t("Loading...", "読み込み中...")}
-                    </p>
+                  <div className="space-y-4">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="p-4 rounded-lg border bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Skeleton className="h-5 w-16 rounded-full" />
+                              <Skeleton className="h-5 w-14 rounded-full" />
+                            </div>
+                            <Skeleton className="h-5 w-48 mb-2" />
+                            <Skeleton className="h-4 w-full mb-1" />
+                            <Skeleton className="h-4 w-3/4 mb-2" />
+                            <div className="flex items-center gap-4">
+                              <Skeleton className="h-3 w-24" />
+                              <Skeleton className="h-3 w-24" />
+                              <Skeleton className="h-3 w-20" />
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Skeleton className="h-5 w-9 rounded-full" />
+                            <Skeleton className="h-8 w-8" />
+                            <Skeleton className="h-8 w-8" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
 

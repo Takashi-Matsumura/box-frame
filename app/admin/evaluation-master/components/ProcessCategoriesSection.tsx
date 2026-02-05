@@ -11,6 +11,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -255,7 +256,58 @@ export default function ProcessCategoriesSection({
 
   if (loading) {
     return (
-      <div className="text-center py-8 text-muted-foreground">{t.loading}</div>
+      <div className="h-full flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between mb-6 flex-shrink-0">
+          <div>
+            <Skeleton className="h-7 w-40 mb-2" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10"></TableHead>
+                <TableHead className="w-16">{t.sortOrder}</TableHead>
+                <TableHead>{t.categoryName}</TableHead>
+                <TableHead className="w-20 text-center">{t.categoryClass}</TableHead>
+                <TableHead className="w-20 text-center">{t.minItemCount}</TableHead>
+                <TableHead className="w-16 text-center">{t.scoreT4}</TableHead>
+                <TableHead className="w-16 text-center">{t.scoreT3}</TableHead>
+                <TableHead className="w-20 text-center">{t.scoreT2}</TableHead>
+                <TableHead className="w-16 text-center">{t.scoreT1}</TableHead>
+                <TableHead>{t.description}</TableHead>
+                <TableHead className="w-20">{t.isActive}</TableHead>
+                <TableHead className="w-24">{t.actions}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-4 w-4" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-8" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell className="text-center"><Skeleton className="h-5 w-8 rounded-full mx-auto" /></TableCell>
+                  <TableCell className="text-center"><Skeleton className="h-4 w-6 mx-auto" /></TableCell>
+                  <TableCell className="text-center"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
+                  <TableCell className="text-center"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
+                  <TableCell className="text-center"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
+                  <TableCell className="text-center"><Skeleton className="h-4 w-8 mx-auto" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-9 rounded-full" /></TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Skeleton className="h-8 w-8 rounded" />
+                      <Skeleton className="h-8 w-8 rounded" />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
     );
   }
 
@@ -450,14 +502,14 @@ export default function ProcessCategoriesSection({
         </Dialog>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-auto">
         {categories.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             {t.noData}
           </div>
         ) : (
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
                 <TableHead className="w-10"></TableHead>
                 <TableHead className="w-16">{t.sortOrder}</TableHead>

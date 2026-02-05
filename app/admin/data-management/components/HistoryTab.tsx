@@ -3,6 +3,7 @@
 import type { ChangeType } from "@prisma/client";
 import { useCallback, useEffect, useState } from "react";
 import { FaFilter, FaHistory } from "react-icons/fa";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { DataManagementTranslation } from "../translations";
 
 interface ChangeLog {
@@ -160,8 +161,50 @@ export function HistoryTab({ organizationId, language, t }: HistoryTabProps) {
 
       {/* History Table */}
       {isLoading ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <p>{t.loading}</p>
+        <div className="flex-1 min-h-0 overflow-auto rounded-lg border border-border">
+          <table className="w-full text-sm">
+            <thead className="bg-muted sticky top-0">
+              <tr>
+                <th className="px-4 py-3 text-left font-medium text-foreground">
+                  {t.changedAt}
+                </th>
+                <th className="px-4 py-3 text-left font-medium text-foreground">
+                  {t.changeType}
+                </th>
+                <th className="px-4 py-3 text-left font-medium text-foreground">
+                  {language === "ja" ? "エンティティ" : "Entity"}
+                </th>
+                <th className="px-4 py-3 text-left font-medium text-foreground">
+                  {t.details}
+                </th>
+                <th className="px-4 py-3 text-left font-medium text-foreground">
+                  {t.changedBy}
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <tr key={i}>
+                  <td className="px-4 py-3">
+                    <Skeleton className="h-4 w-36" />
+                  </td>
+                  <td className="px-4 py-3">
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </td>
+                  <td className="px-4 py-3">
+                    <Skeleton className="h-4 w-16 mb-1" />
+                    <Skeleton className="h-3 w-24" />
+                  </td>
+                  <td className="px-4 py-3">
+                    <Skeleton className="h-4 w-48" />
+                  </td>
+                  <td className="px-4 py-3">
+                    <Skeleton className="h-4 w-24" />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : logs.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">

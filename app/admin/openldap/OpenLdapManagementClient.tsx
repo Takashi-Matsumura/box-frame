@@ -13,6 +13,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -1343,11 +1344,11 @@ export function OpenLdapManagementClient({
 
   return (
     <div
-      className="fixed inset-0 flex flex-col bg-muted/30 transition-all duration-300"
+      className="fixed inset-0 flex flex-col bg-muted/30 transition-all duration-300 overflow-hidden"
       style={{ top: "6rem", left: open ? `${width}px` : "4rem" }}
     >
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-6xl mx-auto p-6 space-y-6">
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="max-w-6xl mx-auto p-6 space-y-6 flex-1 flex flex-col overflow-hidden w-full">
           {/* メッセージ */}
           {message && (
             <div
@@ -1359,10 +1360,10 @@ export function OpenLdapManagementClient({
 
           {/* ユーザタブ */}
           {tab === "users" && (
-            <Card>
-              <CardContent className="p-6">
+            <Card className="flex-1 flex flex-col overflow-hidden">
+              <CardContent className="p-6 flex flex-col flex-1 overflow-hidden">
                 {/* ツールバー：検索と新規作成 */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 flex-shrink-0">
                   <form
                     onSubmit={handleSearch}
                     className="flex gap-2 w-full sm:w-auto"
@@ -1393,18 +1394,69 @@ export function OpenLdapManagementClient({
 
                 {/* データテーブル */}
                 {loading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                  <div className="flex-1 flex flex-col overflow-hidden">
+                    {/* ページネーション Skeleton */}
+                    <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                      <Skeleton className="h-4 w-24" />
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-8 w-20" />
+                        <Skeleton className="h-4 w-12" />
+                        <Skeleton className="h-8 w-20" />
+                      </div>
+                    </div>
+                    {/* テーブル Skeleton */}
+                    <div className="rounded-md border flex-1 overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted/50">
+                            <TableHead className="font-semibold">
+                              {t.userId}
+                            </TableHead>
+                            <TableHead className="font-semibold">
+                              {t.displayName}
+                            </TableHead>
+                            <TableHead className="font-semibold">
+                              {t.email}
+                            </TableHead>
+                            <TableHead className="text-right font-semibold">
+                              {t.actions}
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {Array.from({ length: 10 }).map((_, i) => (
+                            <TableRow key={i}>
+                              <TableCell>
+                                <Skeleton className="h-4 w-24" />
+                              </TableCell>
+                              <TableCell>
+                                <Skeleton className="h-4 w-32" />
+                              </TableCell>
+                              <TableCell>
+                                <Skeleton className="h-4 w-40" />
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-1">
+                                  <Skeleton className="h-8 w-8 rounded" />
+                                  <Skeleton className="h-8 w-8 rounded" />
+                                  <Skeleton className="h-8 w-8 rounded" />
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
                 ) : users.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
+                  <div className="text-center py-12 text-muted-foreground flex-1 flex flex-col items-center justify-center">
                     <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>{t.noUsers}</p>
                   </div>
                 ) : (
-                  <>
+                  <div className="flex-1 flex flex-col overflow-hidden">
                     {/* ページネーション（テーブル上部） */}
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-4 flex-shrink-0">
                       <p className="text-sm text-muted-foreground">
                         {t.total}:{" "}
                         <span className="font-medium text-foreground">
@@ -1446,9 +1498,9 @@ export function OpenLdapManagementClient({
                       </div>
                     </div>
 
-                    <div className="rounded-md border">
+                    <div className="rounded-md border flex-1 overflow-auto">
                       <Table>
-                        <TableHeader>
+                        <TableHeader className="sticky top-0 bg-background z-10">
                           <TableRow className="bg-muted/50">
                             <TableHead className="font-semibold">
                               {t.userId}
@@ -1534,7 +1586,7 @@ export function OpenLdapManagementClient({
                         </TableBody>
                       </Table>
                     </div>
-                  </>
+                  </div>
                 )}
               </CardContent>
             </Card>

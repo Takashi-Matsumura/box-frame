@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -329,7 +330,50 @@ export default function PeriodsSection({
 
   if (loading) {
     return (
-      <div className="text-center py-8 text-muted-foreground">{t.loading}</div>
+      <div className="h-full flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between mb-6 flex-shrink-0">
+          <div>
+            <Skeleton className="h-7 w-32 mb-2" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t.periodName}</TableHead>
+                <TableHead>{t.year}</TableHead>
+                <TableHead>{t.term}</TableHead>
+                <TableHead>{t.startDate}</TableHead>
+                <TableHead>{t.endDate}</TableHead>
+                <TableHead>{t.status}</TableHead>
+                <TableHead>{t.evaluationCount}</TableHead>
+                <TableHead>{t.actions}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-8" /></TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Skeleton className="h-8 w-8 rounded" />
+                      <Skeleton className="h-8 w-8 rounded" />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
     );
   }
 
@@ -437,14 +481,14 @@ export default function PeriodsSection({
         </Dialog>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-auto">
         {periods.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             {t.noPeriods}
           </div>
         ) : (
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
                 <TableHead>{t.periodName}</TableHead>
                 <TableHead>{t.year}</TableHead>

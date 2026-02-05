@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, Database, RefreshCw, Zap } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -500,8 +501,40 @@ export default function Criteria1Section({
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      <div className="h-full flex flex-col overflow-hidden">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6 flex-shrink-0">
+          <div>
+            <Skeleton className="h-6 w-32 mb-2" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+          <Skeleton className="h-10 w-52" />
+        </div>
+        <div className="flex gap-3 items-center mb-4 flex-shrink-0">
+          <Skeleton className="h-10 w-72" />
+          <Skeleton className="h-5 w-24" />
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t.organizationName}</TableHead>
+                <TableHead>{t.departmentType}</TableHead>
+                <TableHead className="text-center">{t.achievementRate}</TableHead>
+                <TableHead className="text-center">{t.status}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                  <TableCell className="text-center"><Skeleton className="h-8 w-20 mx-auto" /></TableCell>
+                  <TableCell className="text-center"><Skeleton className="h-5 w-16 rounded-full mx-auto" /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     );
   }
@@ -639,7 +672,7 @@ export default function Criteria1Section({
       </div>
 
       {/* メインコンテンツ（スクロール領域） */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-auto">
         {/* 初期化が必要な場合 */}
         {results.length === 0 ? (
           <div className="flex flex-col justify-center items-center py-12 px-4 border rounded-lg bg-gray-50">

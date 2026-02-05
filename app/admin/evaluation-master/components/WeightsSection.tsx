@@ -67,6 +67,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -1553,10 +1554,36 @@ export default function WeightsSection({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-auto">
         {loading ? (
-          <div className="text-center py-8 text-muted-foreground">
-            {t.loading}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-4 py-2">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-9 w-32" />
+            </div>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-4 w-4" />
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-8 w-8 rounded" />
+                    <Skeleton className="h-8 w-8 rounded" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-5 gap-4 pl-8">
+                  {Array.from({ length: 5 }).map((_, j) => (
+                    <div key={j} className="space-y-1">
+                      <Skeleton className="h-4 w-12" />
+                      <Skeleton className="h-8 w-full" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         ) : !periodId ? (
           <div className="text-center py-12 text-muted-foreground">
