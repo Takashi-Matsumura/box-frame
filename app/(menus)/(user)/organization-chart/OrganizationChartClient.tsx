@@ -339,14 +339,14 @@ export function OrganizationChartClient({
   return (
     <div className="max-w-7xl mx-auto h-[calc(100vh-128px)] overflow-hidden">
       <Card className="h-full flex flex-col">
-        <CardContent className="p-6 flex flex-col h-full overflow-hidden">
+        <CardContent className="p-3 sm:p-6 flex flex-col h-full overflow-hidden">
           {/* 検索・フィルターバー */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6 flex-shrink-0">
+          <div className="flex flex-col gap-2 sm:gap-4 mb-3 sm:mb-6 flex-shrink-0">
             {/* モバイル: 組織選択ボタン */}
-            {isTabletOrMobile && (
+            <div className="lg:hidden">
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="outline" className="w-full sm:w-auto">
+                  <Button variant="outline" className="w-full">
                     <svg
                       className="w-4 h-4 mr-2"
                       fill="none"
@@ -372,54 +372,58 @@ export function OrganizationChartClient({
                   </ScrollArea>
                 </SheetContent>
               </Sheet>
-            )}
-
-            {/* 検索入力 */}
-            <div className="flex-1 w-full sm:max-w-sm">
-              <Input
-                placeholder={t.searchPlaceholder}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
             </div>
 
-            {/* 役職フィルター */}
-            <Select value={positionFilter} onValueChange={setPositionFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder={t.allPositions} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t.allPositions}</SelectItem>
-                {positions.map((pos) => (
-                  <SelectItem key={pos} value={pos}>
-                    {pos}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* フィルター行: モバイルでは1行に横並び */}
+            <div className="flex items-center gap-2 sm:gap-4">
+              {/* 検索入力 */}
+              <div className="flex-1 min-w-0">
+                <Input
+                  placeholder={t.searchPlaceholder}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="h-9 text-sm"
+                />
+              </div>
 
-            {/* 在籍ステータスフィルター */}
-            <Button
-              variant={showInactive ? "default" : "outline"}
-              size="sm"
-              onClick={() => {
-                setShowInactive(!showInactive);
-                setPage(1);
-              }}
-            >
-              {showInactive ? t.showAll : t.activeOnly}
-            </Button>
+              {/* 役職フィルター */}
+              <Select value={positionFilter} onValueChange={setPositionFilter}>
+                <SelectTrigger className="w-[100px] sm:w-[180px] h-9 text-sm flex-shrink-0">
+                  <SelectValue placeholder={t.allPositions} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t.allPositions}</SelectItem>
+                  {positions.map((pos) => (
+                    <SelectItem key={pos} value={pos}>
+                      {pos}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* 在籍ステータスフィルター */}
+              <Button
+                variant={showInactive ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setShowInactive(!showInactive);
+                  setPage(1);
+                }}
+                className="flex-shrink-0 h-9 px-2 sm:px-3 text-xs sm:text-sm whitespace-nowrap"
+              >
+                {showInactive ? t.showAll : t.activeOnly}
+              </Button>
+            </div>
           </div>
 
           {/* メインコンテンツ */}
-          <div className="flex gap-6 flex-1 min-h-0 overflow-hidden">
+          <div className="flex gap-3 sm:gap-6 flex-1 min-h-0 overflow-hidden">
             {/* デスクトップ: 左パネル（ツリービュー） */}
-            {!isTabletOrMobile && (
-              <div
-                className={`flex-shrink-0 border rounded-lg transition-all duration-300 ${
-                  sidebarCollapsed ? "w-10" : "w-[300px]"
-                }`}
-              >
+            <div
+              className={`hidden lg:block shrink-0 border rounded-lg transition-all duration-300 ${
+                sidebarCollapsed ? "w-10" : "w-[300px]"
+              }`}
+            >
                 {sidebarCollapsed ? (
                   // 折りたたみ時: 展開ボタンを表示
                   <button
@@ -474,13 +478,12 @@ export function OrganizationChartClient({
                     </ScrollArea>
                   </div>
                 )}
-              </div>
-            )}
+            </div>
 
             {/* 右パネル（メンバーグリッド） */}
-            <div className="flex-1 min-w-0 border rounded-lg p-4 flex flex-col overflow-hidden">
+            <div className="flex-1 min-w-0 border rounded-lg p-2 sm:p-4 flex flex-col overflow-hidden">
               {/* パンくずリスト & 表示モード切替 */}
-              <div className="flex items-center justify-between mb-2 flex-shrink-0">
+              <div className="flex items-center justify-between mb-1 sm:mb-2 flex-shrink-0">
                 <OrgBreadcrumb
                   organization={orgData?.organization || null}
                   selection={selection}
@@ -488,8 +491,8 @@ export function OrganizationChartClient({
                   t={t}
                 />
                 <div className="flex items-center gap-4 flex-shrink-0">
-                  {/* 表示モード切替 */}
-                  <div className="flex items-center border rounded-lg overflow-hidden">
+                  {/* 表示モード切替（デスクトップのみ） */}
+                  <div className="hidden lg:flex items-center border rounded-lg overflow-hidden">
                     <button
                       type="button"
                       onClick={() => setViewMode("grid")}
@@ -542,8 +545,8 @@ export function OrganizationChartClient({
                     </button>
                   </div>
 
-                  {/* 重複しないモード */}
-                  <div className="flex items-center gap-2">
+                  {/* 重複しないモード（デスクトップのみ） */}
+                  <div className="hidden lg:flex items-center gap-2">
                     <Label
                       htmlFor="exclusive-mode"
                       className="text-sm text-muted-foreground cursor-pointer"
@@ -564,7 +567,7 @@ export function OrganizationChartClient({
               </div>
 
               {/* 合計表示 & ページネーション */}
-              <div className="flex items-center justify-between mb-4 flex-shrink-0">
+              <div className="flex items-center justify-between mb-2 sm:mb-4 flex-shrink-0">
                 <div className="text-sm text-muted-foreground">
                   {t.total}: {total}
                   {language === "ja" ? t.employees : ` ${t.employees}`}
