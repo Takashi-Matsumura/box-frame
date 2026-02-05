@@ -73,20 +73,22 @@ export const menuGroups: Record<string, MenuGroup> = {
 /**
  * 全モジュールを取得
  * moduleRegistryから有効なモジュールを動的に取得
- * メニュー順序と有効状態のオーバーライドをデータベースから適用
+ * メニュー順序、有効状態、モバイル有効状態のオーバーライドをデータベースから適用
  */
 export async function getAllModules(): Promise<AppModule[]> {
-  // メニュー順序と有効状態のオーバーライドを取得
+  // メニュー順序、有効状態、モバイル有効状態のオーバーライドを取得
   const menuSettings = await prisma.systemSetting.findMany({
     where: {
       OR: [
         { key: { startsWith: "menu_order_" } },
         { key: { startsWith: "menu_enabled_" } },
+        { key: { startsWith: "menu_mobile_enabled_" } },
       ],
     },
   });
   const menuOrderOverrides: Record<string, number> = {};
   const menuEnabledOverrides: Record<string, boolean> = {};
+  const menuMobileEnabledOverrides: Record<string, boolean> = {};
   for (const setting of menuSettings) {
     if (setting.key.startsWith("menu_order_")) {
       const menuId = setting.key.replace("menu_order_", "");
@@ -94,6 +96,9 @@ export async function getAllModules(): Promise<AppModule[]> {
     } else if (setting.key.startsWith("menu_enabled_")) {
       const menuId = setting.key.replace("menu_enabled_", "");
       menuEnabledOverrides[menuId] = setting.value === "true";
+    } else if (setting.key.startsWith("menu_mobile_enabled_")) {
+      const menuId = setting.key.replace("menu_mobile_enabled_", "");
+      menuMobileEnabledOverrides[menuId] = setting.value === "true";
     }
   }
 
@@ -105,6 +110,8 @@ export async function getAllModules(): Promise<AppModule[]> {
         ...menu,
         order: menuOrderOverrides[menu.id] ?? menu.order,
         enabled: menuEnabledOverrides[menu.id] ?? menu.enabled,
+        mobileEnabled:
+          menuMobileEnabledOverrides[menu.id] ?? menu.mobileEnabled,
       })),
     }));
 }

@@ -169,6 +169,8 @@ interface ModuleInfo {
     enabled: boolean;
     order: number;
     requiredRoles: string[];
+    mobileEnabled: boolean;
+    mobileEnabledDefault: boolean;
   }>;
   containers: ContainerStatus[];
   mcpServer: McpServerInfo | null;
@@ -1251,6 +1253,60 @@ export function AdminClient({
         });
       } catch (error) {
         console.error("Error toggling menu:", error);
+        alert(
+          t(
+            error instanceof Error ? error.message : "Failed to update menu",
+            error instanceof Error
+              ? error.message
+              : "メニューの更新に失敗しました",
+          ),
+        );
+      }
+    },
+    [t],
+  );
+
+  // メニューのモバイル有効/無効を切り替え
+  const handleToggleMobileEnabled = useCallback(
+    async (menuId: string, mobileEnabled: boolean) => {
+      try {
+        const response = await fetch("/api/admin/modules", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ menuId, mobileEnabled }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Failed to update menu");
+        }
+
+        // ローカルの状態を更新
+        setModulesData((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            modules: prev.modules.map((m) => ({
+              ...m,
+              menus: m.menus.map((menu) =>
+                menu.id === menuId ? { ...menu, mobileEnabled } : menu,
+              ),
+            })),
+          };
+        });
+
+        // 選択中のモジュールも更新
+        setSelectedModule((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            menus: prev.menus.map((menu) =>
+              menu.id === menuId ? { ...menu, mobileEnabled } : menu,
+            ),
+          };
+        });
+      } catch (error) {
+        console.error("Error toggling mobile enabled:", error);
         alert(
           t(
             error instanceof Error ? error.message : "Failed to update menu",
@@ -3718,6 +3774,23 @@ export function AdminClient({
                                       {t("AI Settings", "AI設定")}
                                     </Button>
                                   )}
+                                  <div className="flex items-center gap-1">
+                                    <Switch
+                                      checked={menu.mobileEnabled}
+                                      onCheckedChange={(checked) =>
+                                        handleToggleMobileEnabled(
+                                          menu.id,
+                                          checked,
+                                        )
+                                      }
+                                      className="scale-75"
+                                    />
+                                    <span
+                                      className={`text-xs ${menu.mobileEnabled ? "text-blue-700" : "text-muted-foreground"}`}
+                                    >
+                                      {t("Mobile", "モバイル")}
+                                    </span>
+                                  </div>
                                   <div className="flex items-center gap-1">
                                     <Switch
                                       checked={menu.enabled}

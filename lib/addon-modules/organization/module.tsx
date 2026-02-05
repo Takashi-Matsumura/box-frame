@@ -94,6 +94,7 @@ export const organizationModule: AppModule = {
       requiredRoles: ["ADMIN"],
       enabled: true,
       order: 80,
+      mobileEnabled: false,
       icon: getMenuIcon("dataManagement", "organization"),
       description: "Import and manage organization data",
       descriptionJa: "組織データのインポートと管理",

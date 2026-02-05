@@ -402,3 +402,64 @@ export function checkPermissionForModule(
 ): boolean {
   return permission.moduleId === targetModuleId;
 }
+
+/**
+ * ============================================
+ * モバイルアクセス制御
+ * ============================================
+ */
+
+/**
+ * メニューがモバイル端末でアクセス可能かチェック
+ *
+ * @param menu 対象メニュー
+ * @param isMobile モバイル端末かどうか
+ * @returns モバイルアクセス可能かどうか
+ */
+export function isMobileAccessible(menu: AppMenu, isMobile: boolean): boolean {
+  // モバイルでない場合は常にアクセス可能
+  if (!isMobile) {
+    return true;
+  }
+
+  // mobileEnabled が未設定（undefined）の場合はデフォルト true（表示）
+  return menu.mobileEnabled !== false;
+}
+
+/**
+ * モバイル端末向けにメニューをフィルタリング
+ *
+ * @param menus メニュー一覧
+ * @param isMobile モバイル端末かどうか
+ * @returns フィルタリングされたメニュー一覧
+ */
+export function filterMenusForMobile(
+  menus: AppMenu[],
+  isMobile: boolean,
+): AppMenu[] {
+  return menus.filter((menu) => isMobileAccessible(menu, isMobile));
+}
+
+/**
+ * メニューグループごとのメニューをモバイル向けにフィルタリング
+ *
+ * @param groupedMenus メニューグループごとのメニュー
+ * @param isMobile モバイル端末かどうか
+ * @returns フィルタリングされたメニューグループ
+ */
+export function filterGroupedMenusForMobile(
+  groupedMenus: Record<string, AppMenu[]>,
+  isMobile: boolean,
+): Record<string, AppMenu[]> {
+  const filtered: Record<string, AppMenu[]> = {};
+
+  for (const [groupId, menus] of Object.entries(groupedMenus)) {
+    const filteredMenus = filterMenusForMobile(menus, isMobile);
+    // 空のグループは含めない
+    if (filteredMenus.length > 0) {
+      filtered[groupId] = filteredMenus;
+    }
+  }
+
+  return filtered;
+}

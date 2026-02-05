@@ -2,6 +2,8 @@
 
 import type { Session } from "next-auth";
 import { Sidebar, SidebarContent, SidebarRail } from "@/components/ui/sidebar";
+import { useIsTabletOrMobile } from "@/hooks/use-mobile";
+import { filterGroupedMenusForMobile } from "@/lib/modules/access-control";
 import { useSidebarStore } from "@/lib/stores/sidebar-store";
 import type { AppMenu } from "@/types/module";
 import { SidebarHeaderContent } from "./sidebar/SidebarHeaderContent";
@@ -32,6 +34,13 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const { width } = useSidebarStore();
   const isAdmin = session.user.role === "ADMIN";
+  const isTabletOrMobile = useIsTabletOrMobile();
+
+  // モバイル端末ではmobileEnabled: falseのメニューを非表示
+  const filteredGroupedMenus = filterGroupedMenusForMobile(
+    groupedMenus,
+    isTabletOrMobile,
+  );
 
   return (
     <SidebarNavigationProvider>
@@ -48,7 +57,11 @@ export function AppSidebar({
 
         <SidebarContent>
           {menuGroups.map((group) => {
-            const menus = groupedMenus[group.id] || [];
+            const menus = filteredGroupedMenus[group.id] || [];
+            // メニューが空のグループは表示しない
+            if (menus.length === 0) {
+              return null;
+            }
             return (
               <SidebarMenuGroup
                 key={group.id}

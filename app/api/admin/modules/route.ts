@@ -14,7 +14,7 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // メニュー順序、有効状態、allowAccessKey設定のオーバーライドを取得
+    // メニュー順序、有効状態、allowAccessKey設定、mobileEnabled設定のオーバーライドを取得
     const menuSettings = await prisma.systemSetting.findMany({
       where: {
         OR: [
@@ -22,6 +22,7 @@ export async function GET() {
           { key: { startsWith: "menu_enabled_" } },
           { key: { startsWith: "menu_allow_access_key_" } },
           { key: { startsWith: "tab_allow_access_key_" } },
+          { key: { startsWith: "menu_mobile_enabled_" } },
         ],
       },
     });
@@ -29,6 +30,7 @@ export async function GET() {
     const menuEnabledOverrides: Record<string, boolean> = {};
     const menuAllowAccessKeyOverrides: Record<string, boolean> = {};
     const tabAllowAccessKeyOverrides: Record<string, boolean> = {};
+    const menuMobileEnabledOverrides: Record<string, boolean> = {};
     for (const setting of menuSettings) {
       if (setting.key.startsWith("menu_order_")) {
         const menuId = setting.key.replace("menu_order_", "");
@@ -43,6 +45,9 @@ export async function GET() {
         // tab_allow_access_key_{menuId}_{tabId} の形式
         const key = setting.key.replace("tab_allow_access_key_", "");
         tabAllowAccessKeyOverrides[key] = setting.value === "true";
+      } else if (setting.key.startsWith("menu_mobile_enabled_")) {
+        const menuId = setting.key.replace("menu_mobile_enabled_", "");
+        menuMobileEnabledOverrides[menuId] = setting.value === "true";
       }
     }
 
@@ -129,6 +134,11 @@ export async function GET() {
             const menuAllowAccessKey =
               menuAllowAccessKeyOverrides[menu.id] ?? menuAllowAccessKeyDefault;
 
+            // メニューのmobileEnabled: DB値 → モジュール定義 → デフォルトtrue
+            const menuMobileEnabledDefault = menu.mobileEnabled ?? true;
+            const menuMobileEnabled =
+              menuMobileEnabledOverrides[menu.id] ?? menuMobileEnabledDefault;
+
             // タブ情報を構築
             const tabs =
               menu.tabs?.map((tab) => {
@@ -159,6 +169,8 @@ export async function GET() {
               requiredRoles: menu.requiredRoles || [],
               allowAccessKey: menuAllowAccessKey,
               allowAccessKeyDefault: menuAllowAccessKeyDefault,
+              mobileEnabled: menuMobileEnabled,
+              mobileEnabledDefault: menuMobileEnabledDefault,
               tabs: tabs.length > 0 ? tabs : undefined,
             };
           }),
@@ -300,11 +312,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { menuId, enabled } = await request.json();
+    const body = await request.json();
+    const { menuId, enabled, mobileEnabled } = body;
 
-    if (!menuId || typeof enabled !== "boolean") {
+    if (!menuId) {
       return NextResponse.json(
-        { error: "Menu ID and enabled status are required" },
+        { error: "Menu ID is required" },
+        { status: 400 },
+      );
+    }
+
+    // enabled と mobileEnabled のどちらかは必須
+    if (typeof enabled !== "boolean" && typeof mobileEnabled !== "boolean") {
+      return NextResponse.json(
+        { error: "Either enabled or mobileEnabled is required" },
         { status: 400 },
       );
     }
@@ -327,34 +348,63 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Menu not found" }, { status: 404 });
     }
 
-    // SystemSettingに保存
-    const settingKey = `menu_enabled_${menuId}`;
-    await prisma.systemSetting.upsert({
-      where: { key: settingKey },
-      update: { value: enabled.toString() },
-      create: { key: settingKey, value: enabled.toString() },
-    });
+    // enabled の更新
+    if (typeof enabled === "boolean") {
+      const settingKey = `menu_enabled_${menuId}`;
+      await prisma.systemSetting.upsert({
+        where: { key: settingKey },
+        update: { value: enabled.toString() },
+        create: { key: settingKey, value: enabled.toString() },
+      });
 
-    // 監査ログに記録
-    await AuditService.log({
-      action: "MENU_TOGGLE",
-      category: "MODULE",
-      userId: session.user.id,
-      targetId: menuId,
-      targetType: "Menu",
-      details: {
-        menuName: foundMenu.name,
-        menuNameJa: foundMenu.nameJa,
-        moduleName: foundModule.name,
-        moduleNameJa: foundModule.nameJa,
-        enabled,
-      },
-    }).catch(() => {});
+      // 監査ログに記録
+      await AuditService.log({
+        action: "MENU_TOGGLE",
+        category: "MODULE",
+        userId: session.user.id,
+        targetId: menuId,
+        targetType: "Menu",
+        details: {
+          menuName: foundMenu.name,
+          menuNameJa: foundMenu.nameJa,
+          moduleName: foundModule.name,
+          moduleNameJa: foundModule.nameJa,
+          enabled,
+        },
+      }).catch(() => {});
+    }
+
+    // mobileEnabled の更新
+    if (typeof mobileEnabled === "boolean") {
+      const settingKey = `menu_mobile_enabled_${menuId}`;
+      await prisma.systemSetting.upsert({
+        where: { key: settingKey },
+        update: { value: mobileEnabled.toString() },
+        create: { key: settingKey, value: mobileEnabled.toString() },
+      });
+
+      // 監査ログに記録
+      await AuditService.log({
+        action: "MENU_MOBILE_TOGGLE",
+        category: "MODULE",
+        userId: session.user.id,
+        targetId: menuId,
+        targetType: "Menu",
+        details: {
+          menuName: foundMenu.name,
+          menuNameJa: foundMenu.nameJa,
+          moduleName: foundModule.name,
+          moduleNameJa: foundModule.nameJa,
+          mobileEnabled,
+        },
+      }).catch(() => {});
+    }
 
     return NextResponse.json({
       success: true,
       menuId,
-      enabled,
+      ...(typeof enabled === "boolean" && { enabled }),
+      ...(typeof mobileEnabled === "boolean" && { mobileEnabled }),
     });
   } catch (error) {
     console.error("Error updating menu:", error);

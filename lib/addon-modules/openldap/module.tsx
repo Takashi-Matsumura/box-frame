@@ -30,6 +30,7 @@ export const openldapModule: AppModule = {
       requiredRoles: ["ADMIN"],
       enabled: true,
       order: 50,
+      mobileEnabled: false,
       description: "Manage OpenLDAP server and users",
       descriptionJa: "OpenLDAPサーバとユーザを管理します",
     },

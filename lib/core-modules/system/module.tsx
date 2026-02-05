@@ -179,6 +179,7 @@ export const systemModule: AppModule = {
       requiredRoles: ["ADMIN"],
       enabled: true,
       order: 90,
+      mobileEnabled: false,
       description: "Manage system environment and settings",
       descriptionJa: "システム環境を管理します",
       icon: (

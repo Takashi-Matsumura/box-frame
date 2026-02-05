@@ -31,6 +31,7 @@ export type AuditAction =
   // MODULE
   | "MODULE_TOGGLE"
   | "MENU_TOGGLE"
+  | "MENU_MOBILE_TOGGLE"
   | "ACCESS_KEY_PERMISSION_UPDATE";
 
 export interface AuditLogInput {
