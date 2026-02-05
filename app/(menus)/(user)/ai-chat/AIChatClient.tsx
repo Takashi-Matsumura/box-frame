@@ -57,6 +57,55 @@ function generateUUID(): string {
   });
 }
 
+/**
+ * 長いモデル名から短い表示名を抽出
+ * 例: "ggml-org_Qwen2.5-VL-7B-Instruct-GGUF_Qwen2.5-VL-7B-Instruct-Q4_K_M" → "Qwen2.5-VL-7B"
+ */
+function shortenModelName(fullName: string): string {
+  // 既知のモデルパターンをマッチ（モデル名 + サイズ）
+  const patterns = [
+    // Qwen系: Qwen2.5-VL-7B, Qwen2-72B など
+    /\b(Qwen[\d.]*(?:-[A-Z]+)?-\d+B)/i,
+    // Llama系: Llama-3.1-8B, Llama-2-70B など
+    /\b(Llama-?[\d.]*-\d+B)/i,
+    // Mistral系: Mistral-7B, Mixtral-8x7B など
+    /\b(Mistral-\d+B|Mixtral-\d+x\d+B)/i,
+    // GPT系: GPT-4, GPT-3.5-turbo など
+    /\b(GPT-[\d.]+-?\w*)/i,
+    // Claude系: Claude-3-opus, Claude-2 など
+    /\b(Claude-[\d.]*-?\w*)/i,
+    // Gemini系: Gemini-Pro, Gemini-1.5-pro など
+    /\b(Gemini-[\d.]*-?\w*)/i,
+    // Phi系: Phi-3-mini など
+    /\b(Phi-\d+-?\w*)/i,
+    // その他: サイズ表記を含むもの（例: Model-7B）
+    /\b([A-Z][a-zA-Z]*-?\d*\.?\d*-\d+B)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = fullName.match(pattern);
+    if (match) {
+      return match[1];
+    }
+  }
+
+  // パターンにマッチしない場合は最初の意味のある部分を返す
+  // アンダースコアやスラッシュで分割して最初の意味のある部分を取得
+  const parts = fullName.split(/[_/]/);
+  for (const part of parts) {
+    // "ggml-org" のようなプレフィックスをスキップ
+    if (part.match(/^(ggml|gguf|hf|huggingface)/i)) continue;
+    // 意味のある部分を見つけたら返す
+    if (part.length > 3) {
+      // 長すぎる場合は30文字で切る
+      return part.length > 30 ? `${part.slice(0, 30)}...` : part;
+    }
+  }
+
+  // フォールバック: 長すぎる場合は切り詰め
+  return fullName.length > 30 ? `${fullName.slice(0, 30)}...` : fullName;
+}
+
 interface PdfAttachment {
   filename: string;
   pages: number;
@@ -809,15 +858,15 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
       {/* Header */}
       <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <RiSparklingLine className="w-5 h-5 text-primary" />
-            <h1 className="font-semibold">{t.title}</h1>
-          </div>
+          <RiSparklingLine className="w-5 h-5 text-primary" />
           {providerInfo && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-muted rounded-full text-xs text-muted-foreground">
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-muted rounded-full text-xs text-muted-foreground"
+              title={providerInfo.modelName}
+            >
               <span className="font-medium">{providerInfo.providerName}</span>
               <span className="text-muted-foreground/60">/</span>
-              <span>{providerInfo.modelName}</span>
+              <span>{shortenModelName(providerInfo.modelName)}</span>
             </div>
           )}
         </div>
@@ -858,9 +907,9 @@ export function AIChatClient({ language, userName }: AIChatClientProps) {
               size="sm"
               onClick={handleClearChat}
               className="text-muted-foreground hover:text-destructive"
+              title={t.clearChat}
             >
-              <RiDeleteBinLine className="w-4 h-4 mr-1" />
-              {t.clearChat}
+              <RiDeleteBinLine className="w-4 h-4" />
             </Button>
           )}
         </div>
