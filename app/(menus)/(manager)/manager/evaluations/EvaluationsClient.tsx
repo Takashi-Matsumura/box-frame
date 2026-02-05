@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -497,8 +498,47 @@ export default function EvaluationsClient({
 
           {/* Evaluatees Table */}
           {loading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              {t.loading}
+            <div className="overflow-auto flex-1">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableRow>
+                    <TableHead>{t.employeeNumber}</TableHead>
+                    <TableHead>{t.employeeInfo}</TableHead>
+                    <TableHead>{t.position}</TableHead>
+                    <TableHead>{t.grade}</TableHead>
+                    <TableHead>{t.department}</TableHead>
+                    <TableHead>{t.periodStatus}</TableHead>
+                    <TableHead>{t.finalGrade}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[...Array(10)].map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell>
+                        <Skeleton className="h-4 w-16" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-24" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-16" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-10" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-40" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-5 w-16 rounded-full" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-5 w-8 rounded-full" />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           ) : periods.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">

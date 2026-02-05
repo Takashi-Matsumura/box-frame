@@ -213,6 +213,141 @@ import { FormModal } from "@/components/modals/FormModal";
 )}
 ```
 
+## ローディング状態（Skeleton）
+
+### 概要
+
+Skeletonは、データ読み込み中に**実際のコンテンツの形状を模したプレースホルダー**を表示するコンポーネント。スピナーよりも優れたUXを提供する。
+
+```tsx
+import { Skeleton } from "@/components/ui/skeleton";
+
+// 基本的な使い方
+<Skeleton className="h-4 w-24" />        // テキスト
+<Skeleton className="h-10 w-10 rounded-full" />  // アバター
+<Skeleton className="h-5 w-16 rounded-full" />   // バッジ
+```
+
+### Skeleton化が効果的なパターン
+
+| パターン | 理由 | 例 |
+|---------|------|-----|
+| **外部API呼び出し** | ネットワーク遅延が発生しやすい | Googleカレンダー連携 |
+| **大量データの取得** | DBクエリに時間がかかる | 社員一覧、評価一覧 |
+| **複数APIの並行呼び出し** | すべて揃うまで待つ | ダッシュボード |
+| **初回表示が重要な画面** | 第一印象に影響 | ダッシュボード |
+| **リスト/テーブル表示** | 形状が予測しやすい | 組織図、評価一覧 |
+
+### Skeleton化が不要なパターン
+
+| パターン | 理由 |
+|---------|------|
+| **100ms以下で完了** | Skeletonがチラつくだけ |
+| **静的コンテンツ** | データ取得がない |
+| **フォーム入力画面** | 入力欄は最初から表示すべき |
+| **モーダル/ダイアログ** | 開く前にデータを取得済みが望ましい |
+| **頻繁に更新される部分** | 毎回Skeletonが出ると煩わしい |
+
+### 判断基準
+
+```
+データ取得に 200ms以上 かかる可能性がある？
+  → はい: Skeleton化を検討
+  → いいえ: 不要（単純なスピナーで十分）
+```
+
+### 実装例：テーブルのSkeleton
+
+```tsx
+if (loading) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>名前</TableHead>
+          <TableHead>役職</TableHead>
+          <TableHead>ステータス</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {[...Array(8)].map((_, i) => (
+          <TableRow key={i}>
+            <TableCell>
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-4 w-16" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-5 w-16 rounded-full" />
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+```
+
+### 実装例：カードグリッドのSkeleton
+
+```tsx
+if (loading) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {[...Array(8)].map((_, i) => (
+        <div key={i} className="border rounded-lg p-4 space-y-3">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-12 w-12 rounded-full" />
+            <div className="space-y-1 flex-1">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </div>
+          <Skeleton className="h-5 w-20 rounded-full" />
+          <Skeleton className="h-3 w-full" />
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### 実装例：ツリービューのSkeleton
+
+```tsx
+if (loading) {
+  return (
+    <div className="space-y-2">
+      {/* ルートノード */}
+      <div className="flex items-center justify-between p-2">
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-5 w-10 rounded-full" />
+      </div>
+      {/* 子ノード */}
+      {[...Array(5)].map((_, i) => (
+        <div key={i} className="flex items-center gap-1">
+          <Skeleton className="h-6 w-6" />
+          <div className="flex-1 flex items-center justify-between p-2">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-5 w-8 rounded-full" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### ポイント
+
+- **実際のUIの形状を模倣する**: ユーザーが「何が表示されるか」を予測できる
+- **テーブルヘッダーは実際の列名を表示**: 構造がわかりやすい
+- **適切な数のプレースホルダー**: 8〜10個程度が一般的
+
 ## フォーム要素
 
 ### 標準入力
@@ -397,3 +532,4 @@ const isMobile = useIsMobile();
 - [ ] 適切なスペーシングを適用
 - [ ] 空状態を実装
 - [ ] モバイル対応を考慮（useIsTabletOrMobile）
+- [ ] ローディング状態を実装（200ms以上かかる場合はSkeleton）

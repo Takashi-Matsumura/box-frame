@@ -2,6 +2,7 @@
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { Language, Translations } from "../translations";
 import { MemberCard } from "./MemberCard";
@@ -63,21 +64,75 @@ export function MemberGrid({
   language,
   viewMode = "grid",
 }: MemberGridProps) {
-  // ローディング中
+  // ローディング中 - Skeletonで実際のコンテンツ構造を表現
   if (loading) {
     if (viewMode === "list") {
       return (
-        <div className="space-y-2">
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="bg-muted animate-pulse rounded-lg h-14" />
-          ))}
+        <div className="border rounded-lg overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-muted/50">
+              <tr className="text-left text-sm text-muted-foreground">
+                <th className="px-4 py-3 font-medium">{t.name}</th>
+                <th className="px-4 py-3 font-medium hidden sm:table-cell">
+                  {t.position}
+                </th>
+                <th className="px-4 py-3 font-medium hidden md:table-cell">
+                  {t.affiliation}
+                </th>
+                <th className="px-4 py-3 font-medium hidden lg:table-cell">
+                  {t.email}
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {[...Array(8)].map((_, i) => (
+                <tr key={i}>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-8 w-8 rounded-full" />
+                      <div className="space-y-1">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-3 w-20" />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 hidden sm:table-cell">
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </td>
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    <Skeleton className="h-4 w-32" />
+                  </td>
+                  <td className="px-4 py-3 hidden lg:table-cell">
+                    <Skeleton className="h-4 w-40" />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       );
     }
+    // グリッドビューのスケルトン
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {[...Array(8)].map((_, i) => (
-          <div key={i} className="bg-muted animate-pulse rounded-lg h-32" />
+          <div
+            key={i}
+            className="border rounded-lg p-4 space-y-3"
+          >
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-12 w-12 rounded-full" />
+              <div className="space-y-1 flex-1">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3 w-16" />
+              </div>
+            </div>
+            <Skeleton className="h-5 w-20 rounded-full" />
+            <div className="space-y-1">
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-3/4" />
+            </div>
+          </div>
         ))}
       </div>
     );

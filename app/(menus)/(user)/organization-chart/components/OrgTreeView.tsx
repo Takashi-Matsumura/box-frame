@@ -8,6 +8,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { Language, Translations } from "../translations";
 
@@ -131,11 +132,51 @@ export function OrgTreeView({
     setExpandedSects(new Set());
   };
 
-  // ローディング中
+  // ローディング中 - Skeletonで実際のツリー構造を表現
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="space-y-2 pr-3">
+        {/* 展開/折りたたみボタンのスケルトン */}
+        <div className="flex gap-2 mb-4">
+          <Skeleton className="h-8 w-20" />
+          <Skeleton className="h-8 w-20" />
+        </div>
+
+        {/* 組織ルートのスケルトン */}
+        <div className="flex items-center justify-between p-2">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-5 w-10 rounded-full" />
+        </div>
+
+        {/* 部署ノードのスケルトン（5個） */}
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="space-y-1">
+            <div className="flex items-center gap-1">
+              <Skeleton className="h-6 w-6" />
+              <div className="flex-1 flex items-center justify-between p-2">
+                <div className="space-y-1">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                <Skeleton className="h-5 w-8 rounded-full" />
+              </div>
+            </div>
+            {/* 課のスケルトン（一部の部署のみ表示） */}
+            {i < 2 && (
+              <div className="ml-4 space-y-1">
+                {[...Array(2)].map((_, j) => (
+                  <div key={j} className="flex items-center gap-1">
+                    <div className="w-5" />
+                    <div className="flex-1 flex items-center justify-between p-1.5">
+                      <Skeleton className="h-3 w-20" />
+                      <Skeleton className="h-4 w-6 rounded-full" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     );
   }
