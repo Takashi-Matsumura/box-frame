@@ -30,7 +30,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: appConfig.name,
+  title: {
+    default: appConfig.name,
+    template: `${appConfig.name}：%s`,
+  },
   description: appConfig.description,
 };
 
