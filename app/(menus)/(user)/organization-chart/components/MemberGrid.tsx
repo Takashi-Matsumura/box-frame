@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Language, Translations } from "../translations";
 import { MemberCard } from "./MemberCard";
 
@@ -64,51 +65,95 @@ export function MemberGrid({
   language,
   viewMode = "grid",
 }: MemberGridProps) {
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const scrollbarRef = useRef<HTMLDivElement>(null);
+  const isScrollingSyncRef = useRef(false);
+  const [tableScrollWidth, setTableScrollWidth] = useState(0);
+
+  // テーブルの幅を監視
+  useEffect(() => {
+    const updateScrollWidth = () => {
+      if (tableContainerRef.current) {
+        setTableScrollWidth(tableContainerRef.current.scrollWidth);
+      }
+    };
+
+    updateScrollWidth();
+
+    // リサイズ時に幅を再計算
+    const resizeObserver = new ResizeObserver(updateScrollWidth);
+    if (tableContainerRef.current) {
+      resizeObserver.observe(tableContainerRef.current);
+    }
+
+    return () => resizeObserver.disconnect();
+  }, [employees]);
+
+  // テーブルのスクロールをスクロールバーに同期
+  const handleTableScroll = useCallback(() => {
+    if (isScrollingSyncRef.current) return;
+    if (tableContainerRef.current && scrollbarRef.current) {
+      isScrollingSyncRef.current = true;
+      scrollbarRef.current.scrollLeft = tableContainerRef.current.scrollLeft;
+      isScrollingSyncRef.current = false;
+    }
+  }, []);
+
+  // スクロールバーのスクロールをテーブルに同期
+  const handleScrollbarScroll = useCallback(() => {
+    if (isScrollingSyncRef.current) return;
+    if (tableContainerRef.current && scrollbarRef.current) {
+      isScrollingSyncRef.current = true;
+      tableContainerRef.current.scrollLeft = scrollbarRef.current.scrollLeft;
+      isScrollingSyncRef.current = false;
+    }
+  }, []);
+
   // ローディング中 - Skeletonで実際のコンテンツ構造を表現
   if (loading) {
     if (viewMode === "list") {
       return (
-        <div className="border rounded-lg overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-muted/50">
-              <tr className="text-left text-sm text-muted-foreground">
-                <th className="px-4 py-3 font-medium">{t.name}</th>
-                <th className="px-4 py-3 font-medium hidden sm:table-cell">
-                  {t.position}
-                </th>
-                <th className="px-4 py-3 font-medium hidden md:table-cell">
-                  {t.affiliation}
-                </th>
-                <th className="px-4 py-3 font-medium hidden lg:table-cell">
-                  {t.email}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {[...Array(8)].map((_, i) => (
-                <tr key={i}>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <Skeleton className="h-8 w-8 rounded-full" />
-                      <div className="space-y-1">
-                        <Skeleton className="h-4 w-24" />
-                        <Skeleton className="h-3 w-20" />
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 hidden sm:table-cell">
-                    <Skeleton className="h-5 w-16 rounded-full" />
-                  </td>
-                  <td className="px-4 py-3 hidden md:table-cell">
-                    <Skeleton className="h-4 w-32" />
-                  </td>
-                  <td className="px-4 py-3 hidden lg:table-cell">
-                    <Skeleton className="h-4 w-40" />
-                  </td>
+        <div className="border rounded-lg relative">
+          <div className="overflow-x-hidden">
+            <table className="w-full min-w-160">
+              <thead className="bg-muted/50">
+                <tr className="text-left text-sm text-muted-foreground">
+                  <th className="px-4 py-3 font-medium">{t.name}</th>
+                  <th className="px-4 py-3 font-medium">{t.position}</th>
+                  <th className="px-4 py-3 font-medium">{t.affiliation}</th>
+                  <th className="px-4 py-3 font-medium">{t.email}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {[...Array(8)].map((_, i) => (
+                  <tr key={i}>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-8 w-8 rounded-full" />
+                        <div className="space-y-1">
+                          <Skeleton className="h-4 w-24" />
+                          <Skeleton className="h-3 w-20" />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Skeleton className="h-5 w-16 rounded-full" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <Skeleton className="h-4 w-32" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <Skeleton className="h-4 w-40" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* 固定スクロールバー */}
+          <div className="overflow-x-scroll sticky bottom-0 bg-background border-t">
+            <div className="min-w-160 h-1" />
+          </div>
         </div>
       );
     }
@@ -168,105 +213,103 @@ export function MemberGrid({
   // リストビュー
   if (viewMode === "list") {
     return (
-      <div className="border rounded-lg overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-muted/50">
-            <tr className="text-left text-sm text-muted-foreground">
-              <th className="px-4 py-3 font-medium">{t.name}</th>
-              <th className="px-4 py-3 font-medium hidden sm:table-cell">
-                {t.position}
-              </th>
-              <th className="px-4 py-3 font-medium hidden md:table-cell">
-                {t.affiliation}
-              </th>
-              <th className="px-4 py-3 font-medium hidden lg:table-cell">
-                {t.email}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {employees.map((employee) => (
-              <tr
-                key={employee.id}
-                onClick={() => onSelectEmployee(employee.id)}
-                className={cn(
-                  "cursor-pointer hover:bg-muted/50 transition-colors",
-                  !employee.isActive && "opacity-60",
-                )}
-              >
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8 flex-shrink-0">
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-                        {getInitials(employee.name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-foreground truncate">
-                          {employee.name}
-                        </span>
-                        {!employee.isActive && (
-                          <Badge variant="secondary" className="text-xs">
-                            {t.inactive}
-                          </Badge>
+      <div className="border rounded-lg relative">
+        {/* テーブル本体 */}
+        <div
+          ref={tableContainerRef}
+          className="overflow-x-hidden"
+          onScroll={handleTableScroll}
+        >
+          <table className="w-full min-w-160">
+            <thead className="bg-muted/50">
+              <tr className="text-left text-sm text-muted-foreground">
+                <th className="px-4 py-3 font-medium">{t.name}</th>
+                <th className="px-4 py-3 font-medium">{t.position}</th>
+                <th className="px-4 py-3 font-medium">{t.affiliation}</th>
+                <th className="px-4 py-3 font-medium">{t.email}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {employees.map((employee) => (
+                <tr
+                  key={employee.id}
+                  onClick={() => onSelectEmployee(employee.id)}
+                  className={cn(
+                    "cursor-pointer hover:bg-muted/50 transition-colors",
+                    !employee.isActive && "opacity-60",
+                  )}
+                >
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8 shrink-0">
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                          {getInitials(employee.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-foreground whitespace-nowrap">
+                            {employee.name}
+                          </span>
+                          {!employee.isActive && (
+                            <Badge variant="secondary" className="text-xs">
+                              {t.inactive}
+                            </Badge>
+                          )}
+                        </div>
+                        {employee.nameKana && (
+                          <p className="text-xs text-muted-foreground whitespace-nowrap">
+                            {employee.nameKana}
+                          </p>
                         )}
                       </div>
-                      {employee.nameKana && (
-                        <p className="text-xs text-muted-foreground truncate">
-                          {employee.nameKana}
-                        </p>
-                      )}
-                      {/* モバイル用: 役職表示 */}
-                      <div className="sm:hidden mt-1">
-                        <Badge
-                          className={cn(
-                            "text-xs",
-                            getPositionColor(employee.position),
-                          )}
-                        >
-                          {employee.position}
-                        </Badge>
-                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3 hidden sm:table-cell">
-                  <Badge
-                    className={cn(
-                      "text-xs",
-                      getPositionColor(employee.position),
-                    )}
-                  >
-                    {employee.position}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3 hidden md:table-cell">
-                  <p className="text-sm text-muted-foreground truncate max-w-[200px]">
-                    {[
-                      employee.department?.name,
-                      employee.section?.name,
-                      employee.course?.name,
-                    ]
-                      .filter(Boolean)
-                      .join(" > ")}
-                  </p>
-                </td>
-                <td className="px-4 py-3 hidden lg:table-cell">
-                  {employee.email && (
-                    <a
-                      href={`mailto:${employee.email}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-sm text-muted-foreground hover:text-primary transition-colors truncate block max-w-[200px]"
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge
+                      className={cn(
+                        "text-xs whitespace-nowrap",
+                        getPositionColor(employee.position),
+                      )}
                     >
-                      {employee.email}
-                    </a>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                      {employee.position}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <p className="text-sm text-muted-foreground whitespace-nowrap">
+                      {[
+                        employee.department?.name,
+                        employee.section?.name,
+                        employee.course?.name,
+                      ]
+                        .filter(Boolean)
+                        .join(" > ")}
+                    </p>
+                  </td>
+                  <td className="px-4 py-3">
+                    {employee.email && (
+                      <a
+                        href={`mailto:${employee.email}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-sm text-muted-foreground hover:text-primary transition-colors whitespace-nowrap"
+                      >
+                        {employee.email}
+                      </a>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {/* 固定スクロールバー */}
+        <div
+          ref={scrollbarRef}
+          className="overflow-x-scroll sticky bottom-0 bg-background border-t"
+          onScroll={handleScrollbarScroll}
+        >
+          <div style={{ width: tableScrollWidth, height: 1 }} />
+        </div>
       </div>
     );
   }

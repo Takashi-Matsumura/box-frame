@@ -157,6 +157,104 @@ import { Label } from "@/components/ui/label";
 </Card>
 ```
 
+## 固定スクロールバー（テーブル横スクロール）
+
+テーブルの横スクロールバーを画面下部に固定表示するパターン。縦スクロールしなくても横スクロールバーにアクセスできる。
+
+### 実装方法
+
+1. テーブル本体は `overflow-x-hidden` でスクロールバーを非表示
+2. テーブルの下に、テーブル幅と同じダミー要素を持つスクロールバーを `sticky bottom-0` で配置
+3. 両者のスクロールをJavaScriptで同期
+
+### 実装例
+
+```tsx
+import { useCallback, useEffect, useRef, useState } from "react";
+
+function TableWithStickyScrollbar() {
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const scrollbarRef = useRef<HTMLDivElement>(null);
+  const isScrollingSyncRef = useRef(false);
+  const [tableScrollWidth, setTableScrollWidth] = useState(0);
+
+  // テーブルの幅を監視
+  useEffect(() => {
+    const updateScrollWidth = () => {
+      if (tableContainerRef.current) {
+        setTableScrollWidth(tableContainerRef.current.scrollWidth);
+      }
+    };
+
+    updateScrollWidth();
+
+    const resizeObserver = new ResizeObserver(updateScrollWidth);
+    if (tableContainerRef.current) {
+      resizeObserver.observe(tableContainerRef.current);
+    }
+
+    return () => resizeObserver.disconnect();
+  }, [data]); // dataが変わったら幅を再計算
+
+  // テーブルのスクロールをスクロールバーに同期
+  const handleTableScroll = useCallback(() => {
+    if (isScrollingSyncRef.current) return;
+    if (tableContainerRef.current && scrollbarRef.current) {
+      isScrollingSyncRef.current = true;
+      scrollbarRef.current.scrollLeft = tableContainerRef.current.scrollLeft;
+      isScrollingSyncRef.current = false;
+    }
+  }, []);
+
+  // スクロールバーのスクロールをテーブルに同期
+  const handleScrollbarScroll = useCallback(() => {
+    if (isScrollingSyncRef.current) return;
+    if (tableContainerRef.current && scrollbarRef.current) {
+      isScrollingSyncRef.current = true;
+      tableContainerRef.current.scrollLeft = scrollbarRef.current.scrollLeft;
+      isScrollingSyncRef.current = false;
+    }
+  }, []);
+
+  return (
+    <div className="border rounded-lg relative">
+      {/* テーブル本体 */}
+      <div
+        ref={tableContainerRef}
+        className="overflow-x-hidden"
+        onScroll={handleTableScroll}
+      >
+        <table className="w-full min-w-160">
+          {/* テーブル内容 */}
+        </table>
+      </div>
+
+      {/* 固定スクロールバー */}
+      <div
+        ref={scrollbarRef}
+        className="overflow-x-scroll sticky bottom-0 bg-background border-t"
+        onScroll={handleScrollbarScroll}
+      >
+        <div style={{ width: tableScrollWidth, height: 1 }} />
+      </div>
+    </div>
+  );
+}
+```
+
+### ポイント
+
+- `tableScrollWidth` でテーブルの実際の幅を取得し、ダミー要素に反映
+- `ResizeObserver` でコンテナ幅の変化を監視（サイドバー開閉時など）
+- `isScrollingSyncRef` で無限ループを防止
+- テーブル本体は `overflow-x-hidden` でスクロールバーを非表示にし、固定スクロールバーのみ表示
+
+### 使用例
+
+- 組織図メニュー: `app/(menus)/(user)/organization-chart/components/MemberGrid.tsx`
+
+---
+
 ## モーダル（Dialog）
 
 ### 作成・編集フォーム用
