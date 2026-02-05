@@ -1081,7 +1081,7 @@ export function DashboardClient({
               </button>
             </div>
           </DrawerHeader>
-          <div className="px-4 pb-4 flex-1 overflow-y-auto">
+          <div className="px-4 pb-4 flex-1 overflow-y-auto" suppressHydrationWarning>
             {rightPanelTab === "events" ? (
               <div className="space-y-3">
                 {selectedDate && (

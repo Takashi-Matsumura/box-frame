@@ -60,8 +60,12 @@ export const dashboardTranslations = {
     conciergeSend: "Send",
     conciergeStop: "Stop",
     conciergeWelcome:
-      "I'm your calendar concierge. Ask me anything about your schedule!",
+      "I'm your calendar concierge.\nAsk me anything about your schedule!",
     conciergeError: "An error occurred. Please try again.",
+    conciergeVoiceStart: "Start voice input",
+    conciergeVoiceStop: "Stop voice input",
+    conciergeVoiceListening: "Listening...",
+    conciergeVoiceNotSupported: "Voice input is not supported in this browser",
     // Event creation
     createEvent: "Create event",
     eventTitle: "Title",
@@ -181,8 +185,12 @@ export const dashboardTranslations = {
     conciergeSend: "送信",
     conciergeStop: "停止",
     conciergeWelcome:
-      "カレンダーコンシェルジュです。スケジュールに関することは何でもお聞きください！",
+      "カレンダーコンシェルジュです。\nスケジュールに関することは何でもお聞きください！",
     conciergeError: "エラーが発生しました。もう一度お試しください。",
+    conciergeVoiceStart: "音声入力を開始",
+    conciergeVoiceStop: "音声入力を停止",
+    conciergeVoiceListening: "聞いています...",
+    conciergeVoiceNotSupported: "このブラウザでは音声入力がサポートされていません",
     // Event creation
     createEvent: "イベントを作成",
     eventTitle: "タイトル",

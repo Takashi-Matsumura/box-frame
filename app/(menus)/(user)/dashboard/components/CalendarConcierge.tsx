@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   RiDeleteBinLine,
+  RiMicLine,
   RiRobot2Line,
   RiSendPlane2Line,
   RiSparklingLine,
@@ -11,6 +12,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
+import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
 import type { ExternalCalendarEvent } from "@/lib/addon-modules/calendar-integration/types";
 import { cn } from "@/lib/utils";
 import { dashboardTranslations } from "../translations";
@@ -139,6 +141,23 @@ export function CalendarConcierge({
   const abortControllerRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Speech recognition for voice input
+  const handleVoiceResult = useCallback((transcript: string) => {
+    setInput((prev) => prev + transcript);
+  }, []);
+
+  const {
+    isSupported: isVoiceSupported,
+    isListening,
+    startListening,
+    stopListening,
+  } = useSpeechRecognition({
+    language: language === "ja" ? "ja-JP" : "en-US",
+    continuous: false,
+    interimResults: true,
+    onResult: handleVoiceResult,
+  });
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -291,7 +310,7 @@ export function CalendarConcierge({
   );
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" suppressHydrationWarning>
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <RiSparklingLine className="w-4 h-4 text-primary" />
@@ -301,9 +320,43 @@ export function CalendarConcierge({
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-3 mb-3 min-h-0">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2 py-4 lg:py-8">
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3 py-4 lg:py-8">
             <RiRobot2Line className="w-8 h-8" />
-            <p className="text-xs text-center">{t.conciergeWelcome}</p>
+            <p className="text-xs text-center whitespace-pre-line">{t.conciergeWelcome}</p>
+            {/* Large centered mic button for voice input */}
+            <button
+              type="button"
+              onClick={() => {
+                if (!isVoiceSupported) {
+                  alert(t.conciergeVoiceNotSupported);
+                  return;
+                }
+                if (isListening) {
+                  stopListening();
+                } else {
+                  startListening();
+                }
+              }}
+              disabled={isLoading}
+              className={cn(
+                "mt-4 w-20 h-20 rounded-full flex items-center justify-center transition-all",
+                isListening
+                  ? "bg-red-500 text-white scale-110 shadow-lg shadow-red-500/30"
+                  : "bg-primary text-primary-foreground hover:scale-105 hover:shadow-lg",
+                !isVoiceSupported && "opacity-70",
+              )}
+              title={isListening ? t.conciergeVoiceStop : t.conciergeVoiceStart}
+            >
+              <RiMicLine className={cn("w-10 h-10", isListening && "animate-pulse")} />
+            </button>
+            {isListening && (
+              <p className="text-sm text-red-500 animate-pulse">{t.conciergeVoiceListening}</p>
+            )}
+            {!isVoiceSupported && (
+              <p className="text-xs text-muted-foreground/70 mt-1">
+                {language === "ja" ? "HTTPSが必要です" : "HTTPS required"}
+              </p>
+            )}
           </div>
         )}
         {messages.map((msg, i) => (
@@ -369,28 +422,39 @@ export function CalendarConcierge({
           variant="ghost"
           size="sm"
           onClick={handleReset}
-          disabled={messages.length === 0 && !input}
+          disabled={messages.length === 0 && !input && !isListening}
           className="shrink-0 text-muted-foreground hover:text-destructive"
           title={language === "ja" ? "リセット" : "Reset"}
         >
           <RiDeleteBinLine className="w-4 h-4" />
         </Button>
-        <textarea
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onCompositionStart={() => {
-            isComposingRef.current = true;
-          }}
-          onCompositionEnd={() => {
-            isComposingRef.current = false;
-          }}
-          placeholder={t.conciergePlaceholder}
-          className="flex-1 resize-none rounded-md border bg-background px-3 py-2 text-base focus:outline-none focus:ring-1 focus:ring-primary min-h-[36px] max-h-[80px]"
-          rows={1}
-          disabled={isLoading}
-        />
+        <div className="flex-1 relative">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onCompositionStart={() => {
+              isComposingRef.current = true;
+            }}
+            onCompositionEnd={() => {
+              isComposingRef.current = false;
+            }}
+            placeholder={isListening ? t.conciergeVoiceListening : t.conciergePlaceholder}
+            className={cn(
+              "w-full resize-none rounded-md border bg-background px-3 py-2 text-base focus:outline-none focus:ring-1 focus:ring-primary min-h-9 max-h-20",
+              isListening && "border-red-500 ring-1 ring-red-500",
+            )}
+            rows={1}
+            disabled={isLoading || isListening}
+            suppressHydrationWarning
+          />
+          {isListening && (
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+            </span>
+          )}
+        </div>
         {isLoading ? (
           <Button
             variant="outline"
@@ -405,7 +469,7 @@ export function CalendarConcierge({
             variant="default"
             size="sm"
             onClick={handleSend}
-            disabled={!input.trim()}
+            disabled={!input.trim() || isListening}
             className="shrink-0"
           >
             <RiSendPlane2Line className="w-4 h-4" />
